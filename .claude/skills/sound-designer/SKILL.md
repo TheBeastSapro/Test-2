@@ -147,11 +147,15 @@ estimate, including the ones a listening model gave.
 
 ### What this changes
 
-1. **The bed is not at 10%.** Measured it sits **23-39%** of programme level (-12.6 to
-   -8.2 dB), averaging about **30% / -10 dB**. Sapro's standing instruction is 10% (-20 dB),
-   which is 2-4x quieter than what his own channel ships. Offer -10 dB as the measured
-   default and -20 dB as the instructed one, and let his ear settle it -- do not silently
-   pick one.
+1. **DECIDED: bed at -10 dB, master at -14 LUFS.** Sapro chose the measured level over his
+   own 10% instruction after seeing the numbers. `--music-db` now defaults to **-10.0**, so
+   this is the behaviour without any flag. Verified end to end: a render at the default
+   measures a bed **-10.3 dB** under programme (references: -8.2 and -12.6) at **-13.9 LUFS**,
+   LRA 2.5 (references: 2.3 and 2.6).
+
+   He keeps **-14 LUFS** rather than matching the channel's -21.5/-23.1, so delivered mixes
+   sit ~8 dB hotter than his back catalogue. That is deliberate and correct for YouTube --
+   mention it once when handing over the first mix, then stop mentioning it.
 2. **A cue change every ~47 s.** `SECTION_SECONDS = 47.0` in `analyze.py` comes straight from
    this; it reproduces 13 and 14 sections for these two runtimes. The old `duration/90` capped
    at 6 was less than half the real rate.
@@ -188,15 +192,16 @@ this only blocks pulling from YouTube directly.
 
 ## Levels — Sapro's house rule
 
-**Music and SFX sit at 10% — that is −20 dB** (20·log10(0.1)). This is what he tells a human
-sound designer, so it is the starting point here too, not a suggestion:
+**SUPERSEDED by measurement — the bed sits at −10 dB, not 10%/−20 dB.** Sapro's original
+instruction to human sound designers was 10%; measuring two of his own mixes showed the channel
+actually ships 23–39%. He reviewed the numbers and chose the measured level. `--music-db`
+defaults to −10.0, so no flag is needed:
 
 ```
-assemble.py ... --music-db -20 --sfx-db -12
+assemble.py --cues cues.json --vo vo.mp3 --assets ./assets --out "Title (mixed).mp3"
 ```
-`--sfx-db -12` because the cue sheet already writes SFX at −6…−9 dB, so −12 more lands them
-around −20 too. Verify by measuring the bed inside a VO gap — it should read roughly 20 dB
-below an untrimmed render, not by trusting the flag.
+SFX keep their per-cue gains (−6…−9 dB), which puts hits a few dB above the bed — right for
+transients. Verify with `measure_ref.py` on the output, not by trusting the flag.
 
 Ducking still applies on top: the bed is at 10% *and* ducks under the voice. Master is
 `loudnorm I=−14:TP=−1:LRA=11`.

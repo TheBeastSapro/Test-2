@@ -193,8 +193,12 @@ def main():
     ap.add_argument("--assets", help="dir with files named by cue id (m1.mp3, s2.wav)")
     ap.add_argument("--stems", help="dir to also write music/sfx/vo stems")
     ap.add_argument("--mux-into", help="video to remux the final mix into (-> mp4)")
-    ap.add_argument("--music-db", type=float, default=0.0, help="global music trim")
-    ap.add_argument("--sfx-db", type=float, default=0.0, help="global sfx trim")
+    # -10 dB is measured, not guessed: across two StickTory full mixes the bed
+    # floor sits 8.2 and 12.6 dB under programme level. See SKILL.md.
+    ap.add_argument("--music-db", type=float, default=-10.0,
+                    help="global music trim (default -10, the measured channel bed level)")
+    ap.add_argument("--sfx-db", type=float, default=0.0,
+                    help="global sfx trim on top of each cue's own gain (-6..-9)")
     ap.add_argument("--no-duck", action="store_true")
     ap.add_argument("--preview", metavar="START-END",
                     help="also write a short excerpt of the finished master, "
