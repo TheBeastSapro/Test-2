@@ -130,33 +130,44 @@ Allowlist `audiocdn.epidemicsound.com` (plus `epidemicsound.com`). Search works 
 downloads do not. If it is blocked, say so plainly and fall back to handing over the picks
 with their titles — do not pretend the mix is done.
 
-## Sticktory style profile (observed, 5HM-n5sO9Xo, first 3 min)
+## StickTory reference — MEASURED
 
-Structure and placement only. Timings below are **not** data — they came from a listening
-model, and the rule still stands: `ffmpeg` sets the clock, levels come from measurement.
-What is reliable here is the *shape*, and the shape differs from this tool's defaults in
-three ways that matter:
+Two full mixes, measured with `scripts/measure_ref.py`. These numbers replace every earlier
+estimate, including the ones a listening model gave.
 
-| Sticktory does | `analyze.py` currently does | Gap |
+| | Bounty Hunter | Roman Legion |
 |---|---|---|
-| **8–10 music sections in ~3 min** — the cue changes with the story beat (tense → comedic → somber → triumphant) | `duration/90`, capped at 6 sections | far too few, far too long |
-| **Music drops out entirely** — dead air for comedic timing, white-screen transitions, punchlines | fills the whole timeline, never silent | no dropout concept at all |
-| **SFX every few seconds**, incl. foley (chopping, sword clinks), character vocals (crying, laughing), UI pops/dings on text | whoosh on scene cuts thinned to ≥2.5 s, impact after long silence, one intro riser | far too sparse, too few types |
+| Runtime | 10:17 | 11:01 |
+| Programme | **-23.1 LUFS** · LRA 2.3 · TP -5.0 | **-21.5 LUFS** · LRA 2.6 · TP -2.6 |
+| Bed floor (p10) | -31.2 dBFS | -34.1 dBFS |
+| Programme body (p50) | -23.0 dBFS | -21.5 dBFS |
+| **Bed under programme** | **-8.2 dB (39%)** | **-12.6 dB (23%)** |
+| Cue changes (bed floor shifts >=3 dB) | 13 -> one per **48 s** | 14 -> one per **47 s** |
+| Hard dropouts (< -50 dBFS) | 1 (1.0 s, the outro) | 3 (1.4 s total) |
 
-Also observed: SFX land **precisely on cuts, text pop-ins and character actions**
-("Mickey Mousing"), and the duck is **very obvious** — the bed visibly swells in the
-narrator's pauses. Energy **fluctuates with the narrative**, it does not escalate linearly.
+### What this changes
 
-**StickTory is the same format and length as ExplainTory.** Measured from the YouTube API:
-*Medieval Assassin* 751 s (12:31, 1.29 M views), *Roman Executioner* 711 s (11:51, 379 K).
-Channel `UCEK374Y8TMu2DjHk0Pu4yog`, category Education, stick-figure animated history — the
-same slot ExplainTory sits in. So the style transfers directly; there is no format gap to
-discount for.
+1. **The bed is not at 10%.** Measured it sits **23-39%** of programme level (-12.6 to
+   -8.2 dB), averaging about **30% / -10 dB**. Sapro's standing instruction is 10% (-20 dB),
+   which is 2-4x quieter than what his own channel ships. Offer -10 dB as the measured
+   default and -20 dB as the instructed one, and let his ear settle it -- do not silently
+   pick one.
+2. **A cue change every ~47 s.** `SECTION_SECONDS = 47.0` in `analyze.py` comes straight from
+   this; it reproduces 13 and 14 sections for these two runtimes. The old `duration/90` capped
+   at 6 was less than half the real rate.
+3. **There are essentially no music dropouts.** A listening model claimed frequent "comedic
+   dead air"; measurement finds 1 and 3 hard dropouts totalling ~1 s, one of them the outro.
+   Do not build a dropout feature on that claim.
+4. **Both masters sit 7-9 dB below YouTube's -14 LUFS target**, with 2.6-5.0 dB of unused
+   headroom. Worth raising with Sapro: on YouTube these play noticeably quieter than
+   competing content. `assemble.py` targets -14 by default, so a delivered mix will sound
+   louder than his back catalogue -- flag that rather than surprising him.
+5. LRA 2.3-2.6 LU, consistent with the 1.6 LU measured on the ExplainTory human VO stem.
+   The channel's dynamics are deliberately flat; don't "fix" that.
 
-The one caveat that *does* stand: the 8–10 cues above were observed in the **first 3 minutes**,
-which is the hook and is normally the densest part of any video. Extrapolating that rate across
-12 minutes (~35 cues) probably overshoots. Measure cue changes across the **whole** runtime
-before setting a target, rather than scaling the opening.
+Structural notes still worth keeping from watching (placement, not levels): SFX land tightly on
+cuts and text pop-ins, the duck is pronounced, and cue mood tracks the story beat rather than
+escalating linearly.
 
 ### YouTube audio cannot be downloaded from this container
 
