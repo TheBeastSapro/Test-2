@@ -62,7 +62,20 @@ python3 assemble.py --cues cues.json --vo "Title (final).mp3" --assets ./assets 
                     --out "Title (mixed).mp3" --stems ./stems
 ```
 
-## Previewing
+## Preview Studio (browser)
+
+`studio.html` is a self-contained preview console — open it in any browser, no server. Load the
+cue sheet, the video, the VO and the assets, and it plays the whole thing back **with live Web
+Audio ducking**, so you can judge balance and timing without rendering. Faders (bed / duck depth
+/ SFX) are live; when it sounds right, **Export cues.json** and pass it to `assemble.py`.
+
+Files are read locally via the file picker — nothing is uploaded. It opens on a demo cue sheet
+with synthesized tones so you can hear the ducking before loading anything.
+
+It is a *monitor*, not the master: the browser approximates with scheduled gain automation, while
+`assemble.py` renders the real sidechain compressor and the −14 LUFS / −1 dBTP master.
+
+## Rendering previews from the CLI
 
 Don't re-render 12 minutes to check one transition. `--preview` cuts an excerpt out of the
 finished master (real loudness, 50 ms fades so it doesn't click):
@@ -99,4 +112,5 @@ play them inline — you never need to open a file on the remote machine.
 | `scripts/fetch.py`    | Epidemic MCP results → `assets/` + writes paths back into the cue sheet |
 | `scripts/assemble.py` | cue sheet + VO + assets → ducked, mastered mix (the hands) |
 | `scripts/common.py`   | shared ffmpeg/ffprobe helpers |
+| `studio.html`         | browser preview console (live ducking, faders, export) |
 | `SKILL.md`            | how Claude runs the studio end-to-end |

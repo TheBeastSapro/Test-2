@@ -53,6 +53,13 @@ python3 assemble.py --cues cues.json --vo "Title (final).mp3" \
 `assemble.py` flags: `--music-db`/`--sfx-db` (global trims), `--no-duck`, `--stems DIR`,
 `--mux-into VIDEO`, `--preview START-END`.
 
+## Preview Studio
+
+`studio.html` (repo root of this skill) is a browser preview console: cue sheet + video + VO +
+assets in, live playback with Web Audio ducking out, live bed/duck/SFX faders, and an
+**Export cues.json** that carries the tuned values back to `assemble.py`. Point Sapro at it when
+he wants to *tune* rather than *check*. It reads files locally; nothing uploads.
+
 ## Previewing (how Sapro actually hears it)
 
 He is on a remote container — he cannot open files on this machine. **Send the rendered file
