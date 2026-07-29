@@ -129,9 +129,15 @@ def snap(t: float, cuts: list[float], tol: float = 1.5) -> float:
     return round(nearest if abs(nearest - t) <= tol else t, 3)
 
 
+# Measured from two StickTory full mixes (Bounty Hunter 10:17, Roman Legion 11:01):
+# the bed floor shifts >=3 dB 13 and 14 times respectively — a cue change every
+# ~47-48 s in both. The old duration/90 capped at 6 gave less than half that.
+SECTION_SECONDS = 47.0
+
+
 def build_music_sections(duration, cuts, times, energy, voiced, n_sections):
     if n_sections == "auto":
-        k = int(np.clip(round(duration / 90.0), 1, 6))
+        k = int(np.clip(round(duration / SECTION_SECONDS), 1, 24))
     else:
         k = max(1, int(n_sections))
     bounds = [duration * i / k for i in range(k + 1)]
