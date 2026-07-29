@@ -88,6 +88,56 @@ def render_sfx_seg(asset, at, gain_db, work, idx, vary: float = 0.0) -> str:
     return out
 
 
+def render_sfx_short(asset, gain_db, work, idx, vary: float = 0.0) -> str:
+    """One SFX at its own length — no delay padding. See build_sfx_bus."""
+    out = os.path.join(work, f"sh_{idx}.wav")
+    chain = f"aformat=sample_rates={SR}:channel_layouts={CH},"
+    if vary:
+        k = 0.86 + 0.30 * vary
+        gain_db += -2.5 * ((vary * 7.0) % 1.0)
+        chain += f"asetrate={int(SR * k)},aresample={SR},"
+    chain += f"afade=t=in:st=0:d=0.005,volume={gain_db:.2f}dB"
+    run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", asset,
+         "-filter:a", chain, "-ac", "2", "-ar", str(SR), out])
+    return out
+
+
+def build_sfx_bus(items, out: str, total: float, work: str, batch: int = 24):
+    """Sum many positioned SFX without one padded file per cue.
+
+    Delaying each hit into its own full-length wav costs total_duration per
+    cue: at 231 cues on a 13-minute video that is ~17 GB of intermediates and
+    it fills the disk. Instead each hit is rendered at its own length, then
+    positioned with adelay inside batched filter graphs, so the number of
+    full-length files is len(items)/batch rather than len(items).
+    """
+    if not items:
+        run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-f", "lavfi",
+             "-i", f"anullsrc=r={SR}:cl={CH}", "-t", f"{total:.3f}", out])
+        return
+    buses = []
+    for bi in range(0, len(items), batch):
+        chunk = items[bi:bi + batch]
+        inputs, parts, labels = [], [], []
+        for i, (path, at) in enumerate(chunk):
+            inputs += ["-i", path]
+            parts.append(f"[{i}]adelay={int(round(at * 1000))}:all=1[d{i}]")
+            labels.append(f"[d{i}]")
+        fc = ";".join(parts) + ";" + "".join(labels)
+        fc += (f"amix=inputs={len(chunk)}:normalize=0:dropout_transition=0[m];"
+               f"[m]apad=whole_dur={total:.3f},atrim=0:{total:.3f}[o]")
+        b = os.path.join(work, f"sbus_{bi}.wav")
+        run([FFMPEG, "-hide_banner", "-v", "error", "-y", *inputs,
+             "-filter_complex", fc, "-map", "[o]", "-ac", "2", "-ar", str(SR), b])
+        buses.append(b)
+    mix_bus(buses, out, total)
+    for b in buses:
+        try:
+            os.remove(b)
+        except OSError:
+            pass
+
+
 def mix_bus(segments: list[str], out: str, total: float):
     """Sum segments (no auto-normalize) into one bus of length `total`."""
     if not segments:
@@ -304,9 +354,9 @@ def main():
         if not asset:
             missing += 1
             continue
-        seg = render_sfx_seg(asset, s["at"], s.get("gain_db", -8.0) + args.sfx_db,
-                             work, s["id"], float(s.get("vary", 0.0)))
-        sfx_segs.append(seg)
+        seg = render_sfx_short(asset, s.get("gain_db", -8.0) + args.sfx_db,
+                               work, s["id"], float(s.get("vary", 0.0)))
+        sfx_segs.append((seg, s["at"]))
         placed_s += 1
         print(f"[assemble]   sfx {s['id']} <- {os.path.basename(asset)} @ {fmt_ts(s['at'])}")
 
@@ -323,7 +373,7 @@ def main():
     music_bus = os.path.join(work, "music_bus.wav")
     sfx_bus = os.path.join(work, "sfx_bus.wav")
     mix_bus(music_segs, music_bus, total)
-    mix_bus(sfx_segs, sfx_bus, total)
+    build_sfx_bus(sfx_segs, sfx_bus, total, work)
 
     ducked = music_bus
     if vo_wav and music_segs and not args.no_duck:
