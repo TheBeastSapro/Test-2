@@ -48,19 +48,31 @@ _PEAK = {}
 
 
 def transient_offset(path: str) -> float:
-    """Seconds from file start to its loudest sample.
+    """Seconds from file start to the sound's ATTACK, via librosa onset detection.
 
     Placing a hit by its file start is not synchronisation: the audible
-    transient is later. Measured on the palette used for a real video, the two
-    most-used sounds peaked 0.49 s and 0.41 s in, so 138 of 231 cues fired
-    roughly half a second after the picture. Align the peak, not the start.
+    transient is later. The loudest *sample* is not the right anchor either --
+    a whoosh peaks well after it starts, and the ear locks to the attack. So
+    take the first onset librosa reports, and fall back to peak amplitude only
+    if onset detection finds nothing.
     """
     if path in _PEAK:
         return _PEAK[path]
     import numpy as np
-    from common import decode_mono_pcm
-    x, sr = decode_mono_pcm(path, 22050)
-    off = float(np.argmax(np.abs(x))) / sr if x.size else 0.0
+    off = 0.0
+    try:
+        import librosa
+        y, sr = librosa.load(path, sr=22050, mono=True)
+        if y.size:
+            on = librosa.onset.onset_detect(y=y, sr=sr, units="time", backtrack=True)
+            if len(on):
+                off = float(on[0])
+            else:
+                off = float(np.argmax(np.abs(y))) / sr
+    except Exception:
+        from common import decode_mono_pcm
+        x, sr = decode_mono_pcm(path, 22050)
+        off = float(np.argmax(np.abs(x))) / sr if x.size else 0.0
     _PEAK[path] = off
     return off
 
@@ -139,9 +151,11 @@ def render_sfx_short(asset, gain_db, work, idx, vary: float = 0.0) -> str:
     out = os.path.join(work, f"sh_{idx}.wav")
     chain = f"aformat=sample_rates={SR}:channel_layouts={CH},"
     if vary:
-        k = 0.86 + 0.30 * vary
+        # rubberband shifts pitch and leaves the duration alone; asetrate was a
+        # varispeed, which also moved the transient and broke the alignment.
+        semis = -3.0 + 6.0 * vary
         gain_db += -2.5 * ((vary * 7.0) % 1.0)
-        chain += f"asetrate={int(SR * k)},aresample={SR},"
+        chain += f"rubberband=pitch={2 ** (semis / 12):.4f},"
     chain += f"afade=t=in:st=0:d=0.005,volume={gain_db:.2f}dB"
     run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", asset,
          "-filter:a", chain, "-ac", "2", "-ar", str(SR), out])
@@ -408,8 +422,7 @@ def main():
         vary = float(s.get("vary", 0.0))
         seg = render_sfx_short(asset, s.get("gain_db", -8.0) + args.sfx_db,
                                work, s["id"], vary)
-        k = (0.86 + 0.30 * vary) if vary else 1.0
-        at = max(0.0, s["at"] - transient_offset(asset) / k)
+        at = max(0.0, s["at"] - transient_offset(asset))
         sfx_segs.append((seg, at))
         placed_s += 1
         print(f"[assemble]   sfx {s['id']} <- {os.path.basename(asset)} @ {fmt_ts(s['at'])}")
