@@ -130,13 +130,28 @@ Allowlist `audiocdn.epidemicsound.com` (plus `epidemicsound.com`). Search works 
 downloads do not. If it is blocked, say so plainly and fall back to handing over the picks
 with their titles — do not pretend the mix is done.
 
-## Sticktory reference (inspiration, not measurement)
+## Sticktory style profile (observed, 5HM-n5sO9Xo, first 3 min)
 
-To borrow the Sticktory feel, watch a Sticktory video with the multimodal watch tool and build a
-**style profile**: where music enters/exits relative to the VO, SFX density, energy arc, how hard
-the bed ducks. Use it to bias the seeds and section energy in `cues.json` *before* fetching. Do
-**not** try to identify exact Sticktory tracks from audio, and do **not** take the watch tool's
-timings as numbers — it informs taste, `ffmpeg` sets the clock.
+Structure and placement only. Timings below are **not** data — they came from a listening
+model, and the rule still stands: `ffmpeg` sets the clock, levels come from measurement.
+What is reliable here is the *shape*, and the shape differs from this tool's defaults in
+three ways that matter:
+
+| Sticktory does | `analyze.py` currently does | Gap |
+|---|---|---|
+| **8–10 music sections in ~3 min** — the cue changes with the story beat (tense → comedic → somber → triumphant) | `duration/90`, capped at 6 sections | far too few, far too long |
+| **Music drops out entirely** — dead air for comedic timing, white-screen transitions, punchlines | fills the whole timeline, never silent | no dropout concept at all |
+| **SFX every few seconds**, incl. foley (chopping, sword clinks), character vocals (crying, laughing), UI pops/dings on text | whoosh on scene cuts thinned to ≥2.5 s, impact after long silence, one intro riser | far too sparse, too few types |
+
+Also observed: SFX land **precisely on cuts, text pop-ins and character actions**
+("Mickey Mousing"), and the duck is **very obvious** — the bed visibly swells in the
+narrator's pauses. Energy **fluctuates with the narrative**, it does not escalate linearly.
+
+**Do not copy the density blindly.** Sticktory is a fast ~3-minute story format; ExplainTory
+runs 11–12 minutes of explainer. Scaling 8–10 sections per 3 min straight across would give
+~40 sections in an ExplainTory video, which is almost certainly wrong. Take the *principles* —
+cue changes on story beats, deliberate dropouts, SFX on text pop-ins as well as cuts — and set
+the density against a measured ExplainTory reference.
 
 ## Levels — Sapro's house rule
 
