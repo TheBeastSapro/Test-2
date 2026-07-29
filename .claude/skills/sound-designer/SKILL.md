@@ -77,26 +77,58 @@ the job done.
 - **Send `--stems`** when he says something sits wrong but can't place what — hearing the bed
   alone answers it fast.
 
-## Epidemic MCP — the asset layer
+## Epidemic MCP — the asset layer (VERIFIED LIVE)
 
-Sapro's Creator plan has the **Epidemic Sound MCP** (`https://www.epidemicsound.com/a/mcp-service/mcp`).
-Connect it once in claude.ai → Settings → Connectors → *Add custom connector* (URL above,
-OAuth or the 30-day API key from the Epidemic dashboard). Once connected + enabled in chat, its
-tools appear in the tool list. **If it is not connected, fall back to the manual-drop workflow**
-(hand Sapro `cues.md` with the search seeds; he downloads from epidemicsound.com and drops files
-named `m1.mp3`, `s1.mp3`… into `assets/`, then run step 3).
+Connected and tested. Real tool names and shapes:
 
-When the MCP is connected, for each cue drive it like a sound designer:
+| Tool | Use |
+|---|---|
+| `SearchRecordings` | music. Filter supports **`vocals: false`**, `bpm{min,max}`, `duration{min,max}` (ms), `moodSlugs`, `tagSlugs`, `musicalKeys`, `featuredInstrumentSlugs` |
+| `SearchSoundEffects` | SFX. Same `duration` filter — cap it so you get hits, not beds |
+| `SearchSimilarToRecording` / `...SoundEffect` | "more like this one" once a cue lands |
+| `DownloadRecording` | `(id, options{fileType: MP3\|WAV, stemType: FULL\|INSTRUMENTS\|BASS\|DRUMS})` -> `assetUrl` |
+| `DownloadSoundEffect` | same, for SFX |
+| `EditRecording` + `PollEditRecordingJob` | fit a track to a target duration keeping musical structure — the right move for a section, better than looping |
+| `GenerateVoiceover` / `ListVoices` | AI VO; not used, ExplainTory VO comes from the VO-master skill |
 
-- **Music sections** → prefer **Soundmatch**: pass the section's video slice (start→end) so it
-  recommends music that fits the *picture*. If Soundmatch isn't applicable, use **semantic
-  search** with `cue.epidemic.search`. Then call **track-versions** with
-  `target_duration_s` so the track is cut to the slot with its musical structure intact (this
-  is better than looping — looping is only the fallback for manually-dropped short tracks).
-- **SFX hits** → **semantic search** with `cue.epidemic.search` ("cinematic whoosh transition",
-  "deep impact hit", "riser uplifter"). Pick the shortest clean match.
-- Collect the returned download/preview URLs into `manifest.json` keyed by cue id and run
-  `fetch.py`. Respect the license — only pull assets from Sapro's own Epidemic account.
+Push constraints into the **query**, don't just filter afterwards: set `vocals: false`,
+`bpm` around the cue's `bpm_hint`, and `duration.min` >= the section length. Use
+`stemType: INSTRUMENTS` when a track is right but its lead is too busy under the VO.
+
+Response shape (results nest one level deep, duration is in **milliseconds**):
+
+```
+{"data":{"recordings":{"nodes":[{"recording":{"id","title","bpm",
+   "audioFile":{"durationInMilliseconds","lqmp3Url","waveformUrl"},
+   "tags":[{"displayName","slug"}]}}]}}}
+```
+
+`scripts/epidemic.py` normalizes exactly this, so raw MCP output can be dumped
+straight to a file and piped in:
+
+```
+epidemic.py select --cues cues.json --candidates raw_mcp.json \
+                   --out picks.json --manifest manifest.json
+epidemic.py fetch  # or: fetch.py --manifest manifest.json --assets ./assets --cues cues.json
+```
+
+`select` scores every candidate against the cue (instrumental, bpm distance, energy,
+tag overlap, duration fit, reuse penalty) and records **why** it picked each winner
+plus the runners-up. That judgement is the skill's job — never hand Sapro a shopping list.
+
+### Network requirement (hard blocker)
+
+`DownloadRecording` returns a **signed URL on `audiocdn.epidemicsound.com`**. Downloading
+it happens from *this container*, not Claude's backend, so that host must be allowlisted in
+the environment's network policy. Verified failure mode when it is not:
+
+```
+curl: (56) CONNECT tunnel failed, response 403
+```
+
+Allowlist `audiocdn.epidemicsound.com` (plus `epidemicsound.com`). Search works without it;
+downloads do not. If it is blocked, say so plainly and fall back to handing over the picks
+with their titles — do not pretend the mix is done.
 
 ## Sticktory reference (inspiration, not measurement)
 

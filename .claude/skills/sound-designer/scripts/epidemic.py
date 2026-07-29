@@ -98,6 +98,55 @@ def get(t: dict, *names, default=None):
     return default
 
 
+def normalize(raw):
+    """Flatten Epidemic's real MCP/GraphQL shape into flat track dicts.
+
+    Verified against live responses, which look like:
+      {"data": {"recordings":   {"nodes": [{"recording":   {...}}]}}}
+      {"data": {"soundEffects": {"nodes": [{"soundEffect": {...}}]}}}
+    with duration under audioFile.durationInMilliseconds and tags as
+    [{displayName, slug}]. Anything already flat passes straight through.
+    """
+    if isinstance(raw, dict):
+        d = raw.get("data", raw)
+        for key in ("recordings", "soundEffects", "tracks", "results"):
+            if isinstance(d.get(key), dict) and "nodes" in d[key]:
+                raw = d[key]["nodes"]
+                break
+        else:
+            raw = raw if isinstance(raw, list) else [raw]
+
+    out = []
+    for item in raw or []:
+        if not isinstance(item, dict):
+            continue
+        t = item.get("recording") or item.get("soundEffect") or item
+        af = t.get("audioFile") or {}
+        ms = af.get("durationInMilliseconds")
+        tags = []
+        for tag in t.get("tags") or []:
+            if isinstance(tag, dict):
+                tags.append(tag.get("slug") or tag.get("displayName") or "")
+            else:
+                tags.append(str(tag))
+        moods = [m.get("slug") if isinstance(m, dict) else str(m) for m in (t.get("moods") or [])]
+        out.append({
+            "id": t.get("id"),
+            "title": t.get("title") or t.get("name") or "",
+            "bpm": t.get("bpm"),
+            "energy": t.get("energy"),
+            # the search filter already constrains this; default to instrumental
+            "hasVocals": t.get("vocals") if t.get("vocals") is not None else False,
+            "duration": (ms / 1000.0) if ms else t.get("duration"),
+            "tags": [x for x in tags if x],
+            "moods": [x for x in moods if x],
+            # no assetUrl until DownloadRecording is called; keep the preview as a fallback
+            "url": t.get("assetUrl") or af.get("lqmp3Url") or "",
+            "waveform": af.get("waveformUrl") or "",
+        })
+    return out
+
+
 def score_music(track: dict, cue: dict) -> tuple[float, list[str]]:
     why, s = [], 0.0
 
@@ -181,6 +230,7 @@ def score_sfx(track: dict, cue: dict) -> tuple[float, list[str]]:
 def cmd_select(args):
     cues = json.load(open(args.cues))
     cands = json.load(open(args.candidates))
+    cands = {k: normalize(v) for k, v in cands.items()}
     picks, used = {}, set()
 
     def choose(cue, kind):
