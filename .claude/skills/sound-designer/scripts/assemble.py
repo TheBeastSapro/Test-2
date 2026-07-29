@@ -21,6 +21,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import tempfile
 
 from common import FFMPEG, run, media_info, fmt_ts
@@ -109,6 +110,31 @@ def to_wav(src: str, out: str, total: float | None = None):
     run(cmd + [out])
 
 
+def integrated_lufs(path: str) -> float | None:
+    """Integrated loudness of a file, or None if it can't be measured."""
+    res = run([FFMPEG, "-hide_banner", "-i", path, "-af", "ebur128", "-f", "null", "-"])
+    hits = re.findall(r"I:\s*(-?[0-9.]+) LUFS", res.stderr)
+    return float(hits[-1]) if hits else None
+
+
+def calibrate_bed(music_bus: str, vo_wav: str, target_db: float):
+    """Return the trim that puts the music bus `target_db` under the VO.
+
+    A flat --music-db trim is not a *relative* level: the VO is a hot mastered
+    file while library tracks arrive at their own levels, so the same trim
+    lands somewhere different on every video. Measured on a real job, a -10 dB
+    trim produced a bed 21.6 dB under the voice. Measure both, then solve.
+    """
+    m, v = integrated_lufs(music_bus), integrated_lufs(vo_wav)
+    if m is None or v is None:
+        print("[assemble] could not measure loudness — leaving the trim as given")
+        return None
+    trim = target_db - (m - v)
+    print(f"[assemble] bed calibration: music {m:.1f} LUFS, vo {v:.1f} LUFS "
+          f"({m - v:+.1f} dB) -> target {target_db:+.0f} dB needs {trim:+.1f} dB")
+    return trim
+
+
 def duck(music: str, vo: str, out: str):
     """Sidechain-compress the music bus, keyed by the voice."""
     fc = (
@@ -195,8 +221,14 @@ def main():
     ap.add_argument("--mux-into", help="video to remux the final mix into (-> mp4)")
     # -10 dB is measured, not guessed: across two StickTory full mixes the bed
     # floor sits 8.2 and 12.6 dB under programme level. See SKILL.md.
-    ap.add_argument("--music-db", type=float, default=-10.0,
-                    help="global music trim (default -10, the measured channel bed level)")
+    ap.add_argument("--music-db", type=float, default=0.0,
+                    help="extra manual music trim on top of the calibration")
+    ap.add_argument("--bed-target-db", type=float, default=-13.0,
+                    help="put the bed this many dB under the VO, measured (default -13, "
+                         "the level measured on a StickTory mix against its own VO stem). "
+                         "Pass 'none' via --no-bed-calibration to disable.")
+    ap.add_argument("--no-bed-calibration", action="store_true",
+                    help="skip the measured calibration and use --music-db verbatim")
     ap.add_argument("--sfx-db", type=float, default=0.0,
                     help="global sfx trim on top of each cue's own gain (-6..-9)")
     ap.add_argument("--no-duck", action="store_true")
@@ -204,6 +236,8 @@ def main():
                     help="also write a short excerpt of the finished master, "
                          "e.g. --preview 0:30-1:00 (for fast ear-checking)")
     args = ap.parse_args()
+    if args.no_bed_calibration:
+        args.bed_target_db = None
 
     with open(args.cues) as f:
         cue = json.load(f)
@@ -255,6 +289,15 @@ def main():
     sfx_bus = os.path.join(work, "sfx_bus.wav")
     mix_bus(music_segs, music_bus, total)
     mix_bus(sfx_segs, sfx_bus, total)
+
+    # Put the bed at a level *relative to this VO*, measured, before ducking.
+    if vo_wav and music_segs and args.bed_target_db is not None:
+        trim = calibrate_bed(music_bus, vo_wav, args.bed_target_db)
+        if trim is not None and abs(trim) > 0.2:
+            cal = os.path.join(work, "music_cal.wav")
+            run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", music_bus,
+                 "-filter:a", f"volume={trim:.2f}dB", "-ac", "2", "-ar", str(SR), cal])
+            music_bus = cal
 
     ducked = music_bus
     if vo_wav and music_segs and not args.no_duck:

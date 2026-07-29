@@ -147,7 +147,19 @@ estimate, including the ones a listening model gave.
 
 ### What this changes
 
-1. **DECIDED: bed at -10 dB, master at -14 LUFS.** Sapro chose the measured level over his
+0. **CORRECTED: the bed target is -13 dB, and it must be CALIBRATED, not trimmed.**
+   A flat `--music-db` is not a relative level -- the VO is a hot mastered file while library
+   tracks arrive at their own levels, so the same trim lands differently on every video. On a
+   real job `--music-db -10` produced a bed **21.6 dB** under the voice (9%), not 30%.
+   `assemble.py` now measures the music bus and the VO in LUFS and solves for the trim
+   (`--bed-target-db`, default **-13**); `--no-bed-calibration` restores the old behaviour.
+
+   The -13 figure is exact, not inferred: the StickTory *Bounty Hunter* VO stem was measured
+   against that video's own full mix. Every window where the narrator is silent in the stem is
+   music-alone in the mix, so the ratio falls straight out -- **-13.1 dB, 22% linear** (median
+   of 5 true gaps; their VO has only 6 gaps >=0.6 s in 10 minutes, as dense as ExplainTory's).
+
+1. **SUPERSEDED (kept for history): bed at -10 dB, master at -14 LUFS.** Sapro chose the measured level over his
    own 10% instruction after seeing the numbers. `--music-db` now defaults to **-10.0**, so
    this is the behaviour without any flag. Verified end to end: a render at the default
    measures a bed **-10.3 dB** under programme (references: -8.2 and -12.6) at **-13.9 LUFS**,
