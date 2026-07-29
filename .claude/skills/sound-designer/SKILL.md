@@ -185,6 +185,39 @@ Structural notes still worth keeping from watching (placement, not levels): SFX 
 cuts and text pop-ins, the duck is pronounced, and cue mood tracks the story beat rather than
 escalating linearly.
 
+## The StickTory sound — what the channel actually does
+
+Observed by watching (structure and vocabulary only; every number in this file is measured
+separately). This is the brief. Match it.
+
+**The signature, in one line:** *tight synchronisation between rhythmic tension music and
+literal, exaggerated foley — every visual action punctuated by a specific, high-fidelity sound
+that sits **prominently above** the music.*
+
+Four things that follow, and each one is a mistake this tool made first:
+
+1. **SFX sit ABOVE the bed, not under it.** They are the foreground. Placing hits at
+   -15…-22 dB buries them and reads as "no SFX". The bed is the thing that gets out of the way.
+2. **Literal foley, not abstract transitions.** Cloth rustle on a hood going up, leather
+   footsteps on dirt, a metallic unsheathe, a wet thud when a body lands, non-verbal
+   vocalisations (gasps, grunts, an "hmm"). A generic whoosh where a cloth rustle belongs is
+   the difference between "dense" and "designed".
+3. **Layered stacks on the big actions.** A fall is *whoosh + scream + wet thud*, not one hit.
+   Single-sample cues are for small moves.
+4. **There is almost always an ambient bed** — wind, outdoor air, room tone. Scenes are rarely
+   dry. This tool shipped completely dry mixes.
+
+**Music:** hybrid tension beds — cinematic percussion (taiko, deep kicks), staccato strings,
+low synth pulses. **Highly rhythmic with a driving pulse**, not ambient wash. It *acts*:
+menacing, playful, triumphant as the story turns.
+
+**Do not score each era with its own regional instruments.** The palette stays **consistent** —
+cinematic/historical tension throughout — and cues change within that family. Swapping to taiko
+for Japan and oud for Persia is off-brand for this channel; it reads as a compilation, not a
+score. (This tool did exactly that on its first pass at the sword video.)
+
+**Era/title cards:** heavy cinematic boom plus a deep whoosh.
+
 ## LOOK AT THE FRAMES. Never place a hit you have not seen.
 
 This is the single most important rule here, and it was learned by getting it wrong on a real
