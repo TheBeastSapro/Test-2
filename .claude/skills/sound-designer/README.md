@@ -62,6 +62,27 @@ python3 assemble.py --cues cues.json --vo "Title (final).mp3" --assets ./assets 
                     --out "Title (mixed).mp3" --stems ./stems
 ```
 
+## Previewing
+
+Don't re-render 12 minutes to check one transition. `--preview` cuts an excerpt out of the
+finished master (real loudness, 50 ms fades so it doesn't click):
+
+```bash
+python3 assemble.py --cues cues.json --vo "Title (final).mp3" --assets ./assets \
+                    --out "Title (mixed).mp3" --preview 0:30-1:00
+#   → "Title (mixed) (preview 0:30-1:00).mp3"
+```
+
+| Question you're asking | What to render |
+|---|---|
+| Is the balance right? | audio `--preview` around the busiest passage |
+| Does the whoosh land on the cut? | `--mux-into` + `--preview` (preview with picture) |
+| Something sits wrong, can't tell what | `--stems` — listen to the bed alone |
+| Is the ducking too much/too little? | two renders, one with `--no-duck` or a different `--music-db`, A/B them |
+
+When Claude runs this in a session it sends the rendered files straight into the chat so you can
+play them inline — you never need to open a file on the remote machine.
+
 ## Notes on honesty
 
 - **Timing is measured** (scene cuts, silence, RMS energy). **Mood/BPM are seeds** for Epidemic

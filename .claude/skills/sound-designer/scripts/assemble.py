@@ -145,6 +145,46 @@ def mux(video, audio, out):
          "-c:a", "aac", "-b:a", "320k", "-shortest", out])
 
 
+def parse_time(s: str) -> float:
+    """'90', '1:30', '1:02:03.5' -> seconds."""
+    parts = str(s).strip().split(":")
+    try:
+        vals = [float(p) for p in parts]
+    except ValueError:
+        raise SystemExit(f"[assemble] bad time value: {s!r}")
+    sec = 0.0
+    for v in vals:
+        sec = sec * 60 + v
+    return sec
+
+
+def parse_window(spec: str, total: float) -> tuple[float, float]:
+    """'0:30-1:00' -> (30.0, 60.0), clamped to the timeline."""
+    if "-" not in spec:
+        raise SystemExit("[assemble] --preview needs START-END, e.g. 0:30-1:00")
+    a, b = spec.split("-", 1)
+    start, end = parse_time(a), parse_time(b)
+    start = max(0.0, min(start, total))
+    end = max(start + 0.5, min(end, total))
+    return start, end
+
+
+def extract_preview(src: str, dst: str, start: float, end: float, is_video: bool):
+    """Cut an excerpt out of the finished master, with short fades so it
+    doesn't click. The audio is the real master -- only excerpted."""
+    dur = end - start
+    fade = min(0.05, dur / 10)
+    af = f"afade=t=in:st=0:d={fade:.3f},afade=t=out:st={dur - fade:.3f}:d={fade:.3f}"
+    cmd = [FFMPEG, "-hide_banner", "-v", "error", "-y",
+           "-ss", f"{start:.3f}", "-t", f"{dur:.3f}", "-i", src, "-af", af]
+    if is_video:
+        cmd += ["-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-b:a", "256k"]
+    elif dst.lower().endswith(".mp3"):
+        cmd += ["-c:a", "libmp3lame", "-q:a", "2"]
+    run(cmd + [dst])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cues", required=True)
@@ -156,6 +196,9 @@ def main():
     ap.add_argument("--music-db", type=float, default=0.0, help="global music trim")
     ap.add_argument("--sfx-db", type=float, default=0.0, help="global sfx trim")
     ap.add_argument("--no-duck", action="store_true")
+    ap.add_argument("--preview", metavar="START-END",
+                    help="also write a short excerpt of the finished master, "
+                         "e.g. --preview 0:30-1:00 (for fast ear-checking)")
     args = ap.parse_args()
 
     with open(args.cues) as f:
@@ -234,6 +277,13 @@ def main():
     if args.mux_into:
         mux(args.mux_into, audio_out, args.out)
         print(f"[assemble] muxed into video -> {args.out}")
+
+    if args.preview:
+        start, end = parse_window(args.preview, total)
+        stem, ext = os.path.splitext(args.out)
+        prev = f"{stem} (preview {fmt_ts(start)}-{fmt_ts(end)}){ext}"
+        extract_preview(args.out, prev, start, end, bool(args.mux_into))
+        print(f"[assemble] preview -> {prev}")
 
     # loudness verification
     res = run([FFMPEG, "-hide_banner", "-i", args.out,

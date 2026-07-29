@@ -51,7 +51,24 @@ python3 assemble.py --cues cues.json --vo "Title (final).mp3" \
 `analyze.py` flags: `--scene-threshold 0.4` (lower = more cuts), `--silence-db -30`,
 `--silence-min 0.5`, `--sections auto|N`, `--lufs -14`.
 `assemble.py` flags: `--music-db`/`--sfx-db` (global trims), `--no-duck`, `--stems DIR`,
-`--mux-into VIDEO`.
+`--mux-into VIDEO`, `--preview START-END`.
+
+## Previewing (how Sapro actually hears it)
+
+He is on a remote container — he cannot open files on this machine. **Send the rendered file
+with `SendUserFile` (`display: "render"`) so it plays inline.** Always preview before declaring
+the job done.
+
+- **Excerpt, don't dump a 12-minute render.** `--preview 0:30-1:00` writes
+  `<name> (preview 0:30-1:00).mp3` — the real master, just cut, with 50 ms fades. Pick the
+  moments that matter: the intro riser, the first duck, a reveal impact, a section change.
+- **A/B when a judgement call is in play** (bed level, duck depth, whether an SFX belongs):
+  render both, send both, name them so the difference is obvious. Do not describe the
+  difference in prose and ask him to imagine it.
+- **Send `--mux-into` previews** when the question is *timing against picture* (does the whoosh
+  land on the cut?); send audio-only when the question is *balance*.
+- **Send `--stems`** when he says something sits wrong but can't place what — hearing the bed
+  alone answers it fast.
 
 ## Epidemic MCP — the asset layer
 
