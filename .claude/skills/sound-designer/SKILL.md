@@ -218,6 +218,64 @@ score. (This tool did exactly that on its first pass at the sword video.)
 
 **Era/title cards:** heavy cinematic boom plus a deep whoosh.
 
+## Density, variety and level — the three numbers behind "this sounds cheap"
+
+Measured on the first full sword-video render, not guessed. When a mix is described as
+"placed by a cheap guy", "irritating", or "repetitive", it is almost always one of these,
+and all three are countable before anyone listens:
+
+**1. How many distinct files are you actually using?** That render had 474 cues drawn from
+**seven** files — one tick played **240 times**, a whoosh 148. Thirteen minutes is long enough
+for the ear to learn a sample and then hear the seam instead of the picture. Count it:
+
+```python
+collections.Counter(os.path.basename(c["asset"]) for c in cues["sfx_cues"]).most_common(5)
+```
+
+Rule of thumb: **no file more than ~10 times in a 13-minute video, and never twice inside
+30 seconds.** Getting there means a real palette (~80 sounds across categories), not a
+keyword search per cue. `pal/` + `rebuild_cues.py` in the job dir is the working example.
+
+**2. Are the hits masking each other?** `sync_check.py` reports onsets detected vs cues placed.
+That render: **723 onsets for 474 cues, and 148 cues never matched an onset at all.** More
+onsets than cues means tails are overlapping into false attacks; unmatched cues mean hits are
+being buried by their neighbours. Both say the same thing — too dense. One cue per 1.5 s is
+too many; **~2.2 s with a per-tier guard** kept everything meaningful and audible.
+
+Guard by tier, and resolve collisions by **priority, not by strength** — a caption tick must
+never elbow a sword strike. Hand-timed beats are exempt from the guard *against each other*:
+an era card is deliberately a whoosh leading into a boom 0.4 s later.
+
+**3. Are the SFX above the bed?** That render's SFX bus peaked at **-23.7 dB**. The music bed
+sits at -13 dB. Everything was under the music, which is why whole minutes read as having no
+SFX. Levels that work, relative to the voice:
+
+| tier | gain | guard |
+|---|---|---|
+| hero boom (era card, stated turn) | -5 dB | 2.2 s |
+| hero hit (hand-timed beat) | -7 dB | 1.3 s |
+| impact (strong on-screen action) | -8 dB | 1.1 s |
+| whoosh (shot change) | -12 dB | 1.0 s |
+| swish (element moves) | -15 dB | 0.85 s |
+| pop (caption, small element) | -19 dB | 0.8 s |
+
+**Normalise the palette before placing anything.** Across 81 library files the peak spread was
+**15 dB** (+12.3 to -2.8). Without a normalise pass the table above means nothing. Trim leading
+silence at the same time — several files start 100-300 ms before the attack, which puts the hit
+late by exactly that much and leaves the mixer's transient search to guess.
+
+**Two cheap wins that cost nothing:**
+- *Anticipation layers.* A strike gets a short swish 0.13 s before contact. One sound is a
+  sample; two is a designed hit.
+- *Ambience beds.* The answer to "this area has no SFX" is room tone, not more hits. A wind or
+  battlefield bed at **-28 to -30 dB** under each section is never consciously heard, and its
+  absence is. Do not run beds through the SFX room impulse — a room tone already is a room.
+
+`polish_sfx()` in assemble.py handles what separates "satisfying" from "irritating" on the bus
+itself: a dip at 2.4/3.6 kHz so effects stop masking consonants, -3 dB above 9 kHz so repeated
+hits don't fatigue over thirteen minutes, a low shelf for body, and a short convolved tail so
+hits sound placed rather than pasted. The chain costs 2.8 dB — the makeup is built in.
+
 ## LOOK AT THE FRAMES. Never place a hit you have not seen.
 
 This is the single most important rule here, and it was learned by getting it wrong on a real

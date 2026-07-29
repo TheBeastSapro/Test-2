@@ -280,6 +280,60 @@ def bed_ratio(master: str, silence: list) -> float | None:
     return st.median(bed) - st.median(prog)
 
 
+def make_ir(work: str, seconds: float = 0.55) -> str:
+    """A small synthetic room impulse, so hits sit in a space.
+
+    Dry hits pasted at full level are the thing that reads as cheap: they have
+    no relationship to the picture's space. A short diffuse tail, mixed low,
+    makes the same sample sound placed rather than dropped on top.
+    """
+    import numpy as np
+    import wave
+    n = int(SR * seconds)
+    rng = np.random.RandomState(7)
+    t = np.arange(n) / SR
+    decay = np.exp(-t * 7.5)
+    ir = np.stack([rng.randn(n) * decay, rng.randn(n) * decay])
+    ir[:, :int(0.004 * SR)] *= np.linspace(0, 1, int(0.004 * SR))   # soften the front
+    ir /= np.abs(ir).max()
+    path = os.path.join(work, "_ir.wav")
+    with wave.open(path, "wb") as w:
+        w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR)
+        w.writeframes((ir.T.reshape(-1) * 0.5 * 32767).astype("<i2").tobytes())
+    return path
+
+
+def polish_sfx(src: str, out: str, work: str, wet: float = 0.16):
+    """Make the SFX bus sit with the voice instead of fighting it.
+
+    Three things separate 'satisfying' from 'irritating', and all three are
+    measurable rather than matters of taste:
+
+      * A dip through the speech band. Consonant intelligibility lives around
+        1.5-4 kHz; effects with energy there mask the narration and the ear
+        reads the result as noise even at a modest level.
+      * A tamed top end. Everything above ~9 kHz is what makes repeated hits
+        fatiguing over thirteen minutes.
+      * A little weight and a little room. A low shelf gives impacts body, and
+        a short tail places them in the scene.
+    """
+    ir = make_ir(work)
+    fc = (
+        "[0:a]equalizer=f=2400:t=q:w=1.1:g=-4,"          # out of the way of consonants
+        "equalizer=f=3600:t=q:w=1.3:g=-3,"
+        "highshelf=f=9000:g=-3,"                          # stop the long-run fatigue
+        "lowshelf=f=120:g=2.5,"                           # body under the impacts
+        "highpass=f=45[eq];"                              # no inaudible rumble
+        f"[eq]asplit=2[dry][pre];"
+        f"[pre][1:a]afir=dry=0:wet=1[wetsig];"
+        f"[dry][wetsig]amix=inputs=2:weights='{1-wet} {wet}':normalize=0,"
+        "volume=2.8dB[o]"                                 # makeup: the dips and
+    )                                                     # the wet mix cost that
+
+    run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", src, "-i", ir,
+         "-filter_complex", fc, "-map", "[o]", "-ac", "2", "-ar", str(SR), out])
+
+
 def duck(music: str, vo: str, out: str):
     """Sidechain-compress the music bus, keyed by the voice."""
     fc = (
@@ -376,6 +430,8 @@ def main():
                     help="skip the measured calibration and use --music-db verbatim")
     ap.add_argument("--sfx-db", type=float, default=0.0,
                     help="global sfx trim on top of each cue's own gain (-6..-9)")
+    ap.add_argument("--no-sfx-polish", action="store_true",
+                    help="skip the SFX bus EQ/room chain (see polish_sfx)")
     ap.add_argument("--no-duck", action="store_true")
     ap.add_argument("--preview", metavar="START-END",
                     help="also write a short excerpt of the finished master, "
@@ -427,6 +483,22 @@ def main():
         placed_s += 1
         print(f"[assemble]   sfx {s['id']} <- {os.path.basename(asset)} @ {fmt_ts(s['at'])}")
 
+    # Ambience beds. "Most of the areas has no SFX" is not answered by more
+    # hits -- it is answered by the scene having a room. A bed at -28 dB is
+    # never consciously heard and its absence is, which is exactly the point.
+    bed_segs = []
+    for b in cue.get("amb_beds", []):
+        asset = resolve_asset(b, args.assets)
+        if not asset:
+            missing += 1
+            continue
+        fade = float(b.get("fade", 2.0))
+        bed_segs.append(render_music_seg(asset, b["at"], b["dur"], fade, fade,
+                                         b.get("gain_db", -28.0), work,
+                                         f"amb_{b['id']}"))
+    if bed_segs:
+        print(f"[assemble] {len(bed_segs)} ambience beds under the sections")
+
     print(f"[assemble] placed {placed_m} music + {placed_s} sfx · {missing} cues had no asset")
 
     vo_wav = None
@@ -441,6 +513,22 @@ def main():
     sfx_bus = os.path.join(work, "sfx_bus.wav")
     mix_bus(music_segs, music_bus, total)
     build_sfx_bus(sfx_segs, sfx_bus, total, work)
+
+    # Polish the hits, then lay the beds under them. The beds are deliberately
+    # NOT convolved -- a room tone already is a room, and running it through the
+    # impulse just smears it into mush.
+    if sfx_segs and not args.no_sfx_polish:
+        pol = os.path.join(work, "sfx_pol.wav")
+        polish_sfx(sfx_bus, pol, work)
+        sfx_bus = pol
+        print("[assemble] polished the SFX bus (speech-band dip, tamed top, room)")
+    if bed_segs:
+        amb_bus = os.path.join(work, "amb_bus.wav")
+        mix_bus(bed_segs, amb_bus, total)
+        merged = os.path.join(work, "sfx_amb.wav")
+        mix_bus([sfx_bus, amb_bus] if sfx_segs else [amb_bus], merged, total)
+        sfx_bus = merged
+        sfx_segs = sfx_segs or bed_segs
 
     ducked = music_bus
     if vo_wav and music_segs and not args.no_duck:
