@@ -185,6 +185,43 @@ Structural notes still worth keeping from watching (placement, not levels): SFX 
 cuts and text pop-ins, the duck is pronounced, and cue mood tracks the story beat rather than
 escalating linearly.
 
+## LOOK AT THE FRAMES. Never place a hit you have not seen.
+
+This is the single most important rule here, and it was learned by getting it wrong on a real
+video. Placing SFX at "a fraction through the section, snapped to a nearby cut" produced:
+
+| Beat | Guessed | Actually on screen | Error |
+|---|---|---|---|
+| the counterfeit ULFBERHT shatters | 4:29.8 | 4:48.4 | **19 s** |
+| katana clay-quench | 8:11.7 | **not in that section at all** | invented |
+| the smith at the anvil | never placed | 6:39.5, in the *shamshir* entry | missed |
+| Renaissance era change | 8:46.5 | 8:42.1 (the title card) | 4.4 s |
+
+The katana one is the lesson: that section is entirely the "paperwork disagrees" argument --
+cutting demo, wound registers, Suzuki, the wound-cause chart -- and contains no forging
+whatsoever. A steam sizzle would have played over a bar chart.
+
+**Method.** Build contact sheets and read them:
+
+```python
+# 9 frames across a section, tiled 3x3, sampled at the detected scene cuts
+ffmpeg -ss <t> -i video.mp4 -frames:v 1 -vf scale=440:-1 f_<i>.jpg    # per frame
+ffmpeg -i f_0 .. -i f_8 -filter_complex \
+  "[0][1][2]hstack=3[r1];[3][4][5]hstack=3[r2];[6][7][8]hstack=3[r3];[r1][r2][r3]vstack=3[o]" \
+  -map "[o]" sheet.jpg
+```
+Then `Read` the sheet, note which panel holds the beat, and use that panel's timestamp. Six
+sheets of 9 frames cover a 13-minute video at ~15 s granularity -- enough to find every era
+card and every payoff shot. Refine with a tighter sheet where a beat needs sub-second placing,
+then snap to the nearest scene cut within ~1.5 s so it lands on the picture change.
+
+**Two things the frames give you for free:**
+- **Era title cards are on screen** (BRONZE AGE, IRON AGE, ...). Snap the music section
+  boundaries to the frame the card appears on, not to a scaled estimate from the script.
+- **The retention peak is visible.** On the sword video it is the wound-cause chart reading
+  "Sword -- Very Low". That gets the riser and the impact; nothing else in the video needs
+  them more.
+
 ## SFX must follow the scene, not the cut
 
 Generic whooshes on scene cuts are the lazy version and it shows. StickTory syncs sound to
