@@ -66,16 +66,25 @@ def render_music_seg(asset, start, dur, fin, fout, gain_db, work, idx) -> str:
     return out
 
 
-def render_sfx_seg(asset, at, gain_db, work, idx) -> str:
+def render_sfx_seg(asset, at, gain_db, work, idx, vary: float = 0.0) -> str:
+    """Place one SFX. `vary` in [0,1) detunes and re-levels it.
+
+    A dense track re-using a handful of sources reads as repetitive fast. Real
+    designers never drop the identical file twice; shifting pitch a few percent
+    and trimming a decibel or two makes the same hit feel like a family of hits.
+    """
     out = os.path.join(work, f"s_{idx}.wav")
     delay_ms = int(round(at * 1000))
-    af = (
-        f"aformat=sample_rates={SR}:channel_layouts={CH},"
-        f"afade=t=in:st=0:d=0.005,volume={gain_db:.2f}dB,"
-        f"adelay={delay_ms}:all=1"
-    )
+    chain = f"aformat=sample_rates={SR}:channel_layouts={CH},"
+    if vary:
+        # deterministic spread: ~-15%..+15% pitch, -2.5..0 dB
+        k = 0.86 + 0.30 * vary
+        gain_db += -2.5 * ((vary * 7.0) % 1.0)
+        chain += f"asetrate={int(SR * k)},aresample={SR},"
+    chain += (f"afade=t=in:st=0:d=0.005,volume={gain_db:.2f}dB,"
+              f"adelay={delay_ms}:all=1")
     run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", asset,
-         "-filter:a", af, "-ac", "2", "-ar", str(SR), out])
+         "-filter:a", chain, "-ac", "2", "-ar", str(SR), out])
     return out
 
 
@@ -296,7 +305,7 @@ def main():
             missing += 1
             continue
         seg = render_sfx_seg(asset, s["at"], s.get("gain_db", -8.0) + args.sfx_db,
-                             work, s["id"])
+                             work, s["id"], float(s.get("vary", 0.0)))
         sfx_segs.append(seg)
         placed_s += 1
         print(f"[assemble]   sfx {s['id']} <- {os.path.basename(asset)} @ {fmt_ts(s['at'])}")
