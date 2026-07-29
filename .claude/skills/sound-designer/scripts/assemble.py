@@ -44,15 +44,61 @@ def dur_of(path: str) -> float:
     return media_info(path)["duration"]
 
 
-def render_music_seg(asset, start, dur, fin, fout, gain_db, work, idx) -> str:
+_PEAK = {}
+
+
+def transient_offset(path: str) -> float:
+    """Seconds from file start to its loudest sample.
+
+    Placing a hit by its file start is not synchronisation: the audible
+    transient is later. Measured on the palette used for a real video, the two
+    most-used sounds peaked 0.49 s and 0.41 s in, so 138 of 231 cues fired
+    roughly half a second after the picture. Align the peak, not the start.
+    """
+    if path in _PEAK:
+        return _PEAK[path]
+    import numpy as np
+    from common import decode_mono_pcm
+    x, sr = decode_mono_pcm(path, 22050)
+    off = float(np.argmax(np.abs(x))) / sr if x.size else 0.0
+    _PEAK[path] = off
+    return off
+
+
+def energy_onset(path: str, db: float = -12.0, limit: float = 30.0) -> float:
+    """Seconds until the file first reaches `db` below its own peak.
+
+    Library tracks often open on a long ambient swell. Starting a section at
+    sample 0 then means the new cue is inaudible for several seconds and the
+    era change reads as 'the music never changed' -- measured at 8-17 s on
+    five of seventeen tracks in one video.
+    """
+    import numpy as np
+    from common import decode_mono_pcm
+    x, sr = decode_mono_pcm(path, 22050)
+    if x.size == 0:
+        return 0.0
+    n = int(0.05 * sr)
+    seg = x[:int(sr * limit)]
+    e = np.array([np.sqrt(np.mean(seg[i:i + n].astype(np.float64) ** 2))
+                  for i in range(0, len(seg), n)])
+    if e.size == 0 or e.max() <= 0:
+        return 0.0
+    i = int(np.argmax(e >= e.max() * 10 ** (db / 20)))
+    return max(0.0, i * 0.05 - 0.25)          # land just before it blooms
+
+
+def render_music_seg(asset, start, dur, fin, fout, gain_db, work, idx, skip=0.0) -> str:
     """Fit an asset to `dur`, fade, gain, delay to `start`; write a wav."""
     out = os.path.join(work, f"m_{idx}.wav")
-    loop = dur_of(asset) < dur - 0.1
+    loop = dur_of(asset) < dur + skip - 0.1
+    if loop:
+        skip = 0.0
     fout_st = max(0.0, dur - fout)
     delay_ms = int(round(start * 1000))
     af = (
         f"aformat=sample_rates={SR}:channel_layouts={CH},"
-        f"atrim=0:{dur:.3f},asetpts=PTS-STARTPTS,"
+        f"atrim={skip:.3f}:{skip + dur:.3f},asetpts=PTS-STARTPTS,"
         f"afade=t=in:st=0:d={fin:.3f},"
         f"afade=t=out:st={fout_st:.3f}:d={fout:.3f},"
         f"volume={gain_db:.2f}dB,"
@@ -340,10 +386,15 @@ def main():
             missing += 1
             print(f"[assemble]   music {m['id']} ({fmt_ts(m['start'])}) — NO ASSET, skipped")
             continue
+        skip = m.get("intro_skip")
+        if skip is None:
+            skip = energy_onset(asset)
         seg = render_music_seg(
             asset, m["start"], m["dur"], m.get("fade_in", 1.0),
             m.get("fade_out", 1.5), m.get("gain_db", 0.0) + args.music_db,
-            work, m["id"])
+            work, m["id"], skip)
+        if skip > 0.4:
+            print(f"[assemble]     skipped {skip:.1f}s of soft intro on {m['id']}")
         music_segs.append(seg)
         placed_m += 1
         print(f"[assemble]   music {m['id']} <- {os.path.basename(asset)} "
@@ -354,9 +405,12 @@ def main():
         if not asset:
             missing += 1
             continue
+        vary = float(s.get("vary", 0.0))
         seg = render_sfx_short(asset, s.get("gain_db", -8.0) + args.sfx_db,
-                               work, s["id"], float(s.get("vary", 0.0)))
-        sfx_segs.append((seg, s["at"]))
+                               work, s["id"], vary)
+        k = (0.86 + 0.30 * vary) if vary else 1.0
+        at = max(0.0, s["at"] - transient_offset(asset) / k)
+        sfx_segs.append((seg, at))
         placed_s += 1
         print(f"[assemble]   sfx {s['id']} <- {os.path.basename(asset)} @ {fmt_ts(s['at'])}")
 
