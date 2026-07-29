@@ -147,11 +147,16 @@ Also observed: SFX land **precisely on cuts, text pop-ins and character actions*
 ("Mickey Mousing"), and the duck is **very obvious** — the bed visibly swells in the
 narrator's pauses. Energy **fluctuates with the narrative**, it does not escalate linearly.
 
-**Do not copy the density blindly.** Sticktory is a fast ~3-minute story format; ExplainTory
-runs 11–12 minutes of explainer. Scaling 8–10 sections per 3 min straight across would give
-~40 sections in an ExplainTory video, which is almost certainly wrong. Take the *principles* —
-cue changes on story beats, deliberate dropouts, SFX on text pop-ins as well as cuts — and set
-the density against a measured ExplainTory reference.
+**StickTory is the same format and length as ExplainTory.** Measured from the YouTube API:
+*Medieval Assassin* 751 s (12:31, 1.29 M views), *Roman Executioner* 711 s (11:51, 379 K).
+Channel `UCEK374Y8TMu2DjHk0Pu4yog`, category Education, stick-figure animated history — the
+same slot ExplainTory sits in. So the style transfers directly; there is no format gap to
+discount for.
+
+The one caveat that *does* stand: the 8–10 cues above were observed in the **first 3 minutes**,
+which is the hook and is normally the densest part of any video. Extrapolating that rate across
+12 minutes (~35 cues) probably overshoots. Measure cue changes across the **whole** runtime
+before setting a target, rather than scaling the opening.
 
 ## Levels — Sapro's house rule
 
