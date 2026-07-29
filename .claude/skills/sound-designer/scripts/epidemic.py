@@ -130,13 +130,25 @@ def normalize(raw):
             else:
                 tags.append(str(tag))
         moods = [m.get("slug") if isinstance(m, dict) else str(m) for m in (t.get("moods") or [])]
+
+        # The `vocals: false` search filter is not airtight — live results still
+        # returned a track tagged "vocal presence". Trust the tags over the filter.
+        low = " ".join(tags).lower()
+        if t.get("vocals") is not None:
+            vox = bool(t["vocals"])
+        elif "no vocals" in low or "no-vocals" in low:
+            vox = False
+        elif "vocal" in low:          # "vocal presence", "lead vocals", ...
+            vox = True
+        else:
+            vox = False
         out.append({
             "id": t.get("id"),
             "title": t.get("title") or t.get("name") or "",
             "bpm": t.get("bpm"),
             "energy": t.get("energy"),
             # the search filter already constrains this; default to instrumental
-            "hasVocals": t.get("vocals") if t.get("vocals") is not None else False,
+            "hasVocals": vox,
             "duration": (ms / 1000.0) if ms else t.get("duration"),
             "tags": [x for x in tags if x],
             "moods": [x for x in moods if x],

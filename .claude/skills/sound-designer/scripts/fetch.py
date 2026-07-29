@@ -25,7 +25,23 @@ SR = 48000
 
 
 def fetch_one(url: str, dst: str):
-    # ffmpeg reads http(s) and HLS natively; always land as 48k stereo wav.
+    """Download, then transcode to 48k stereo wav.
+
+    Signed CDN URLs must be fetched with curl, not handed to ffmpeg directly:
+    ffmpeg re-encodes the %-escapes in the query string, which breaks the
+    signature and the CDN answers 403 on a URL curl retrieves fine. HLS
+    (.m3u8) still goes straight to ffmpeg, which has to walk the playlist.
+    """
+    if url.startswith(("http://", "https://")) and ".m3u8" not in url:
+        tmp = dst + ".dl"
+        try:
+            run(["curl", "-sS", "-L", "--fail", "--max-time", "300", "-o", tmp, url])
+            run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", tmp,
+                 "-ac", "2", "-ar", str(SR), "-c:a", "pcm_s16le", dst])
+        finally:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        return
     run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", url,
          "-ac", "2", "-ar", str(SR), "-c:a", "pcm_s16le", dst])
 

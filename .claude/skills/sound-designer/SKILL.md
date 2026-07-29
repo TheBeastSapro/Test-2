@@ -138,9 +138,33 @@ the bed ducks. Use it to bias the seeds and section energy in `cues.json` *befor
 **not** try to identify exact Sticktory tracks from audio, and do **not** take the watch tool's
 timings as numbers — it informs taste, `ffmpeg` sets the clock.
 
-## Defaults are the approved starting point
+## Levels — Sapro's house rule
 
-Ducking is a −30 dB-threshold, 6:1 sidechain (musical, VO always on top). Master is
-`loudnorm I=−14:TP=−1:LRA=11`. SFX sit −6 to −9 dB under the bed; music beds duck to −9 dB
-under voice, −3 dB in gaps. Expect one round of ear-checking on bed level and duck depth —
+**Music and SFX sit at 10% — that is −20 dB** (20·log10(0.1)). This is what he tells a human
+sound designer, so it is the starting point here too, not a suggestion:
+
+```
+assemble.py ... --music-db -20 --sfx-db -12
+```
+`--sfx-db -12` because the cue sheet already writes SFX at −6…−9 dB, so −12 more lands them
+around −20 too. Verify by measuring the bed inside a VO gap — it should read roughly 20 dB
+below an untrimmed render, not by trusting the flag.
+
+Ducking still applies on top: the bed is at 10% *and* ducks under the voice. Master is
+`loudnorm I=−14:TP=−1:LRA=11`.
+
+## Calibrating from Sticktory — measure, never listen
+
+To copy Sticktory's balance, do **not** ask an audio model how loud the music is. Measure the
+published mix: in the **silences between VO lines the music bed is playing alone**, so
+`silencedetect` finds those gaps and `volumedetect` over them gives the true bed level. Compare
+that against the level during speech and the bed-to-voice ratio falls out as a number.
+
+```
+yt-dlp -x --audio-format wav -o ref.wav "<sticktory url>"
+ffmpeg -i ref.wav -af silencedetect=noise=-30dB:d=0.4 -f null -   # find gaps
+ffmpeg -i ref.wav -af "atrim=<gap>,volumedetect" -f null -        # bed alone
+```
+This is the same discipline as the VO skill: the aligner and the meters are data, a listening
+model's description is not. Expect one round of ear-checking on bed level and duck depth —
 Sapro's ear catches what the meters call fine.
