@@ -158,6 +158,23 @@ which is the hook and is normally the densest part of any video. Extrapolating t
 12 minutes (~35 cues) probably overshoots. Measure cue changes across the **whole** runtime
 before setting a target, rather than scaling the opening.
 
+### YouTube audio cannot be downloaded from this container
+
+Do not spend a session rediscovering this. With network access on **Full**, the proxy tunnel
+opens and YouTube's *API* responds, but every **media** fetch returns `HTTP Error 403`.
+Confirmed against an unrelated control video, so it is the IP range, not the video:
+
+| Attempt | Result |
+|---|---|
+| `player_client=android` | API fine, media **403** |
+| `player_client=ios/mweb/web/web_safari` | "Sign in to confirm you're not a bot" |
+| `player_client=tv` | "This video is DRM protected" |
+| `--impersonate chrome` (curl_cffi) | TLS reset — the agent proxy's MITM breaks fingerprinting |
+
+**The fix is not a setting.** To measure a reference video, ask Sapro to attach the audio (or
+the video file) to the chat and measure the local file. Everything downstream works normally —
+this only blocks pulling from YouTube directly.
+
 ## Levels — Sapro's house rule
 
 **Music and SFX sit at 10% — that is −20 dB** (20·log10(0.1)). This is what he tells a human
