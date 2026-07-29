@@ -135,6 +135,32 @@ def calibrate_bed(music_bus: str, vo_wav: str, target_db: float):
     return trim
 
 
+def mean_db(path: str, a: float, b: float):
+    res = run([FFMPEG, "-hide_banner", "-i", path,
+               "-af", f"atrim={a:.3f}:{b:.3f},volumedetect", "-f", "null", "-"])
+    m = re.search(r"mean_volume: (-?[0-9.]+)", res.stderr)
+    return float(m.group(1)) if m else None
+
+
+def bed_ratio(master: str, silence: list) -> float | None:
+    """Measured bed-vs-programme on the finished master.
+
+    This is the metric the reference was measured with: the bed alone inside
+    the VO's gaps, against the programme during speech. An integrated-LUFS
+    ratio is NOT the same quantity -- it folds the ducking and the VO's own
+    gaps together -- so calibrating on LUFS lands in the wrong place.
+    """
+    import statistics as st
+    gaps = [(a, b) for a, b in silence if b - a >= 0.30][:40]
+    if len(gaps) < 4:
+        return None
+    bed = [x for x in (mean_db(master, a + 0.05, b - 0.02) for a, b in gaps) if x and x > -70]
+    prog = [x for x in (mean_db(master, a - 2.0, a - 0.3) for a, b in gaps[:25] if a > 3) if x]
+    if len(bed) < 3 or len(prog) < 3:
+        return None
+    return st.median(bed) - st.median(prog)
+
+
 def duck(music: str, vo: str, out: str):
     """Sidechain-compress the music bus, keyed by the voice."""
     fc = (
@@ -327,6 +353,25 @@ def main():
     if args.mux_into:
         mux(args.mux_into, audio_out, args.out)
         print(f"[assemble] muxed into video -> {args.out}")
+
+    # Closed loop: measure the bed on the finished master with the same metric the
+    # reference was measured with, and correct once if it landed off target.
+    if (vo_wav and music_segs and args.bed_target_db is not None
+            and not args.mux_into and cue.get("measured", {}).get("silence")):
+        got = bed_ratio(args.out, cue["measured"]["silence"])
+        if got is not None:
+            err = args.bed_target_db - got
+            print(f"[assemble] measured bed {got:+.1f} dB vs target {args.bed_target_db:+.1f} dB")
+            if abs(err) > 1.2:
+                print(f"[assemble] correcting by {err:+.1f} dB and re-rendering the master")
+                cal2 = os.path.join(work, "music_cal2.wav")
+                run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", ducked,
+                     "-filter:a", f"volume={err:.2f}dB", "-ac", "2", "-ar", str(SR), cal2])
+                final_master(cal2, sfx_bus if sfx_segs else None, vo_wav,
+                             audio_out, lufs, tp, is_mp3 and not args.mux_into)
+                got2 = bed_ratio(args.out, cue["measured"]["silence"])
+                if got2 is not None:
+                    print(f"[assemble] after correction: bed {got2:+.1f} dB")
 
     if args.preview:
         start, end = parse_window(args.preview, total)

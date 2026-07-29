@@ -185,6 +185,31 @@ Structural notes still worth keeping from watching (placement, not levels): SFX 
 cuts and text pop-ins, the duck is pronounced, and cue mood tracks the story beat rather than
 escalating linearly.
 
+## SFX must follow the scene, not the cut
+
+Generic whooshes on scene cuts are the lazy version and it shows. StickTory syncs sound to
+what is actually happening on screen -- "Mickey Mousing" -- so source **literally** and place
+on the beat.
+
+The script usually hands you the beats for free. ExplainTory scripts carry an animator
+reference listing a SYNC note per entry; read it and turn each note into a sound:
+
+| Script beat | Sound |
+|---|---|
+| "the fake failing with visible slag" | glass smash |
+| "coated in clay, quenched so the edge froze glass-hard" | steam sizzle on hot metal |
+| "three weapons in one: cut → half-sword thrust → pommel" | three separate hits, spaced |
+| "thrown in short stabs that traveled inches" | metal clash on the shield line |
+| "reached over and around Roman shields" | clash on the hook |
+
+Useful Epidemic searches, all verified to return tight usable hits: `sword unsheathe metal
+blade ring draw`, `sword clash metal impact hit blade`, `glass metal shatter break`,
+`hot metal quench steam hiss forge`. Cap `duration` at 3-4 s so you get hits, not beds.
+
+Place each beat at a sensible fraction through its section, then snap to the nearest scene cut
+within ~3 s so it lands on picture. Era changes get a short blade draw; save the big impacts
+for the rehook and the closer.
+
 ### YouTube audio cannot be downloaded from this container
 
 Do not spend a session rediscovering this. With network access on **Full**, the proxy tunnel
