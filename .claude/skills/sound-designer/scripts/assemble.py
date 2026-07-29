@@ -290,20 +290,23 @@ def main():
     mix_bus(music_segs, music_bus, total)
     mix_bus(sfx_segs, sfx_bus, total)
 
-    # Put the bed at a level *relative to this VO*, measured, before ducking.
-    if vo_wav and music_segs and args.bed_target_db is not None:
-        trim = calibrate_bed(music_bus, vo_wav, args.bed_target_db)
-        if trim is not None and abs(trim) > 0.2:
-            cal = os.path.join(work, "music_cal.wav")
-            run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", music_bus,
-                 "-filter:a", f"volume={trim:.2f}dB", "-ac", "2", "-ar", str(SR), cal])
-            music_bus = cal
-
     ducked = music_bus
     if vo_wav and music_segs and not args.no_duck:
         ducked = os.path.join(work, "ducked.wav")
         duck(music_bus, vo_wav, ducked)
         print("[assemble] sidechain-ducked music under VO")
+
+    # Calibrate AFTER ducking. Calibrating the raw bus is wrong whenever the VO
+    # is dense: the compressor then pulls the bed below the level we just set,
+    # and with a 93%-voiced VO it never comes back up. Measure what actually
+    # reaches the master.
+    if vo_wav and music_segs and args.bed_target_db is not None:
+        trim = calibrate_bed(ducked, vo_wav, args.bed_target_db)
+        if trim is not None and abs(trim) > 0.2:
+            cal = os.path.join(work, "music_cal.wav")
+            run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", ducked,
+                 "-filter:a", f"volume={trim:.2f}dB", "-ac", "2", "-ar", str(SR), cal])
+            ducked = cal
 
     is_mp3 = args.out.lower().endswith(".mp3")
     audio_out = args.out if not args.mux_into else os.path.join(work, "final.wav")
