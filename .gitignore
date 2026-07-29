@@ -1,0 +1,13 @@
+# python
+__pycache__/
+*.pyc
+
+# sound-designer working files (per-video, not source)
+assets/
+stems/
+manifest.json
+cues.json
+cues.md
+*.mp3
+*.mp4
+*.wav
