@@ -325,6 +325,39 @@ Overall "within one frame" will sit around 75% for this reason, and that is fine
 encoder overshoots after it — a master asked for −1.0 dBTP came out at −0.2 once the SFX were
 levelled as foreground. `final_master` appends an explicit `alimiter`, which brings it to −0.7.
 
+## Casting: the category is not the question, the OBJECT is
+
+Getting the timing right and the tier right still produces a wrong mix if the sound
+is of the wrong object. Every item below was reported by the channel owner watching a
+render where the timing was already correct.
+
+**Look at what the impact star is ON.** In the Bronze Age fight the first two strikes
+put the comic starburst on the defender's *wooden shield*, with the blade against it —
+he only takes X-eyes at 35.58, after a hook drags the shield away. Cast as flesh stabs
+they were wrong twice over: wrong object, and they spent the flesh sound before the beat
+that earns it. Blade-on-shield is wood plus metal; blade-in-body is flesh. Zoom into the
+frame and check what the blade is touching before choosing.
+
+**Read the whole shot, not the shot list.** A wide of an army on a field can be an
+advance or an aftermath. One shot in the Iron Age section is corpses strewn over grass
+with survivors standing among them; it got a marching bed, and marching over dead bodies
+was reported as "not matching the scene". Aftermath wants wind, not feet.
+
+**A diagram is not a strike, but its labels still name things.** A wound chart appearing
+was cast as a metal impact by redraw tiering (it is a big redraw) and its two labels as
+caption ticks. Right answer: the panel gets a soft element, and each label gets the sound
+of the wound it names, 6 dB down from a real hit.
+
+**Levels for sustained beds, measured against the voice.** The VO sits near -18 dBFS rms
+and the music bed lands near -28. A featured texture like marching at -31 fights the
+narration and was reported as overlapping it; **-37 dBFS** sits under the music and reads
+as present without competing. Ambience beds belong near -42.
+
+**Vocals: sparingly, and only where a person would make one.** Non-verbal vocalisation
+(an effort grunt on a heavy swing, a short cry on the killing blow, a crowd's yell on a
+charge) is part of this channel's sound. It is also the fastest thing to overdo — one per
+fight beat is a cartoon. Reserve it for the blow that lands and the ranks that shout.
+
 ## LOOK AT THE FRAMES. Never place a hit you have not seen.
 
 This is the single most important rule here, and it was learned by getting it wrong on a real
