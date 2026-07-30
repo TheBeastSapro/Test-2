@@ -22,6 +22,7 @@ import glob
 import json
 import os
 import re
+import shutil
 import tempfile
 
 from common import FFMPEG, run, media_info, fmt_ts
@@ -616,4 +617,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # The work dir holds a full-length wav per batch plus one file per cue --
+    # 2-4 GB for a 13-minute video. Ten leaked runs filled a 252 GB disk and
+    # the next render died mid-mix with "No space left on device", so it is
+    # removed even when the render raises.
+    try:
+        main()
+    finally:
+        for d in glob.glob(os.path.join(tempfile.gettempdir(), "sd_assemble_*")):
+            shutil.rmtree(d, ignore_errors=True)
