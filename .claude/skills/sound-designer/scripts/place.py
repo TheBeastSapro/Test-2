@@ -115,7 +115,7 @@ def main():
         raise SystemExit(f"[place] palette is missing categories: {missing}")
 
     rot = {c: Rotator(v, rng, cooldown=90.0 if c == "boom" else 30.0)
-           for c, v in pal.items() if c != "amb"}
+           for c, v in pal.items() if c != "amb" and v}
 
     # An era card or a stated turning point has to land ON its frame, so it must
     # be cast with an impact rather than a swell. Two of six boom files are
@@ -155,7 +155,8 @@ def main():
                                                else "hero_hit"),
                      "t": s["at"], "cat": cat, "label": s["kind"],
                      "files": s.get("files"), "gain_db": s.get("gain_db"),
-                     "stack": s.get("stack")})
+                     "stack": s.get("stack"), "hand": True,
+                     "solo_ok": s.get("solo_ok", False)})
     heroes = len(cand)
 
     # 2-3. the visual beats.
@@ -211,6 +212,29 @@ def main():
                              "label": {"impact": "strike", "swish": "movement",
                                        "pop": "small element"}[tier]})
 
+    # 3b. mute windows. The detector fires on redraw, which is a good proxy for
+    # "something happened" and a bad one for "something was STRUCK". A portrait
+    # of Tutankhamun sliding in with its caption is a big redraw, so it drew a
+    # sword hit -- a sword sound over a museum photograph, reported by the
+    # channel owner with a screenshot. There is no sound the detector could have
+    # picked that would be right there, because nothing is being hit: the beat
+    # should be silent, and no amount of re-tiering expresses that.
+    #
+    # A window names a span that generic cues may not sound in. Hand-timed beats
+    # are never muted -- if a designed beat is wrong, fix or delete the beat.
+    # Each entry is [start, end] or [start, end, "why"], seconds.
+    mutes = [w for w in cue.get("mute_windows", []) if len(w) >= 2]
+    if mutes:
+        before = len(cand)
+        cand = [c for c in cand
+                if c.get("hand")
+                or not any(w[0] <= c["t"] <= w[1] for w in mutes)]
+        print(f"[place] {before - len(cand)} generic cue(s) muted "
+              f"across {len(mutes)} window(s)")
+        for w in mutes:
+            why = w[2] if len(w) > 2 else ""
+            print(f"          {w[0]:7.2f}-{w[1]:6.2f}s  {why}")
+
     # 4. resolve collisions by PRIORITY, not by strength -- a caption tick must
     # never elbow a sword strike. Hand-timed beats are exempt from the guard
     # against each other: an era card is deliberately a whoosh leading into a
@@ -221,16 +245,25 @@ def main():
     # 2.2 s guard) but it also let a hand-timed sword beat land on the exact
     # frame of one card, so a metal ring-out played over the title. A title card
     # is a boom and nothing else.
+    # The guard is symmetric, and that is right for the generic pool but wrong
+    # for designed action. An era card does not stop the story: the card is
+    # drawn and the scene under it keeps moving, so a hand-cast beat landing
+    # inside the window is silenced along with the caption ticks it was meant to
+    # stop. That is how the falcata reaching over the Roman shield -- one of the
+    # named beats in the script -- ended up with no sound at all under the IRON
+    # AGE card. A hand-timed beat sets "solo_ok": true to say "I know, I meant
+    # it"; nothing in the generic pool can.
     CARD_SOLO = 0.45
     booms = [c["t"] for c in cand if c["tier"] == "hero_boom"]
 
-    kept, lost, shushed = [], 0, 0
+    kept, lost, shushed = [], 0, []
     for tier in PRIORITY:
         guard, hero = TIERS[tier][1], tier.startswith("hero")
         for c in sorted((c for c in cand if c["tier"] == tier), key=lambda c: c["t"]):
-            if tier != "hero_boom" and "into the card" not in c["label"]:
+            if (tier != "hero_boom" and "into the card" not in c["label"]
+                    and not c.get("solo_ok")):
                 if any(abs(c["t"] - b) <= CARD_SOLO for b in booms):
-                    shushed += 1
+                    shushed.append(c)
                     continue
             rivals = [k for k in kept if not (hero and k["tier"].startswith("hero"))]
             if any(abs(c["t"] - k["t"]) < max(guard, TIERS[k["tier"]][1])
@@ -238,8 +271,14 @@ def main():
                 lost += 1
                 continue
             kept.append(c)
+    # Name them. A bare count made a silenced *hand-cast* beat indistinguishable
+    # from a silenced caption tick, so a designed moment could go missing and the
+    # log looked healthy. A hand-timed beat landing here is nearly always a bug.
     if shushed:
-        print(f"[place] {shushed} cue(s) silenced for sitting on a title card")
+        print(f"[place] {len(shushed)} cue(s) silenced for sitting on a title card")
+        for c in shushed:
+            flag = "  <-- HAND-TIMED, set solo_ok if intended" if c.get("hand") else ""
+            print(f"          {c['t']:8.2f}s  {c['label']}{flag}")
     kept.sort(key=lambda c: c["t"])
 
     # 5. assign files
@@ -269,7 +308,14 @@ def main():
                     "asset": os.path.join(apath, f"{f}.wav")})
         # A strike gets a short swish just before contact. One sound is a
         # sample; two is a designed hit.
-        if not args.no_anticipation and tier in ("impact", "hero_hit") and t > 0.4:
+        # ...but not in front of a voice. Anticipation is the air a moving object
+        # displaces before it lands; a grunt or a cry displaces nothing, so a
+        # swish in front of one is a whoosh attached to a man's throat. It also
+        # doubled up: the grunt on the Bronze Age swing sat on the same frame as
+        # the swing's own anticipation, so the beat got two swishes and a voice.
+        voice = cat.startswith("vox")
+        if (not args.no_anticipation and not voice
+                and tier in ("impact", "hero_hit") and t > 0.4):
             g = rot["swish"].take(t)
             sfx.append({"id": f"s{i}a", "at": round(t - 0.13, 4),
                         "kind": f"{label} (anticipation)", "tier": "swish",

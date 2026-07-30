@@ -32,6 +32,21 @@ STRONG = [e for e in ev if e["strength"] >= 0.05]
 # same frame and a metal ring-out played over the title.
 OVERRIDE = {"AGE OF EMPIRES": 607.96}
 
+# The video opens ON the BRONZE AGE card, and the source sheet does not contain
+# it: its first entries are a "shot change" at 0.000 and a "strong on-screen
+# action" at 0.917, so the card was cast by redraw tiering as impact_08 -- a
+# metal strike -- while all seven other cards get whoosh_01 into boom_01.
+# Reported as "the bronze age title card has sword sound not boom/bass like
+# world war 2", which is exactly what the cue sheet says happened.
+# Adding it also silences the stray strike, because a card boom is exclusive.
+MISSING = [("BRONZE AGE", 0.917)]
+for era, t in MISSING:
+    if any(s.get("kind", "").startswith(era) for s in cue["sfx_cues"]):
+        continue
+    cue["sfx_cues"] += [{"at": round(t - 0.40, 3), "kind": f"{era} — into the card"},
+                        {"at": t, "kind": f"{era} card"}]
+    print(f"[beats] added the missing {era} card at {t:.3f}")
+
 cards, moved = {}, 0
 for s in cue["sfx_cues"]:
     k = s.get("kind", "")
@@ -82,8 +97,16 @@ BEATS = [
     (28.75, "khopesh clashes on the shield",  "shield", ["shield_01"], -7.0, ["clatter"]),
     (30.21, "khopesh drives into the shield", "shield", ["shield_02"], -7.0, ["clatter"]),
     (32.79, "khopesh swings down",            "swish",  ["whoosh_11", "whoosh_12"], -10.0, []),
+    # Vocals, and only where a person would make one: the swing that costs
+    # effort and the blow that kills. The source recording is three grunts in
+    # one 3.56 s take, split by oneshot.py into vox_effort_01..03 (0.16-0.26 s,
+    # anchors 4-17 ms) -- dropped whole it plays all three down one swing.
+    (32.79, "the effort of the swing",        "vox_effort", ["vox_effort_01"], -11.0, []),
     (34.12, "the hook catches the shield",    "shield", ["shield_03"], -7.0, ["armor"]),
     (35.58, "the killing stab",               "stab",   ["stab_04"],  -5.0, ["impact", "armor"]),
+    # 80 ms after the blade, not on it: a man cries out because he was hit, and
+    # on the same frame it only thickens the stab.
+    (35.66, "the cry as it lands",            "vox_cry", ["vox_cry_01"], -7.0, []),
     (37.08, "the body drops, spear clatters", "fall",   ["fall_01"],  -6.0, ["clatter", "armor"]),
 
     # The Iron Age wound chart. A green info panel and two labels appearing are
@@ -93,6 +116,18 @@ BEATS = [
     (166.71, "spear wound",                   "stab",   ["stab_05"], -13.0, []),
     (167.79, "arrow wound",                   "stab",   ["stab_07"], -13.0, []),
     (168.71, "both men are dead",             "boom",   ["boom_06"], -12.0, []),
+
+    # The Dacian falx hooking over the Roman shield -- one of the beats the
+    # script names ("reached over and around Roman shields"), and it had NO cue
+    # at all: reported as "sfx missing in this action". The redraw event at
+    # 200.000 lost its collision to a generic "movement" swish 0.71 s earlier,
+    # inside the 0.85 s swish guard, so the designed moment was deleted by a
+    # nothing cue. As a hand-timed beat it takes priority instead.
+    # Cast for the object: the blade CLEARS the rim rather than being blocked,
+    # so it is a scrape into a ring-out, not the four-blow shield take. falx_02
+    # ("Weapons, Sword, Hit Sword, Block, Parry, Impact, Ringing") measures
+    # front-loaded 1.00 with a 0 ms anchor, so it lands on the frame.
+    (200.00, "the falx hooks over the shield", "falx",  ["falx_02"], -7.0, ["armor"]),
 ]
 beats = [s for s in cue["sfx_cues"]
          if s.get("kind") not in GENERIC
@@ -102,6 +137,31 @@ for at, kind, cat, files, gain, stack in BEATS:
                   "files": files, "gain_db": gain, "stack": stack,
                   "tier": "hero_hit", "vary": 0.0})
 beats.sort(key=lambda s: s["at"])
+
+# --------------------------------------------------------------- mute windows
+# A still figure is not an event. The redraw detector cannot tell a photograph
+# sliding into frame from a blade entering a shield -- both are large mid-band
+# redraws -- so the opening minute put sword strikes on a sepia portrait of
+# Howard Carter (impact_05 at 2.458), on the sarcophagus reveal beside it
+# (impact_03 at 4.708), on a caption (impact_10 at 6.833) and on the photograph
+# of Tutankhamun's mask (impact_04 at 13.333, impact_02 at 17.625).
+#
+# Nothing is being struck in any of them, so there is no quieter sound that is
+# right -- the beat is silent, and the answer to a bare stretch is the ambience
+# bed, not more hits. Generic cues only: hand-timed beats pass through.
+# Deliberately narrow: only the three cues the channel owner actually reported.
+# Two more sit in the same fault class -- impact_03 at 4.708 on the sarcophagus
+# sliding in beside the Carter photo, impact_02 at 17.625 on the caption beside
+# the Tutankhamun photo -- and both were left in on his instruction, because a
+# mix that has been through several rounds of notes should not have unreported
+# beats changed underneath it. Widen only when he flags one.
+MUTE = [
+    (2.30,  2.60,  "impact_05 on the Howard Carter photograph"),
+    (6.70,  7.00,  "impact_10 on a caption -- the tick reported at 0:06"),
+    (13.20, 13.50, "impact_04 on the Tutankhamun photograph"),
+]
+cue["mute_windows"] = [list(w) for w in MUTE]
+print(f"[beats] {len(MUTE)} mute window(s) over portraits and captions")
 cue["sfx_cues"] = beats
 print(f"[beats] {len(BEATS)} hand-cast Bronze Age beats, {len(beats)} hand-timed total")
 
@@ -128,7 +188,14 @@ LV = json.load(open(f"{J}/pal/palette_manifest.json")).get("_rms", {})
 SHOTS = [
     (155.5, 2.2, "legion in close formation",       [("march_01", -37.0)], [0.6, -0.6]),
     (160.6, 3.0, "the field after the battle",      [("amb_04", -34.0)],   None),
-    (172.5, 3.2, "the ranks shout",                 [("amb_06", -33.0)],   None),
+    # The one shot where a crowd is the subject, so it takes the third and last
+    # vocal. Beds mix onto the SFX bus and only the MUSIC bus is sidechained, so
+    # a bed never ducks -- and a crowd is mid-band, right where the narration
+    # lives. It sits at -32 dBFS: above the ambience so it reads as the feature
+    # of the shot, still under the -28 music bed so it cannot climb over the
+    # voice, with amb_06 pulled back from -33 to -36 to make room.
+    (172.5, 3.2, "the ranks shout",                 [("crowd_01", -36.0),
+                                                     ("vox_yell_01", -32.0)], None),
     (178.0, 5.8, "the legion marches in formation", [("march_05", -37.0)], [0.85, -0.85]),
 ]
 beds = []

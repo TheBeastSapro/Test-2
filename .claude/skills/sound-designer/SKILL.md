@@ -123,6 +123,25 @@ Push constraints into the **query**, don't just filter afterwards: set `vocals: 
 `bpm` around the cue's `bpm_hint`, and `duration.min` >= the section length. Use
 `stemType: INSTRUMENTS` when a track is right but its lead is too busy under the VO.
 
+**`vocals: false` is not airtight — check the tags.** Measured live, **12 of 60** results
+returned under that filter still carried a **`vocal presence`** tag. The filter means "not a
+lead-vocal song", not "no human voice", so choir and chant pads come straight through it.
+Under a narration track a choir is as bad as a singer. Trust the tags, not the filter —
+`epidemic_api.py` now flags every leaked result in its search output.
+
+**CORRECTION — this was NOT what caused "unnecessary vocals in the background" at 9:14.**
+That was diagnosed from this leak without measuring, and the measurement says otherwise: the
+Renaissance track is *The Vice*, tagged `action, dark, electronic rock, no vocals, suspense`,
+with no vocal tag at all. The voices were an **ambience bed** — `amb_07`, whose Epidemic title
+is literally *"Crowds, Battle, Medieval, Village Battle Ambience, **Voices, Yells**"* — running
+under the whole 44.8 s section at -16 dB. See "Room tone must not contain a second voice"
+below. The filter leak is real and worth guarding; it just wasn't this bug.
+
+And treat vocals as **disqualifying, not a penalty**. `score_music` docked them 6 points,
+which a track matching bpm, energy and three moods banks back easily, so the *best-fitting*
+vocal track beat a plainer instrumental. It is a hard reject now, and a cue whose whole
+candidate pool is rejected fails loudly rather than picking the least-bad choir.
+
 Response shape (results nest one level deep, duration is in **milliseconds**):
 
 ```
@@ -238,6 +257,14 @@ Four things that follow, and each one is a mistake this tool made first:
 **Music:** hybrid tension beds — cinematic percussion (taiko, deep kicks), staccato strings,
 low synth pulses. **Highly rhythmic with a driving pulse**, not ambient wash. It *acts*:
 menacing, playful, triumphant as the story turns.
+
+**"Floaty" is a casting error, not a level problem.** The Golden Age of the East section was
+reported as "float music, bit annoying". The reflex is to pull the bed down, but a drifting
+ambient track at -16 dB is still a drifting ambient track — it just annoys more quietly, and
+it drops the section below the channel's measured bed level to buy that. The brief above is
+the fix: this channel's music is *rhythmic with a driving pulse*, never ambient wash. Replace
+the cue, and only then check the level. Reach for a per-section `gain_db` (it stacks with
+`--music-db`) when a correctly-cast cue is merely a touch hot — not to sedate a wrong one.
 
 **Do not score each era with its own regional instruments.** The palette stays **consistent** —
 cinematic/historical tension throughout — and cues change within that family. Swapping to taiko
@@ -379,6 +406,26 @@ Setup, once:
 Prefer this over the connector for any real job. Use the MCP tools only for
 exploration when they happen to be up.
 
+**`query`, `filter` and `options` are objects, not JSON strings.** Passing them
+stringified — which `epidemic_api.py` did — fails every search with:
+
+```
+{'errors': [{'message': 'Unexpected error occurred',
+             'path': ['variable', 'query'],
+             'extensions': {'code': 'GRAPHQL_VALIDATION_FAILED'}}]}
+```
+
+Nothing in that says "wrong type", and `tools` still connects fine, so it reads
+like an expired key or a server fault and sends you to regenerate a key that was
+never the problem. The authority is the tool's own `inputSchema`, which types
+`query` as `$ref: SoundEffectsQuery` (an object). Dump it when a call is
+rejected and the answer is usually right there:
+
+```python
+c = Client(api_key()); c.initialize()
+[t["inputSchema"] for t in c.list_tools() if t["name"] == "SearchSoundEffects"]
+```
+
 ## Panning: a static sound under a moving picture reads as stuck
 
 Reported on a shot of a legion advancing right-to-left: "I'm hearing the sfx only on
@@ -453,6 +500,45 @@ was cast as a metal impact by redraw tiering (it is a big redraw) and its two la
 caption ticks. Right answer: the panel gets a soft element, and each label gets the sound
 of the wound it names, 6 dB down from a real hit.
 
+**An era card does not stop the scene.** The title-card guard silences everything within
+0.45 s of a card boom, which is right for caption ticks and wrong for designed action. A
+hand-timed beat sets `"solo_ok": true` (7th field in the sword video's `BEATS` tuples) to
+survive the guard. The guard's log now names every silenced cue and flags the hand-timed
+ones, because a bare count made a missing designed beat look identical to a healthy render.
+
+**CORRECTION — the card guard was NOT what silenced the shield beat.** That was a guess made
+before reading the cue sheet, and the sheet disagrees. The beat is the **Dacian falx** (not the
+falcata) hooking over the Roman shield at **200.000**, and the nearest card is IRON AGE at
+99.583 — a hundred seconds away, so the guard never touched it. What actually happened: the
+redraw event at 200.000 lost its collision to a generic `movement` swish at **199.292**, 0.71 s
+earlier, inside the swish tier's 0.85 s guard. A nothing-cue deleted a named beat. The general
+lesson stands and is worth more than the specific one: **a generic cue can silently outrank a
+designed moment purely by arriving first**, so any beat the script names belongs in the
+hand-timed sheet, where tier priority protects it — not left to the detector to rediscover.
+
+**A portrait is not an event — mute it, don't re-tier it.** A museum photograph of
+Tutankhamun's mask sliding in with its caption, and a sepia portrait plate, both drew sword
+hits. To the redraw detector they are indistinguishable from a blade entering a shield: a
+large mid-band redraw. But nothing is being struck, so there is no quieter or softer sound
+that is *right* — the beat should be silent. `place.py` takes `mute_windows` in the cue
+sheet ( `[start, end, "why"]`, seconds) which drop **generic** cues only; hand-timed beats
+pass through, so a designed beat inside a window still sounds. Sweep the figure shots off
+contact sheets and window them all at once — these arrive one screenshot at a time
+otherwise, and each round costs a render.
+
+**Room tone must not contain a second voice.** `place.py` lays one `amb` bed under every music
+section by rotation, and two of the eight ambience recordings are crowds with people in them —
+`amb_06` *"Crowds, Battle, Medieval, Savages Battle Ambience, Voices, Yells"* and `amb_07`
+*"...Village Battle Ambience, Voices, Yells"*. Rotation put one of them under **five** of the
+seventeen sections; the Renaissance one was reported as "unnecessary vocals in the background".
+A bed never ducks (beds mix onto the SFX bus, only the music bus is sidechained), so a crowd
+bed is a second voice competing with the narrator for 45 seconds at a time.
+
+Keep them in the palette as a `crowd` category, which nothing auto-assigns, so a hand-written
+bed can still call one where a crowd is actually on screen. And **check the titles of every
+file in the auto-assigned pool** — the internal names say `amb_06`, which tells you nothing;
+the Epidemic titles say "Voices, Yells", which tells you everything.
+
 **Levels for sustained beds, measured against the voice.** The VO sits near -18 dBFS rms
 and the music bed lands near -28. A featured texture like marching at -31 fights the
 narration and was reported as overlapping it; **-37 dBFS** sits under the music and reads
@@ -462,6 +548,31 @@ as present without competing. Ambience beds belong near -42.
 (an effort grunt on a heavy swing, a short cry on the killing blow, a crowd's yell on a
 charge) is part of this channel's sound. It is also the fastest thing to overdo — one per
 fight beat is a cartoon. Reserve it for the blow that lands and the ranks that shout.
+
+What that came to on the sword video — three vocals in thirteen minutes, and the search
+terms and levels that got there:
+
+| beat | recording | placement |
+|---|---|---|
+| the swing that costs effort | *Voices, Efforts, Male, Attack, Grunt, Breath, Short, Multiple 02* | on the swing, **-11 dB** |
+| the killing blow | *Voices, Male, Sudden Death, Combat, Pain 04* | **+80 ms** after the blade, **-7 dB** |
+| the ranks in formation | *Crowds, Battle, Medium, Yell, Short* | bed, **-32 dBFS** rms |
+
+Three things that are easy to get wrong here:
+
+- **The grunt take was three grunts.** 3.56 s, measured at three hits — the "takes, not
+  samples" rule again, and dropped whole it plays all three down one swing. Split it
+  (`oneshot.py`) into 0.16–0.26 s one-shots with 4–17 ms anchors.
+- **The cry goes after the blade, not on it.** A man cries out *because* he was hit; on the
+  same frame it just thickens the stab. 80 ms reads as reaction.
+- **A crowd yell is the one bed that can climb over the narration.** Beds mix onto the SFX
+  bus, and *only the music bus is sidechained* — a bed never ducks. A yell is mid-band,
+  exactly where the voice is, so it is the most dangerous thing in the sheet. Keep it a few
+  dB under the -28 music bed (-32) and pull the shot's ambience back to make room rather
+  than raising the yell.
+- **Cast the crowd for what the shot is doing.** Ranks holding formation want *Yell* or
+  *Shout*; the *Battle Cry, Screams, Charge* recordings are men running, and putting those
+  under a standing formation is the same error as marching over corpses.
 
 ## LOOK AT THE FRAMES. Never place a hit you have not seen.
 
