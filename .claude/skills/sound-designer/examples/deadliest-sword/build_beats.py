@@ -32,20 +32,21 @@ STRONG = [e for e in ev if e["strength"] >= 0.05]
 # same frame and a metal ring-out played over the title.
 OVERRIDE = {"AGE OF EMPIRES": 607.96}
 
-# The video opens ON the BRONZE AGE card, and the source sheet does not contain
-# it: its first entries are a "shot change" at 0.000 and a "strong on-screen
-# action" at 0.917, so the card was cast by redraw tiering as impact_08 -- a
-# metal strike -- while all seven other cards get whoosh_01 into boom_01.
-# Reported as "the bronze age title card has sword sound not boom/bass like
-# world war 2", which is exactly what the cue sheet says happened.
-# Adding it also silences the stray strike, because a card boom is exclusive.
-MISSING = [("BRONZE AGE", 0.917)]
-for era, t in MISSING:
-    if any(s.get("kind", "").startswith(era) for s in cue["sfx_cues"]):
-        continue
-    cue["sfx_cues"] += [{"at": round(t - 0.40, 3), "kind": f"{era} — into the card"},
-                        {"at": t, "kind": f"{era} card"}]
-    print(f"[beats] added the missing {era} card at {t:.3f}")
+# The BRONZE AGE card gets NO cue, and the reason is worth keeping: the source
+# sheet has seven era cards and this is not one of them, which looks like an
+# omission and is not. Every other card ARRIVES -- it is drawn onto the screen,
+# so there is a frame to punctuate, and it takes whoosh_01 into boom_01.
+#
+# This one is already on screen at t=0. The video opens on it, and between 0.4
+# and 1.2 s it cross-dissolves out into the section header. The redraw action at
+# 0.917 that looks like a card is the MIDDLE OF THAT DISSOLVE, so a boom snapped
+# to it punctuates the card leaving, which is what it was for. Reported as
+# "unnecessary boom here" the moment it was added.
+#
+# There is no arrival to hit, so the answer is nothing at all -- and 0.917 is
+# muted below, because without a card boom to shush it the generic tiering casts
+# that same dissolve as impact_08, the metal strike originally reported as "the
+# bronze age title card has sword sound not boom/bass like world war 2".
 
 cards, moved = {}, 0
 for s in cue["sfx_cues"]:
@@ -128,6 +129,38 @@ BEATS = [
     # ("Weapons, Sword, Hit Sword, Block, Parry, Impact, Ringing") measures
     # front-loaded 1.00 with a 0 ms anchor, so it lands on the frame.
     (200.00, "the falx hooks over the shield", "falx",  ["falx_02"], -7.0, ["armor"]),
+
+    # The katana through the cutting target. The log is whole at 352.0 and
+    # sliced at 353.0; the element redraw at 352.792 carried no cue at all.
+    # Cast for the object -- a straw-and-wood target, so wood splitting, not
+    # the gore slices the search keeps offering.
+    (352.792, "the blade goes through the target", "cut", ["cut_01"], -7.0, []),
+
+    # "Chopping weight": the shamshir into stone, red impact star on the rock.
+    # Same fault as the falx -- the redraw at 423.667 exists but lost its
+    # collision to a generic movement swish 0.63 s earlier, inside the swish
+    # tier's 0.85 s guard. A hand-timed beat takes priority instead.
+    (423.667, "the shamshir bites into the stone", "chop", ["chop_01"], -7.0, ["clatter"]),
+
+    # The second stone chop, "throwing its weight into the last inches". Same
+    # guard fault: the impact star is drawn at 661.542 and a generic movement
+    # swish 0.42 s earlier ate it. The existing impact_06 at 663.500 is not this
+    # beat -- it sits on the cut OUT to the trooper drill, and impact_06 is
+    # "Metal, Impact, Ring Out 05", a ring rather than a bite into rock.
+    (661.542, "the sabre bites into the stone", "chop", ["chop_02"], -7.0, ["clatter"]),
+
+    # The cavalry charge at Salamanca: two troopers cut down, blood on the
+    # blade. Flesh, not wood or stone -- the object rule again. 688.958 had only
+    # a -15 dB movement swish on it.
+    (688.958, "the sabre cuts the troopers down", "slash", ["slash_01"], -7.0, ["body"]),
+
+    # Le Marchant is shot: standing at 692.3, down with X-eyes and a blood pool
+    # at 692.65, and the musket lies in the grass. The redraw at 692.500 is the
+    # shot itself and carried a movement swish. No antique musket SHOT exists in
+    # the library -- the "Guns, Antique, Musket" entries are frizzen and trigger
+    # handling -- so this is "Rifle, Large Shot 03", a single heavy black-powder
+    # style report, split to its first shot.
+    (692.500, "Le Marchant is shot",           "gun",   ["gun_01"],   -6.0, []),
 ]
 beats = [s for s in cue["sfx_cues"]
          if s.get("kind") not in GENERIC
@@ -156,6 +189,12 @@ beats.sort(key=lambda s: s["at"])
 # mix that has been through several rounds of notes should not have unreported
 # beats changed underneath it. Widen only when he flags one.
 MUTE = [
+    # The whole dissolve, not just the 0.917 event. Muting 0.917 alone lets a
+    # pop at 0.500 surface that the boom's guard had been suppressing, so
+    # removing the boom would have swapped it for a tick -- a sound that was
+    # never in the approved mix. The card exit gets nothing.
+    (0.40,  1.10,  "the BRONZE AGE card dissolving out -- an exit, not an event"),
+    (122.85, 123.15, "impact_08 on the text card \"at Cannae two years later\""),
     (2.30,  2.60,  "impact_05 on the Howard Carter photograph"),
     (6.70,  7.00,  "impact_10 on a caption -- the tick reported at 0:06"),
     (13.20, 13.50, "impact_04 on the Tutankhamun photograph"),

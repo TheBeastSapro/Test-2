@@ -5,8 +5,6 @@
   "amb_03",
   "amb_04",
   "amb_05",
-  "amb_06",
-  "amb_07",
   "amb_08"
  ],
  "armor": [
@@ -25,6 +23,7 @@
   "boom_05",
   "boom_06"
  ],
+ "chopsrc": [],
  "clatter": [
   "clatter_01",
   "clatter_02",
@@ -46,6 +45,10 @@
   "fall_03",
   "fall_04"
  ],
+ "falx": [
+  "falx_01",
+  "falx_02"
+ ],
  "forge": [
   "forge_01",
   "forge_02",
@@ -53,6 +56,7 @@
   "forge_04",
   "forge_05"
  ],
+ "gunsrc": [],
  "impact": [
   "impact_01",
   "impact_02",
@@ -64,7 +68,6 @@
   "impact_08",
   "impact_09",
   "impact_10",
-  "impact_11",
   "impact_12"
  ],
  "march": [
@@ -86,6 +89,7 @@
   "pop_09",
   "pop_10"
  ],
+ "slashsrc": [],
  "stab": [
   "stab_01",
   "stab_02",
@@ -111,6 +115,13 @@
   "swish_11",
   "swish_12"
  ],
+ "vox_cry": [
+  "vox_cry_01"
+ ],
+ "vox_yell": [
+  "vox_yell_01"
+ ],
+ "voxsrc": [],
  "whoosh": [
   "whoosh_01",
   "whoosh_02",
@@ -125,6 +136,7 @@
   "whoosh_11",
   "whoosh_12"
  ],
+ "woodsrc": [],
  "_anchors": {
   "armor_01": 0.1219,
   "armor_02": 0.0865,
@@ -138,6 +150,7 @@
   "boom_04": 0.0,
   "boom_05": 0.376,
   "boom_06": 0.2118,
+  "chopsrc_01": 0.1896,
   "clatter_01": 0.0702,
   "clatter_02": 0.0276,
   "clatter_03": 0.0724,
@@ -153,11 +166,14 @@
   "fall_02": 0.0113,
   "fall_03": 0.75,
   "fall_04": 0.4886,
+  "falx_01": 0.0219,
+  "falx_02": 0.0,
   "forge_01": 0.1102,
   "forge_02": 0.0,
   "forge_03": 0.0864,
   "forge_04": 0.0868,
   "forge_05": 0.3154,
+  "gunsrc_01": 0.0441,
   "impact_01": 0.0,
   "impact_02": 0.0,
   "impact_03": 0.0,
@@ -180,6 +196,7 @@
   "pop_08": 0.1999,
   "pop_09": 0.0,
   "pop_10": 0.0312,
+  "slashsrc_01": 0.092,
   "stab_01": 0.005,
   "stab_02": 0.0,
   "stab_03": 0.0,
@@ -201,6 +218,8 @@
   "swish_10": 0.0974,
   "swish_11": 0.4115,
   "swish_12": 0.4144,
+  "vox_cry_01": 0.0911,
+  "voxsrc_01": 0.1185,
   "whoosh_01": 0.2155,
   "whoosh_02": 0.3659,
   "whoosh_03": 0.6162,
@@ -213,13 +232,30 @@
   "whoosh_10": 0.6806,
   "whoosh_11": 0.0441,
   "whoosh_12": 0.0413,
-  "shield_01": 0.015,
-  "shield_02": 0.0,
-  "shield_03": 0.0,
+  "woodsrc_01": 0.0,
   "body_01": 0.0,
   "body_02": 0.0098,
   "body_03": 0.0,
-  "body_04": 0.0
+  "body_04": 0.0,
+  "shield_01": 0.015,
+  "shield_02": 0.0,
+  "shield_03": 0.0,
+  "vox_effort_01": 0.0167,
+  "vox_effort_02": 0.004,
+  "vox_effort_03": 0.0173,
+  "cut_01": 0.0,
+  "cut_02": 0.0,
+  "cut_03": 0.0,
+  "chop_01": 0.0034,
+  "chop_02": 0.0,
+  "slash_01": 0.0,
+  "slash_02": 0.0,
+  "slash_03": 0.0,
+  "gun_01": 0.0,
+  "gun_02": 0.0,
+  "gun_03": 0.0,
+  "gun_04": 0.0,
+  "gun_05": 0.0
  },
  "_frontload": {
   "armor_01": 0.002,
@@ -234,6 +270,7 @@
   "boom_04": 0.523,
   "boom_05": 0.002,
   "boom_06": 0.0,
+  "chopsrc_01": 0.001,
   "clatter_01": 0.002,
   "clatter_02": 0.009,
   "clatter_03": 0.307,
@@ -249,11 +286,14 @@
   "fall_02": 0.373,
   "fall_03": 0.0,
   "fall_04": 0.0,
+  "falx_01": 0.0,
+  "falx_02": 1.0,
   "forge_01": 0.002,
   "forge_02": 0.521,
   "forge_03": 0.0,
   "forge_04": 0.0,
   "forge_05": 0.0,
+  "gunsrc_01": 0.35,
   "impact_01": 1.0,
   "impact_02": 1.0,
   "impact_03": 1.0,
@@ -276,6 +316,7 @@
   "pop_08": 0.093,
   "pop_09": 1.0,
   "pop_10": 0.303,
+  "slashsrc_01": 0.008,
   "stab_01": 0.004,
   "stab_02": 1.0,
   "stab_03": 1.0,
@@ -297,6 +338,8 @@
   "swish_10": 0.032,
   "swish_11": 0.017,
   "swish_12": 0.021,
+  "vox_cry_01": 0.002,
+  "voxsrc_01": 0.0,
   "whoosh_01": 0.007,
   "whoosh_02": 0.006,
   "whoosh_03": 0.0,
@@ -309,13 +352,30 @@
   "whoosh_10": 0.01,
   "whoosh_11": 0.055,
   "whoosh_12": 0.015,
-  "shield_01": 0.357,
-  "shield_02": 1.0,
-  "shield_03": 1.0,
+  "woodsrc_01": 0.533,
   "body_01": 1.0,
   "body_02": 0.05,
   "body_03": 0.28,
-  "body_04": 0.003
+  "body_04": 0.003,
+  "shield_01": 0.357,
+  "shield_02": 1.0,
+  "shield_03": 1.0,
+  "vox_effort_01": 0.315,
+  "vox_effort_02": 0.329,
+  "vox_effort_03": 0.312,
+  "cut_01": 1.0,
+  "cut_02": 1.0,
+  "cut_03": 1.0,
+  "chop_01": 0.297,
+  "chop_02": 1.0,
+  "slash_01": 0.609,
+  "slash_02": 1.0,
+  "slash_03": 0.45,
+  "gun_01": 0.629,
+  "gun_02": 0.681,
+  "gun_03": 1.0,
+  "gun_04": 1.0,
+  "gun_05": 0.834
  },
  "_rms": {
   "amb_01": -29.45,
@@ -323,24 +383,55 @@
   "amb_03": -27.31,
   "amb_04": -35.25,
   "amb_05": -34.94,
-  "amb_06": -27.28,
-  "amb_07": -27.95,
   "amb_08": -31.06,
   "march_01": -35.59,
   "march_02": -39.88,
   "march_03": -35.83,
   "march_04": -35.8,
-  "march_05": -38.55
+  "march_05": -38.55,
+  "vox_yell_01": -29.3,
+  "crowd_01": -27.28,
+  "crowd_02": -27.95
  },
- "shield": [
-  "shield_01",
-  "shield_02",
-  "shield_03"
- ],
  "body": [
   "body_01",
   "body_02",
   "body_03",
   "body_04"
+ ],
+ "shield": [
+  "shield_01",
+  "shield_02",
+  "shield_03"
+ ],
+ "vox_effort": [
+  "vox_effort_01",
+  "vox_effort_02",
+  "vox_effort_03"
+ ],
+ "cut": [
+  "cut_01",
+  "cut_02",
+  "cut_03"
+ ],
+ "chop": [
+  "chop_01",
+  "chop_02"
+ ],
+ "slash": [
+  "slash_01",
+  "slash_02",
+  "slash_03"
+ ],
+ "gun": [
+  "gun_01",
+  "gun_02",
+  "gun_03",
+  "gun_04",
+  "gun_05"
+ ],
+ "crowd": [
+  "crowd_01",
+  "crowd_02"
  ]
 }

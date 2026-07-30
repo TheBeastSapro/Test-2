@@ -115,7 +115,14 @@ def main():
     #              Multiple 02" -- three grunts in 3.56 s, so one swing would
     #              have played all three.
     import palette
-    for src, name in (("impact_11", "shield"), ("voxsrc_01", "vox_effort")):
+    for src, name in (("impact_11", "shield"), ("voxsrc_01", "vox_effort"),
+                      # "Wood, Break, Wood Chop, Split, Barn 04" is 3 splits in
+                      # 2.97 s; "Sword, Axe, Heavy, Whoosh, Blade Impact 06" is a
+                      # whoosh into an impact, and its energy anchor straddles
+                      # both at 190 ms. Split so the impact lands on the frame and
+                      # place.py supplies its own anticipation.
+                      ("woodsrc_01", "cut"), ("chopsrc_01", "chop"),
+                      ("slashsrc_01", "slash"), ("gunsrc_01", "gun")):
         srcp = os.path.join(args.out, f"{src}.wav")
         if not os.path.exists(srcp):
             continue
