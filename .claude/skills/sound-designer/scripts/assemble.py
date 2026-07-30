@@ -101,7 +101,36 @@ def energy_onset(path: str, db: float = -12.0, limit: float = 30.0) -> float:
     return max(0.0, i * 0.05 - 0.25)          # land just before it blooms
 
 
-def render_music_seg(asset, start, dur, fin, fout, gain_db, work, idx, skip=0.0) -> str:
+def pan_expr(pan, dur: float) -> str | None:
+    """A constant-power pan, static or travelling, as a single aeval filter.
+
+    Sound that does not move under a picture that does reads as stuck. A column
+    of soldiers crossing frame right-to-left was measured dead centre (+0.7 dB
+    balance) and described as sitting only on one side -- the ear localises a
+    static source wherever its loudest transient is and then stops believing it.
+
+    `pan` is a position in [-1, +1] (left..right), or a [from, to] pair to
+    travel between them over `dur`. Constant power keeps the level steady across
+    the sweep instead of dipping through the middle.
+    """
+    if pan is None:
+        return None
+    if isinstance(pan, (int, float)):
+        p0 = p1 = float(pan)
+    else:
+        p0, p1 = (float(pan[0]), float(pan[1]))
+    p0, p1 = max(-1.0, min(1.0, p0)), max(-1.0, min(1.0, p1))
+    if p0 == p1:
+        pos = f"{p0:.4f}"
+    else:
+        pos = f"({p0:.4f}+({p1 - p0:.4f})*min(1,t/{max(dur, 1e-3):.3f}))"
+    gl = f"sqrt(2)*sqrt((1-({pos}))/2)"
+    gr = f"sqrt(2)*sqrt((1+({pos}))/2)"
+    return f"aeval=exprs='val(0)*({gl})|val(1)*({gr})':channel_layout=stereo"
+
+
+def render_music_seg(asset, start, dur, fin, fout, gain_db, work, idx, skip=0.0,
+                     pan=None) -> str:
     """Fit an asset to `dur`, fade, gain, delay to `start`; write a wav."""
     out = os.path.join(work, f"m_{idx}.wav")
     loop = dur_of(asset) < dur + skip - 0.1
@@ -115,8 +144,11 @@ def render_music_seg(asset, start, dur, fin, fout, gain_db, work, idx, skip=0.0)
         f"afade=t=in:st=0:d={fin:.3f},"
         f"afade=t=out:st={fout_st:.3f}:d={fout:.3f},"
         f"volume={gain_db:.2f}dB,"
-        f"adelay={delay_ms}:all=1"
     )
+    pe = pan_expr(pan, dur)
+    if pe:
+        af += pe + ","
+    af += f"adelay={delay_ms}:all=1"
     cmd = [FFMPEG, "-hide_banner", "-v", "error", "-y"]
     if loop:
         cmd += ["-stream_loop", "-1"]
@@ -527,7 +559,8 @@ def main():
         bed_segs.append(render_music_seg(asset, b["at"], b["dur"], fade, fade,
                                          b.get("gain_db", -28.0), work,
                                          f"amb_{b['id']}",
-                                         float(b.get("skip", 0.0))))
+                                         float(b.get("skip", 0.0)),
+                                         b.get("pan")))
     if bed_segs:
         print(f"[assemble] {len(bed_segs)} ambience beds under the sections")
 

@@ -325,6 +325,53 @@ Overall "within one frame" will sit around 75% for this reason, and that is fine
 encoder overshoots after it — a master asked for −1.0 dBTP came out at −0.2 once the SFX were
 levelled as foreground. `final_master` appends an explicit `alimiter`, which brings it to −0.7.
 
+## Fetching assets without the MCP connector (do this — it stops the dropouts)
+
+The claude.ai MCP connector for Epidemic dropped in and out repeatedly across one
+session, taking search and download with it each time. It is not the only way in.
+
+Epidemic's MCP endpoint also accepts a plain bearer token, so `epidemic_api.py`
+reaches the same catalogue over an ordinary HTTPS request from inside the container.
+Nothing outside the container can disconnect it.
+
+```
+epidemic_api.py sfx "sword hits wooden shield" -n 12 --min-ms 200 --max-ms 4000
+epidemic_api.py pull <id> <id> --out pal_raw --name clink
+```
+
+Setup, once:
+1. Generate a key at **https://www.epidemicsound.com/account/api-keys**. It is tied to
+   the user's own Epidemic account — **no partnership agreement needed**. (The separate
+   Partner Content API at `partner-content-api.epidemicsound.com` *does* require one.
+   This does not.)
+2. Store it as `EPIDEMIC_SOUND_API_KEY` in the cloud environment's environment
+   variables. **Never in chat** — chat is stored, environments are not.
+3. Keys last **30 days**. A 401 means regenerate, and the script says so.
+
+Prefer this over the connector for any real job. Use the MCP tools only for
+exploration when they happen to be up.
+
+## Panning: a static sound under a moving picture reads as stuck
+
+Reported on a shot of a legion advancing right-to-left: "I'm hearing the sfx only on
+the left". Measured, the bed was dead centre — balance +0.7 dB, and the source files
+were within 0.5 dB of centred. Nothing was wrong with the balance; the problem was that
+nothing *moved*. The ear localises a static source once, and then the picture's motion
+contradicts it.
+
+`render_music_seg(..., pan=)` takes a position in [-1, +1], or a `[from, to]` pair to
+travel between them over the segment. It is constant power, so the level holds across
+the sweep instead of dipping through the middle — verified on a 6 s sweep: balance went
+-8.8 dB to +11.4 dB while total level stayed within 1 dB.
+
+Two things worth knowing:
+- **Check the direction before committing.** Measure the ink centroid across the shot
+  rather than trusting a glance. On the legion shot the framing does not translate at
+  all — the column *faces* left, so the implied advance is right-to-left, and the pan
+  carries what the framing does not.
+- **Don't sweep hard on a wide shot.** ±0.85 reads as movement; ±1.0 draws attention to
+  the technique. A tighter shot wants less, not more (±0.6).
+
 ## Casting: the category is not the question, the OBJECT is
 
 Getting the timing right and the tier right still produces a wrong mix if the sound

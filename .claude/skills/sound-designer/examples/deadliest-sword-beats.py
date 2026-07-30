@@ -73,8 +73,13 @@ for s in cue["sfx_cues"]:
 # and the flesh sound is saved for the one beat that earns it.
 BEATS = [
     (21.00, "pharaoh lunges",                 "swish",  ["swish_01", "swish_03"], -11.0, []),
-    (28.75, "khopesh blocked on the shield",  "impact", ["impact_11"], -6.0, ["clatter"]),
-    (30.21, "khopesh drives into the shield", "impact", ["impact_04"], -6.0, ["clatter"]),
+    # A bronze blade on a wooden shield is a bright CLINK plus the wood under it,
+    # not a big shield-impact slam. Chosen by measurement: impact_06 has the
+    # highest spectral centroid of any short metal file in the palette (7.6 kHz
+    # over 0.87 s) and rings out; impact_07 is the shorter, drier parry for the
+    # second strike. clatter carries the wood.
+    (28.75, "khopesh clinks off the shield",  "impact", ["impact_06"], -7.0, ["clatter"]),
+    (30.21, "khopesh drives into the shield", "impact", ["impact_07"], -7.0, ["clatter"]),
     (32.79, "khopesh swings down",            "swish",  ["whoosh_11", "whoosh_12"], -10.0, []),
     (34.12, "the hook catches the shield",    "impact", ["armor_01"], -7.0, ["impact"]),
     (35.58, "the killing stab",               "stab",   ["stab_04"],  -5.0, ["impact", "armor"]),
@@ -113,21 +118,30 @@ LV = json.load(open(f"{J}/pal/palette_manifest.json")).get("_rms", {})
 # And 160.54 is not an advancing army -- it is the AFTERMATH, corpses strewn over
 # a field with survivors standing among them. Marching over dead bodies is
 # exactly the "doesn't match the scene" a viewer reported. It gets cold wind.
+# The legion faces and points left, so it advances right-to-left, and the sound
+# should travel with it. The marching beds measured dead centre (+0.7 dB balance)
+# and were described as sitting on one side -- a static source under a moving
+# picture reads as stuck, because the ear localises it once and stops believing
+# it. pan is [from, to] in [-1, +1]; not a full hard sweep, which on a wide shot
+# draws attention to itself.
 SHOTS = [
-    (155.5, 2.2, "legion in close formation",       [("march_01", -37.0)]),
-    (160.6, 3.0, "the field after the battle",      [("amb_04", -34.0)]),
-    (172.5, 3.2, "the ranks shout",                 [("amb_06", -33.0)]),
-    (178.0, 5.8, "the legion marches in formation", [("march_05", -37.0)]),
+    (155.5, 2.2, "legion in close formation",       [("march_01", -37.0)], [0.6, -0.6]),
+    (160.6, 3.0, "the field after the battle",      [("amb_04", -34.0)],   None),
+    (172.5, 3.2, "the ranks shout",                 [("amb_06", -33.0)],   None),
+    (178.0, 5.8, "the legion marches in formation", [("march_05", -37.0)], [0.85, -0.85]),
 ]
 beds = []
-for i, (at, dur, label, layers) in enumerate(SHOTS, 1):
+for i, (at, dur, label, layers, pan) in enumerate(SHOTS, 1):
     for j, (f, target) in enumerate(layers):
         # bed-category files are levelled from measurement; hit-category files
         # are already peak-normalised, so they take a plain trim
         g = round(target - LV[f], 2) if (target is not None and f in LV) else -20.0
-        beds.append({"id": f"hb{i}_{j}", "at": at, "dur": dur, "gain_db": g,
-                     "fade": 0.35, "era": label, "hand": True,
-                     "asset": os.path.join(P, f"{f}.wav")})
+        bed = {"id": f"hb{i}_{j}", "at": at, "dur": dur, "gain_db": g,
+               "fade": 0.35, "era": label, "hand": True,
+               "asset": os.path.join(P, f"{f}.wav")}
+        if pan:
+            bed["pan"] = pan
+        beds.append(bed)
 cue["amb_beds"] = beds
 print(f"[beats] {len(cue['amb_beds'])} hand beds across {len(SHOTS)} shots")
 
