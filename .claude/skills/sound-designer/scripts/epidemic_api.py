@@ -150,9 +150,16 @@ def flatten(payload: dict, kind: str) -> list[dict]:
     for n in nodes:
         e = n.get(inner, n)
         af = e.get("audioFile") or {}
+        tags = [t.get("displayName", "") for t in (e.get("tags") or [])]
+        # "vocals: false" means "not a lead-vocal song", not "no human voice":
+        # measured live, 12 of 60 filtered results still carried a "vocal
+        # presence" tag. Under a narration track a choir is as bad as a singer,
+        # so flag it here rather than letting it reach a mix.
+        vox = [t for t in tags
+               if "vocal" in t.lower() and t.lower().replace("-", " ") != "no vocals"]
         out.append({"id": e.get("id"), "title": e.get("title"),
                     "ms": af.get("durationInMilliseconds"),
-                    "lqmp3": af.get("lqmp3Url")})
+                    "lqmp3": af.get("lqmp3Url"), "tags": tags, "vocals": vox})
     return out
 
 
@@ -166,12 +173,16 @@ def main():
         p.add_argument("-n", type=int, default=12)
         p.add_argument("--min-ms", type=int)
         p.add_argument("--max-ms", type=int)
-    p = sub.add_parser("url")
-    p.add_argument("id")
-    p = sub.add_parser("pull")
-    p.add_argument("ids", nargs="+")
-    p.add_argument("--out", required=True)
-    p.add_argument("--name", default="sfx")
+    for c_ in ("url", "pull"):
+        p = sub.add_parser(c_)
+        p.add_argument("ids" if c_ == "pull" else "id", **({"nargs": "+"} if c_ == "pull" else {}))
+        # Music and SFX are separate catalogues with separate download tools.
+        # This defaulted to SFX with no way to say otherwise, so replacing a
+        # music bed -- the whole point of a re-score -- could not be done here.
+        p.add_argument("--kind", choices=("sfx", "music"), default="sfx")
+        if c_ == "pull":
+            p.add_argument("--out", required=True)
+            p.add_argument("--name", default="sfx")
     args = ap.parse_args()
 
     c = Client(api_key())
@@ -199,9 +210,17 @@ def main():
         if not rows:
             print(f"[epidemic] nothing matched. raw: {str(payload)[:300]}")
             return
+        vocal_hits = 0
         for r in rows:
             ms = f"{r['ms']/1000:.2f}s" if r.get("ms") else "?"
-            print(f"  {r['id']}  {ms:>8}  {r['title']}")
+            warn = ""
+            if r.get("vocals"):
+                vocal_hits += 1
+                warn = f"   <-- {'/'.join(r['vocals'])}, NOT usable under a VO"
+            print(f"  {r['id']}  {ms:>8}  {r['title']}{warn}")
+        if vocal_hits:
+            print(f"[epidemic] {vocal_hits} of {len(rows)} carry a vocal tag "
+                  f"even with vocals:false — the filter is not airtight")
         return
 
     ids = [args.id] if args.cmd == "url" else args.ids

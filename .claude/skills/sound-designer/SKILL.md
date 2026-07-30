@@ -95,6 +95,18 @@ Push constraints into the **query**, don't just filter afterwards: set `vocals: 
 `bpm` around the cue's `bpm_hint`, and `duration.min` >= the section length. Use
 `stemType: INSTRUMENTS` when a track is right but its lead is too busy under the VO.
 
+**`vocals: false` is not airtight — check the tags.** Measured live, **12 of 60** results
+returned under that filter still carried a **`vocal presence`** tag. The filter means "not a
+lead-vocal song", not "no human voice", so choir and chant pads come straight through it.
+Under a narration track a choir is as bad as a singer: that is how one reached the
+Renaissance section and was reported as "unnecessary vocals in the background". Trust the
+tags, not the filter — `epidemic_api.py` now flags every leaked result in its search output.
+
+And treat vocals as **disqualifying, not a penalty**. `score_music` docked them 6 points,
+which a track matching bpm, energy and three moods banks back easily, so the *best-fitting*
+vocal track beat a plainer instrumental. It is a hard reject now, and a cue whose whole
+candidate pool is rejected fails loudly rather than picking the least-bad choir.
+
 Response shape (results nest one level deep, duration is in **milliseconds**):
 
 ```
@@ -210,6 +222,14 @@ Four things that follow, and each one is a mistake this tool made first:
 **Music:** hybrid tension beds — cinematic percussion (taiko, deep kicks), staccato strings,
 low synth pulses. **Highly rhythmic with a driving pulse**, not ambient wash. It *acts*:
 menacing, playful, triumphant as the story turns.
+
+**"Floaty" is a casting error, not a level problem.** The Golden Age of the East section was
+reported as "float music, bit annoying". The reflex is to pull the bed down, but a drifting
+ambient track at -16 dB is still a drifting ambient track — it just annoys more quietly, and
+it drops the section below the channel's measured bed level to buy that. The brief above is
+the fix: this channel's music is *rhythmic with a driving pulse*, never ambient wash. Replace
+the cue, and only then check the level. Reach for a per-section `gain_db` (it stacks with
+`--music-db`) when a correctly-cast cue is merely a touch hot — not to sedate a wrong one.
 
 **Do not score each era with its own regional instruments.** The palette stays **consistent** —
 cinematic/historical tension throughout — and cues change within that family. Swapping to taiko

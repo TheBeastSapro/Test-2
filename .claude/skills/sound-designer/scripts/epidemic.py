@@ -162,13 +162,22 @@ def normalize(raw):
 def score_music(track: dict, cue: dict) -> tuple[float, list[str]]:
     why, s = [], 0.0
 
+    # Vocals are DISQUALIFYING, not a penalty. -6.0 was soft enough to be
+    # outvoted: a track matching bpm, energy and three mood tags banks well over
+    # 6 points, so the best-fitting vocal track beat a plainer instrumental and
+    # a choir ended up under the narration in the Renaissance section, reported
+    # as "unnecessary vocals in the background". There is no bpm match good
+    # enough to make a second human voice acceptable under a first one.
+    #
+    # This matters more than it looks, because the search filter does not catch
+    # them: measured live, 12 of 60 results returned with `vocals: false` still
+    # carried a "vocal presence" tag. The filter means "not a lead-vocal song",
+    # not "no human voice", so the tags are the only reliable signal.
     vocals = get(track, "hasVocals", "has_vocals", "vocals", default=False)
     if vocals:
-        s -= 6.0
-        why.append("has vocals (bad under VO)")
-    else:
-        s += 2.0
-        why.append("instrumental")
+        return float("-inf"), ["has vocals — rejected, never under a VO"]
+    s += 2.0
+    why.append("instrumental")
 
     bpm, want_bpm = get(track, "bpm", "tempo"), cue.get("bpm_hint")
     if bpm and want_bpm:
@@ -261,6 +270,13 @@ def cmd_select(args):
             scored.append((sc, tid, t, why))
         scored.sort(key=lambda x: -x[0])
         best = scored[0]
+        # Every candidate disqualified is not a pick of the least-bad one. Say
+        # so and leave the cue empty, so it surfaces as a missing asset instead
+        # of quietly becoming a choir under the narration.
+        if best[0] == float("-inf"):
+            print(f"   {cue['id']:>3}  all {len(pool)} candidates rejected "
+                  f"({best[3][0]}) — search again with different terms")
+            return
         if kind == "music":
             used.add(best[1])
         picks[cue["id"]] = {
