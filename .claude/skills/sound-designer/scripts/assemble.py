@@ -262,27 +262,31 @@ def mean_db(path: str, a: float, b: float):
     return float(m.group(1)) if m else None
 
 
-def bed_ratio(master: str, silence: list) -> float | None:
-    """Measured bed-vs-programme on the finished master.
+def bed_ratio(music: str, vo: str, silence: list) -> float | None:
+    """Measured music-bed-vs-voice: the bed inside the VO's gaps, against the
+    voice during speech.
 
-    This is the metric the reference was measured with: the bed alone inside
-    the VO's gaps, against the programme during speech. An integrated-LUFS
-    ratio is NOT the same quantity -- it folds the ducking and the VO's own
-    gaps together -- so calibrating on LUFS lands in the wrong place.
+    Measured on the STEMS, and on the music stem specifically. Both of those
+    are corrections of earlier versions that landed in the wrong place:
+
+      * An integrated-LUFS ratio is not this quantity at all -- it folds the
+        ducking and the VO's own gaps together, and calibrating on it put the
+        bed 5.5 dB under the voice instead of 13.
+      * Measuring the finished master is worse once the SFX are doing their job.
+        The master's gaps contain music AND effects AND ambience, so loud
+        effects inflate the reading and the loop compensates by pulling the
+        *music* down. On the v3 render that misread the bed as -5.6 dB and
+        trimmed the music 7.4 dB when the true error was about 3. "Bed" means
+        the music bed; the effects are foreground and are levelled by tier.
     """
     import statistics as st
     gaps = [(a, b) for a, b in silence if b - a >= 0.30][:40]
     if len(gaps) < 4:
         return None
-    if master.lower().endswith(".mp3"):
-        # atrim on a freshly written mp3 fails to seek ("Could not seek to N"):
-        # the container has no index and ffmpeg gives up. Measure a decoded copy.
-        wav = os.path.join(tempfile.gettempdir(), "sd_bedcheck.wav")
-        run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", master,
-             "-c:a", "pcm_s16le", wav])
-        master = wav
-    bed = [x for x in (mean_db(master, a + 0.05, b - 0.02) for a, b in gaps) if x and x > -70]
-    prog = [x for x in (mean_db(master, a - 2.0, a - 0.3) for a, b in gaps[:25] if a > 3) if x]
+    bed = [x for x in (mean_db(music, a + 0.05, b - 0.02) for a, b in gaps)
+           if x and x > -70]
+    prog = [x for x in (mean_db(vo, a - 2.0, a - 0.3) for a, b in gaps[:25] if a > 3)
+            if x and x > -70]
     if len(bed) < 3 or len(prog) < 3:
         return None
     return st.median(bed) - st.median(prog)
@@ -489,8 +493,13 @@ def main():
         # A palette prepared by palette.py already starts on its attack, so the
         # transient search must NOT run again -- doing both compensates twice
         # and throws slow-blooming files (whooshes especially) hundreds of ms
-        # early. Only un-prepared assets get searched.
-        lead = 0.0 if s.get("pre_trimmed") else transient_offset(asset)
+        # early. Prepared cues instead carry a measured anchor: the file is
+        # placed so its *perceived* moment lands on the beat, which for a pop
+        # is its first sample and for a whoosh is ~400 ms in.
+        if s.get("pre_trimmed"):
+            lead = float(s.get("anchor", 0.0))
+        else:
+            lead = transient_offset(asset)
         at = max(0.0, s["at"] - lead)
         sfx_segs.append((seg, at))
         placed_s += 1
@@ -553,13 +562,33 @@ def main():
     # is dense: the compressor then pulls the bed below the level we just set,
     # and with a 93%-voiced VO it never comes back up. Measure what actually
     # reaches the master.
+    #
+    # Closed loop on the STEMS, not on the finished file. Measuring the master
+    # cannot separate the music bed from the effects, so once the effects are
+    # levelled as foreground they inflate the reading and the loop pulls the
+    # music down to compensate. Iterating here also means the correction is
+    # verified before mastering rather than by re-rendering it afterwards.
     if vo_wav and music_segs and args.bed_target_db is not None:
-        trim = calibrate_bed(ducked, vo_wav, args.bed_target_db)
-        if trim is not None and abs(trim) > 0.2:
-            cal = os.path.join(work, "music_cal.wav")
+        silence = cue.get("measured", {}).get("silence")
+        for attempt in range(2):
+            got = bed_ratio(ducked, vo_wav, silence) if silence else None
+            if got is None:                      # no VO gaps to measure in
+                trim = calibrate_bed(ducked, vo_wav, args.bed_target_db)
+                if trim is None or abs(trim) <= 0.2:
+                    break
+            else:
+                trim = args.bed_target_db - got
+                print(f"[assemble] measured bed {got:+.1f} dB vs target "
+                      f"{args.bed_target_db:+.1f} dB")
+                if abs(trim) <= 1.0:
+                    break
+            cal = os.path.join(work, f"music_cal{attempt}.wav")
             run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", ducked,
                  "-filter:a", f"volume={trim:.2f}dB", "-ac", "2", "-ar", str(SR), cal])
             ducked = cal
+            print(f"[assemble] trimmed the bed {trim:+.1f} dB")
+            if got is None:
+                break
 
     is_mp3 = args.out.lower().endswith(".mp3")
     audio_out = args.out if not args.mux_into else os.path.join(work, "final.wav")
@@ -580,25 +609,6 @@ def main():
     if args.mux_into:
         mux(args.mux_into, audio_out, args.out)
         print(f"[assemble] muxed into video -> {args.out}")
-
-    # Closed loop: measure the bed on the finished master with the same metric the
-    # reference was measured with, and correct once if it landed off target.
-    if (vo_wav and music_segs and args.bed_target_db is not None
-            and not args.mux_into and cue.get("measured", {}).get("silence")):
-        got = bed_ratio(args.out, cue["measured"]["silence"])
-        if got is not None:
-            err = args.bed_target_db - got
-            print(f"[assemble] measured bed {got:+.1f} dB vs target {args.bed_target_db:+.1f} dB")
-            if abs(err) > 1.2:
-                print(f"[assemble] correcting by {err:+.1f} dB and re-rendering the master")
-                cal2 = os.path.join(work, "music_cal2.wav")
-                run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", ducked,
-                     "-filter:a", f"volume={err:.2f}dB", "-ac", "2", "-ar", str(SR), cal2])
-                final_master(cal2, sfx_bus if sfx_segs else None, vo_wav,
-                             audio_out, lufs, tp, is_mp3 and not args.mux_into)
-                got2 = bed_ratio(args.out, cue["measured"]["silence"])
-                if got2 is not None:
-                    print(f"[assemble] after correction: bed {got2:+.1f} dB")
 
     if args.preview:
         start, end = parse_window(args.preview, total)

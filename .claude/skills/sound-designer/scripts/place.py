@@ -100,6 +100,7 @@ def main():
     cue = json.load(open(args.cues))
     ev = json.load(open(args.events))
     pal = json.load(open(os.path.join(args.palette, "palette_manifest.json")))
+    anchors = pal.pop("_anchors", {})     # per-file rise time; see palette.py
     apath = os.path.abspath(args.palette)
 
     missing = [c for c in set(TIER_CAT.values()) | {"swish"} if c not in pal]
@@ -167,6 +168,7 @@ def main():
         sfx.append({"id": f"s{i}", "at": round(t, 4), "kind": label,
                     "tier": tier, "cat": cat, "gain_db": gain,
                     "vary": VARY.get(cat, 0.0), "pre_trimmed": True,
+                    "anchor": anchors.get(f, 0.0),
                     "asset": os.path.join(apath, f"{f}.wav")})
         # A strike gets a short swish just before contact. One sound is a
         # sample; two is a designed hit.
@@ -176,6 +178,7 @@ def main():
                         "kind": f"{label} (anticipation)", "tier": "swish",
                         "cat": "swish", "gain_db": gain - 7.0, "vary": 0.3,
                         "layer": "anticipation", "pre_trimmed": True,
+                        "anchor": anchors.get(g, 0.0),
                         "asset": os.path.join(apath, f"{g}.wav")})
         # ...and a body layer just after contact. Metal alone is thin; the
         # weight of a hit is the flesh-and-armour element under it, 35 ms late
@@ -187,6 +190,7 @@ def main():
                         "kind": f"{label} (weight)", "tier": "swish",
                         "cat": "body", "gain_db": gain - 5.0, "vary": 0.2,
                         "layer": "weight", "pre_trimmed": True,
+                        "anchor": anchors.get(h, 0.0),
                         "asset": os.path.join(apath, f"{h}.wav")})
     sfx.sort(key=lambda s: s["at"])
 
