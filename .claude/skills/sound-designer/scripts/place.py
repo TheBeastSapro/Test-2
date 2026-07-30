@@ -129,39 +129,81 @@ def main():
     else:
         rot["boom_punchy"] = rot["boom"]
 
-    cand = []                                    # (tier, t, category, label)
+    cand = []      # dicts: tier, t, cat, label, and optional explicit choices
 
-    # 1. hand-timed beats: the designed moments, never dropped
+    # 1. hand-timed beats: the designed moments, never dropped.
+    #
+    # A hand-timed beat may name its own sound, because the pool is the wrong
+    # tool for the shots that matter. On the sword video the pharaoh's khopesh
+    # going into a man's chest drew "medieval shield impact" from the metal pool
+    # -- correct category, wrong object, and it read as unsatisfying exactly as
+    # a viewer reported. Honoured keys: cat (a palette category), files (an
+    # explicit list to rotate through), tier, gain_db, stack (extra categories
+    # layered on the same beat, e.g. ["body"] to put weight under a stab).
     for s in cue.get("sfx_cues", []):
         if s.get("kind") in GENERIC:
             continue
         word = (s.get("epidemic") or {}).get("search", "clash")
-        cat = HERO_CAT.get(word, "impact")
-        cand.append(("hero_boom" if cat == "boom" else "hero_hit",
-                     s["at"], cat, s["kind"]))
+        cat = s.get("cat") or HERO_CAT.get(word, "impact")
+        cand.append({"tier": s.get("tier") or ("hero_boom" if cat == "boom"
+                                               else "hero_hit"),
+                     "t": s["at"], "cat": cat, "label": s["kind"],
+                     "files": s.get("files"), "gain_db": s.get("gain_db"),
+                     "stack": s.get("stack")})
     heroes = len(cand)
 
-    # 2. shot changes get air
-    for e in ev["events"]:
-        if e["kind"] == "cut":
-            cand.append(("whoosh", e["t"], "whoosh", "shot change"))
-
-    # 3. in-shot action, ranked; the weakest slice is camera drift, not action
-    acts = sorted((e for e in ev["events"] if e["kind"] == "action"),
-                  key=lambda e: e["strength"])
-    if acts:
-        n = len(acts)
-        lo = acts[int(n * args.drop_weakest)]["strength"]
-        mid = acts[int(n * (args.drop_weakest + (1 - args.drop_weakest) * .46))]["strength"]
-        hi = acts[int(n * .88)]["strength"]
-        for e in acts:
-            s = e["strength"]
-            if s < lo:
-                continue
-            tier = "impact" if s >= hi else ("swish" if s >= mid else "pop")
-            cand.append((tier, e["t"], TIER_CAT[tier],
-                         {"impact": "strike", "swish": "movement",
-                          "pop": "small element"}[tier]))
+    # 2-3. the visual beats.
+    #
+    # Two event vocabularies are accepted. visual_redraw.py classifies by how
+    # much of the frame was redrawn, which for animation is both more reliable
+    # and self-classifying, so its labels are trusted directly. visual_events.py
+    # produces a continuous optical-flow curve that has to be percentile-cut.
+    #
+    # Prefer redraw. Flow ranking got the beats that matter wrong: a khopesh
+    # entering a chest is a small movement, so it ranked below a camera pan and
+    # was cast as a generic "movement" swish, and a hook catching a shield was
+    # cast as a caption tick. Both are unmistakable mid-band redraws.
+    redraw_mode = any(e.get("kind") == "element" for e in ev["events"])
+    if redraw_mode:
+        acts = [e for e in ev["events"] if e["kind"] == "action"]
+        split = (sorted(e["strength"] for e in acts)[len(acts) // 2]
+                 if acts else 0.0)
+        for e in ev["events"]:
+            k = e["kind"]
+            if k == "cut":
+                cand.append({"tier": "whoosh", "t": e["t"], "cat": "whoosh",
+                             "label": "shot change"})
+            elif k == "action":
+                big = e["strength"] >= split
+                cand.append({"tier": "impact" if big else "swish", "t": e["t"],
+                             "cat": "impact" if big else "swish",
+                             "label": "strike" if big else "movement"})
+            else:
+                cand.append({"tier": "pop", "t": e["t"], "cat": "pop",
+                             "label": "small element"})
+        print(f"[place] redraw events: {sum(1 for e in ev['events'] if e['kind']=='cut')} cuts, "
+              f"{len(acts)} actions (split at {split:.3f}), "
+              f"{sum(1 for e in ev['events'] if e['kind']=='element')} elements")
+    else:
+        for e in ev["events"]:
+            if e["kind"] == "cut":
+                cand.append({"tier": "whoosh", "t": e["t"], "cat": "whoosh",
+                             "label": "shot change"})
+        acts = sorted((e for e in ev["events"] if e["kind"] == "action"),
+                      key=lambda e: e["strength"])
+        if acts:
+            n = len(acts)
+            lo = acts[int(n * args.drop_weakest)]["strength"]
+            mid = acts[int(n * (args.drop_weakest + (1 - args.drop_weakest) * .46))]["strength"]
+            hi = acts[int(n * .88)]["strength"]
+            for e in acts:
+                v = e["strength"]
+                if v < lo:
+                    continue
+                tier = "impact" if v >= hi else ("swish" if v >= mid else "pop")
+                cand.append({"tier": tier, "t": e["t"], "cat": TIER_CAT[tier],
+                             "label": {"impact": "strike", "swish": "movement",
+                                       "pop": "small element"}[tier]})
 
     # 4. resolve collisions by PRIORITY, not by strength -- a caption tick must
     # never elbow a sword strike. Hand-timed beats are exempt from the guard
@@ -170,20 +212,34 @@ def main():
     kept, lost = [], 0
     for tier in PRIORITY:
         guard, hero = TIERS[tier][1], tier.startswith("hero")
-        for c in sorted((c for c in cand if c[0] == tier), key=lambda c: c[1]):
-            rivals = [k for k in kept if not (hero and k[0].startswith("hero"))]
-            if any(abs(c[1] - k[1]) < max(guard, TIERS[k[0]][1]) for k in rivals):
+        for c in sorted((c for c in cand if c["tier"] == tier), key=lambda c: c["t"]):
+            rivals = [k for k in kept if not (hero and k["tier"].startswith("hero"))]
+            if any(abs(c["t"] - k["t"]) < max(guard, TIERS[k["tier"]][1])
+                   for k in rivals):
                 lost += 1
                 continue
             kept.append(c)
-    kept.sort(key=lambda c: c[1])
+    kept.sort(key=lambda c: c["t"])
 
     # 5. assign files
     sfx, counts = [], {}
-    for i, (tier, t, cat, label) in enumerate(kept, 1):
-        f = rot["boom_punchy" if tier == "hero_boom" and cat == "boom" else cat].take(t)
+    adhoc = {}                       # rotators for explicit per-beat file lists
+
+    def pick(cat, files, t):
+        if files:
+            key = tuple(files)
+            if key not in adhoc:
+                adhoc[key] = Rotator(files, rng, cooldown=20.0)
+            return adhoc[key].take(t)
+        return rot["boom_punchy" if cat == "boom" and pick.hero_boom else cat].take(t)
+
+    for i, c in enumerate(kept, 1):
+        tier, t, cat, label = c["tier"], c["t"], c["cat"], c["label"]
+        pick.hero_boom = tier == "hero_boom"
+        f = pick(cat, c.get("files"), t)
         counts[f] = counts.get(f, 0) + 1
-        gain = TIERS[tier][0]
+        gain = c.get("gain_db")
+        gain = TIERS[tier][0] if gain is None else float(gain)
         sfx.append({"id": f"s{i}", "at": round(t, 4), "kind": label,
                     "tier": tier, "cat": cat, "gain_db": gain,
                     "vary": VARY.get(cat, 0.0), "pre_trimmed": True,
@@ -199,22 +255,36 @@ def main():
                         "layer": "anticipation", "pre_trimmed": True,
                         "anchor": anchors.get(g, 0.0),
                         "asset": os.path.join(apath, f"{g}.wav")})
-        # ...and a body layer just after contact. Metal alone is thin; the
-        # weight of a hit is the flesh-and-armour element under it, 35 ms late
-        # because the body reacts after the blade arrives. This is the third
-        # element in the channel's stacks (whoosh + strike + thud).
-        if tier in ("impact", "hero_hit") and "body" in rot:
-            h = rot["body"].take(t)
-            sfx.append({"id": f"s{i}b", "at": round(t + 0.035, 4),
+        # ...and whatever the beat asks to be stacked on it, just after contact.
+        # Metal alone is thin: the weight of a hit is the flesh-and-armour
+        # element under it, 35 ms late because the body reacts after the blade
+        # arrives. Generic strikes default to a body layer; a hand-timed beat can
+        # ask for anything in the palette (a shield drag, a spear clatter).
+        stack = c.get("stack")
+        if stack is None and tier in ("impact", "hero_hit"):
+            stack = ["body"]
+        for k, scat in enumerate(stack or []):
+            if scat not in rot:
+                continue
+            h = rot[scat].take(t)
+            sfx.append({"id": f"s{i}b{k}", "at": round(t + 0.035 + k * 0.05, 4),
                         "kind": f"{label} (weight)", "tier": "swish",
-                        "cat": "body", "gain_db": gain - 5.0, "vary": 0.2,
+                        "cat": scat, "gain_db": gain - 5.0, "vary": 0.2,
                         "layer": "weight", "pre_trimmed": True,
                         "anchor": anchors.get(h, 0.0),
                         "asset": os.path.join(apath, f"{h}.wav")})
     sfx.sort(key=lambda s: s["at"])
 
     # 6. beds. "This area has no SFX" is answered by room tone, not more hits.
-    beds = []
+    #
+    # Hand-written beds in the input sheet are carried through untouched. They
+    # cover what a hit cannot: an army marching across a field is not an event,
+    # it is a continuous texture, and placing single clanks on it reads as
+    # nothing happening. Mark them "hand": true.
+    beds = [b for b in cue.get("amb_beds", []) if b.get("hand")]
+    if beds:
+        print(f"[place] {len(beds)} hand-written beds carried through "
+              f"(marching, crowds, weather)")
     if not args.no_beds and pal.get("amb"):
         war = [a for a in pal["amb"] if a.endswith(("_05", "_06", "_07"))]
         calm = [a for a in pal["amb"] if a not in war] or pal["amb"]
