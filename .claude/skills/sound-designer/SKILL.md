@@ -28,6 +28,34 @@ Timing/structure is **measured**. Mood/BPM are **seeds**, not truth — Epidemic
 your ear refine them. (Same discipline as the VO skill: never treat a listening model's
 description as data. This tool trusts ffmpeg measurements only.)
 
+## Intake for a new video — follow this order, it removes the back-and-forth
+
+The first video took many rounds because the tooling was being built. It should not
+happen again. What Sapro supplies: the **video** and the **mastered VO as a separate
+file** (both via Drive — YouTube downloads are blocked from the container), plus the
+**title and script/chapter list**. Nothing else is needed.
+
+Then, in this order:
+
+1. **`visual_redraw.py video.mp4 -o redraw.json`** — the beats. Do not use optical flow
+   for animation. Do not skip this and guess times from the script.
+2. **Rebuild the palette** rather than re-choosing sounds:
+   `examples/deadliest-sword/rebuild_palette.py --scripts scripts/`. It reproduces 107
+   prepared files from a 3.7 KB id list in ~2 min. Fetch only what the new video needs
+   on top, with `epidemic_api.py` (not the MCP connector).
+3. **Build the music sections from the script's chapters**, one cue per topic — measured
+   at a change every ~47 s on this channel. `examples/deadliest-sword/build_beats.py` is
+   the working pattern.
+4. **Hand-cast the first 2–3 minutes beat by beat**, off contact sheets. This is where
+   the audience decides, and pool-casting is not good enough there. Extract contact
+   sheets at 4 fps and *look* — check what each blade is touching.
+5. `place.py` → `assemble.py --stems`.
+6. **Verify before showing anything:** `sync_check.py --by-tier`, and measure the bed on
+   the stems. Report the numbers.
+7. **Send 3–4 short clips WITH PICTURE at the specific action beats** — not the whole
+   mix. Every correction on the first video came from watching a specific moment, and
+   sending clips early is what turns five rounds into one.
+
 ## Runbook
 
 ```bash
