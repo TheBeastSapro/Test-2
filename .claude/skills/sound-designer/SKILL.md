@@ -98,9 +98,16 @@ Push constraints into the **query**, don't just filter afterwards: set `vocals: 
 **`vocals: false` is not airtight — check the tags.** Measured live, **12 of 60** results
 returned under that filter still carried a **`vocal presence`** tag. The filter means "not a
 lead-vocal song", not "no human voice", so choir and chant pads come straight through it.
-Under a narration track a choir is as bad as a singer: that is how one reached the
-Renaissance section and was reported as "unnecessary vocals in the background". Trust the
-tags, not the filter — `epidemic_api.py` now flags every leaked result in its search output.
+Under a narration track a choir is as bad as a singer. Trust the tags, not the filter —
+`epidemic_api.py` now flags every leaked result in its search output.
+
+**CORRECTION — this was NOT what caused "unnecessary vocals in the background" at 9:14.**
+That was diagnosed from this leak without measuring, and the measurement says otherwise: the
+Renaissance track is *The Vice*, tagged `action, dark, electronic rock, no vocals, suspense`,
+with no vocal tag at all. The voices were an **ambience bed** — `amb_07`, whose Epidemic title
+is literally *"Crowds, Battle, Medieval, Village Battle Ambience, **Voices, Yells**"* — running
+under the whole 44.8 s section at -16 dB. See "Room tone must not contain a second voice"
+below. The filter leak is real and worth guarding; it just wasn't this bug.
 
 And treat vocals as **disqualifying, not a penalty**. `score_music` docked them 6 points,
 which a track matching bpm, energy and three moods banks back easily, so the *best-fitting*
@@ -466,12 +473,20 @@ caption ticks. Right answer: the panel gets a soft element, and each label gets 
 of the wound it names, 6 dB down from a real hit.
 
 **An era card does not stop the scene.** The title-card guard silences everything within
-0.45 s of a card boom, which is right for caption ticks and wrong for designed action: the
-falcata reaching over the Roman shield -- a named beat in the script -- played under the
-IRON AGE card and was silenced with them, reported as "sfx missing in this action". A
+0.45 s of a card boom, which is right for caption ticks and wrong for designed action. A
 hand-timed beat sets `"solo_ok": true` (7th field in the sword video's `BEATS` tuples) to
 survive the guard. The guard's log now names every silenced cue and flags the hand-timed
 ones, because a bare count made a missing designed beat look identical to a healthy render.
+
+**CORRECTION — the card guard was NOT what silenced the shield beat.** That was a guess made
+before reading the cue sheet, and the sheet disagrees. The beat is the **Dacian falx** (not the
+falcata) hooking over the Roman shield at **200.000**, and the nearest card is IRON AGE at
+99.583 — a hundred seconds away, so the guard never touched it. What actually happened: the
+redraw event at 200.000 lost its collision to a generic `movement` swish at **199.292**, 0.71 s
+earlier, inside the swish tier's 0.85 s guard. A nothing-cue deleted a named beat. The general
+lesson stands and is worth more than the specific one: **a generic cue can silently outrank a
+designed moment purely by arriving first**, so any beat the script names belongs in the
+hand-timed sheet, where tier priority protects it — not left to the detector to rediscover.
 
 **A portrait is not an event — mute it, don't re-tier it.** A museum photograph of
 Tutankhamun's mask sliding in with its caption, and a sepia portrait plate, both drew sword
@@ -482,6 +497,19 @@ sheet ( `[start, end, "why"]`, seconds) which drop **generic** cues only; hand-t
 pass through, so a designed beat inside a window still sounds. Sweep the figure shots off
 contact sheets and window them all at once — these arrive one screenshot at a time
 otherwise, and each round costs a render.
+
+**Room tone must not contain a second voice.** `place.py` lays one `amb` bed under every music
+section by rotation, and two of the eight ambience recordings are crowds with people in them —
+`amb_06` *"Crowds, Battle, Medieval, Savages Battle Ambience, Voices, Yells"* and `amb_07`
+*"...Village Battle Ambience, Voices, Yells"*. Rotation put one of them under **five** of the
+seventeen sections; the Renaissance one was reported as "unnecessary vocals in the background".
+A bed never ducks (beds mix onto the SFX bus, only the music bus is sidechained), so a crowd
+bed is a second voice competing with the narrator for 45 seconds at a time.
+
+Keep them in the palette as a `crowd` category, which nothing auto-assigns, so a hand-written
+bed can still call one where a crowd is actually on screen. And **check the titles of every
+file in the auto-assigned pool** — the internal names say `amb_06`, which tells you nothing;
+the Epidemic titles say "Voices, Yells", which tells you everything.
 
 **Levels for sustained beds, measured against the voice.** The VO sits near -18 dBFS rms
 and the music bed lands near -28. A featured texture like marching at -31 fights the

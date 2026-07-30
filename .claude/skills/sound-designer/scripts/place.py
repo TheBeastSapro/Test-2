@@ -307,7 +307,14 @@ def main():
                     "asset": os.path.join(apath, f"{f}.wav")})
         # A strike gets a short swish just before contact. One sound is a
         # sample; two is a designed hit.
-        if not args.no_anticipation and tier in ("impact", "hero_hit") and t > 0.4:
+        # ...but not in front of a voice. Anticipation is the air a moving object
+        # displaces before it lands; a grunt or a cry displaces nothing, so a
+        # swish in front of one is a whoosh attached to a man's throat. It also
+        # doubled up: the grunt on the Bronze Age swing sat on the same frame as
+        # the swing's own anticipation, so the beat got two swishes and a voice.
+        voice = cat.startswith("vox")
+        if (not args.no_anticipation and not voice
+                and tier in ("impact", "hero_hit") and t > 0.4):
             g = rot["swish"].take(t)
             sfx.append({"id": f"s{i}a", "at": round(t - 0.13, 4),
                         "kind": f"{label} (anticipation)", "tier": "swish",
