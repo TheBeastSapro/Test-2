@@ -101,7 +101,14 @@ for s in cue["sfx_cues"]:
         s.update(cat="whoosh", files=["whoosh_01"], tier="hero_hit", stack=[],
                  at=round(cards.get(era, s["at"] + 0.4) - 0.40, 3))
     elif k.endswith("card"):
-        s.update(cat="boom", files=["boom_01"], tier="hero_boom", stack=[])
+        # BRONZE AGE takes a whoosh rather than the boom, on instruction. It is
+        # the one card the video opens on rather than cutting to, and a boom
+        # reads as punctuating something that already happened; a whoosh carries
+        # the dissolve instead. Every other card keeps boom_01.
+        if k.startswith("BRONZE AGE"):
+            s.update(cat="whoosh", files=["whoosh_01"], tier="hero_boom", stack=[])
+        else:
+            s.update(cat="boom", files=["boom_01"], tier="hero_boom", stack=[])
 
 # ------------------------------------------------------- the Bronze Age fight
 # Every beat below was previously a generic swish or a caption tick. Times come
@@ -177,7 +184,15 @@ BEATS = [
     # The cavalry charge at Salamanca: two troopers cut down, blood on the
     # blade. Flesh, not wood or stone -- the object rule again. 688.958 had only
     # a -15 dB movement swish on it.
-    (688.958, "the sabre cuts the troopers down", "slash", ["slash_01"], -7.0, ["body"]),
+    # RETIMED off the frames: the French officer is upright at 686.600 and
+    # airborne at 686.634, so contact is 686.633. The old 688.958 was 2.3 s late
+    # and sat on the cut to the next scene, which is why it read as out of sync.
+    # slash_02 not slash_01: the source is "Sword, Swipe, Slash, Body, Squelch"
+    # and the split separates swipe / impact / squelch, so _01 is the swipe --
+    # the approach, not the blow. _02 is the impact and is front-loaded 1.00.
+    # The swipe comes back as place.py's own anticipation layer and the squelch
+    # as the body stack, which is the same shape the recording had.
+    (686.633, "the sabre cuts the troopers down", "slash", ["slash_02"], -7.0, ["body"]),
 
     # Le Marchant is shot: standing at 692.3, down with X-eyes and a blood pool
     # at 692.65, and the musket lies in the grass. The redraw at 692.500 is the
@@ -185,7 +200,12 @@ BEATS = [
     # the library -- the "Guns, Antique, Musket" entries are frizzen and trigger
     # handling -- so this is "Rifle, Large Shot 03", a single heavy black-powder
     # style report, split to its first shot.
-    (692.500, "Le Marchant is shot",           "gun",   ["gun_01"],   -6.0, []),
+    # Le Marchant is standing at 692.434 and down with X-eyes at 692.467, so the
+    # shot is 692.467 -- one frame earlier than the redraw event reported.
+    # gun_04, not gun_01: the split of "Rifle, Large Shot 03" gives five pieces
+    # and _01 is a 0.069 s clipped crack, the quietest of them. _04 is 0.140 s,
+    # front-loaded 1.00, and has the body a black-powder report needs.
+    (692.467, "Le Marchant is shot",           "gun",   ["gun_04"],   -6.0, []),
 ]
 beats = [s for s in cue["sfx_cues"]
          if s.get("kind") not in GENERIC
