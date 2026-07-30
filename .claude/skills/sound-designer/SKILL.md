@@ -351,6 +351,26 @@ Setup, once:
 Prefer this over the connector for any real job. Use the MCP tools only for
 exploration when they happen to be up.
 
+**`query`, `filter` and `options` are objects, not JSON strings.** Passing them
+stringified — which `epidemic_api.py` did — fails every search with:
+
+```
+{'errors': [{'message': 'Unexpected error occurred',
+             'path': ['variable', 'query'],
+             'extensions': {'code': 'GRAPHQL_VALIDATION_FAILED'}}]}
+```
+
+Nothing in that says "wrong type", and `tools` still connects fine, so it reads
+like an expired key or a server fault and sends you to regenerate a key that was
+never the problem. The authority is the tool's own `inputSchema`, which types
+`query` as `$ref: SoundEffectsQuery` (an object). Dump it when a call is
+rejected and the answer is usually right there:
+
+```python
+c = Client(api_key()); c.initialize()
+[t["inputSchema"] for t in c.list_tools() if t["name"] == "SearchSoundEffects"]
+```
+
 ## Panning: a static sound under a moving picture reads as stuck
 
 Reported on a shot of a legion advancing right-to-left: "I'm hearing the sfx only on
@@ -425,6 +445,16 @@ was cast as a metal impact by redraw tiering (it is a big redraw) and its two la
 caption ticks. Right answer: the panel gets a soft element, and each label gets the sound
 of the wound it names, 6 dB down from a real hit.
 
+**A portrait is not an event — mute it, don't re-tier it.** A museum photograph of
+Tutankhamun's mask sliding in with its caption, and a sepia portrait plate, both drew sword
+hits. To the redraw detector they are indistinguishable from a blade entering a shield: a
+large mid-band redraw. But nothing is being struck, so there is no quieter or softer sound
+that is *right* — the beat should be silent. `place.py` takes `mute_windows` in the cue
+sheet ( `[start, end, "why"]`, seconds) which drop **generic** cues only; hand-timed beats
+pass through, so a designed beat inside a window still sounds. Sweep the figure shots off
+contact sheets and window them all at once — these arrive one screenshot at a time
+otherwise, and each round costs a render.
+
 **Levels for sustained beds, measured against the voice.** The VO sits near -18 dBFS rms
 and the music bed lands near -28. A featured texture like marching at -31 fights the
 narration and was reported as overlapping it; **-37 dBFS** sits under the music and reads
@@ -434,6 +464,31 @@ as present without competing. Ambience beds belong near -42.
 (an effort grunt on a heavy swing, a short cry on the killing blow, a crowd's yell on a
 charge) is part of this channel's sound. It is also the fastest thing to overdo — one per
 fight beat is a cartoon. Reserve it for the blow that lands and the ranks that shout.
+
+What that came to on the sword video — three vocals in thirteen minutes, and the search
+terms and levels that got there:
+
+| beat | recording | placement |
+|---|---|---|
+| the swing that costs effort | *Voices, Efforts, Male, Attack, Grunt, Breath, Short, Multiple 02* | on the swing, **-11 dB** |
+| the killing blow | *Voices, Male, Sudden Death, Combat, Pain 04* | **+80 ms** after the blade, **-7 dB** |
+| the ranks in formation | *Crowds, Battle, Medium, Yell, Short* | bed, **-32 dBFS** rms |
+
+Three things that are easy to get wrong here:
+
+- **The grunt take was three grunts.** 3.56 s, measured at three hits — the "takes, not
+  samples" rule again, and dropped whole it plays all three down one swing. Split it
+  (`oneshot.py`) into 0.16–0.26 s one-shots with 4–17 ms anchors.
+- **The cry goes after the blade, not on it.** A man cries out *because* he was hit; on the
+  same frame it just thickens the stab. 80 ms reads as reaction.
+- **A crowd yell is the one bed that can climb over the narration.** Beds mix onto the SFX
+  bus, and *only the music bus is sidechained* — a bed never ducks. A yell is mid-band,
+  exactly where the voice is, so it is the most dangerous thing in the sheet. Keep it a few
+  dB under the -28 music bed (-32) and pull the shot's ambience back to make room rather
+  than raising the yell.
+- **Cast the crowd for what the shot is doing.** Ranks holding formation want *Yell* or
+  *Shout*; the *Battle Cry, Screams, Charge* recordings are men running, and putting those
+  under a standing formation is the same error as marching over corpses.
 
 ## LOOK AT THE FRAMES. Never place a hit you have not seen.
 

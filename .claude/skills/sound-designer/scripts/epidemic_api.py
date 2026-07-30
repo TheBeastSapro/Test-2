@@ -189,8 +189,12 @@ def main():
             f["duration"] = {k: v for k, v in (("min", args.min_ms),
                                                ("max", args.max_ms)) if v}
         tool = "SearchSoundEffects" if args.cmd == "sfx" else "SearchRecordings"
-        payload = c.call(tool, {"query": json.dumps(q), "first": args.n,
-                                **({"filter": json.dumps(f)} if f else {})})
+        # query/filter/options are OBJECTS, not JSON strings. Passing them
+        # stringified returns GRAPHQL_VALIDATION_FAILED on ['variable','query']
+        # with no hint that the type is the problem -- the tool's own
+        # inputSchema ($ref SoundEffectsQuery) is what says so.
+        payload = c.call(tool, {"query": q, "first": args.n,
+                                **({"filter": f} if f else {})})
         rows = flatten(payload, args.cmd)
         if not rows:
             print(f"[epidemic] nothing matched. raw: {str(payload)[:300]}")
@@ -204,8 +208,8 @@ def main():
     if args.cmd == "pull":
         os.makedirs(args.out, exist_ok=True)
     for i, sid in enumerate(ids, 1):
-        res = c.call("DownloadSoundEffect", {"id": sid, "options": json.dumps(
-            {"fileType": "WAV"})})
+        res = c.call("DownloadSoundEffect", {"id": sid,
+                                            "options": {"fileType": "WAV"}})
         url = ((res.get("data", {}) or {}).get("soundEffectDownload", {})
                or {}).get("assetUrl")
         if not url:

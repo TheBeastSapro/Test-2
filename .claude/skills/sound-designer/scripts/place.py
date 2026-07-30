@@ -155,7 +155,7 @@ def main():
                                                else "hero_hit"),
                      "t": s["at"], "cat": cat, "label": s["kind"],
                      "files": s.get("files"), "gain_db": s.get("gain_db"),
-                     "stack": s.get("stack")})
+                     "stack": s.get("stack"), "hand": True})
     heroes = len(cand)
 
     # 2-3. the visual beats.
@@ -210,6 +210,29 @@ def main():
                 cand.append({"tier": tier, "t": e["t"], "cat": TIER_CAT[tier],
                              "label": {"impact": "strike", "swish": "movement",
                                        "pop": "small element"}[tier]})
+
+    # 3b. mute windows. The detector fires on redraw, which is a good proxy for
+    # "something happened" and a bad one for "something was STRUCK". A portrait
+    # of Tutankhamun sliding in with its caption is a big redraw, so it drew a
+    # sword hit -- a sword sound over a museum photograph, reported by the
+    # channel owner with a screenshot. There is no sound the detector could have
+    # picked that would be right there, because nothing is being hit: the beat
+    # should be silent, and no amount of re-tiering expresses that.
+    #
+    # A window names a span that generic cues may not sound in. Hand-timed beats
+    # are never muted -- if a designed beat is wrong, fix or delete the beat.
+    # Each entry is [start, end] or [start, end, "why"], seconds.
+    mutes = [w for w in cue.get("mute_windows", []) if len(w) >= 2]
+    if mutes:
+        before = len(cand)
+        cand = [c for c in cand
+                if c.get("hand")
+                or not any(w[0] <= c["t"] <= w[1] for w in mutes)]
+        print(f"[place] {before - len(cand)} generic cue(s) muted "
+              f"across {len(mutes)} window(s)")
+        for w in mutes:
+            why = w[2] if len(w) > 2 else ""
+            print(f"          {w[0]:7.2f}-{w[1]:6.2f}s  {why}")
 
     # 4. resolve collisions by PRIORITY, not by strength -- a caption tick must
     # never elbow a sword strike. Hand-timed beats are exempt from the guard
