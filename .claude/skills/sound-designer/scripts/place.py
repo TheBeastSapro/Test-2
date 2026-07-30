@@ -244,6 +244,7 @@ def main():
 
     # 5. assign files
     sfx, counts = [], {}
+    _warned_missing: set[str] = set()
     adhoc = {}                       # rotators for explicit per-beat file lists
 
     def pick(cat, files, t):
@@ -286,6 +287,13 @@ def main():
             stack = ["body"]
         for k, scat in enumerate(stack or []):
             if scat not in rot:
+                # Loud, because silent was expensive: rebuilding a palette once
+                # dropped the "body" category, and every generic strike lost its
+                # weight layer for a whole render without a single warning.
+                if scat not in _warned_missing:
+                    _warned_missing.add(scat)
+                    print(f"[place] WARNING: stack category {scat!r} is not in the "
+                          f"palette — those layers are being dropped")
                 continue
             h = rot[scat].take(t)
             sfx.append({"id": f"s{i}b{k}", "at": round(t + 0.035 + k * 0.05, 4),
