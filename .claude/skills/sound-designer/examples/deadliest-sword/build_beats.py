@@ -30,9 +30,34 @@ STRONG = [e for e in ev if e["strength"] >= 0.05]
 # drawn at 607.96 and the duel it cuts to starts at 609.46. The sheet had the
 # card AT 609.46, so the card boom and the hand-timed duel strike landed on the
 # same frame and a metal ring-out played over the title.
-OVERRIDE = {"AGE OF EMPIRES": 607.96}
+OVERRIDE = {"AGE OF EMPIRES": 607.96,
+            # Pinned, because snapping would move it. The BRONZE AGE card is
+            # full-screen from 0.000 and cross-dissolves out between 0.4 and
+            # 1.2, so the only strong redraw near it (0.917, strength 0.143) is
+            # the MIDDLE OF THE DISSOLVE -- the card leaving. A boom snapped
+            # there was reported as "unnecessary boom here", and removing it
+            # altogether was the wrong correction: the card then had no sound
+            # while every other era card does. It belongs at the top, on the
+            # card itself, at 0.08.
+            "BRONZE AGE": 0.08}
 
-# The BRONZE AGE card gets NO cue, and the reason is worth keeping: the source
+# The source sheet has seven era cards and the BRONZE AGE one is missing, so it
+# was cast by generic redraw tiering as impact_08 -- a metal strike -- while the
+# other seven get whoosh_01 into boom_01. Reported as "the bronze age title card
+# has sword sound not boom/bass like world war 2".
+#
+# It gets the boom but NOT the lead-in whoosh. Every other card is drawn onto
+# the screen, so a whoosh can run into it 0.40 s ahead; this one is already up
+# at frame 0 (the video opens on it), which puts that whoosh at -0.32 s. The
+# boom alone, at the top of the video, on the card that is on screen.
+MISSING = [("BRONZE AGE", 0.08)]
+for era, t in MISSING:
+    if any(s_.get("kind", "").startswith(era) for s_ in cue["sfx_cues"]):
+        continue
+    cue["sfx_cues"].append({"at": t, "kind": f"{era} card"})
+    print(f"[beats] added the missing {era} card at {t:.2f} (boom only, no lead-in)")
+
+# NOTE, kept because it was learned the expensive way: the surviving
 # sheet has seven era cards and this is not one of them, which looks like an
 # omission and is not. Every other card ARRIVES -- it is drawn onto the screen,
 # so there is a frame to punctuate, and it takes whoosh_01 into boom_01.
