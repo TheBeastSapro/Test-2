@@ -134,6 +134,26 @@ def anchor_offset(path: str, pct: float = 0.15, window: float = 1.0,
     return max(0.0, min(cap, rise - deadband))
 
 
+def rms_db(path: str) -> float:
+    """Overall RMS in dBFS. Beds are levelled from this, not from a fixed trim.
+
+    Bed sources are deliberately not normalised, so their levels run 12 dB apart
+    (-27 to -40 dBFS across ambience and marching recordings). A fixed "-28 dB"
+    bed gain therefore means nothing: applied to those sources it put beds at
+    -55 to -65 dBFS, which is inaudible. Every bed the mix had was silent.
+    """
+    try:
+        import numpy as np
+        import soundfile as sf
+    except ImportError:
+        return -30.0
+    y, sr = sf.read(path, dtype="float32", always_2d=True)
+    if not len(y):
+        return -90.0
+    mono = y.mean(axis=1)
+    return float(20.0 * np.log10(np.sqrt((mono ** 2).mean()) + 1e-12))
+
+
 def lead_silence(path: str, thresh_db: float = -45.0, cap: float = 1.0) -> float:
     """Seconds of silence before the first real sample. Capped, because a file
     that is quiet for more than a second is not a hit with a late attack -- it
@@ -160,7 +180,10 @@ def main():
     ap.add_argument("--peak", type=float, default=-3.0,
                     help="normalise every hit to this peak dBFS (default -3)")
     ap.add_argument("--bed-prefix", default="amb",
-                    help="category left untouched: no trim, no normalise")
+                    help="comma-separated categories left untouched: no trim, "
+                         "no normalise. Marching and room tone both belong here "
+                         "-- they have no attack to find, and peak-normalising a "
+                         "long recording just amplifies its loudest moment.")
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
@@ -170,19 +193,22 @@ def main():
     if not files:
         raise SystemExit(f"[palette] nothing to prepare in {args.raw}")
 
+    beds = {x.strip() for x in args.bed_prefix.split(",") if x.strip()}
     manifest: dict[str, list[str]] = {}
     anchors: dict[str, float] = {}
     fronts: dict[str, float] = {}
+    levels: dict[str, float] = {}      # bed rms, so beds can be levelled
     for src in files:
         name = os.path.splitext(os.path.basename(src))[0]
         cat = name.rsplit("_", 1)[0] if "_" in name else name
         dst = os.path.join(args.out, f"{name}.wav")
 
-        if cat == args.bed_prefix:
+        if cat in beds:
             run(["ffmpeg", "-v", "error", "-y", "-i", src, "-ac", "2",
                  "-ar", str(SR), "-c:a", "pcm_s16le", dst])
             manifest.setdefault(cat, []).append(name)
-            print(f"  {name:<12} bed, untouched")
+            levels[name] = round(rms_db(dst), 2)
+            print(f"  {name:<12} bed, untouched, {levels[name]:+.1f} dBFS rms")
             continue
 
         trim = lead_silence(src)
@@ -203,7 +229,8 @@ def main():
     for v in manifest.values():
         v.sort()
     with open(os.path.join(args.out, "palette_manifest.json"), "w") as f:
-        json.dump({**manifest, "_anchors": anchors, "_frontload": fronts}, f, indent=1)
+        json.dump({**manifest, "_anchors": anchors, "_frontload": fronts,
+                   "_rms": levels}, f, indent=1)
 
     total = sum(len(v) for v in manifest.values())
     print(f"[palette] {total} files ready across {len(manifest)} categories")

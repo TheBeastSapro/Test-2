@@ -521,9 +521,13 @@ def main():
             missing += 1
             continue
         fade = float(b.get("fade", 2.0))
+        # A bed may skip into its source. Field recordings of marching open with
+        # a second or two of the mic settling, and starting a 2 s bed at sample
+        # zero lands on that instead of on the marching.
         bed_segs.append(render_music_seg(asset, b["at"], b["dur"], fade, fade,
                                          b.get("gain_db", -28.0), work,
-                                         f"amb_{b['id']}"))
+                                         f"amb_{b['id']}",
+                                         float(b.get("skip", 0.0))))
     if bed_segs:
         print(f"[assemble] {len(bed_segs)} ambience beds under the sections")
 

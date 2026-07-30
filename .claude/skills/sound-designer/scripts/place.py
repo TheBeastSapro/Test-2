@@ -93,6 +93,11 @@ def main():
                     help="fraction of in-shot action events to discard as "
                          "camera drift rather than things that happen")
     ap.add_argument("--no-beds", action="store_true")
+    ap.add_argument("--bed-rms", type=float, default=-42.0,
+                    help="put ambience beds at this rms dBFS. Derived from the "
+                         "measured source level, not a fixed trim: bed sources "
+                         "run 12 dB apart, so a fixed trim put them at -55..-65 "
+                         "dBFS and every bed in the mix was inaudible.")
     ap.add_argument("--no-anticipation", action="store_true")
     args = ap.parse_args()
 
@@ -102,6 +107,7 @@ def main():
     pal = json.load(open(os.path.join(args.palette, "palette_manifest.json")))
     anchors = pal.pop("_anchors", {})     # per-file rise time; see palette.py
     fronts = pal.pop("_frontload", {})    # "starts with a bang" ratio
+    levels = pal.pop("_rms", {})          # measured bed rms, for levelling
     apath = os.path.abspath(args.palette)
 
     missing = [c for c in set(TIER_CAT.values()) | {"swish"} if c not in pal]
@@ -209,16 +215,31 @@ def main():
     # never elbow a sword strike. Hand-timed beats are exempt from the guard
     # against each other: an era card is deliberately a whoosh leading into a
     # boom 0.4 s later, and a 2.2 s guard would delete the whoosh.
-    kept, lost = [], 0
+    # A card boom is EXCLUSIVE: nothing else may sound within CARD_SOLO of it
+    # except the whoosh that leads into it. The hero-vs-hero exemption above is
+    # what a card needs (its whoosh sits 0.4 s ahead and must survive the boom's
+    # 2.2 s guard) but it also let a hand-timed sword beat land on the exact
+    # frame of one card, so a metal ring-out played over the title. A title card
+    # is a boom and nothing else.
+    CARD_SOLO = 0.45
+    booms = [c["t"] for c in cand if c["tier"] == "hero_boom"]
+
+    kept, lost, shushed = [], 0, 0
     for tier in PRIORITY:
         guard, hero = TIERS[tier][1], tier.startswith("hero")
         for c in sorted((c for c in cand if c["tier"] == tier), key=lambda c: c["t"]):
+            if tier != "hero_boom" and "into the card" not in c["label"]:
+                if any(abs(c["t"] - b) <= CARD_SOLO for b in booms):
+                    shushed += 1
+                    continue
             rivals = [k for k in kept if not (hero and k["tier"].startswith("hero"))]
             if any(abs(c["t"] - k["t"]) < max(guard, TIERS[k["tier"]][1])
                    for k in rivals):
                 lost += 1
                 continue
             kept.append(c)
+    if shushed:
+        print(f"[place] {shushed} cue(s) silenced for sitting on a title card")
     kept.sort(key=lambda c: c["t"])
 
     # 5. assign files
@@ -292,11 +313,13 @@ def main():
         for k, m in enumerate(cue.get("music_sections", [])):
             hot = m.get("energy", 0.5) >= 0.62
             pool = war if hot else calm
+            src = pool[k % len(pool)]
+            gain = args.bed_rms - levels.get(src, -30.0) - (2.0 if hot else 0.0)
             beds.append({"id": f"b{k+1}", "at": round(m["start"], 3),
                          "dur": round(m["dur"], 3),
-                         "gain_db": -30.0 if hot else -28.0, "fade": 2.5,
+                         "gain_db": round(gain, 2), "fade": 2.5,
                          "era": m.get("era", ""),
-                         "asset": os.path.join(apath, f"{pool[k % len(pool)]}.wav")})
+                         "asset": os.path.join(apath, f"{src}.wav")})
 
     cue["sfx_cues"] = sfx
     cue["amb_beds"] = beds
