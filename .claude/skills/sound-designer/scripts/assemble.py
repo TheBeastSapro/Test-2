@@ -273,6 +273,13 @@ def bed_ratio(master: str, silence: list) -> float | None:
     gaps = [(a, b) for a, b in silence if b - a >= 0.30][:40]
     if len(gaps) < 4:
         return None
+    if master.lower().endswith(".mp3"):
+        # atrim on a freshly written mp3 fails to seek ("Could not seek to N"):
+        # the container has no index and ffmpeg gives up. Measure a decoded copy.
+        wav = os.path.join(tempfile.gettempdir(), "sd_bedcheck.wav")
+        run([FFMPEG, "-hide_banner", "-v", "error", "-y", "-i", master,
+             "-c:a", "pcm_s16le", wav])
+        master = wav
     bed = [x for x in (mean_db(master, a + 0.05, b - 0.02) for a, b in gaps) if x and x > -70]
     prog = [x for x in (mean_db(master, a - 2.0, a - 0.3) for a, b in gaps[:25] if a > 3) if x]
     if len(bed) < 3 or len(prog) < 3:
@@ -478,7 +485,12 @@ def main():
         vary = float(s.get("vary", 0.0))
         seg = render_sfx_short(asset, s.get("gain_db", -8.0) + args.sfx_db,
                                work, s["id"], vary)
-        at = max(0.0, s["at"] - transient_offset(asset))
+        # A palette prepared by palette.py already starts on its attack, so the
+        # transient search must NOT run again -- doing both compensates twice
+        # and throws slow-blooming files (whooshes especially) hundreds of ms
+        # early. Only un-prepared assets get searched.
+        lead = 0.0 if s.get("pre_trimmed") else transient_offset(asset)
+        at = max(0.0, s["at"] - lead)
         sfx_segs.append((seg, at))
         placed_s += 1
         print(f"[assemble]   sfx {s['id']} <- {os.path.basename(asset)} @ {fmt_ts(s['at'])}")

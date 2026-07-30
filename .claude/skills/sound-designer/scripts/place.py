@@ -166,7 +166,7 @@ def main():
         gain = TIERS[tier][0]
         sfx.append({"id": f"s{i}", "at": round(t, 4), "kind": label,
                     "tier": tier, "cat": cat, "gain_db": gain,
-                    "vary": VARY.get(cat, 0.0),
+                    "vary": VARY.get(cat, 0.0), "pre_trimmed": True,
                     "asset": os.path.join(apath, f"{f}.wav")})
         # A strike gets a short swish just before contact. One sound is a
         # sample; two is a designed hit.
@@ -175,7 +175,19 @@ def main():
             sfx.append({"id": f"s{i}a", "at": round(t - 0.13, 4),
                         "kind": f"{label} (anticipation)", "tier": "swish",
                         "cat": "swish", "gain_db": gain - 7.0, "vary": 0.3,
+                        "layer": "anticipation", "pre_trimmed": True,
                         "asset": os.path.join(apath, f"{g}.wav")})
+        # ...and a body layer just after contact. Metal alone is thin; the
+        # weight of a hit is the flesh-and-armour element under it, 35 ms late
+        # because the body reacts after the blade arrives. This is the third
+        # element in the channel's stacks (whoosh + strike + thud).
+        if tier in ("impact", "hero_hit") and "body" in rot:
+            h = rot["body"].take(t)
+            sfx.append({"id": f"s{i}b", "at": round(t + 0.035, 4),
+                        "kind": f"{label} (weight)", "tier": "swish",
+                        "cat": "body", "gain_db": gain - 5.0, "vary": 0.2,
+                        "layer": "weight", "pre_trimmed": True,
+                        "asset": os.path.join(apath, f"{h}.wav")})
     sfx.sort(key=lambda s: s["at"])
 
     # 6. beds. "This area has no SFX" is answered by room tone, not more hits.
@@ -199,11 +211,16 @@ def main():
         json.dump(cue, f, indent=1)
 
     dur = cue.get("duration") or (sfx[-1]["at"] if sfx else 1.0)
-    gaps = [b["at"] - a["at"] for a, b in zip(sfx, sfx[1:])] or [0.0]
+    # Rate is per *event*, not per cue: a three-layer strike is one thing the
+    # viewer hears, and counting its layers separately makes a well-built stack
+    # look like the density problem it is meant to replace.
+    prim = [s for s in sfx if not s.get("layer")]
+    gaps = [b["at"] - a["at"] for a, b in zip(prim, prim[1:])] or [0.0]
     busiest = sorted(counts.items(), key=lambda x: -x[1])[:3]
     print(f"[place] {len(cand)} candidates ({heroes} hand-timed) -> {len(kept)} kept, "
-          f"{lost} lost a collision, {len(sfx)-len(kept)} anticipation layers")
-    print(f"[place] {len(sfx)} cues over {dur:.0f}s = one per {dur/max(1,len(sfx)):.2f}s")
+          f"{lost} lost a collision, {len(sfx)-len(kept)} stack layers")
+    print(f"[place] {len(prim)} events over {dur:.0f}s = one per "
+          f"{dur/max(1,len(prim)):.2f}s ({len(sfx)} cues including layers)")
     print(f"[place] {len(counts)} distinct files; busiest: "
           + ", ".join(f"{f} x{n}" for f, n in busiest))
     print(f"[place] median gap {sorted(gaps)[len(gaps)//2]:.2f}s, {len(beds)} ambience beds")
