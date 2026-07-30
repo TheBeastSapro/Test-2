@@ -445,6 +445,14 @@ was cast as a metal impact by redraw tiering (it is a big redraw) and its two la
 caption ticks. Right answer: the panel gets a soft element, and each label gets the sound
 of the wound it names, 6 dB down from a real hit.
 
+**An era card does not stop the scene.** The title-card guard silences everything within
+0.45 s of a card boom, which is right for caption ticks and wrong for designed action: the
+falcata reaching over the Roman shield -- a named beat in the script -- played under the
+IRON AGE card and was silenced with them, reported as "sfx missing in this action". A
+hand-timed beat sets `"solo_ok": true` (7th field in the sword video's `BEATS` tuples) to
+survive the guard. The guard's log now names every silenced cue and flags the hand-timed
+ones, because a bare count made a missing designed beat look identical to a healthy render.
+
 **A portrait is not an event — mute it, don't re-tier it.** A museum photograph of
 Tutankhamun's mask sliding in with its caption, and a sepia portrait plate, both drew sword
 hits. To the redraw detector they are indistinguishable from a blade entering a shield: a

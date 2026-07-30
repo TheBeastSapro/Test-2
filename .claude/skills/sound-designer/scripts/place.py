@@ -155,7 +155,8 @@ def main():
                                                else "hero_hit"),
                      "t": s["at"], "cat": cat, "label": s["kind"],
                      "files": s.get("files"), "gain_db": s.get("gain_db"),
-                     "stack": s.get("stack"), "hand": True})
+                     "stack": s.get("stack"), "hand": True,
+                     "solo_ok": s.get("solo_ok", False)})
     heroes = len(cand)
 
     # 2-3. the visual beats.
@@ -244,16 +245,25 @@ def main():
     # 2.2 s guard) but it also let a hand-timed sword beat land on the exact
     # frame of one card, so a metal ring-out played over the title. A title card
     # is a boom and nothing else.
+    # The guard is symmetric, and that is right for the generic pool but wrong
+    # for designed action. An era card does not stop the story: the card is
+    # drawn and the scene under it keeps moving, so a hand-cast beat landing
+    # inside the window is silenced along with the caption ticks it was meant to
+    # stop. That is how the falcata reaching over the Roman shield -- one of the
+    # named beats in the script -- ended up with no sound at all under the IRON
+    # AGE card. A hand-timed beat sets "solo_ok": true to say "I know, I meant
+    # it"; nothing in the generic pool can.
     CARD_SOLO = 0.45
     booms = [c["t"] for c in cand if c["tier"] == "hero_boom"]
 
-    kept, lost, shushed = [], 0, 0
+    kept, lost, shushed = [], 0, []
     for tier in PRIORITY:
         guard, hero = TIERS[tier][1], tier.startswith("hero")
         for c in sorted((c for c in cand if c["tier"] == tier), key=lambda c: c["t"]):
-            if tier != "hero_boom" and "into the card" not in c["label"]:
+            if (tier != "hero_boom" and "into the card" not in c["label"]
+                    and not c.get("solo_ok")):
                 if any(abs(c["t"] - b) <= CARD_SOLO for b in booms):
-                    shushed += 1
+                    shushed.append(c)
                     continue
             rivals = [k for k in kept if not (hero and k["tier"].startswith("hero"))]
             if any(abs(c["t"] - k["t"]) < max(guard, TIERS[k["tier"]][1])
@@ -261,8 +271,14 @@ def main():
                 lost += 1
                 continue
             kept.append(c)
+    # Name them. A bare count made a silenced *hand-cast* beat indistinguishable
+    # from a silenced caption tick, so a designed moment could go missing and the
+    # log looked healthy. A hand-timed beat landing here is nearly always a bug.
     if shushed:
-        print(f"[place] {shushed} cue(s) silenced for sitting on a title card")
+        print(f"[place] {len(shushed)} cue(s) silenced for sitting on a title card")
+        for c in shushed:
+            flag = "  <-- HAND-TIMED, set solo_ok if intended" if c.get("hand") else ""
+            print(f"          {c['t']:8.2f}s  {c['label']}{flag}")
     kept.sort(key=lambda c: c["t"])
 
     # 5. assign files

@@ -110,10 +110,14 @@ BEATS = [
 beats = [s for s in cue["sfx_cues"]
          if s.get("kind") not in GENERIC
          and s.get("kind") != "pharaoh's khopesh strikes"]   # replaced by the seven
-for at, kind, cat, files, gain, stack in BEATS:
+for at, kind, cat, files, gain, stack, *rest in BEATS:
+    # An optional 7th field sets solo_ok: this beat survives the title-card
+    # guard. Needed for any designed action that plays under a card while it is
+    # still on screen -- the card does not stop the scene.
     beats.append({"id": f"h_{int(at*100)}", "at": at, "kind": kind, "cat": cat,
                   "files": files, "gain_db": gain, "stack": stack,
-                  "tier": "hero_hit", "vary": 0.0})
+                  "tier": "hero_hit", "vary": 0.0,
+                  "solo_ok": bool(rest[0]) if rest else False})
 beats.sort(key=lambda s: s["at"])
 
 # --------------------------------------------------------------- mute windows
