@@ -365,8 +365,14 @@ def final_master(music, sfx, vo, out, lufs, tp, is_mp3):
             labels.append(f"[{idx}:a]")
             idx += 1
     mixin = "".join(labels)
+    # loudnorm's own true-peak limiter is not tight in single-pass mode, and the
+    # mp3 encoder adds overshoot after it: a master asked for -1.0 dBTP came out
+    # at -0.2 once the SFX were levelled as foreground. An explicit limiter after
+    # loudnorm holds the ceiling the cue sheet actually specifies.
+    ceiling = 10 ** (tp / 20.0)
     fc = (f"{mixin}amix=inputs={len(labels)}:normalize=0:dropout_transition=0[mx];"
-          f"[mx]loudnorm=I={lufs}:TP={tp}:LRA=11[o]")
+          f"[mx]loudnorm=I={lufs}:TP={tp}:LRA=11,"
+          f"alimiter=limit={ceiling:.4f}:attack=5:release=50:level=disabled[o]")
     cmd = [FFMPEG, "-hide_banner", "-v", "error", "-y", *inputs,
            "-filter_complex", fc, "-map", "[o]"]
     if is_mp3:

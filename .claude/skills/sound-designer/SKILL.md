@@ -276,6 +276,55 @@ itself: a dip at 2.4/3.6 kHz so effects stop masking consonants, -3 dB above 9 k
 hits don't fatigue over thirteen minutes, a low shelf for body, and a short convolved tail so
 hits sound placed rather than pasted. The chain costs 2.8 dB — the makeup is built in.
 
+## Anchoring: place the sound's *perceived* moment on the beat, not its first sample
+
+The single biggest sync lesson from the sword video, and it took five renders to get right
+because each fix exposed the next one. Run `sync_check.py --by-tier` — the **per-tier**
+breakdown is where the diagnosis lives; the headline number only ever said "scattered".
+
+The rule that works, in order:
+
+1. **Trim leading silence once, at palette prep.** Never also run a per-render transient
+   search — doing both compensates twice and threw slow-blooming whooshes 300 ms early.
+2. **Store a per-file anchor**: where the first 15% of the file's energy has accumulated.
+   Per *file*, not per category — the spread inside a category is what makes the p90.
+3. **Zero the anchor for anything front-loaded** (≥40% of peak level inside the first 30 ms).
+   If it starts with a bang, the bang *is* the moment. This is what finally fixed era-card
+   booms, which sat 59 ms early through two earlier rounds because a boom is a transient
+   followed by a long sub tail.
+4. **Subtract a one-frame deadband** from the rest. Only rise time beyond a frame is real ramp.
+5. **Cast beats that must hit a mark with front-loaded files.** A swell cannot land on a frame.
+   Two of six boom files were swells; using them on era cards was a casting error, not a
+   timing one.
+
+Metrics that were tried and are *worse*, so don't repeat them:
+- *Time to 60% of peak* — breaks on any multi-hit file. Across five blacksmith files it locked
+  onto the loudest **late** hammer strike: median 749 ms where energy accumulation finds the
+  first strike at 127 ms.
+- *Steepest envelope rise* — finds later swells. 203 ms for pops (vs 17) and 492 ms for forge
+  files (vs 127).
+
+Where that landed on a 13-minute video, 314 events, 438 cues:
+
+| tier | median | p90 | within one frame |
+|---|---|---|---|
+| hand-timed beats | −3.8 ms | 12.8 ms | **100%** |
+| impact | +2.1 ms | 104.7 ms | 87.9% |
+| era-card boom | −1.1 ms | 39.0 ms | 86.7% |
+| swish | +16.6 ms | 46.7 ms | 85.9% |
+| pop | −17.3 ms | 61.6 ms | 75.4% |
+| whoosh | −8.3 ms | 213.5 ms | 40.4% |
+| **overall** | **−0.6 ms** | **74.5 ms** | 75.2% |
+
+**Do not chase the whoosh number.** A 400 ms ramp has no well-defined onset, so the metric
+cannot pin it: measured against the cue the p90 is 212 ms, and measured against the file's own
+start it is *worse* at 265 ms. The median (−8 ms) says the placement is centred correctly.
+Overall "within one frame" will sit around 75% for this reason, and that is fine.
+
+**Master ceiling:** `loudnorm`'s true-peak limiter is not tight in single-pass mode and the mp3
+encoder overshoots after it — a master asked for −1.0 dBTP came out at −0.2 once the SFX were
+levelled as foreground. `final_master` appends an explicit `alimiter`, which brings it to −0.7.
+
 ## LOOK AT THE FRAMES. Never place a hit you have not seen.
 
 This is the single most important rule here, and it was learned by getting it wrong on a real
