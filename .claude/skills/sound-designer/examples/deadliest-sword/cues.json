@@ -10258,21 +10258,11 @@
    "id": "hb3_0",
    "at": 172.5,
    "dur": 3.2,
-   "gain_db": -8.72,
+   "gain_db": -5.72,
    "fade": 0.35,
    "era": "the ranks shout",
    "hand": true,
    "asset": "/home/user/job/pal/crowd_01.wav"
-  },
-  {
-   "id": "hb3_1",
-   "at": 172.5,
-   "dur": 3.2,
-   "gain_db": -2.7,
-   "fade": 0.35,
-   "era": "the ranks shout",
-   "hand": true,
-   "asset": "/home/user/job/pal/vox_yell_01.wav"
   },
   {
    "id": "hb4_0",

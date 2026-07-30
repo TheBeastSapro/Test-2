@@ -233,8 +233,11 @@ SHOTS = [
     # lives. It sits at -32 dBFS: above the ambience so it reads as the feature
     # of the shot, still under the -28 music bed so it cannot climb over the
     # voice, with amb_06 pulled back from -33 to -36 to make room.
-    (172.5, 3.2, "the ranks shout",                 [("crowd_01", -36.0),
-                                                     ("vox_yell_01", -32.0)], None),
+    # REVERTED on the channel owner's instruction, asked twice. The crowd yell
+    # added here is removed and the shot's bed goes back to exactly what it was
+    # before -- crowd_01 (the renamed amb_06) at its original -33.0 dBFS. The
+    # grunt and the cry on the Bronze Age fight stay; only this one is undone.
+    (172.5, 3.2, "the ranks shout",                 [("crowd_01", -33.0)], None),
     (178.0, 5.8, "the legion marches in formation", [("march_05", -37.0)], [0.85, -0.85]),
 ]
 beds = []
