@@ -110,6 +110,21 @@ def main():
     rot = {c: Rotator(v, rng, cooldown=90.0 if c == "boom" else 30.0)
            for c, v in pal.items() if c != "amb"}
 
+    # An era card or a stated turning point has to land ON its frame, so it must
+    # be cast with an impact rather than a swell. Two of six boom files are
+    # swells (one rises in 398 ms, one in 227 ms); using them on cards put that
+    # tier 57 ms early with not one cue inside a frame. Files whose measured
+    # rise is under PUNCHY_MAX are the ones that can hit a mark.
+    PUNCHY_MAX = 0.12
+    punchy = [f for f in pal.get("boom", []) if anchors.get(f, 0.0) <= PUNCHY_MAX]
+    if len(punchy) >= 2:
+        rot["boom_punchy"] = Rotator(punchy, rng, cooldown=90.0)
+        swells = [f for f in pal.get("boom", []) if f not in punchy]
+        print(f"[place] card booms cast from {len(punchy)} impact-type files; "
+              f"{len(swells)} swell(s) held back: {', '.join(swells) or 'none'}")
+    else:
+        rot["boom_punchy"] = rot["boom"]
+
     cand = []                                    # (tier, t, category, label)
 
     # 1. hand-timed beats: the designed moments, never dropped
@@ -162,7 +177,7 @@ def main():
     # 5. assign files
     sfx, counts = [], {}
     for i, (tier, t, cat, label) in enumerate(kept, 1):
-        f = rot[cat].take(t)
+        f = rot["boom_punchy" if tier == "hero_boom" and cat == "boom" else cat].take(t)
         counts[f] = counts.get(f, 0) + 1
         gain = TIERS[tier][0]
         sfx.append({"id": f"s{i}", "at": round(t, 4), "kind": label,

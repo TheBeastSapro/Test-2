@@ -49,7 +49,7 @@ def peak_db(path: str) -> float:
 
 
 def anchor_offset(path: str, pct: float = 0.15, window: float = 1.0,
-                  cap: float = 0.5, deadband: float = 0.04) -> float:
+                  cap: float = 0.75, deadband: float = 0.04) -> float:
     """Seconds from the file's start to the moment it is *perceived* to happen.
 
     Trimming to the first audible sample is right for a pop and wrong for a
@@ -75,6 +75,10 @@ def anchor_offset(path: str, pct: float = 0.15, window: float = 1.0,
     tail of the transient, and compensating for it moves the hit early. On the
     first anchored render that cost 28 ms on impacts and 36 ms on pops. Only
     rise time beyond one frame is real ramp worth compensating for.
+
+    `cap` is 750 ms because a 500 ms cap silently truncated three long "airy"
+    whooshes whose real rise is 598-759 ms, leaving them 100-260 ms late and
+    contributing most of that tier's p90 error.
     """
     try:
         import numpy as np
