@@ -31,11 +31,25 @@ description as data. This tool trusts ffmpeg measurements only.)
 ## Intake for a new video — follow this order, it removes the back-and-forth
 
 The first video took many rounds because the tooling was being built. It should not
-happen again. What Sapro supplies: the **video** and the **mastered VO as a separate
-file** (both via Drive — YouTube downloads are blocked from the container), plus the
-**title and script/chapter list**. Nothing else is needed.
+happen again.
 
-Then, in this order:
+**A four-line brief is COMPLETE INPUT. Start work; do not ask for more.**
+
+```
+Sound design this ExplainTory video, StickTory style.
+
+Video: <drive link>
+Voiceover: <drive link>          <- mastered VO as a SEPARATE file, always
+Title: <title>
+Script: <doc link>
+```
+
+That is everything Sapro should ever have to type. The VO must be separate because both
+the ducking and the bed level are calibrated against the VO stem — a mix-down cannot be
+used. Links are Drive because YouTube downloads are blocked from the container. If the
+script is missing, ask only for that; everything else below is your job to do unasked.
+
+Then, in this order — **all of it is default behaviour, not something to be told:**
 
 1. **`visual_redraw.py video.mp4 -o redraw.json`** — the beats. Do not use optical flow
    for animation. Do not skip this and guess times from the script.
@@ -55,6 +69,19 @@ Then, in this order:
 7. **Send 3–4 short clips WITH PICTURE at the specific action beats** — not the whole
    mix. Every correction on the first video came from watching a specific moment, and
    sending clips early is what turns five rounds into one.
+8. Only after those are approved, deliver the full mix.
+
+**Expect exactly one round of notes, and expect it to be about casting** — whether each
+sound is the right *object* for what is on screen. That is the one thing measurement
+cannot settle and Sapro's eyes can. Anything else taking a second round means a rule
+belongs in this file; write it here rather than fixing it silently.
+
+**If the topic is not history or warfare**, say so up front: 60 of the palette's files
+(pop, swish, whoosh, impact, boom, ambience) carry over to anything, and ~47 (stab,
+shield, armour, marching, forge, draws, falls, clatter) only apply to combat. Budget
+20 minutes to fetch a topical set with `epidemic_api.py` and say that at the start
+rather than discovering it mid-mix. `place.py`'s HERO_CAT maps script words to
+categories and its vocabulary is weapon-flavoured — extend it for the new subject.
 
 ## Runbook
 
