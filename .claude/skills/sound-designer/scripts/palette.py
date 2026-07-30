@@ -49,7 +49,7 @@ def peak_db(path: str) -> float:
 
 
 def anchor_offset(path: str, pct: float = 0.15, window: float = 1.0,
-                  cap: float = 0.5) -> float:
+                  cap: float = 0.5, deadband: float = 0.04) -> float:
     """Seconds from the file's start to the moment it is *perceived* to happen.
 
     Trimming to the first audible sample is right for a pop and wrong for a
@@ -69,6 +69,12 @@ def anchor_offset(path: str, pct: float = 0.15, window: float = 1.0,
     files it locked onto the loudest *late* hammer strike and reported a median
     rise of 749 ms, where energy accumulation correctly finds the first strike
     at 127 ms. Same story for sustained rustles with a late peak.
+
+    `deadband` is subtracted before the value is used, because for an impulsive
+    sound the attack IS the perceived moment: its 15%-energy figure is just the
+    tail of the transient, and compensating for it moves the hit early. On the
+    first anchored render that cost 28 ms on impacts and 36 ms on pops. Only
+    rise time beyond one frame is real ramp worth compensating for.
     """
     try:
         import numpy as np
@@ -85,7 +91,8 @@ def anchor_offset(path: str, pct: float = 0.15, window: float = 1.0,
     cum = np.cumsum(power)
     if not cum.size or cum[-1] <= 0:
         return 0.0
-    return min(cap, float(int(np.argmax(cum >= pct * cum[-1])) / sr))
+    rise = float(int(np.argmax(cum >= pct * cum[-1])) / sr)
+    return max(0.0, min(cap, rise - deadband))
 
 
 def lead_silence(path: str, thresh_db: float = -45.0, cap: float = 1.0) -> float:
