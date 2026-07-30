@@ -101,6 +101,7 @@ def main():
     ev = json.load(open(args.events))
     pal = json.load(open(os.path.join(args.palette, "palette_manifest.json")))
     anchors = pal.pop("_anchors", {})     # per-file rise time; see palette.py
+    fronts = pal.pop("_frontload", {})    # "starts with a bang" ratio
     apath = os.path.abspath(args.palette)
 
     missing = [c for c in set(TIER_CAT.values()) | {"swish"} if c not in pal]
@@ -115,8 +116,11 @@ def main():
     # swells (one rises in 398 ms, one in 227 ms); using them on cards put that
     # tier 57 ms early with not one cue inside a frame. Files whose measured
     # rise is under PUNCHY_MAX are the ones that can hit a mark.
-    PUNCHY_MAX = 0.12
-    punchy = [f for f in pal.get("boom", []) if anchors.get(f, 0.0) <= PUNCHY_MAX]
+    # Front-loaded is the right test, not a small anchor: it asks whether the
+    # file HAS an attack, rather than whether its energy happens to arrive early.
+    punchy = [f for f in pal.get("boom", []) if fronts.get(f, 0.0) >= 0.40]
+    if len(punchy) < 2:
+        punchy = [f for f in pal.get("boom", []) if anchors.get(f, 0.0) <= 0.12]
     if len(punchy) >= 2:
         rot["boom_punchy"] = Rotator(punchy, rng, cooldown=90.0)
         swells = [f for f in pal.get("boom", []) if f not in punchy]
