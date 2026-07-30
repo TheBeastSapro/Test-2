@@ -372,6 +372,36 @@ Two things worth knowing:
 - **Don't sweep hard on a wide shot.** ±0.85 reads as movement; ±1.0 draws attention to
   the technique. A tighter shot wants less, not more (±0.6).
 
+## Library files are takes, not samples — split them before placing
+
+Run `oneshot.py` on anything whose measured hit count is greater than one. This was
+diagnosed twice from the same underlying fault, both times reported as bad sound design:
+
+*"Weapons, Armor, Medieval Shield, Impact, Hit, Block, Sword Attack"* is exactly the
+sword-on-shield clash a sword video wants. It is also a **3.23 s take containing four
+separate blows**. Dropped whole on a one-frame beat it reads as a slam, and because the
+energy anchor accumulates across all four hits it measured **695 ms**, so the whole
+cluster landed early as well. It got rejected as "not good" — and the replacement, a
+generic *Metal, Impact, Ring Out*, got correctly rejected as not being a shield at all.
+The right sound had been in the palette the whole time, in the wrong shape.
+
+```
+oneshot.py pal/impact_11.wav --out pal --name shield     # -> 3 clashes, 0.23 s each
+```
+
+Each slice is cut from its own attack, ended where it decays 38 dB below its peak or at
+the next hit, faded 30 ms, and peak-normalised to match `palette.py`. Front-loaded with
+anchors of 0–15 ms, so they land on the frame.
+
+**How to spot the problem** — count attacks per file (local rises above 30% of peak,
+80 ms apart) and cross-check the anchor. A file with more than one hit *and* a large
+anchor is a take being mistaken for a sample. In this palette the forge and armour
+recordings have the same shape, so anything cast from them was landing as a cluster too.
+
+**Also: my internal filenames are not sound names.** `impact_06` is a slot in a rotation,
+not a description. When discussing a choice, quote the real Epidemic title — otherwise a
+"clink" gets attributed to a recording that is nothing of the kind.
+
 ## Casting: the category is not the question, the OBJECT is
 
 Getting the timing right and the tier right still produces a wrong mix if the sound

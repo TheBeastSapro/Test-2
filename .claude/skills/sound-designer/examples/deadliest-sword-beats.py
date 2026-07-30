@@ -73,15 +73,16 @@ for s in cue["sfx_cues"]:
 # and the flesh sound is saved for the one beat that earns it.
 BEATS = [
     (21.00, "pharaoh lunges",                 "swish",  ["swish_01", "swish_03"], -11.0, []),
-    # A bronze blade on a wooden shield is a bright CLINK plus the wood under it,
-    # not a big shield-impact slam. Chosen by measurement: impact_06 has the
-    # highest spectral centroid of any short metal file in the palette (7.6 kHz
-    # over 0.87 s) and rings out; impact_07 is the shorter, drier parry for the
-    # second strike. clatter carries the wood.
-    (28.75, "khopesh clinks off the shield",  "impact", ["impact_06"], -7.0, ["clatter"]),
-    (30.21, "khopesh drives into the shield", "impact", ["impact_07"], -7.0, ["clatter"]),
+    # The real thing: "Weapons, Armor, Medieval Shield, Impact, Hit, Block, Sword
+    # Attack" -- an actual sword-on-shield recording. It is a 3.23 s take holding
+    # four blows, so dropped whole it read as a slam, and its energy accumulates
+    # across all four so the measured anchor put the cluster 695 ms early. Split
+    # into single hits by oneshot.py it is one clash per file, 0.23 s, attack at
+    # the front. clatter carries the shield's wood.
+    (28.75, "khopesh clashes on the shield",  "shield", ["shield_01"], -7.0, ["clatter"]),
+    (30.21, "khopesh drives into the shield", "shield", ["shield_02"], -7.0, ["clatter"]),
     (32.79, "khopesh swings down",            "swish",  ["whoosh_11", "whoosh_12"], -10.0, []),
-    (34.12, "the hook catches the shield",    "impact", ["armor_01"], -7.0, ["impact"]),
+    (34.12, "the hook catches the shield",    "shield", ["shield_03"], -7.0, ["armor"]),
     (35.58, "the killing stab",               "stab",   ["stab_04"],  -5.0, ["impact", "armor"]),
     (37.08, "the body drops, spear clatters", "fall",   ["fall_01"],  -6.0, ["clatter", "armor"]),
 
