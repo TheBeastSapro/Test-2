@@ -30,6 +30,7 @@ from .base import (
     VoiceProvider,
 )
 from .llm import AnthropicProvider, OpenAIProvider
+from .llm_cli import ClaudeCliProvider
 from .media import (
     ElevenLabsProvider,
     FalImageProvider,
@@ -38,11 +39,16 @@ from .media import (
     RunwayVideoProvider,
 )
 from .mock import MockAvatar, MockImage, MockLLM, MockVideo, MockVoice
+from .stock import OpenverseProvider
 
 # vendor name -> (capability, class, env/key name)
 CATALOGUE: dict[str, tuple[Capability, type, str]] = {
     "openai": (Capability.llm, OpenAIProvider, "openai"),
     "anthropic": (Capability.llm, AnthropicProvider, "anthropic"),
+    # Keyless options. The empty key name marks them as needing no credential, so
+    # resolution treats them as always-available rather than always-unconfigured.
+    "claude-cli": (Capability.llm, ClaudeCliProvider, ""),
+    "openverse": (Capability.image, OpenverseProvider, ""),
     "elevenlabs": (Capability.voice, ElevenLabsProvider, "elevenlabs"),
     "fal": (Capability.image, FalImageProvider, "fal"),
     "fal-video": (Capability.video, FalVideoProvider, "fal"),
@@ -51,10 +57,13 @@ CATALOGUE: dict[str, tuple[Capability, type, str]] = {
 }
 
 # Tried in order when no override is set. First one with a usable key wins.
+# Keyless providers sit last: a real API key means the operator chose that vendor, so
+# it wins. But they are in the list, which is why a run with no keys at all still
+# works instead of failing at the first node.
 DEFAULT_ROUTING: dict[Capability, list[str]] = {
-    Capability.llm: ["anthropic", "openai"],
+    Capability.llm: ["anthropic", "openai", "claude-cli"],
     Capability.voice: ["elevenlabs"],
-    Capability.image: ["fal"],
+    Capability.image: ["fal", "openverse"],
     Capability.video: ["fal-video", "runway"],
     Capability.avatar: ["heygen"],
 }
@@ -101,15 +110,25 @@ class ProviderRegistry:
             cap, cls, key_name = entry
             if cap is not capability:
                 continue
-            api_key = self.key_for(key_name)
             tried.append(vendor)
+
+            if not key_name:
+                # Keyless provider. Some still have a precondition — the CLI has to
+                # be installed — so ask before handing it back.
+                candidate = self._cached(f"{vendor}", cls)
+                checker = getattr(candidate, "available", None)
+                if checker is None or checker():
+                    return candidate
+                continue
+
+            api_key = self.key_for(key_name)
             if api_key:
                 return self._cached(f"{vendor}", cls, api_key)
 
         raise ProviderError(
             f"no usable {capability.value} provider: tried {tried or candidates} "
-            "and none had an API key. Add one under Settings → Provider keys, "
-            "or run with FORGECAST_PROVIDER_MODE=mock."
+            "and none was usable. Add a key under Settings → Provider keys, or run "
+            "with FORGECAST_PROVIDER_MODE=mock."
         )
 
     def _cached(self, cache_key: str, cls: type, *args):

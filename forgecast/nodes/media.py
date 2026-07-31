@@ -352,9 +352,21 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
             credits += still.credits
             provider = still.provider or provider
             plate = still.path
+            relevance = still.meta.get("relevance")
+            if relevance == "weak":
+                # Stock search always returns something; when the query had to be
+                # gutted to find it, the picture often does not depict the subject.
+                degraded += 1
+                ctx.log(
+                    f"scene {index}: weak stock match "
+                    f"({still.meta.get('title', '?')!r}) — may not depict the subject",
+                    level="warning",
+                )
             ctx.emit_artifact(
                 "image", plate, still.mime, scene_index=index, role="plate",
-                prompt=prompt[:300],
+                prompt=prompt[:300], relevance=relevance,
+                licence=still.meta.get("licence"),
+                attribution=still.meta.get("attribution"),
             )
         except ProviderError as exc:
             ctx.log(f"shot {index} still failed: {exc}", level="warning")
