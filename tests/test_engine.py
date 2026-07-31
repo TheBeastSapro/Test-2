@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -95,6 +96,65 @@ async def test_full_run_completes_and_renders_a_real_video(session: Session, cha
 
         published = next(n for n in finished.nodes if n.key == "publish")
         assert published.output["url"].startswith("https://www.youtube.com/watch?v=")
+
+
+async def test_render_applies_motion_graphics_and_records_what_it_did(
+    session: Session, channel: Channel
+):
+    """Motion is opt-out, so an ordinary run must come out animated.
+
+    Checked by comparing each animated scene's clip against its own pre-motion
+    intermediate: a motion pass that silently did nothing would still exit 0 and still
+    produce a playable video, which is exactly how every bug in this area presented.
+    """
+    channel.style_profile = {**(channel.style_profile or {}),
+                             "render_spec": {"motion_intensity": 0.82}}
+    run = create_run(
+        session, channel=channel, topic="Why deep-sea cables keep breaking",
+        pipeline="faceless_shorts", options={"target_seconds": 20},
+    )
+    run_id = run.id
+    session.commit()
+
+    assert await _drive(run_id) is RunStatus.completed
+
+    with SessionLocal() as check:
+        render = check.execute(
+            select(Node).where(Node.run_id == run_id, Node.key == "render")
+        ).scalar_one()
+        motion = render.output["motion"]
+
+        # 0.82 measured intensity must not pick a slow look.
+        assert motion["intensity"] >= 0.7, motion
+        animated = [item for item in motion["scenes"] if item["kind"] != "none"]
+        assert animated, f"nothing animated: {motion['scenes']}"
+        assert animated[0]["kind"] == "title"
+        # Every plan explains itself, so a surprising layout can be audited.
+        assert all(item["reason"] for item in motion["scenes"])
+
+        workdir = Path(render.output["video_path"]).parent / "work"
+        passes = sorted(workdir.glob("scene_*_motion.mp4"))
+        assert len(passes) == len(animated)
+
+        altered = _mean_frame_delta(workdir / passes[0].name.replace("_motion", ""),
+                                    passes[0])
+        assert altered > 0.3, f"the motion pass changed nothing (delta {altered:.3f})"
+
+
+def _mean_frame_delta(first: Path, second: Path) -> float:
+    """Mean absolute per-pixel difference between two clips, at a small scale."""
+    import numpy as np
+
+    def frames(path: Path):
+        raw = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(path),
+             "-vf", "scale=160:90", "-f", "rawvideo", "-pix_fmt", "gray", "-"],
+            capture_output=True, check=True).stdout
+        return np.frombuffer(raw, dtype=np.uint8).reshape(-1, 90, 160).astype(np.float32)
+
+    left, right = frames(first), frames(second)
+    count = min(len(left), len(right))
+    return float(np.abs(left[:count] - right[:count]).mean())
 
 
 async def test_completed_run_returns_every_unspent_credit(session: Session, user: User,

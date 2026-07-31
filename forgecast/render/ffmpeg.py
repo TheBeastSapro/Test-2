@@ -364,12 +364,21 @@ def assemble_video(
     height: int = 720,
     avatar_path: Path | None = None,
     subtitles: bool = True,
+    motion_preset=None,
+    motion_plans=None,
 ) -> Path:
     """Turn scenes + narration into one finished file.
 
-    Visual bed -> optional avatar PiP -> narration audio -> optional burned captions.
+    Visual bed -> optional motion graphics -> optional avatar PiP -> narration audio
+    -> optional burned captions.
+
+    `motion_preset` and `motion_plans` come from `render.motion_layer`. Both are
+    optional and are planned by the caller rather than here, so the node that spends
+    the credits also owns the record of what was animated.
     """
     workdir.mkdir(parents=True, exist_ok=True)
+    plan_by_scene = {item.scene_index: item for item in (motion_plans or [])}
+
     clips: list[Path] = []
     for scene in scenes:
         target = workdir / f"scene_{scene.index:03d}.mp4"
@@ -385,6 +394,18 @@ def assemble_video(
                 width=width,
                 height=height,
                 label=scene.narration[:80] or f"scene {scene.index}",
+            )
+
+        item = plan_by_scene.get(scene.index)
+        if motion_preset is not None and item is not None and item.active:
+            # Imported here, not at module scope: motion_layer imports this module for
+            # its Scene type, so a top-level import would be circular.
+            from .motion_layer import apply as apply_motion
+
+            target = apply_motion(
+                target, workdir / f"scene_{scene.index:03d}_motion.mp4", item,
+                preset=motion_preset, seconds=scene.seconds,
+                width=width, height=height,
             )
         clips.append(target)
 

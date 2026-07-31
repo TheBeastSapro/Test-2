@@ -79,6 +79,15 @@ async def render_node(ctx: NodeContext) -> NodeResult:
     workdir = ctx.path_for("work")
     ctx.log(f"rendering {len(scenes)} scenes at {width}x{height}")
 
+    preset, plans = _motion_for(ctx, scenes, script)
+    if preset is not None:
+        animated = [item for item in plans if item.active]
+        ctx.log(
+            f"motion preset '{preset.name}' (intensity {preset.intensity:.2f}, "
+            f"{preset.provenance.get('origin', 'built_in')}): "
+            f"{len(animated)} of {len(scenes)} scenes animated"
+        )
+
     # ffmpeg is blocking and CPU-bound; keep it off the event loop.
     await asyncio.to_thread(
         assemble_video,
@@ -90,6 +99,8 @@ async def render_node(ctx: NodeContext) -> NodeResult:
         height=height,
         avatar_path=avatar_path,
         subtitles=bool(ctx.params.get("subtitles", True)),
+        motion_preset=preset,
+        motion_plans=plans,
     )
 
     from ..render import ffprobe_duration
@@ -111,10 +122,44 @@ async def render_node(ctx: NodeContext) -> NodeResult:
             "width": width,
             "height": height,
             "size_bytes": out_path.stat().st_size,
+            "motion": {
+                "preset": preset.name if preset else None,
+                "intensity": preset.intensity if preset else None,
+                "origin": preset.provenance.get("origin") if preset else None,
+                "scenes": [item.as_dict() for item in plans],
+            },
         },
         credits=0,
         provider="local-ffmpeg",
     )
+
+
+def _motion_for(ctx: NodeContext, scenes: list[Scene], script: dict):
+    """Resolve the run's motion preset and plan, or (None, []) when motion is off.
+
+    Motion is opt-out rather than opt-in: a faceless video with no graphics at all
+    reads as a slideshow, which is the failure mode this whole module exists to avoid.
+    Setting `motion: false` on the run turns it off entirely.
+    """
+    from ..render.motion_layer import plan as plan_motion
+    from ..render.motion_layer import resolve_preset
+
+    style = ctx.channel.style_profile or {}
+    if ctx.params.get("motion") is False or style.get("motion") is False:
+        return None, []
+
+    name = str(ctx.params.get("motion_preset") or style.get("motion_preset") or "")
+    # An analysed reference leaves its measurements on the channel, so a run that has
+    # never been given a reference still gets motion sized to the intended pacing.
+    measured = style.get("render_spec") or {}
+    intensity = measured.get("motion_intensity")
+    preset = resolve_preset(
+        name,
+        intensity=float(intensity) if isinstance(intensity, (int, float)) else None,
+        directory=ctx.params.get("motion_preset_dir") or "./storage/motion_presets",
+    )
+    headline = str(script.get("title") or ctx.topic or "")
+    return preset, plan_motion(scenes, preset=preset, headline=headline)
 
 
 # ---------------------------------------------------------------------- compliance

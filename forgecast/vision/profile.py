@@ -44,6 +44,10 @@ class RenderSpec:
     target_contrast: float
     target_saturation: float
     palette: list[dict] = field(default_factory=list)
+    # How aggressive the motion graphics should be, 0..1. Defaulted rather than
+    # required: a spec written by hand or restored from an older run predates motion,
+    # and 0.5 is the middle of the built-in preset range.
+    motion_intensity: float = 0.5
 
     def as_dict(self) -> dict:
         return {
@@ -59,6 +63,7 @@ class RenderSpec:
             "caption_position": self.caption_position,
             "snap_cuts_to_beat": self.snap_cuts_to_beat,
             "pacing": self.pacing,
+            "motion_intensity": round(self.motion_intensity, 3),
             "grade_filter": self.grade_filter,
             "target_brightness": round(self.target_brightness, 2),
             "target_contrast": round(self.target_contrast, 2),
@@ -201,6 +206,17 @@ def _render_spec(
 
     captions = overlay.caption_zone != "none" and overlay.caption_persistence >= 0.4
 
+    # How aggressive the motion graphics should be. The formula lives with the presets
+    # that consume it rather than being restated here, so the number a preset derives
+    # and the number this spec reports can never drift apart.
+    from ..motion.presets import derive_intensity
+
+    motion_intensity, _ = derive_intensity({
+        "shot_rhythm": {"cuts_per_minute": shot_analysis.cuts_per_minute(meta.duration)},
+        "motion": {"mean_magnitude": mean_magnitude},
+        "overlay": {"graphic_density": overlay.graphic_density},
+    })
+
     return RenderSpec(
         target_shot_seconds=median,
         shot_seconds_range=(low, high),
@@ -214,6 +230,7 @@ def _render_spec(
         caption_position=overlay.caption_zone,
         snap_cuts_to_beat=alignment.verdict == "cuts_locked_to_beat",
         pacing=shot_analysis.pacing_trend(),
+        motion_intensity=motion_intensity,
         grade_filter=_grade_filter(colour),
         target_brightness=colour.brightness,
         target_contrast=colour.contrast,
