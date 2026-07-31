@@ -189,6 +189,36 @@ def test_threshold_adapts_to_the_noise_floor():
     assert noise == pytest.approx(6.0)
 
 
+def test_noise_floor_survives_a_high_cut_rate():
+    """Regression: a p95 noise floor lands on a cut score in fast-cut footage.
+
+    Measured on a 12-cut, 8-second clip at 25fps — 5.4% of frames are cut frames, so
+    p95 read 7.3, the threshold became 43.8, and 9 of 11 cuts vanished.
+    """
+    # 8% of frames are cuts, which is a realistic ceiling for fast editing.
+    scores = [0.1] * 92 + [30.0] * 8
+    threshold, noise = shots_mod.adaptive_threshold(scores)
+    assert noise < 1.0, "noise floor was taken from the cut frames"
+    assert threshold < 30.0, "threshold excludes the cuts it is meant to find"
+
+
+def test_first_frame_is_not_reported_as_a_cut(tmp_path):
+    """Regression: scdet scores frame 1 against no predecessor.
+
+    A clip that opens on busy content therefore reports a cut at t=0.04. The video's
+    start is already a shot start, and counting it again left a zero-length shot at
+    the head of every such analysis.
+    """
+    path = tmp_path / "busy_open.mp4"
+    _run(["-f", "lavfi", "-i", "testsrc2=s=160x90:d=4:r=25",
+          "-vf", "noise=alls=60:allf=t+u", "-c:v", "libx264",
+          "-preset", "veryfast", "-pix_fmt", "yuv420p", str(path)])
+
+    analysis = shots_mod.detect(probe(path))
+    assert analysis.boundaries == [], f"phantom cut: {analysis.boundaries}"
+    assert len(analysis.shots) == 1
+
+
 def test_rhythm_statistics(fixtures):
     meta = probe(fixtures["shots"])
     payload = shots_mod.detect(meta).as_dict(meta.duration)

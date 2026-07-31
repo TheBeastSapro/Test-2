@@ -36,10 +36,18 @@ from .probe import FFMPEG, ProbeError, VideoMeta, run
 # an absolute floor so a static screencast (noise ~0) does not turn every
 # compression artefact into a cut.
 #
-# threshold = max(ABSOLUTE_FLOOR, p95(scores) * NOISE_MULTIPLE)
+# threshold = max(ABSOLUTE_FLOOR, p75(scores) * NOISE_MULTIPLE)
+#
+# The percentile is 75, not 95, and that is a bug fix rather than a preference. A
+# noise floor taken at p95 assumes cut frames are rarer than 5% of all frames — true
+# for a 12 cuts/min documentary, false for exactly the fast-cut content this tool
+# exists to analyse. Measured on a 12-cut, 8-second clip at 25fps: cut frames are
+# 5.4% of the total, so p95 landed *on a cut score* (7.3), the threshold became 43.8,
+# and 9 of 11 cuts were silently dropped. p75 tolerates a cut rate up to 25% — about
+# 6 cuts per second — which no real edit reaches.
 ABSOLUTE_FLOOR = 4.0
 NOISE_MULTIPLE = 6.0
-NOISE_PERCENTILE = 95
+NOISE_PERCENTILE = 75
 # A boundary spanning more than this many frames is a dissolve, not a cut.
 MAX_CUT_FRAMES = 2
 # Two boundaries closer than this are one event seen twice (common on dissolves).
@@ -253,6 +261,13 @@ def detect(
     for run_frames in events:
         peak_time, peak_score = max(run_frames, key=lambda item: item[1])
         kind = "cut" if len(run_frames) <= MAX_CUT_FRAMES else "dissolve"
+        if peak_time < min_shot:
+            # scdet scores the first frame against no predecessor, so any clip that
+            # opens on busy or bright content reports a cut at frame 1 — measured at
+            # t=0.04 on grain, high-motion and strobing fixtures alike. The start of
+            # a video is already a shot start; counting it again inflates the shot
+            # count and leaves a zero-length shot at the head.
+            continue
         if boundaries and peak_time - boundaries[-1].time < min_shot:
             # Same event detected twice; keep the stronger reading.
             if peak_score > boundaries[-1].score:
