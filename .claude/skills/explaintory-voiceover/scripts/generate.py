@@ -306,6 +306,13 @@ def main():
     ap.add_argument("--max-chunk", type=int, default=450)
     ap.add_argument("--chapter-pause", choices=["tight", "natural", "wide"])
     ap.add_argument("--regen", help="comma-separated 1-based sections to re-render")
+    ap.add_argument("--budget", type=int, default=2000,
+                    help="hard ceiling on characters this invocation may SEND. "
+                         "Above it the run stops and prints what it wanted to spend, "
+                         "so nobody discovers the bill afterwards. Raise it "
+                         "deliberately with --approve-spend.")
+    ap.add_argument("--approve-spend", type=int, default=0,
+                    help="raise --budget to this many characters for this run")
     ap.add_argument("--stability", type=float,
                     help="override the profile's stability for this run. Raising it "
                          "slightly is the studio's fix for false mid-sentence pauses.")
@@ -347,6 +354,24 @@ def main():
         if a.regen:
             only = [int(x) - 1 for x in a.regen.split(",") if x.strip()]
             log(f"re-rendering sections {', '.join(str(i+1) for i in only)}")
+
+        # Count what is actually about to be SENT — sections already on disk are
+        # free. A redo pass is where a bill quietly doubles, so it is checked by
+        # the same ceiling as a first render.
+        todo = range(len(sections)) if only is None else only
+        due = sum(sections[i]["chars"] for i in todo
+                  if only is None or not os.path.isfile(
+                      os.path.join(parts_dir, f"sec_{i:03d}.mp3")) or i in set(only))
+        ceiling = max(a.budget, a.approve_spend)
+        if due > ceiling:
+            raise SystemExit(
+                f"\nSTOPPED before spending. This step would send {due:,} characters, "
+                f"over the {ceiling:,} ceiling.\n"
+                f"  {len(list(todo))} section(s): "
+                f"{', '.join(str(i+1) for i in list(todo)[:12])}"
+                f"{'…' if len(list(todo)) > 12 else ''}\n\n"
+                f"Approve it explicitly:  --approve-spend {due}\n")
+        log(f"sending {due:,} chars (ceiling {ceiling:,})")
         generate_sections(prof, sections, parts_dir, only)
 
     log("stitching")

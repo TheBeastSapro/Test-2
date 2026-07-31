@@ -276,6 +276,9 @@ def main():
                          "request, no inserted silence. Auto-read from the script's "
                          "READ NOTE when not given.")
     ap.add_argument("--asr-model", default=rc.DEFAULT_ASR)
+    ap.add_argument("--approve-spend", type=int, default=0,
+                    help="characters this run is allowed to send. Default ceiling "
+                         "is 2000; a full render needs this set to the plan's cost.")
     ap.add_argument("--max-redos", type=int, default=2,
                     help="rounds of re-rendering flagged sections before giving up")
     ap.add_argument("--from", dest="start", choices=STAGES, default="generate")
@@ -371,6 +374,8 @@ def main():
         gen_cmd += ["--chapter-pause", a.chapter_pause]
     if a.lexicon:
         gen_cmd += ["--lexicon", a.lexicon]
+    if a.approve_spend:
+        gen_cmd += ["--approve-spend", str(a.approve_spend)]
     if runon:
         gen_cmd += ["--run-on"]
 
