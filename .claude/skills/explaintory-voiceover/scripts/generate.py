@@ -82,7 +82,10 @@ def load_profile(path=None):
             "collapse_breaks": bool(cal.get("collapseBreaks", prof.get("collapse_breaks", False))),
             "chapter_pause": cal.get("chapterPause", prof.get("chapter_pause", "natural")),
             "skip_headings": bool(cal.get("skipHeadings", prof.get("skip_headings", False))),
-            "chunk_size": int(cal.get("chunkSize", prof.get("chunk_size", 0)) or 0)}
+            "chunk_size": int(cal.get("chunkSize", prof.get("chunk_size", 0)) or 0),
+            # the studio reads the title aloud by default; this pipeline follows the
+            # profile rather than deciding for itself
+            "read_title": bool(cal.get("readTitle", prof.get("read_title", True)))}
 
 
 def check_profile(prof):
@@ -128,10 +131,12 @@ def tts(client, prof, sections, index, prev_ids):
     for attempt in range(4):
         try:
             # raw response so the request id header survives — it is what makes the
-            # next section continue this one's delivery instead of restarting it
-            raw = client.text_to_speech.with_raw_response.convert(**kw)
-            audio = b"".join(raw.data)
-            headers = getattr(raw, "headers", {}) or {}
+            # next section continue this one's delivery instead of restarting it.
+            # convert() is a context manager streaming chunks; it is not an object
+            # with a .data attribute.
+            with client.text_to_speech.with_raw_response.convert(**kw) as raw:
+                audio = b"".join(raw.data)
+                headers = raw.headers or {}
             rid = headers.get("request-id") or headers.get("x-request-id")
             return audio, rid
         except ApiError as e:

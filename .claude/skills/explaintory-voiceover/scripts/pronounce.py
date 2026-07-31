@@ -90,6 +90,34 @@ def apply_to_sections(sections, lex):
     return total
 
 
+def import_pron_extra(text):
+    """Read the studio's `pronExtra` block into lexicon entries.
+
+    One per line, 'Word — RES-pel-ing', em dash or hyphen. The list Sapro already
+    maintains there is the same job this lexicon does, so it is imported rather
+    than retyped.
+    """
+    out = {}
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        m = re.match(r"^(.+?)\s+[—–-]\s+(.+)$", line)
+        if not m:
+            continue
+        word, say = m.group(1).strip(), m.group(2).strip()
+        if word and say:
+            out[word] = say
+    return out
+
+
+def from_profile(profile_path):
+    """-> lexicon dict built from a voiceover_profile.json's pronExtra block."""
+    prof = json.load(open(profile_path, encoding="utf-8"))
+    cal = prof.get("calibration") or {}
+    return import_pron_extra(cal.get("pronExtra", ""))
+
+
 def candidates_from_check(check_json):
     """Turn the read-check's settled mismatches into lexicon starter entries.
 
@@ -112,7 +140,14 @@ def _cli():
     ap.add_argument("--model", default="eleven_multilingual_v2")
     ap.add_argument("--text", help="show what would be sent for this text")
     ap.add_argument("--from-check", help="readcheck.json — print lexicon candidates")
+    ap.add_argument("--from-profile", help="voiceover_profile.json — import its "
+                                           "pronExtra block as a lexicon")
     a = ap.parse_args()
+
+    if a.from_profile:
+        lex = from_profile(a.from_profile)
+        print(json.dumps({"words": lex}, indent=1, ensure_ascii=False))
+        return 0
 
     if a.from_check:
         cand = candidates_from_check(a.from_check)

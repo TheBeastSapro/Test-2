@@ -14,3 +14,8 @@ cues.md
 
 # python bytecode from compileall
 **/__pycache__/
+
+# never commit a profile — it can carry an API key
+voiceover_profile.json
+**/voiceover_profile.json
+lexicon.json

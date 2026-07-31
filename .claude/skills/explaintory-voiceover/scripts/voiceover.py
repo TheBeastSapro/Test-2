@@ -55,13 +55,12 @@ def safe_filename(s):
     return re.sub(r"\s+", " ", s)[:80] or "Voiceover"
 
 
-def derive_title(script_path, raw, explicit=None):
-    """-> (title, script with the title line removed).
+def derive_title(script_path, raw, explicit=None, read_title=True):
+    """-> (title, script for narration).
 
-    The script's H1 is the video's title, not its first chapter. Left in place it
-    becomes a spoken chapter announcement and the voiceover opens by reading its
-    own title out loud, so it is stripped from the narration once it has been used
-    for the filename.
+    The H1 names the file either way. Whether it is also SPOKEN is the profile's
+    `readTitle`, not this tool's opinion — the studio reads it by default and that
+    is the read Sapro has been publishing.
     """
     lines = raw.split("\n")
     for i, line in enumerate(lines[:12]):
@@ -70,8 +69,8 @@ def derive_title(script_path, raw, explicit=None):
              or re.match(r"^title\s*[:\-]\s*(.{2,80})$", s, re.I))
         if m:
             found = m.group(1).strip()
-            stripped = "\n".join(lines[:i] + lines[i + 1:])
-            return (explicit.strip() if explicit else found), stripped
+            body = raw if read_title else "\n".join(lines[:i] + lines[i + 1:])
+            return (explicit.strip() if explicit else found), body
     if explicit:
         return explicit.strip(), raw
     stem = os.path.splitext(os.path.basename(script_path))[0]
@@ -169,7 +168,8 @@ def main():
     if a.max_chunk is None:
         a.max_chunk = prof["chunk_size"] or 450
 
-    title, raw = derive_title(a.script, open(a.script, encoding="utf-8").read(), a.title)
+    title, raw = derive_title(a.script, open(a.script, encoding="utf-8").read(),
+                              a.title, prof["read_title"])
     lines = master_script_lines(raw, a.skip_headings)
 
     if a.suggest_breaks:
