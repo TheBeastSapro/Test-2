@@ -248,9 +248,21 @@ def check_sections(sections, parts_dir, asr_size=DEFAULT_ASR):
             problems.append("section is silent or near-empty")
             regen = True
         if wpm and not (WPM_LOW <= wpm <= WPM_HIGH):
-            problems.append(f"speaking rate {wpm:.0f} wpm is outside {WPM_LOW:.0f}–{WPM_HIGH:.0f}"
-                            " — text was probably dropped or repeated")
-            regen = True
+            # An odd rate has two very different causes and only one of them is worth
+            # credits. If the transcript matches the script, every word is present and
+            # the section is merely fast or slow — a timing problem, which the master
+            # fixes exactly and a re-roll would not. Only a rate that comes WITH
+            # missing or duplicated words means the render actually lost text.
+            if not hard and wer <= WER_FLAG:
+                problems.append(
+                    f"reads at {wpm:.0f} wpm — every word is there, so this is pace, "
+                    f"not lost text. Levelled by the master's --max-wpm; "
+                    f"re-rendering would not fix it")
+            else:
+                problems.append(f"speaking rate {wpm:.0f} wpm is outside "
+                                f"{WPM_LOW:.0f}–{WPM_HIGH:.0f}, and the transcript "
+                                f"disagrees — text was dropped or repeated")
+                regen = True
         if m["at_ceiling"]:
             problems.append(f"peaks at {m['peak_dbfs']:+.2f} dBFS — against the ceiling "
                             f"({m['full_scale_samples']} full-scale samples)")

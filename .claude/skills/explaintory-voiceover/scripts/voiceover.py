@@ -150,6 +150,11 @@ def main():
                     help="rounds of re-rendering flagged sections before giving up")
     ap.add_argument("--from", dest="start", choices=STAGES, default="generate")
     ap.add_argument("--humanize", help="path to humanize.py")
+    ap.add_argument("--max-wpm", type=float, default=0.0,
+                    help="slow only sentences faster than this, in the master. 290 = "
+                         "faster than the human reference ever goes, so it catches only "
+                         "broken sentences; 250 is the human's p90 and will also slow "
+                         "real punchlines. 0 (default) = off, the approved sound.")
     ap.add_argument("--no-master", action="store_true", help="stop after the read-check")
     ap.add_argument("--suggest-breaks", action="store_true",
                     help="print candidate clause breaks and exit — read them, keep the real ones")
@@ -259,6 +264,10 @@ def main():
             "--align-cache", os.path.join(work, "align.json")]
     if a.curated:
         mcmd += ["--curated", a.curated]
+    if a.max_wpm:
+        mcmd += ["--max-wpm", str(a.max_wpm)]
+        log(f"levelling sentences above {a.max_wpm:.0f} wpm "
+            "(off by default — this changes the approved sound)")
     run_stage(mcmd)
 
     if not os.path.isfile(final):

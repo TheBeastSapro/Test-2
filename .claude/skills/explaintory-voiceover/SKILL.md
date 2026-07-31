@@ -132,6 +132,42 @@ to level against. Corrections are clamped to ±15%, past which the stretch is au
 itself; when the clamp binds it says so and asks for an ear. `--no-level-headings`
 turns it off.
 
+## When a read is fast — retime, do not re-render
+
+Speed is a timing problem, and timing is fixed exactly by processing. Re-rendering
+is for missing or wrong *words*. Three distinct cases, three different answers:
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| A whole section off-rate **and** the transcript disagrees | the render lost or repeated text | re-render |
+| A whole section off-rate, transcript matches | it is merely fast | timing — never re-rendered |
+| The first chapter announcement rushes | no conditioning behind it | retimed at stitch, automatic |
+| An individual sentence unusually fast | one sentence, not the read | `--max-wpm` in the master |
+
+The read-check makes that distinction itself: an odd rate only forces a re-render when
+it arrives *with* a transcript mismatch. A section where every word is present is
+reported as pace and left for the master.
+
+### Choosing --max-wpm
+
+`humanize.py` levels per sentence off the alignment, skips the first 25 s so the hook
+stays fast, and never stretches past 13%. Default is **0, off** — the un-levelled read
+is the one that was approved.
+
+Measured on a test read containing both of the reference stem's named punchlines:
+
+- **`--max-wpm 290`** — touched nothing (x1.000). 290 is faster than the human
+  reference ever goes, so it only ever catches genuinely broken sentences. This is the
+  safe setting if levelling is wanted at all.
+- **`--max-wpm 250`** — slowed *"A cart full of fireworks had done the work of an army"*
+  from 290 to 252 wpm, and *"A weapon this strange should have been a footnote"* to 250.
+  Those are the two lines the vo-master skill records the **human** delivering at 290
+  and 283. 250 is the human's p90, so it flattens real punchlines by construction.
+
+So: the channel's fastest sentences are not a defect, they are the delivery. Do not
+reach for 250 because a sentence "sounds fast" — check whether the human goes faster
+there too. If Sapro asks for levelling, start at 290 and let him hear it.
+
 ## Before mastering — the curated clause breaks
 
 `humanize.py` wants a file of clause breaks the script forgot to punctuate, one
