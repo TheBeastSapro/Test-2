@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from typing import ClassVar
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import httpx
 
@@ -30,6 +30,15 @@ log = logging.getLogger("forgecast.providers.search")
 _TIMEOUT = httpx.Timeout(connect=10.0, read=45.0, write=15.0, pool=10.0)
 MAX_PAGE_BYTES = 3_000_000
 MIN_USEFUL_CHARS = 400
+
+# An identifiable agent with a contact route, not a browser impersonation. This is not
+# just politeness: Wikimedia's User-Agent policy returns 403 to anything without one,
+# so a generic "Mozilla/5.0 (compatible; ...)" string fetched zero characters from
+# every Wikipedia article — which silently emptied the research brief rather than
+# failing loudly.
+FETCH_USER_AGENT = (
+    "Forgecast/0.1 (+https://github.com/TheBeastSapro/Test-2) research bot"
+)
 
 
 @dataclass
@@ -274,7 +283,7 @@ async def fetch(url: str, *, timeout: float = 30.0) -> FetchedPage:
             response = await client.get(
                 url,
                 headers={
-                    "User-Agent": "Mozilla/5.0 (compatible; Forgecast research bot)",
+                    "User-Agent": FETCH_USER_AGENT,
                     "Accept": "text/html,application/xhtml+xml",
                 },
             )
@@ -313,8 +322,87 @@ async def fetch(url: str, *, timeout: float = 30.0) -> FetchedPage:
     )
 
 
+class WikipediaSearch(SearchProvider):
+    """Keyless search over Wikipedia, for grounding when no vendor key exists.
+
+    This exists for the same reason `claude-cli` and Openverse exist: a run with no
+    API keys at all should still do the real thing rather than a simulation of it.
+    Without it, research silently falls back to `MockSearch` and the script gets
+    invented sources — which is the single worst failure this pipeline can have,
+    because a fabricated citation looks exactly like a real one.
+
+    **What it is good and bad at.** It is a genuine, documented, rate-limit-friendly
+    API returning real articles with real text, and for the explainer topics this
+    product targets — how a thing works, why a thing happens — an encyclopaedia is a
+    defensible primary source. It is useless for anything recent, local, commercial,
+    or contested, where a general web index is what you actually need. So it sits
+    *behind* Tavily and Brave in preference, and it reports itself by name so the
+    brief records what the claims were grounded in.
+    """
+
+    name = "wikipedia"
+    base_url = "https://en.wikipedia.org/w/api.php"
+    # Wikimedia's UA policy wants a contact route and returns 403 without one.
+    user_agent: ClassVar[str] = (
+        "Forgecast/0.1 (+https://github.com/TheBeastSapro/Test-2) research bot"
+    )
+
+    async def search(self, query: str, *, limit: int = 8) -> list[SearchResult]:
+        params = {
+            "action": "query",
+            "list": "search",
+            "srsearch": query,
+            "srlimit": str(max(1, min(limit, 20))),
+            # Snippets come back with HTML highlight markup; plain text is easier to
+            # feed to a model and easier to verify a quote against.
+            "srprop": "snippet|timestamp",
+            "format": "json",
+        }
+        try:
+            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                response = await client.get(
+                    self.base_url, params=params,
+                    headers={"User-Agent": self.user_agent},
+                )
+        except httpx.TimeoutException as exc:
+            raise ProviderTimeout("wikipedia search timed out",
+                                  provider=self.name) from exc
+        except httpx.HTTPError as exc:
+            raise ProviderError(f"wikipedia search failed: {exc}",
+                                provider=self.name) from exc
+
+        if response.status_code != 200:
+            raise ProviderError(
+                f"wikipedia returned {response.status_code}: {response.text[:200]}",
+                provider=self.name,
+                retryable=response.status_code in (429, 500, 502, 503),
+            )
+
+        payload = response.json()
+        hits = (payload.get("query") or {}).get("search") or []
+        results: list[SearchResult] = []
+        for rank, hit in enumerate(hits, start=1):
+            title = str(hit.get("title") or "").strip()
+            if not title:
+                continue
+            slug = title.replace(" ", "_")
+            results.append(SearchResult(
+                title=title,
+                url=f"https://en.wikipedia.org/wiki/{quote(slug)}",
+                snippet=_strip_tags(str(hit.get("snippet") or "")),
+                published=str(hit.get("timestamp") or "") or None,
+                rank=rank,
+            ))
+        return results
+
+
+def _strip_tags(markup: str) -> str:
+    """Wikipedia snippets arrive with <span class="searchmatch"> highlighting."""
+    return html.unescape(re.sub(r"<[^>]+>", "", markup)).strip()
+
+
 def provider_for(user_keys: dict[str, str] | None = None) -> SearchProvider:
-    """Pick a search provider: user key, then platform key, then mock."""
+    """Pick a search provider: user key, then platform key, then keyless, then mock."""
     settings = get_settings()
     keys = user_keys or {}
 
@@ -326,5 +414,7 @@ def provider_for(user_keys: dict[str, str] | None = None) -> SearchProvider:
         if key:
             return cls(key)
 
-    log.warning("no search provider key configured — falling back to mock search")
-    return MockSearch()
+    # Keyless, and real. Reached only when no vendor key is configured, which is the
+    # normal state of a fresh private instance.
+    log.info("no search vendor key configured — grounding research in Wikipedia")
+    return WikipediaSearch()

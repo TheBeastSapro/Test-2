@@ -329,7 +329,20 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
 
     width, height = dimensions(ctx)
     image_provider = ctx.registry.image()
-    video_provider = ctx.registry.video() if any(s["kind"] == "video" for s in shots) else None
+
+    video_provider = None
+    if any(s["kind"] == "video" for s in shots):
+        try:
+            video_provider = ctx.registry.video()
+        except ProviderError as exc:
+            # No video vendor configured. The loop below already falls back to the
+            # still for any shot whose animation fails, so resolving eagerly and
+            # letting this propagate would fail a run that could have finished —
+            # and stills plus a Ken Burns push is a perfectly good B-roll bed.
+            ctx.log(
+                f"no video provider available, rendering every shot as a still: {exc}",
+                level="warning",
+            )
 
     credits = 0
     provider = ""

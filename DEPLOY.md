@@ -56,7 +56,16 @@ Either put them in `.env` (the instance uses them for everything) or add them in
 UI under **Settings → Provider keys** (encrypted at rest with
 `FORGECAST_ENCRYPTION_KEY`, and preferred over the instance's own). Two work with no
 key at all: `claude-cli` for text if the `claude` CLI is installed in the container,
-and Openverse for stock imagery.
+Openverse for stock imagery, and Wikipedia for research grounding.
+
+That trio is a complete working configuration — real script, real sources, real
+imagery, no keys. Add an ElevenLabs key and you have real narration too. What you do
+*not* get without a key is generated video (fal/Runway): every shot renders as a still
+with a Ken Burns push, which the shots node degrades to on its own and logs.
+
+Keyless research uses Wikipedia, which is genuine and citable but encyclopaedic — no
+good for anything recent, local, or contested. Add a Tavily or Brave key when the
+topics need a general web index; both take precedence automatically.
 
 ---
 

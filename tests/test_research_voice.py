@@ -9,14 +9,20 @@ through a citation-shaped wrapper, so it gets tested from several angles.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
+from forgecast.config import get_settings
+from forgecast.providers.base import ProviderError
 from forgecast.providers.search import (
+    FETCH_USER_AGENT,
     FetchedPage,
     MockSearch,
     SearchResult,
+    WikipediaSearch,
     _TextExtractor,
+    provider_for,
 )
 from forgecast.research.brief import Claim, ResearchBrief, Source
 from forgecast.research.engine import _normalise, research_topic
@@ -514,3 +520,134 @@ def test_missing_cache_is_not_an_error():
     from forgecast.voice.discover import load_catalogue
 
     assert load_catalogue(Path("/nonexistent/nope.json")) == []
+
+
+# --------------------------------------------------- keyless search (Wikipedia)
+#
+# Stubbed rather than live: a suite that needs Wikipedia to be reachable is a suite
+# that fails for reasons that have nothing to do with the code.
+
+
+class _FakeResponse:
+    def __init__(self, payload: dict, status: int = 200) -> None:
+        self._payload = payload
+        self.status_code = status
+        self.text = ""
+
+    def json(self) -> dict:
+        return self._payload
+
+
+class _FakeClient:
+    """Captures the request so the User-Agent can be asserted on."""
+
+    last_headers: ClassVar[dict] = {}
+    last_params: ClassVar[dict] = {}
+    payload: ClassVar[dict] = {}
+    status: int = 200
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_exc):
+        return False
+
+    async def get(self, url, params=None, headers=None):
+        type(self).last_headers = dict(headers or {})
+        type(self).last_params = dict(params or {})
+        return _FakeResponse(type(self).payload, type(self).status)
+
+
+@pytest.fixture
+def fake_wikipedia(monkeypatch):
+    _FakeClient.payload = {
+        "query": {
+            "search": [
+                {"title": "Submarine communications cable",
+                 "snippet": 'A <span class="searchmatch">cable</span> laid on the seabed',
+                 "timestamp": "2026-01-02T03:04:05Z"},
+                {"title": "2008 submarine cable disruption",
+                 "snippet": "damage involving up to five cables"},
+                {"title": ""},          # must be skipped, not crash
+            ]
+        }
+    }
+    _FakeClient.status = 200
+    monkeypatch.setattr("forgecast.providers.search.httpx.AsyncClient",
+                        lambda *a, **k: _FakeClient())
+    return _FakeClient
+
+
+async def test_wikipedia_search_returns_article_urls(fake_wikipedia):
+    results = await WikipediaSearch().search("undersea cables", limit=5)
+    assert [r.title for r in results] == [
+        "Submarine communications cable", "2008 submarine cable disruption",
+    ]
+    assert results[0].url == (
+        "https://en.wikipedia.org/wiki/Submarine_communications_cable"
+    )
+    assert results[0].rank == 1
+
+
+async def test_wikipedia_snippets_are_stripped_of_highlight_markup(fake_wikipedia):
+    results = await WikipediaSearch().search("undersea cables")
+    assert results[0].snippet == "A cable laid on the seabed"
+    assert "<span" not in results[0].snippet
+
+
+async def test_wikipedia_sends_a_contact_bearing_user_agent(fake_wikipedia):
+    """Wikimedia's UA policy 403s anything without a contact route."""
+    await WikipediaSearch().search("undersea cables")
+    agent = fake_wikipedia.last_headers.get("User-Agent", "")
+    assert "http" in agent, agent
+    assert "Mozilla" not in agent, "do not impersonate a browser"
+
+
+async def test_wikipedia_clamps_the_result_limit(fake_wikipedia):
+    await WikipediaSearch().search("x", limit=500)
+    assert int(fake_wikipedia.last_params["srlimit"]) <= 20
+
+
+async def test_wikipedia_reports_a_rate_limit_as_retryable(fake_wikipedia):
+    _FakeClient.status = 429
+    with pytest.raises(ProviderError) as caught:
+        await WikipediaSearch().search("x")
+    assert caught.value.retryable is True
+
+
+def test_page_fetch_identifies_itself_with_a_contact_route():
+    """Regression: a browser-shaped UA fetched 0 characters from every Wikipedia
+    article — a 403 that emptied the research brief instead of failing loudly."""
+    assert "http" in FETCH_USER_AGENT
+    assert "Mozilla" not in FETCH_USER_AGENT
+
+
+def test_live_mode_without_a_search_key_grounds_in_wikipedia_not_mock(monkeypatch):
+    """The important one: research must never silently become fiction.
+
+    MockSearch returns plausible-looking results, so falling back to it in live mode
+    produces a brief full of sources that do not exist.
+    """
+    settings = get_settings()
+    original = settings.provider_mode
+    settings.provider_mode = "live"
+    try:
+        assert isinstance(provider_for(), WikipediaSearch)
+    finally:
+        settings.provider_mode = original
+
+
+def test_a_vendor_key_still_wins_over_the_keyless_fallback(monkeypatch):
+    settings = get_settings()
+    original_mode, original_key = settings.provider_mode, settings.tavily_api_key
+    settings.provider_mode = "live"
+    settings.tavily_api_key = "tvly-test"
+    try:
+        assert provider_for().name == "tavily"
+    finally:
+        settings.provider_mode = original_mode
+        settings.tavily_api_key = original_key
+
+
+def test_mock_mode_still_uses_mock_search():
+    assert isinstance(provider_for(), MockSearch)
