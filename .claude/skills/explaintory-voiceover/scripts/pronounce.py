@@ -118,6 +118,52 @@ def from_profile(profile_path):
     return import_pron_extra(cal.get("pronExtra", ""))
 
 
+def verify_names(prof, lex, workdir, client=None):
+    """Does the voice already say each name the way Sapro intends?
+
+    His pronExtra list is a researched reference, but a respelling only helps if
+    the plain spelling is actually being read wrong — and applying one that was
+    not needed costs pacing (a hyphenated respelling ran 35% long in testing).
+
+    ASR cannot settle this: transcribers mangle obscure proper nouns whatever the
+    audio does ('Archimedes' came back as 'Hiraeys' from a clean take). So this
+    compares the AUDIO. Each name is rendered twice — plain spelling and intended
+    respelling — and the two are matched with DTW over MFCCs. Close means the
+    voice already reads it as intended and needs no entry. Far means the plain
+    reading diverges from the intent, and that name is worth an ear.
+
+    Costs one short pair of renders per name.
+    """
+    import numpy as np
+    import librosa
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import generate as g
+
+    client = client or g.client(prof)
+    os.makedirs(workdir, exist_ok=True)
+
+    def render(text, path):
+        if not os.path.isfile(path):
+            secs = [{"index": 0, "send_text": text, "is_heading": False,
+                     "is_cta": False, "chars": len(text)}]
+            audio, _ = g.tts(client, prof, secs, 0, [])
+            open(path, "wb").write(audio)
+        y, sr = librosa.load(path, sr=16000)
+        return librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+
+    rows = []
+    for word, say in sorted(lex.items()):
+        stem = re.sub(r"\W+", "_", word)
+        a = render(word + ".", os.path.join(workdir, f"{stem}_plain.mp3"))
+        b = render(say + ".", os.path.join(workdir, f"{stem}_intended.mp3"))
+        d, _ = librosa.sequence.dtw(X=a, Y=b, metric="cosine")
+        # normalise by path length so a long name is not penalised for being long
+        dist = float(d[-1, -1]) / (a.shape[1] + b.shape[1])
+        rows.append((dist, word, say))
+    rows.sort(reverse=True)
+    return rows
+
+
 def candidates_from_check(check_json):
     """Turn the read-check's settled mismatches into lexicon starter entries.
 

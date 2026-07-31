@@ -57,6 +57,61 @@ def unmark(t):
     return t.replace(SECTION_MARK, "").replace(PAUSE_MARK, "")
 
 
+# A pronunciation guide sits at the end of every ExplainTory script. It is a note
+# to the reader, not a line to read, and left in place it would be narrated —
+# the video would close by reciting its own glossary. It is also the per-script
+# answer key for how each name should sound, which is worth more than a static
+# list because it arrives with the words it belongs to.
+# 'names' is deliberately NOT a heading word here: a script section legitimately
+# titled 'Names' would be swallowed whole. The heading has to actually say
+# pronunciation for the tail to be treated as a glossary.
+_GUIDE_HEAD = re.compile(
+    r"^\s*#{0,6}\s*\**\s*(pronunciation|pronounciation|pronunciations|"
+    r"pronounce|how to say|say it)\b[^\n]{0,40}$", re.I)
+# 'Syracusia — sirr-uh-KYOO-zee-uh', also en dash, hyphen, colon, or '='
+_GUIDE_LINE = re.compile(r"^\s*[-*•]?\s*(.+?)\s*[—–\-:=]\s+(.+?)\s*$")
+
+
+def _looks_like_guide_body(lines):
+    """A run of 'word — respelling' lines, allowing blanks and bullets.
+
+    One entry is enough, because the heading already had to say 'pronunciation'
+    outright — and a one-name guide read aloud is exactly as wrong as a ten-name
+    one. What is still required is that most of what follows looks like entries,
+    so a heading followed by prose is left alone.
+    """
+    real = [ln for ln in lines if ln.strip()]
+    if not real:
+        return False
+    hits = sum(1 for ln in real if _GUIDE_LINE.match(ln))
+    return hits >= 1 and hits >= len(real) * 0.6
+
+
+def split_pronunciation_guide(text):
+    """-> (script without the guide, {word: respelling})
+
+    Looks only at the tail, because that is where it lives and because a mid-script
+    line like 'The corvus — a boarding bridge — decided the battle' must never be
+    mistaken for a glossary entry.
+    """
+    lines = text.split("\n")
+    for i in range(len(lines) - 1, max(-1, len(lines) - 60), -1):
+        if not _GUIDE_HEAD.match(lines[i]):
+            continue
+        body = lines[i + 1:]
+        if not _looks_like_guide_body(body):
+            continue
+        guide = {}
+        for ln in body:
+            m = _GUIDE_LINE.match(ln)
+            if m:
+                w, say = m.group(1).strip(" *-•"), m.group(2).strip()
+                if w and say:
+                    guide[w] = say
+        return "\n".join(lines[:i]).rstrip(), guide
+    return text, {}
+
+
 def is_title_case_heading(s):
     """A standalone Title-Case line — 'Siren Head' — not a sentence."""
     if len(s) > 60:

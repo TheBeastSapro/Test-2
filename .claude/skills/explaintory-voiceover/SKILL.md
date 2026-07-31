@@ -168,6 +168,24 @@ So: the channel's fastest sentences are not a defect, they are the delivery. Do 
 reach for 250 because a sentence "sounds fast" — check whether the human goes faster
 there too. If Sapro asks for levelling, start at 290 and let him hear it.
 
+## The pronunciation guide at the end of the script
+
+Every ExplainTory script ends with one, in `Name — RES-pel-ing` form. It is a note
+to the reader, and **left in place the video closes by reciting its own glossary**.
+It is stripped from the narration automatically and saved to
+`<work>/pronunciation_guide.json` as that video's answer key.
+
+Detection needs the heading to actually say *pronunciation* (or "how to say"), and
+most of what follows to look like entries — so a section legitimately titled "Names",
+or a heading followed by prose, is left alone. Only the tail is examined, so a
+mid-script line like "The corvus — a boarding bridge — decided the battle" is never
+mistaken for an entry. One entry is enough to trigger it; a one-name guide read aloud
+is exactly as wrong as a ten-name one.
+
+**Extracted is not applied.** Sapro compared a raw take against a respelled one in his
+own voice and chose the raw: `pronOn` is `false` in his profile, and respelling costs
+pacing. The guide is the reference for *checking*, not an automatic substitution.
+
 ## Pronunciation — respell, never phonemes
 
 ElevenLabs takes two kinds of pronunciation rule and only one of them works here.

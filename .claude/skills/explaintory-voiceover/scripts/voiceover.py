@@ -23,7 +23,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import generate as gen  # noqa: E402
 import readcheck as rc  # noqa: E402
-from script_prep import build_sections, master_script_lines  # noqa: E402
+from script_prep import (build_sections, master_script_lines,  # noqa: E402
+                         split_pronunciation_guide)
 
 STAGES = ["generate", "check", "master"]
 
@@ -170,6 +171,9 @@ def main():
 
     title, raw = derive_title(a.script, open(a.script, encoding="utf-8").read(),
                               a.title, prof["read_title"])
+    # the guide at the foot of the script is a note to the reader, never a line to
+    # read — and it is this video's answer key for how each name should sound
+    raw, guide = split_pronunciation_guide(raw)
     lines = master_script_lines(raw, a.skip_headings)
 
     if a.suggest_breaks:
@@ -197,6 +201,12 @@ def main():
     sections = build_sections(raw, a.skip_headings, a.max_chunk)
     log(f"“{title}” · {len(sections)} sections · "
         f"{sum(s['chars'] for s in sections)} chars")
+    if guide:
+        guide_path = os.path.join(work, "pronunciation_guide.json")
+        json.dump({"words": guide}, open(guide_path, "w", encoding="utf-8"),
+                  indent=1, ensure_ascii=False)
+        log(f"pronunciation guide: {len(guide)} names, held out of the narration "
+            f"({', '.join(list(guide)[:5])}{'…' if len(guide) > 5 else ''})")
 
     start = STAGES.index(a.start)
     here = os.path.dirname(os.path.abspath(__file__))
