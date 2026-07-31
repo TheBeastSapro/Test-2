@@ -12,3 +12,7 @@ dist/
 storage/
 .pytest_cache/
 .ruff_cache/
+
+# Remotion renderer (opt-in backend)
+node_modules/
+remotion/out/

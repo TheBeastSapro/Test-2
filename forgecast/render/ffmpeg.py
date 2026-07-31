@@ -366,6 +366,7 @@ def assemble_video(
     subtitles: bool = True,
     motion_preset=None,
     motion_plans=None,
+    motion_backend: str = "ffmpeg",
 ) -> Path:
     """Turn scenes + narration into one finished file.
 
@@ -378,6 +379,14 @@ def assemble_video(
     """
     workdir.mkdir(parents=True, exist_ok=True)
     plan_by_scene = {item.scene_index: item for item in (motion_plans or [])}
+
+    engine = None
+    if motion_preset is not None and plan_by_scene:
+        # Imported here, not at module scope: backends imports this module for its
+        # Scene type, so a top-level import would be circular.
+        from .backends import backend_for
+
+        engine = backend_for(motion_backend)
 
     clips: list[Path] = []
     for scene in scenes:
@@ -397,12 +406,8 @@ def assemble_video(
             )
 
         item = plan_by_scene.get(scene.index)
-        if motion_preset is not None and item is not None and item.active:
-            # Imported here, not at module scope: motion_layer imports this module for
-            # its Scene type, so a top-level import would be circular.
-            from .motion_layer import apply as apply_motion
-
-            target = apply_motion(
+        if engine is not None and item is not None and item.active:
+            target = engine.render(
                 target, workdir / f"scene_{scene.index:03d}_motion.mp4", item,
                 preset=motion_preset, seconds=scene.seconds,
                 width=width, height=height,

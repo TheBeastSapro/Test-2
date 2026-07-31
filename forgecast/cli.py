@@ -151,6 +151,8 @@ def cmd_run_start(args) -> int:
             options["motion_preset"] = args.motion_preset
         if args.no_motion:
             options["motion"] = False
+        if args.motion_backend:
+            options["motion_backend"] = args.motion_backend
         try:
             run = create_run(
                 session, channel=channel, topic=args.topic, pipeline=args.pipeline,
@@ -382,6 +384,10 @@ def build_parser() -> argparse.ArgumentParser:
                             "or a built-in name")
     start.add_argument("--no-motion", action="store_true",
                        help="render without motion graphics")
+    start.add_argument("--motion-backend", default="", choices=["", "ffmpeg", "remotion"],
+                       help="renderer for motion scenes. remotion needs "
+                            "`npm install` in remotion/ and carries its own licence "
+                            "terms — see remotion/README.md")
     start.set_defaults(func=cmd_run_start)
 
     advance = run.add_parser("advance")

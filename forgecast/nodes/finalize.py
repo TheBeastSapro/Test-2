@@ -80,11 +80,19 @@ async def render_node(ctx: NodeContext) -> NodeResult:
     ctx.log(f"rendering {len(scenes)} scenes at {width}x{height}")
 
     preset, plans = _motion_for(ctx, scenes, script)
+    backend_name = str(ctx.options.get("motion_backend")
+                       or (ctx.channel.style_profile or {}).get("motion_backend")
+                       or "ffmpeg")
     if preset is not None:
+        from ..render.backends import backend_for
+
+        # Resolve now so the log names the engine that will actually run, not the one
+        # that was asked for — an unavailable backend silently downgrades to ffmpeg.
+        backend_name = backend_for(backend_name).name
         animated = [item for item in plans if item.active]
         ctx.log(
             f"motion preset '{preset.name}' (intensity {preset.intensity:.2f}, "
-            f"{preset.provenance.get('origin', 'built_in')}): "
+            f"{preset.provenance.get('origin', 'built_in')}) via {backend_name}: "
             f"{len(animated)} of {len(scenes)} scenes animated"
         )
 
@@ -101,6 +109,7 @@ async def render_node(ctx: NodeContext) -> NodeResult:
         subtitles=bool(ctx.params.get("subtitles", True)),
         motion_preset=preset,
         motion_plans=plans,
+        motion_backend=backend_name,
     )
 
     from ..render import ffprobe_duration
@@ -124,6 +133,7 @@ async def render_node(ctx: NodeContext) -> NodeResult:
             "size_bytes": out_path.stat().st_size,
             "motion": {
                 "preset": preset.name if preset else None,
+                "backend": backend_name if preset else None,
                 "intensity": preset.intensity if preset else None,
                 "origin": preset.provenance.get("origin") if preset else None,
                 "scenes": [item.as_dict() for item in plans],
