@@ -13,6 +13,26 @@ Deliver: `<Video Title> (final).mp3`. Report the runtime, the read-check result
 (which sections were redone and why), and the wpm/silence figures against the human
 reference. Do not ask which settings to use.
 
+
+## Confirm a fix on the excerpt, not the whole file
+
+Sapro's rule, and it is faster for both sides: when a defect is fixed, send him
+the SIX SECONDS around it — before and after, cut from the stitch so the fix is
+the only difference — and wait for his yes. Master and deliver the full file
+only after he confirms.
+
+Mastering a twelve-minute file takes eight minutes and makes him listen to
+twelve to check one edit. An excerpt is instant, and if the fix is wrong he
+says so in seconds instead of after a full pass. Kick the master off in the
+background while he listens, so a yes delivers immediately.
+
+    ffmpeg -ss <chapter_start - 2.5> -t <len + 5> -i raw_stitched.wav clip.mp3
+
+Applies to every fix — a trimmed fricative, a removed beat, a repaired click.
+The one exception is a change that only exists after mastering, like loudness
+or a pause the master itself inserts; those have to be judged on the master.
+
+
 ## What this exists to remove
 
 Generating a voiceover meant listening to twelve minutes of audio, catching the two
