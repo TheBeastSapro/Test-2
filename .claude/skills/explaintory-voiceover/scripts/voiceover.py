@@ -23,7 +23,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import generate as gen  # noqa: E402
 import readcheck as rc  # noqa: E402
-from script_prep import (build_sections, detect_structure,  # noqa: E402
+from script_prep import (_META_LABELS, build_sections, detect_structure,  # noqa: E402
                          master_script_lines, note_wants_runon,
                          split_pronunciation_guide, split_read_note)
 
@@ -78,6 +78,11 @@ def derive_title(script_path, raw, explicit=None, read_title=True):
         s = line.strip()
         m = (re.match(r"^#\s+(.{2,80})$", s)
              or re.match(r"^title\s*[:\-]\s*(.{2,80})$", s, re.I))
+        if m and re.fullmatch(r"[\s*_#]*" + _META_LABELS + r"[\s*_:.]*", s, re.I):
+            # '# Script' labels the document; it is not the video's title and there
+            # is nothing here to narrate. The title then comes from --title or the
+            # filename, and names the file only.
+            continue
         if m:
             found = clean(m.group(1).strip())
             shown = (explicit.strip() if explicit else found)

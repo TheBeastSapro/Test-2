@@ -46,7 +46,8 @@ CTA_RE = re.compile(
     r"|notification bell|hit the bell|turn on notifications?|comment (below|which|what|down|if)"
     r"|drop a (like|comment)|in the comments)\b", re.I)
 
-_META_LABELS = r"(intro|outro|hook|conclusion|opening|closing|cta|title|the end)"
+_META_LABELS = (r"(intro|outro|hook|conclusion|opening|closing|cta|title|the end"
+                r"|script|voiceover script|vo script|body|full script)")
 _SECTION_WORD = r"(section|part|chapter|act|scene|segment)"
 _SMALL_WORD = re.compile(
     r"^(of|the|and|a|an|in|on|to|for|vs|or|at|by|is|it|with|from|as|but|nor|into"
@@ -55,6 +56,18 @@ _SMALL_WORD = re.compile(
 
 def unmark(t):
     return t.replace(SECTION_MARK, "").replace(PAUSE_MARK, "")
+
+
+def strip_markdown(t):
+    """Remove emphasis markers so they are never sent to the voice.
+
+    Google Docs exports headings as '## **Coca**' and bolds names inline. Left in,
+    the asterisks and underscores go to the API as literal characters.
+    """
+    t = re.sub(r"\*\*([^*]+)\*\*", r"\1", t)      # **bold**
+    t = re.sub(r"(?<!\w)_([^_]+)_(?!\w)", r"\1", t)  # _em_, but not snake_case
+    t = re.sub(r"(?<![\w*])\*([^*\n]+)\*(?![\w*])", r"\1", t)   # *italic*
+    return t
 
 
 # A pronunciation guide sits at the end of every ExplainTory script. It is a note
@@ -88,29 +101,49 @@ def _looks_like_guide_body(lines):
     return hits >= 1 and hits >= len(real) * 0.6
 
 
-def split_pronunciation_guide(text):
-    """-> (script without the guide, {word: respelling})
+# Blocks that live after the script and are never narrated. The animator note is
+# the other one: pages of "NO HORNED HELMETS" and "Do not draw a mounted rider",
+# written for the artist. It can sit either side of the guide, so both are found
+# and the cut is made at whichever comes first.
+_APPENDIX_HEAD = re.compile(
+    r"^\s*#{0,6}\s*\**\s*(animator|animation|art|visual|thumbnail|production|"
+    r"reference|source|research|accuracy)\b[^\n]{0,60}$", re.I)
 
-    Looks only at the tail, because that is where it lives and because a mid-script
-    line like 'The corvus — a boarding bridge — decided the battle' must never be
-    mistaken for a glossary entry.
+
+def split_pronunciation_guide(text):
+    """-> (script without the guide and any appendices, {word: respelling})
+
+    The whole document is searched, not just its last lines. When an animator note
+    follows the guide it can run to hundreds of lines, and a fixed tail window
+    misses the guide heading entirely — which is how a 11,500-character script
+    became a 19,295-character one that recited the art direction aloud.
+
+    A mid-script line like 'The corvus — a boarding bridge — decided the battle'
+    is still safe: the heading regex has to match first, and it must actually say
+    pronunciation.
     """
     lines = text.split("\n")
-    for i in range(len(lines) - 1, max(-1, len(lines) - 60), -1):
-        if not _GUIDE_HEAD.match(lines[i]):
-            continue
-        body = lines[i + 1:]
-        if not _looks_like_guide_body(body):
-            continue
-        guide = {}
-        for ln in body:
-            m = _GUIDE_LINE.match(ln)
-            if m:
-                w, say = m.group(1).strip(" *-•"), m.group(2).strip()
-                if w and say:
-                    guide[w] = say
-        return "\n".join(lines[:i]).rstrip(), guide
-    return text, {}
+    guide, cut = {}, None
+
+    for i, ln in enumerate(lines):
+        if _GUIDE_HEAD.match(ln) and _looks_like_guide_body(lines[i + 1:]):
+            for sub in lines[i + 1:]:
+                m = _GUIDE_LINE.match(sub)
+                if m:
+                    w, say = m.group(1).strip(" *-•_"), m.group(2).strip(" *_")
+                    if w and say:
+                        guide.setdefault(w, say)
+            cut = i if cut is None else min(cut, i)
+            break
+
+    for i, ln in enumerate(lines):
+        if _APPENDIX_HEAD.match(ln):
+            cut = i if cut is None else min(cut, i)
+            break
+
+    if cut is None:
+        return text, {}
+    return "\n".join(lines[:cut]).rstrip(), guide
 
 
 # A production note to the reader, at the top of the script: "READ NOTE — please
@@ -391,7 +424,8 @@ def build_sections(script_text, skip_headings=False, max_chunk=MAX_CHUNK, runon=
     for i, t in enumerate(split_script(narration, max_chunk)):
         is_heading = bool(re.search(r"\x02\s*$", t)) and "\n" not in t
         is_cta = t.startswith(PAUSE_MARK)
-        send = re.sub(r"\s*\x02", "", t).replace(SECTION_MARK, "").strip()
+        send = strip_markdown(
+            re.sub(r"\s*\x02", "", t).replace(SECTION_MARK, "")).strip()
         out.append({"index": i, "text": t, "send_text": send,
                     "is_heading": is_heading, "is_cta": is_cta, "chars": len(send)})
     return out
@@ -426,7 +460,7 @@ def master_script_lines(script_text, skip_headings=False, runon=False):
     narration = narration_text(script_text, skip_headings=skip_headings, runon=runon)
     lines = []
     for para in re.split(r"\n\s*\n", narration):
-        p = unmark(para).strip()
+        p = strip_markdown(unmark(para)).strip()
         p = re.sub(r"\s*\n\s*", " ", p)             # a paragraph is one line
         if p:
             lines.append(p)
