@@ -15,6 +15,51 @@ reference. Do not ask which settings to use.
 
 
 
+
+
+### Prove a destructive edit did not eat a word
+
+Any edit that silences or removes audio must be checked by TRANSCRIBING the
+region afterwards and diffing against the script — before it is reported, and
+before the file is sent.
+
+A sweep for orphan fragments in the chapter gaps looked correct and was not. A
+gap is 0.30 s, so the next sentence starts inside a 0.6 s search window, and
+every "fragment" the sweep found after a chapter name was the opening of the
+following line. It turned "Captagon was invented for children" into "Captagon
+was in for children" — a word cut out of the middle of the read, delivered as a
+fix. The transcript caught it; nothing else would have.
+
+Silencing something that turns out to be speech is worse than the glitch it
+replaced, because it is invisible to every level and waveform check and only
+shows up as a missing word.
+
+
+## Check the raw take before ever proposing a re-render
+
+If the RAW take is clean and the DELIVERED file is not, the defect was created
+downstream — by the stitch or by the master — and re-rendering cannot fix it. It
+buys a different take of a line that was already right, and the same pipeline
+damages the new one identically.
+
+This is not hypothetical. The Hashish chapter announcement measured 16 ms of
+fricative in the stitch and 186 ms after mastering; three surgical attempts
+missed because they were aimed at the fricative, when the real defect was two
+orphan fragments 106 ms and 66 ms after the word. The proposal on the table at
+that point was to re-render the header. Sapro asked "but the raw was good
+right?" and that question is the whole rule.
+
+So, in order, every time:
+
+  1. Measure the defect in the RAW section file.
+  2. Clean there  -> the stitch or the master did it. Fix it there. Zero credits.
+  3. Present there -> the take is genuinely bad. Only then consider a re-render,
+     and only after saying what it will cost.
+
+A re-render is the last option, not the first. Sapro has said so repeatedly and
+he has been right every time.
+
+
 ## One report means sweep the class
 
 When Sapro names a defect, the timestamp he gives is a sample, not the job. Find
