@@ -11,3 +11,6 @@ cues.md
 *.mp3
 *.mp4
 *.wav
+
+# python bytecode from compileall
+**/__pycache__/
