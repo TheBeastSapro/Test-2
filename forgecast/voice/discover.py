@@ -58,7 +58,32 @@ class MeasuredVoice:
     voiced_ratio: float = 0.0
     preview_url: str = ""
     measurement: str = "not_measured"
+    # "account" when it came from /voices, "library" from /shared-voices. Kept
+    # separate from `category` because both endpoints use that word differently.
+    provenance: str = "account"
     descriptors: list[str] = field(default_factory=list)
+
+    @property
+    def ownership(self) -> str:
+        """Whose voice this is, from the vendor's `category`.
+
+        Detected rather than configured: an operator should not have to paste their
+        own voice IDs when the account already reports which voices are theirs.
+
+          own_clone     you cloned it — almost always what you want
+          professional  professional voice clone licensed to this account
+          stock         a vendor premade voice
+          library       from the public shared library. Verified directly
+                        synthesisable without adding it to the account first, so this
+                        carries no usability penalty — only lower ownership priority.
+        """
+        if self.provenance == "library":
+            return "library"
+        return {
+            "cloned": "own_clone",
+            "professional": "professional",
+            "premade": "stock",
+        }.get(self.category, "library")
 
     @property
     def energy(self) -> str:
@@ -93,6 +118,8 @@ class MeasuredVoice:
             "use_case": self.use_case,
             "descriptive": self.descriptive,
             "category": self.category,
+            "provenance": self.provenance,
+            "ownership": self.ownership,
             "pitch_hz": round(self.pitch_hz, 1) if self.pitch_hz else None,
             "pitch_band": self.pitch_band,
             "voiced_ratio": round(self.voiced_ratio, 3),
@@ -114,6 +141,7 @@ class MeasuredVoice:
             use_case=data.get("use_case", ""),
             descriptive=data.get("descriptive", ""),
             category=data.get("category", ""),
+            provenance=data.get("provenance", "account"),
             pitch_hz=data.get("pitch_hz"),
             pitch_band=data.get("pitch_band"),
             voiced_ratio=data.get("voiced_ratio") or 0.0,
@@ -145,6 +173,7 @@ def parse_voice(entry: dict) -> MeasuredVoice:
         use_case=str(labels.get("use_case") or ""),
         descriptive=str(labels.get("descriptive") or ""),
         category=str(entry.get("category") or ""),
+        provenance=str(entry.get("provenance") or "account"),
         preview_url=str(entry.get("preview_url") or ""),
         descriptors=descriptors,
     )
@@ -306,8 +335,10 @@ def metadata_score(target, voice: MeasuredVoice) -> float:
     if (band in {"low", "low_mid"} and voice.gender == "male") or (band in {"mid", "high"} and voice.gender == "female"):
         score += 1.0
 
-    if voice.category == "premade":
-        score += 0.75          # account voices are licensed and known-good
+    # The operator's own voices earn a measurement slot ahead of the library.
+    score += {"own_clone": 3.0, "professional": 1.5, "stock": 0.75}.get(
+        voice.ownership, 0.0
+    )
     if voice.preview_url:
         score += 0.5           # measurable at all
     # Community usage is weak evidence of quality, worth a nudge and no more.

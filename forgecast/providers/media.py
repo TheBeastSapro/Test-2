@@ -144,6 +144,12 @@ class ElevenLabsProvider(VoiceProvider):
                             "voice_id": entry.get("voice_id"),
                             "name": entry.get("name"),
                             "category": entry.get("category") or "shared",
+                            # Explicit, because BOTH endpoints return `category`
+                            # and only /voices implies the account owns it. The
+                            # shared endpoint reports category="professional" for
+                            # community pro-cloned voices, which would otherwise
+                            # read as "your professional voice".
+                            "provenance": "library",
                             "labels": {
                                 "gender": entry.get("gender"),
                                 "accent": entry.get("accent"),

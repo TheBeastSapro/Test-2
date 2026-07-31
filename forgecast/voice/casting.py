@@ -245,6 +245,21 @@ def _score_measured(target: VoiceTarget, voice: MeasuredVoice) -> tuple[float, l
             score -= 0.5
             caveats.append(f"{voice.accent} accent, not {target.accent}")
 
+    # Ownership. A voice the operator cloned themselves is nearly always the right
+    # answer when it also fits, so it outranks a marginally closer library match.
+    ownership_bonus = {"own_clone": 3.0, "professional": 1.0, "stock": 0.0}.get(
+        voice.ownership, 0.0
+    )
+    score += ownership_bonus
+    if voice.ownership == "own_clone":
+        reasons.insert(0, "your own cloned voice")
+    elif voice.ownership == "professional":
+        reasons.insert(0, "professional voice on your account")
+    elif voice.ownership == "library":
+        caveats.append(
+            "from the public shared library rather than your account (usable directly)"
+        )
+
     # Prefer a voice whose preview actually resolved over one that did not.
     if voice.measurement != "measured":
         score -= 0.5
