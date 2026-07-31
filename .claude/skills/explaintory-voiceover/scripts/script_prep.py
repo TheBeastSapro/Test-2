@@ -33,8 +33,14 @@ MAX_CHUNK = 450
 CONTEXT_CHARS = 300
 
 # Silence added around a spoken chapter heading, on top of the ~0.20s the voice
-# model already renders at section edges. 'natural' matches Sapro's hand edits:
-# ~0.45s before the chapter name, ~0.50s after it.
+# model already renders at section edges, and before the master adds its own
+# paragraph pause on top of that.
+#
+# These are the INSERTED amounts, not the finished ones. Measured on a delivered
+# master, 'natural' lands at roughly 0.33-0.41s before a chapter name and
+# 0.39-0.57s after it. An earlier version of this comment quoted those finished
+# figures (~0.45/~0.50) as if they were the values in the dict below, which made
+# the dict look wrong to anyone who read both.
 PAUSE_PRESETS = {
     "tight":   {"before": 0.10, "after": 0.18, "cta": 0.20},
     "natural": {"before": 0.22, "after": 0.30, "cta": 0.30},
