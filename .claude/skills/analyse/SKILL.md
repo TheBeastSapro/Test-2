@@ -81,7 +81,36 @@ later in the video, and say in the report which span you actually watched.
 For YouTube Shorts (under ~60s) just watch the whole thing — the clip trick saves
 nothing.
 
-### 3. Analyse
+### 3. Measure the edit with the local engine
+
+Whenever the question touches editing style, pacing, grade, or how the video is cut —
+and always when the user wants the style *replicated* — run the local visual engine
+on the file. Read `references/visual-engine.md` for the full field guide.
+
+```bash
+python3 -m forgecast.vision.cli analyse clip.mp4 --json style.json
+```
+
+It is deterministic ffmpeg and numpy: no API key, no vendor, nothing to rate-limit,
+and it returns exact numbers where a vision model returns adjectives. Shot
+boundaries, cuts per minute, shot-length regularity, pacing trend, transition mix,
+colour grade with an applicable ffmpeg filter string, per-shot motion, caption
+position, loudness, silence, tempo — and cut-to-beat alignment, which no transcript
+or single frame can reveal.
+
+Two rules when you have both the engine and a vision pass:
+
+- **The engine wins on anything countable.** Cuts, durations, palettes, cuts/min. A
+  vision model asked to count cuts will guess; the engine measures.
+- **The vision pass owns semantics.** What is in the shot, what the on-screen text
+  says, what the graphic style is. The engine's `semantic` field is `null` and its
+  confidence block says so — leave it null rather than filling it with plausible
+  guesses about what is in frame.
+
+Attach the whole profile under `style_profile` in the per-video JSON, and use its
+numbers to populate `visual_layout`.
+
+### 4. Analyse
 
 Read `references/frameworks.md` before your first analysis of a session. It holds
 the taxonomies — hook types, format types, the 7-section structure, visual-layout
@@ -97,7 +126,7 @@ python3 scripts/metrics.py pace --words <word_count> --duration <seconds>
 python3 scripts/metrics.py pace --duration 47 --transcript-file transcript.txt
 ```
 
-### 4. Write the per-video output
+### 5. Write the per-video output
 
 Two artefacts per video, both required:
 
@@ -117,7 +146,7 @@ Validate before you finish:
 python3 scripts/metrics.py validate analysis/instagram-DZU1D_8OI62.json
 ```
 
-### 5. Synthesise (2+ URLs)
+### 6. Synthesise (2+ URLs)
 
 Read `references/batch-synthesis.md` and follow it. The short version: a pattern
 is a claim about frequency, so every pattern carries a count (`7/9 videos`) and
@@ -187,7 +216,7 @@ populated.
 Two honest limits: the swipefile is YouTube-only, so Instagram and TikTok
 analyses live only in your output files; and `get_swipefile_folder_insights`
 returns just the share count — it does no analysis. Cross-video insight comes from
-step 5, not from a tool.
+step 6, not from a tool.
 
 Only save when the user asks. Writing to their saved research uninvited is a
 surprise.
@@ -200,6 +229,7 @@ surprise.
 | `references/extraction-prompt.md` | Composing a watch-tool call |
 | `references/output-contract.md` | Writing JSON, or wiring a consumer to it |
 | `references/batch-synthesis.md` | 2+ videos, before synthesising |
+| `references/visual-engine.md` | Editing style, pacing, grade, cut-to-beat |
 | `assets/report-template.md` | Writing the markdown report |
 | `scripts/metrics.py` | Pace metrics, JSON validation, batch prevalence |
 | `examples/instagram-DZU1D_8OI62.{md,json}` | A complete worked pair, if you want to see the standard before writing your own |
