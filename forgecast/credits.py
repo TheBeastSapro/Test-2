@@ -37,6 +37,8 @@ class InsufficientCredits(Exception):
 # Keep these small — a base fee that rivals the variable cost double-charges the user.
 BASE_COSTS: dict[str, int] = {
     "brief": 3,
+    "research": 8,        # query planning + one extraction call per fetched page
+    "voice_casting": 2,   # a few seconds of TTS per audition
     "script": 5,
     "thumbnail": 2,
     "voice": 2,
@@ -63,6 +65,8 @@ PER_UNIT_COSTS: dict[str, tuple[str, int, int]] = {
     # per-clip estimate of "all video" (≈55) would hold three times what a run spends.
     # 1/3 x 55 (video) + 2/3 x 5 (still) ≈ 22.
     "shots": ("clips", 22, 1),
+    "research": ("pages", 4, 1),        # one LLM extraction call per page
+    "voice_casting": ("auditions", 3, 1),
 }
 
 

@@ -84,12 +84,21 @@ async def script_node(ctx: NodeContext) -> NodeResult:
     seconds = int(brief.get("target_duration_seconds") or target_seconds(ctx))
     payload = request_payload(ctx, target_duration_seconds=seconds, brief=brief)
 
+    # Research, when the pipeline ran it, is appended as a hard constraint rather than
+    # background reading: it names exactly which facts are available and forbids the
+    # rest. Without it the house rule against inventing statistics has nothing to
+    # stand on, because a documentary script with no sources will manufacture them.
+    instructions = SCRIPT_INSTRUCTIONS
+    research = ctx.upstream_outputs.get("research") or {}
+    if research.get("prompt_block"):
+        instructions = f"{SCRIPT_INSTRUCTIONS}\n\n{research['prompt_block']}"
+
     data, credits, provider = await ask_json(
         ctx,
         role="Write the full narration script.",
         schema_name="script",
         payload=payload,
-        instructions=SCRIPT_INSTRUCTIONS,
+        instructions=instructions,
         max_tokens=16384,
         temperature=0.8,
     )
@@ -118,6 +127,15 @@ async def script_node(ctx: NodeContext) -> NodeResult:
             f"({drift:.0%} off)",
             level="warning",
         )
+    if research:
+        claims = (research.get("counts") or {}).get("claims_verified", 0)
+        data["research_claims_available"] = claims
+        if claims == 0:
+            ctx.log(
+                "written without sourced facts — research found nothing verifiable",
+                level="warning",
+            )
+
     ctx.log(
         f"script ready: {len(scenes)} scenes, {data['word_count']} words, "
         f"~{data['estimated_seconds']:.0f}s"

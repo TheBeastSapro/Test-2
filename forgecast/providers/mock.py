@@ -87,6 +87,8 @@ class MockLLM(LLMProvider):
             "broll_plan": self._broll,
             "compliance": self._compliance,
             "metadata": self._metadata,
+            "research_queries": self._research_queries,
+            "research_claims": self._research_claims,
         }.get(schema_name, self._generic)
         return builder(topic, prompt, seed)
 
@@ -233,6 +235,48 @@ class MockLLM(LLMProvider):
             "mock": True,
         }
 
+    def _research_queries(self, topic: str, prompt: str, seed: int) -> dict:
+        return {
+            "queries": [
+                f"{topic} explained",
+                f"{topic} statistics data",
+                f"{topic} recent developments 2026",
+                f"{topic} criticism counterargument",
+            ],
+            "open_questions": [
+                f"How often does {topic.lower()} actually happen?",
+                f"Who bears the cost of {topic.lower()}?",
+            ],
+            "mock": True,
+        }
+
+    def _research_claims(self, topic: str, prompt: str, seed: int) -> dict:
+        """Claims quoted verbatim from the supplied page text.
+
+        The quote is lifted from the real `page_text` in the prompt rather than
+        invented, because the research engine verifies quotes by substring match. A
+        mock that returned plausible-sounding quotes would fail that check and make
+        the offline flow look broken when it is working correctly.
+        """
+        match = re.search(r'"page_text"\s*:\s*"(.*?)"\s*[,}]', prompt, re.DOTALL)
+        page_text = (match.group(1) if match else "").replace("\\n", " ")
+        words = page_text.split()
+        if len(words) < 12:
+            return {"claims": [], "mock": True}
+
+        span = " ".join(words[:18])
+        return {
+            "claims": [
+                {
+                    "text": f"[MOCK CLAIM] The source discusses {topic.lower()}.",
+                    "quote": span,
+                    "kind": "context",
+                    "confidence": "low",
+                }
+            ],
+            "mock": True,
+        }
+
     def _generic(self, topic: str, prompt: str, seed: int) -> dict:
         return {"topic": topic, "result": "ok", "seed": seed, "mock": True}
 
@@ -246,6 +290,21 @@ class MockLLM(LLMProvider):
 
 class MockVoice(VoiceProvider):
     name = "mock-voice"
+
+    async def list_voices(self) -> list[dict]:
+        """Mirror the catalogue so name resolution can be exercised offline."""
+        from ..voice.catalogue import STOCK_VOICES
+
+        return [
+            {
+                "voice_id": f"mock-{voice.name.lower()}",
+                "name": voice.name,
+                "category": "premade",
+                "labels": {"accent": voice.accent, "energy": voice.energy},
+                "preview_url": None,
+            }
+            for voice in STOCK_VOICES
+        ]
 
     async def synthesize(
         self, text: str, *, voice_id: str, out_path: Path, speed: float = 1.0

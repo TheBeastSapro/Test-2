@@ -30,6 +30,14 @@ MIN_BPM, MAX_BPM = 60, 200
 # ~42% jump in RMS: unambiguously an attack, six times above the noise ceiling.
 MIN_ONSET_FLUX = 0.35
 
+# Pitch search range. Human speech f0 runs roughly 70-300Hz; going wider invites
+# octave errors on harmonics without finding any real voices.
+MIN_F0, MAX_F0 = 70.0, 300.0
+PITCH_FRAME_SECONDS = 0.040
+# A frame needs this much of the track's peak energy to be worth pitching at all;
+# silence and room noise produce confident nonsense otherwise.
+PITCH_ENERGY_GATE = 0.12
+
 
 @dataclass
 class AudioAnalysis:
@@ -45,6 +53,10 @@ class AudioAnalysis:
     tempo_bpm: float | None = None
     tempo_confidence: str = "low"
     likely_music: bool = False
+    pitch_hz: float | None = None
+    pitch_band: str | None = None
+    pitch_spread: float | None = None
+    voiced_ratio: float = 0.0
     note: str = ""
 
     def as_dict(self) -> dict:
@@ -62,6 +74,10 @@ class AudioAnalysis:
             "tempo_bpm": round(self.tempo_bpm, 1) if self.tempo_bpm else None,
             "tempo_confidence": self.tempo_confidence,
             "likely_music": self.likely_music,
+            "pitch_hz": round(self.pitch_hz, 1) if self.pitch_hz else None,
+            "pitch_band": self.pitch_band,
+            "pitch_spread_hz": round(self.pitch_spread, 1) if self.pitch_spread else None,
+            "voiced_ratio": round(self.voiced_ratio, 3),
             "note": self.note,
         }
 
@@ -139,6 +155,7 @@ def analyse(meta: VideoMeta) -> AudioAnalysis:
 
     onsets = _onsets(rms, hop)
     tempo, tempo_confidence = _tempo(onsets, duration)
+    pitch_hz, pitch_band, pitch_spread, voiced_ratio = _pitch(samples)
 
     # Music is inferred, never asserted: sustained energy (little silence) plus a
     # steady onset pulse. Speech-only tracks have more silence and irregular onsets.
@@ -160,8 +177,84 @@ def analyse(meta: VideoMeta) -> AudioAnalysis:
         tempo_bpm=tempo,
         tempo_confidence=tempo_confidence,
         likely_music=likely_music,
-        note="music/speech split is inferred from silence and onset regularity",
+        pitch_hz=pitch_hz,
+        pitch_band=pitch_band,
+        pitch_spread=pitch_spread,
+        voiced_ratio=voiced_ratio,
+        note="music/speech split is inferred from silence and onset regularity; "
+             "pitch bands describe frequency only and imply nothing about the speaker",
     )
+
+
+def _pitch(samples: np.ndarray) -> tuple[float | None, str | None, float | None, float]:
+    """Median fundamental frequency by autocorrelation.
+
+    Returns (median_hz, band, interquartile_spread_hz, voiced_ratio). Used to cast a
+    voice against a reference: pitch is the single strongest determinant of whether
+    two voices read as similar, and it is measurable, unlike "sounds authoritative".
+
+    Autocorrelation rather than anything fancier because we need a robust median over
+    thousands of frames, not per-frame accuracy — individual octave errors wash out.
+    Frames below the energy gate are skipped entirely: silence autocorrelates to
+    confident nonsense.
+    """
+    frame = int(SAMPLE_RATE * PITCH_FRAME_SECONDS)
+    if len(samples) < frame * 4:
+        return None, None, None, 0.0
+
+    min_lag = max(int(SAMPLE_RATE / MAX_F0), 2)
+    max_lag = min(int(SAMPLE_RATE / MIN_F0), frame - 1)
+    if max_lag <= min_lag:
+        return None, None, None, 0.0
+
+    usable = (len(samples) // frame) * frame
+    frames = samples[:usable].reshape(-1, frame)
+    energies = np.sqrt((frames ** 2).mean(axis=1) + 1e-12)
+    gate = energies.max() * PITCH_ENERGY_GATE
+
+    estimates: list[float] = []
+    voiced = 0
+    # Cap the work on long inputs: a few hundred frames give a stable median.
+    step = max(1, len(frames) // 400)
+    considered = 0
+    for index in range(0, len(frames), step):
+        considered += 1
+        if energies[index] < gate:
+            continue
+        window = frames[index] - frames[index].mean()
+        correlation = np.correlate(window, window, mode="full")[frame - 1:]
+        if correlation[0] <= 0:
+            continue
+        segment = correlation[min_lag:max_lag]
+        if segment.size == 0:
+            continue
+        lag = int(np.argmax(segment)) + min_lag
+        # Require a real periodic peak, not just the largest value in noise.
+        if correlation[lag] < 0.3 * correlation[0]:
+            continue
+        estimates.append(SAMPLE_RATE / lag)
+        voiced += 1
+
+    voiced_ratio = voiced / considered if considered else 0.0
+    if len(estimates) < 8:
+        return None, None, None, voiced_ratio
+
+    values = np.asarray(estimates)
+    median = float(np.median(values))
+    spread = float(np.percentile(values, 75) - np.percentile(values, 25))
+
+    # Bands describe the measurement. They deliberately do not claim a speaker's
+    # gender: pitch ranges overlap, and a confident guess from one number would be
+    # wrong often enough to matter.
+    if median < 110:
+        band = "low"
+    elif median < 165:
+        band = "low_mid"
+    elif median < 215:
+        band = "mid"
+    else:
+        band = "high"
+    return median, band, spread, voiced_ratio
 
 
 def _longest_run(mask: np.ndarray) -> int:

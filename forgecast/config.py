@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     youtube_client_id: str = ""
     youtube_client_secret: str = ""
 
+    # Research search providers. Tavily is preferred when both are present because it
+    # returns extracted page content, saving a fetch per result.
+    tavily_api_key: str = ""
+    brave_api_key: str = ""
+
     worker_concurrency: int = 2
     worker_poll_seconds: float = 2.0
 
@@ -54,6 +59,8 @@ class Settings(BaseSettings):
             "fal": self.fal_key,
             "runway": self.runway_api_key,
             "heygen": self.heygen_api_key,
+            "tavily": self.tavily_api_key,
+            "brave": self.brave_api_key,
         }.get(provider, "")
 
     def run_dir(self, run_id: int) -> Path:

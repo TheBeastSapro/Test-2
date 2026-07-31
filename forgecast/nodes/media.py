@@ -169,7 +169,16 @@ async def voice_node(ctx: NodeContext) -> NodeResult:
         raise ProviderError("cannot narrate a script with no scenes")
 
     voice = ctx.registry.voice()
-    voice_id = ctx.channel.voice_id or str(ctx.params.get("voice_id") or "")
+    # Casting wins over the channel default: the operator picked it at the gate for
+    # this run, having actually heard the auditions.
+    casting = ctx.upstream_outputs.get("voice_casting") or {}
+    voice_id = (
+        str(casting.get("selected_voice_id") or "")
+        or ctx.channel.voice_id
+        or str(ctx.params.get("voice_id") or "")
+    )
+    if casting.get("selected"):
+        ctx.log(f"narrating with the cast voice: {casting['selected']}")
     speed = float(ctx.options.get("voice_speed") or 1.0)
 
     credits = 0

@@ -69,6 +69,34 @@ class ElevenLabsProvider(VoiceProvider):
         super().__init__(api_key)
         self.model = model
 
+    async def list_voices(self) -> list[dict]:
+        """Voices available on this account, for resolving catalogue names to IDs.
+
+        Casting works from names because IDs vary per account and cannot be verified
+        offline; this is where a name becomes something synthesizable.
+        """
+        key = self._require_key()
+        try:
+            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                response = await client.get(
+                    f"{self.base_url}/voices", headers={"xi-api-key": key}
+                )
+        except httpx.TimeoutException as exc:
+            raise ProviderTimeout(str(exc), provider=self.name) from exc
+        _check(response, self.name)
+
+        voices = response.json().get("voices") or []
+        return [
+            {
+                "voice_id": entry.get("voice_id"),
+                "name": entry.get("name"),
+                "category": entry.get("category"),
+                "labels": entry.get("labels") or {},
+                "preview_url": entry.get("preview_url"),
+            }
+            for entry in voices
+        ]
+
     async def synthesize(
         self, text: str, *, voice_id: str, out_path: Path, speed: float = 1.0
     ) -> MediaResult:

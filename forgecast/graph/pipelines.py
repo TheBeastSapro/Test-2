@@ -32,10 +32,19 @@ def faceless_longform(
             params={"target_duration_seconds": target_seconds},
         ),
         NodeSpec(
+            key="research",
+            type="research",
+            title="Research & verify sources",
+            depends_on=("brief",),
+            params={"max_queries": 5, "max_pages": 8},
+        ),
+        NodeSpec(
             key="script",
             type="script",
             title="Write full script",
-            depends_on=("brief",),
+            # Research first: a documentary script with no sources invents its
+            # statistics, and the citation rule needs real claims to point at.
+            depends_on=("brief", "research"),
             requires_approval=True,
             estimated_units=words,
             params={"target_duration_seconds": target_seconds},
@@ -50,10 +59,21 @@ def faceless_longform(
             params={"concepts": 2, "width": 1280, "height": 720},
         ),
         NodeSpec(
+            key="voice_casting",
+            type="voice_casting",
+            title="Cast the voice",
+            depends_on=("script",),
+            # Gated: the voice is the most audible decision in the video, so the
+            # system auditions candidates and a human picks.
+            requires_approval=True,
+            estimated_units=3,
+            params={"shortlist": 3},
+        ),
+        NodeSpec(
             key="voice",
             type="voice",
             title="Narrate script",
-            depends_on=("script",),
+            depends_on=("script", "voice_casting"),
             estimated_units=words * 5.5,  # ≈ characters
         ),
         NodeSpec(
@@ -147,16 +167,29 @@ def faceless_shorts(*, target_seconds: int = 45, publish: bool = True, **_) -> P
             params={"target_duration_seconds": target_seconds, "format": "shorts"},
         ),
         NodeSpec(
+            key="research",
+            type="research",
+            title="Research & verify sources",
+            depends_on=("brief",),
+            params={"max_queries": 3, "max_pages": 4},
+        ),
+        NodeSpec(
             key="script",
             type="script",
             title="Write hook-first script",
-            depends_on=("brief",),
+            depends_on=("brief", "research"),
             requires_approval=True,
             estimated_units=words,
             params={"target_duration_seconds": target_seconds, "format": "shorts"},
         ),
         NodeSpec(
-            key="voice", type="voice", title="Narrate script", depends_on=("script",),
+            key="voice_casting", type="voice_casting", title="Cast the voice",
+            depends_on=("script",), requires_approval=True, estimated_units=3,
+            params={"shortlist": 3},
+        ),
+        NodeSpec(
+            key="voice", type="voice", title="Narrate script",
+            depends_on=("script", "voice_casting"),
             estimated_units=words * 5.5,
         ),
         NodeSpec(
