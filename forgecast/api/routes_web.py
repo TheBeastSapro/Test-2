@@ -61,6 +61,8 @@ def login_submit(
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     if action == "signup":
+        if not get_settings().allow_signup:
+            return _redirect("/login?error=Registration+is+closed+on+this+instance")
         existing = session.execute(
             select(User).where(User.email == email.strip().lower())
         ).scalar_one_or_none()
@@ -202,7 +204,7 @@ def run_page(
             {
                 "kind": artifact.kind,
                 "node_key": node_keys.get(artifact.node_id or -1, ""),
-                "url": artifact_url(artifact.path),
+                "url": artifact_url(artifact.path, user.id),
                 "size_mb": artifact.size_bytes / 1_048_576,
                 "meta": artifact.meta or {},
             }

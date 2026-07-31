@@ -17,6 +17,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 
 from sqlalchemy import select
@@ -48,6 +49,68 @@ def cmd_user_create(args) -> int:
         session.flush()
         billing.grant(session, user.id, args.grant, note="cli grant")
         print(f"user {user.id} created with {args.grant} credits")
+    return 0
+
+
+def cmd_bootstrap(args) -> int:
+    """Prepare an empty instance for its owner: tables, account, first channel.
+
+    Idempotent on purpose. This runs on every container start, so a restart must not
+    fail because the owner already exists, and must not top the balance up again —
+    that would mint credits outside the ledger's reserve/settle discipline.
+    """
+    init_db()
+    email = args.email.strip().lower()
+    password = args.password or os.environ.get("FORGECAST_OWNER_PASSWORD", "")
+
+    with session_scope() as session:
+        user = session.execute(
+            select(User).where(User.email == email)
+        ).scalar_one_or_none()
+
+        if user is None:
+            if len(password) < 12:
+                print("refusing to create an account with a password shorter than 12 "
+                      "characters — this instance may be reachable from the internet",
+                      file=sys.stderr)
+                return 1
+            user = User(email=email, hashed_password=hash_password(password))
+            session.add(user)
+            session.flush()
+            # The idempotency key is what makes a restart safe: a second grant with
+            # the same key is a no-op rather than free money.
+            billing.grant(session, user.id, args.grant, note="owner grant",
+                          idempotency_key=f"bootstrap:{user.id}")
+            print(f"owner {email} created (user {user.id}) with {args.grant} credits")
+        elif args.reset_password:
+            if len(password) < 12:
+                print("refusing to set a password shorter than 12 characters",
+                      file=sys.stderr)
+                return 1
+            user.hashed_password = hash_password(password)
+            print(f"password reset for {email}")
+        else:
+            print(f"owner {email} already exists (user {user.id})")
+
+        channel = session.execute(
+            select(Channel).where(Channel.user_id == user.id)
+        ).scalars().first()
+        if channel is None and args.channel:
+            channel = Channel(
+                user_id=user.id, name=args.channel, niche=args.niche or "",
+                voice_id="", target_duration_seconds=args.seconds,
+                style_profile={"tone": args.tone} if args.tone else {},
+            )
+            session.add(channel)
+            session.flush()
+            print(f"channel {channel.id} '{channel.name}' created")
+
+        balance = billing.balance(session, user.id)
+
+    settings = get_settings()
+    print(f"balance {balance} credits · provider mode {settings.provider_mode} · "
+          f"signup {'open' if settings.allow_signup else 'closed'}")
+    print(f"sign in at {settings.base_url}/login")
     return 0
 
 
@@ -271,6 +334,23 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("initdb", help="create database tables").set_defaults(func=cmd_initdb)
+
+    boot = sub.add_parser(
+        "bootstrap",
+        help="prepare an instance for its owner: tables, account, first channel",
+    )
+    boot.add_argument("--email", required=True)
+    boot.add_argument("--password", default="",
+                      help="or set FORGECAST_OWNER_PASSWORD; minimum 12 characters")
+    boot.add_argument("--grant", type=int, default=10_000)
+    boot.add_argument("--channel", default="My Channel",
+                      help="name for the first channel; empty to skip")
+    boot.add_argument("--niche", default="")
+    boot.add_argument("--tone", default="")
+    boot.add_argument("--seconds", type=int, default=480)
+    boot.add_argument("--reset-password", action="store_true",
+                      help="set a new password for an account that already exists")
+    boot.set_defaults(func=cmd_bootstrap)
 
     user = sub.add_parser("user").add_subparsers(dest="action", required=True)
     create = user.add_parser("create")

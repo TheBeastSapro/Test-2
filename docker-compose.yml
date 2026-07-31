@@ -1,0 +1,62 @@
+# A private, single-operator Forgecast instance.
+#
+#   cp .env.example .env      # then fill in the two generated secrets
+#   docker compose up -d      # api on http://localhost:8000
+#
+# SQLite on a volume is the default and is the right default here: one operator, a
+# handful of concurrent runs, and WAL mode handles the api and worker sharing it. The
+# postgres profile is there for when that stops being true — `--profile postgres`.
+
+name: forgecast
+
+services:
+  app:
+    build: .
+    image: forgecast:latest
+    command: ["api"]
+    env_file: [.env]
+    environment:
+      # Only the api container talks to the browser, so it is the one that needs to
+      # trust a reverse proxy's forwarded headers.
+      FORGECAST_FORWARDED_ALLOW_IPS: ${FORGECAST_FORWARDED_ALLOW_IPS:-127.0.0.1}
+    ports:
+      # Bound to loopback deliberately. Publishing 8000 on every interface is how a
+      # "private" instance ends up answering the internet. Put a reverse proxy or a
+      # tunnel in front of it — see DEPLOY.md.
+      - "${FORGECAST_PUBLISH_ADDR:-127.0.0.1}:8000:8000"
+    volumes:
+      - forgecast-data:/data
+    restart: unless-stopped
+
+  worker:
+    build: .
+    image: forgecast:latest
+    command: ["worker"]
+    env_file: [.env]
+    volumes:
+      # The same volume, because the worker writes the renders the api serves.
+      - forgecast-data:/data
+    depends_on:
+      app:
+        condition: service_started
+    restart: unless-stopped
+
+  postgres:
+    profiles: ["postgres"]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: forgecast
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forgecast}
+      POSTGRES_DB: forgecast
+    volumes:
+      - forgecast-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forgecast"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  forgecast-data:
+  forgecast-postgres:

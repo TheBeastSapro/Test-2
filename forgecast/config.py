@@ -22,6 +22,18 @@ class Settings(BaseSettings):
 
     access_token_ttl_minutes: int = 60 * 24 * 7
 
+    # Registration is closed by default. This is the one setting whose default has to
+    # be the *restrictive* one: a private instance that becomes reachable — a tunnel, a
+    # VPS, a forwarded port — must not accept strangers because nobody remembered to
+    # turn signup off. Open it deliberately when you want other people on it, and
+    # create your own account with `forgecast bootstrap`.
+    allow_signup: bool = False
+
+    # How long a signed media URL stays valid. Long enough to watch a render without
+    # the link expiring mid-playback, short enough that a copied URL is not a
+    # permanent key to the file.
+    media_url_ttl_seconds: int = 60 * 60 * 6
+
     # "mock" never touches the network and never spends money.
     provider_mode: Literal["mock", "live"] = "mock"
 

@@ -40,6 +40,18 @@ Create an account, add a channel, queue a run. The run page shows the live node 
 streams the log over SSE, and stops at each gate for you to approve or send back with
 notes. API docs at `/docs`.
 
+## Hosting it privately
+
+```bash
+./docker/first-run.sh you@example.com     # writes .env, prints your password
+docker compose up -d                      # http://localhost:8000
+```
+
+Registration is closed by default, media is served through signed expiring URLs, and
+the port binds to loopback. [DEPLOY.md](DEPLOY.md) covers that plus a Cloudflare tunnel
+for phone access, a VPS with automatic TLS, Postgres, backups, and exactly which parts
+of the deploy are verified and which are not.
+
 ## Going live
 
 Set real keys and flip the mode. Costs real money from the first call.
@@ -63,9 +75,10 @@ Check the cost before committing to a run:
 curl "localhost:8000/api/pipelines/faceless_longform/estimate?target_seconds=480"
 ```
 
-Read [ARCHITECTURE.md §2.7](ARCHITECTURE.md) first — payments, object storage,
-migrations, and the YouTube OAuth callback are deliberately not implemented, and the
-media adapters have never made a paid call.
+Read [ARCHITECTURE.md §2.7](ARCHITECTURE.md) first — payments, object storage and the
+YouTube OAuth callback are deliberately not implemented, and the media adapters have
+never made a paid call. Migrations now exist: `alembic upgrade head`, applied
+automatically at container start.
 
 ## CLI
 

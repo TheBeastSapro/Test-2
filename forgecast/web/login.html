@@ -18,14 +18,22 @@
              autocomplete="current-password" minlength="8">
       <div class="row" style="margin-top:16px">
         <button name="action" value="login" type="submit">Sign in</button>
+        {% if settings and settings.allow_signup %}
         <button name="action" value="signup" type="submit" class="ghost">Create account</button>
+        {% endif %}
       </div>
     </form>
   </div>
+  {% if settings and not settings.allow_signup %}
+  <p class="muted" style="font-size:13px;margin-top:14px">
+    This is a private instance — registration is closed. The owner creates accounts
+    with <code>forgecast bootstrap</code>.
+  </p>
+  {% endif %}
   {% if settings and settings.is_mock %}
   <p class="muted" style="font-size:13px;margin-top:14px">
-    Running in <strong>mock mode</strong>: new accounts get
-    {{ settings.signup_credit_grant }} credits and no provider is ever called.
+    Running in <strong>mock mode</strong>: no provider is ever called and nothing is
+    ever charged.
   </p>
   {% endif %}
 </div>

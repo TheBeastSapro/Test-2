@@ -38,6 +38,7 @@ from ..models import (
 )
 from ..providers.registry import CATALOGUE
 from . import runner
+from .media import sign_url
 from .schemas import (
     ArtifactOut,
     ChannelIn,
@@ -77,13 +78,9 @@ def _owned_run(session: Session, run_id: int, user: User) -> Run:
     return run
 
 
-def artifact_url(path: str | Path) -> str | None:
-    settings = get_settings()
-    try:
-        relative = Path(path).resolve().relative_to(settings.storage_dir.resolve())
-    except (ValueError, OSError):
-        return None
-    return f"/files/{relative.as_posix()}"
+def artifact_url(path: str | Path, user_id: int) -> str | None:
+    """A signed, expiring URL for this user. See `api.media` for why it is signed."""
+    return sign_url(path, user_id)
 
 
 def serialise_run(session: Session, run: Run) -> RunOut:
@@ -126,7 +123,7 @@ def serialise_run(session: Session, run: Run) -> RunOut:
                 mime=a.mime,
                 size_bytes=a.size_bytes,
                 node_key=node_keys.get(a.node_id or -1),
-                url=artifact_url(a.path),
+                url=artifact_url(a.path, run.user_id),
                 meta=a.meta or {},
             )
             for a in artifacts
@@ -139,6 +136,12 @@ def serialise_run(session: Session, run: Run) -> RunOut:
 
 @router.post("/auth/signup", response_model=TokenOut, status_code=201)
 def signup(payload: SignupIn, session: Session = Depends(get_session)) -> TokenOut:
+    if not get_settings().allow_signup:
+        raise HTTPException(
+            status_code=403,
+            detail="registration is closed on this instance; the owner creates "
+                   "accounts with `forgecast bootstrap`",
+        )
     email = payload.email.strip().lower()
     if session.execute(select(User).where(User.email == email)).scalar_one_or_none():
         raise HTTPException(status_code=409, detail="email already registered")

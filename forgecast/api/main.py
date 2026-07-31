@@ -6,13 +6,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from .. import nodes  # noqa: F401 - registers node handlers
 from ..config import get_settings
 from ..db import init_db
 from ..providers import ProviderError
 from . import runner
+from .media import router as media_router
 from .routes_api import router as api_router
 from .routes_web import router as web_router
 
@@ -41,11 +41,11 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router)
     app.include_router(web_router)
-
-    # Artifacts are served straight off disk in development. In production put them
-    # in object storage behind signed URLs — this mount has no per-user authorisation.
+    # Artifacts are served through signed, expiring, per-user URLs rather than a
+    # static mount of the storage directory. See `api.media` — a plain mount hands
+    # every run's video to anyone who can guess a path.
+    app.include_router(media_router)
     settings.storage_dir.mkdir(parents=True, exist_ok=True)
-    app.mount("/files", StaticFiles(directory=settings.storage_dir), name="files")
 
     @app.exception_handler(ProviderError)
     async def provider_error_handler(_request: Request, exc: ProviderError) -> JSONResponse:

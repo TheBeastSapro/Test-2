@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
+from pathlib import Path
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from .config import get_settings
 from .models import Base
+
+log = logging.getLogger("forgecast.db")
 
 
 def _make_engine():
@@ -37,8 +41,45 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 
 
 def init_db() -> None:
-    """Create tables. Real deployments use Alembic; this keeps dev one command."""
+    """Create tables, and record that they are already at the latest migration.
+
+    Two mechanisms create schema here: `create_all` for a one-command start, and
+    Alembic for a deployment that has to evolve. They have to agree, and the stamp is
+    what makes them agree. Without it, a fresh instance that booted the app first
+    would have every table but no `alembic_version` row, so the first
+    `alembic upgrade head` would try to create tables that already exist and fail —
+    at exactly the moment you least want a migration to fail.
+    """
     Base.metadata.create_all(engine)
+    _stamp_head_if_unstamped()
+
+
+def _stamp_head_if_unstamped() -> None:
+    """Mark a freshly created database as being at head. Never re-stamps."""
+    try:
+        from alembic.config import Config
+        from alembic.migration import MigrationContext
+        from alembic.script import ScriptDirectory
+    except ImportError:  # pragma: no cover - alembic is an install-time dependency
+        return
+
+    root = Path(__file__).resolve().parent.parent
+    ini = root / "alembic.ini"
+    if not ini.exists():  # installed as a package without the migration tree
+        return
+
+    try:
+        with engine.begin() as connection:
+            context = MigrationContext.configure(connection)
+            if context.get_current_heads():
+                return  # already under Alembic's control; leave it alone
+            config = Config(str(ini))
+            config.set_main_option("script_location", str(root / "migrations"))
+            heads = ScriptDirectory.from_config(config).get_heads()
+            if heads:
+                context.stamp(ScriptDirectory.from_config(config), "head")
+    except Exception:  # pragma: no cover - a stamp failure must not stop startup
+        log.warning("could not stamp the migration version", exc_info=True)
 
 
 @contextmanager

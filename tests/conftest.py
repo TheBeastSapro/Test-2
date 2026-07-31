@@ -16,6 +16,10 @@ os.environ.setdefault("FORGECAST_STORAGE_DIR", str(_TMP / "storage"))
 os.environ.setdefault("FORGECAST_PROVIDER_MODE", "mock")
 os.environ.setdefault("FORGECAST_SECRET_KEY", "test-secret-key-not-for-production")
 os.environ.setdefault("FORGECAST_SIGNUP_CREDIT_GRANT", "5000")
+# The suite creates its users through the signup endpoint, so it needs registration
+# open. The shipped default is closed — see test_private_instance.py, which asserts
+# both that default and what happens when it is enforced.
+os.environ.setdefault("FORGECAST_ALLOW_SIGNUP", "true")
 
 import pytest  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
