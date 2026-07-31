@@ -271,6 +271,35 @@ def level_headings(parts_dir, sections, tol=0.12, floor=0.85, ceil=1.18):
     return factors
 
 
+# Each section is a separate render, butt-joined to the next. Whatever sample the
+# encoder happens to end on meets whatever sample the next one starts on, and the
+# step between them is a click. Sapro heard two of these -- 2:31 and 3:28 in a
+# delivered file -- and both landed within a second of a section join.
+#
+# A click cannot be found reliably after the fact: a sample-step detector tuned to
+# catch all three he reported also flagged several hundred ordinary plosives, which
+# is the same wall explaintory-vo-master hit. So it is prevented instead. Three
+# milliseconds of fade at each section edge takes the join to zero and back; it is
+# far shorter than any phoneme, and it cannot click because there is no step left
+# to click on.
+SPLICE_FADE = 0.003
+
+
+def _edge_fade(pcm_bytes, rate, dur=SPLICE_FADE):
+    """Ramp the first and last few ms of a section to zero so joins cannot step."""
+    import array
+    a = array.array("h")
+    a.frombytes(pcm_bytes)
+    n = int(dur * rate)
+    if len(a) < 2 * n or n < 1:
+        return pcm_bytes
+    for k in range(n):
+        g = k / n
+        a[k] = int(a[k] * g)
+        a[len(a) - 1 - k] = int(a[len(a) - 1 - k] * g)
+    return a.tobytes()
+
+
 def stitch(parts_dir, sections, out_path, preset="natural", rate=SR, level=True):
     """Concatenate the sections with exact digital silence between them.
     Returns [{index, start, end}] so a flagged section maps back to a timestamp."""
@@ -282,8 +311,9 @@ def stitch(parts_dir, sections, out_path, preset="natural", rate=SR, level=True)
         if gaps[i] > 0:
             pcm += b"\x00\x00" * int(round(gaps[i] * rate))
         start = len(pcm) / 2 / rate
-        pcm += _decode(os.path.join(parts_dir, f"sec_{i:03d}.mp3"), rate,
-                       factors.get(i, 1.0))
+        pcm += _edge_fade(
+            _decode(os.path.join(parts_dir, f"sec_{i:03d}.mp3"), rate,
+                    factors.get(i, 1.0)), rate)
         marks.append({"index": i, "start": round(start, 3),
                       "end": round(len(pcm) / 2 / rate, 3),
                       "retimed": round(factors.get(i, 1.0), 4)})

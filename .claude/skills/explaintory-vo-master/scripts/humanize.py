@@ -182,8 +182,55 @@ def qc_report(x, label="source"):
     return out
 
 # ---------------------------------------------------------------- 3. align
+_ONES = ["zero","one","two","three","four","five","six","seven","eight","nine",
+         "ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen",
+         "seventeen","eighteen","nineteen"]
+_TENS = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"]
+
+
+def _under100(n):
+    if n < 20:
+        return _ONES[n]
+    return _TENS[n // 10] + (_ONES[n % 10] if n % 10 else "")
+
+
+def _spell(n):
+    """1547 -> 'fifteenfortyseven'. Year-style for four digits, plain otherwise."""
+    if n < 100:
+        return _under100(n)
+    if n < 1000:
+        return _ONES[n // 100] + "hundred" + (_under100(n % 100) if n % 100 else "")
+    if 1000 <= n < 10000:
+        hi, lo = n // 100, n % 100
+        if n % 1000 == 0:
+            return _under100(n // 1000) + "thousand"
+        if lo == 0:                       # 1900 -> nineteenhundred
+            return _under100(hi) + "hundred"
+        return _under100(hi) + _under100(lo)          # 1547 -> fifteenfortyseven
+    return _under100(n // 1000) + "thousand" + (_spell(n % 1000) if n % 1000 else "")
+
+
 def norm_tok(w):
+    """Alignable form of a script token.
+
+    Numerals used to be stripped to nothing and dropped from the alignment
+    entirely. Everything downstream then worked on a token stream with holes in
+    it: a boundary near "between 1547 and 1550, described" had no idea where
+    either year was, so the beat meant for the comma after 1550 was placed by
+    guesswork and landed inside the range instead -- audible as a stumble at
+    0:57, and as a missing comma pause right after it. 35 tokens of this script
+    were invisible for the same reason.
+
+    Digits are spelled the way they are spoken, so the aligner can find them:
+    four-digit numbers year-style ("fifteenfortyseven"), everything else plainly.
+    """
     w = unicodedata.normalize("NFKD", w).encode("ascii", "ignore").decode()
+    core = re.sub(r"[^0-9a-zA-Z']", "", w)
+    if core.isdigit():
+        try:
+            return _spell(int(core))
+        except (ValueError, IndexError, KeyError):
+            return ""
     return re.sub(r"[^a-zA-Z']", "", w).lower()
 
 def align(wav16_path, lines, chunk_s=40):
