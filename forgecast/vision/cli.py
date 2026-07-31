@@ -16,6 +16,7 @@ import tempfile
 from pathlib import Path
 
 from .acquire import AcquireError
+from .apply import spec_from_dict
 from .engine import analyse_file, analyse_reference
 from .probe import ProbeError
 
@@ -183,6 +184,55 @@ def cmd_compare(args) -> int:
     return 0
 
 
+def cmd_restyle(args) -> int:
+    """Conform footage to a saved reference style, then optionally verify it."""
+    from .restyle import restyle
+
+    try:
+        payload = json.loads(Path(args.profile).read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"error reading {args.profile}: {exc}", file=sys.stderr)
+        return 1
+
+    spec = spec_from_dict(payload)
+    beats = (payload.get("audio") or {}).get("onset_times") or None
+
+    try:
+        result = restyle(
+            args.source, spec, args.output,
+            beats=beats, keep_audio=not args.no_audio,
+        )
+    except ProbeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"wrote {result.path} — {result.shot_count} shots "
+          f"(target {spec.target_shot_seconds:.2f}s, "
+          f"calibrated grade {result.plan.grade_filter})",
+          file=sys.stderr)
+
+    if args.verify:
+        reference = payload.get("shot_rhythm") or {}
+        produced = analyse_file(result.path)
+        applied = produced.shot_rhythm
+        print()
+        print("VERIFY — did the style actually transfer?")
+        rows = [
+            ("median shot s", (reference.get("shot_length") or {}).get("median"),
+             (applied.get("shot_length") or {}).get("median")),
+            ("cuts/min", reference.get("cuts_per_minute"),
+             applied.get("cuts_per_minute")),
+            ("brightness", (payload.get("colour") or {}).get("brightness"),
+             produced.colour.get("brightness")),
+            ("saturation", (payload.get("colour") or {}).get("saturation"),
+             produced.colour.get("saturation")),
+        ]
+        print(f"  {'metric':<16}{'reference':>12}{'result':>12}")
+        for label, want, got in rows:
+            print(f"  {label:<16}{want!s:>12}{got!s:>12}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="forgecast-vision", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -204,6 +254,17 @@ def build_parser() -> argparse.ArgumentParser:
     compare = sub.add_parser("compare", help="diff two saved profiles side by side")
     compare.add_argument("paths", nargs="+")
     compare.set_defaults(func=cmd_compare)
+
+    restyle_cmd = sub.add_parser(
+        "restyle", help="re-cut and re-grade footage to match a saved style profile"
+    )
+    restyle_cmd.add_argument("source", help="video to conform")
+    restyle_cmd.add_argument("--profile", required=True, help="profile JSON to apply")
+    restyle_cmd.add_argument("-o", "--output", required=True)
+    restyle_cmd.add_argument("--no-audio", action="store_true")
+    restyle_cmd.add_argument("--verify", action="store_true",
+                             help="re-analyse the output and compare it to the reference")
+    restyle_cmd.set_defaults(func=cmd_restyle)
     return parser
 
 

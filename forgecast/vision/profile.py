@@ -41,6 +41,7 @@ class RenderSpec:
     pacing: str                        # accelerating | steady | decelerating
     grade_filter: str                  # ffmpeg `eq` filter string
     target_brightness: float
+    target_contrast: float
     target_saturation: float
     palette: list[dict] = field(default_factory=list)
 
@@ -60,6 +61,7 @@ class RenderSpec:
             "pacing": self.pacing,
             "grade_filter": self.grade_filter,
             "target_brightness": round(self.target_brightness, 2),
+            "target_contrast": round(self.target_contrast, 2),
             "target_saturation": round(self.target_saturation, 4),
             "palette": self.palette,
         }
@@ -214,6 +216,7 @@ def _render_spec(
         pacing=shot_analysis.pacing_trend(),
         grade_filter=_grade_filter(colour),
         target_brightness=colour.brightness,
+        target_contrast=colour.contrast,
         target_saturation=colour.saturation,
         palette=colour.palette,
     )
