@@ -168,6 +168,41 @@ So: the channel's fastest sentences are not a defect, they are the delivery. Do 
 reach for 250 because a sentence "sounds fast" — check whether the human goes faster
 there too. If Sapro asks for levelling, start at 290 and let him hear it.
 
+## Pronunciation — respell, never phonemes
+
+ElevenLabs takes two kinds of pronunciation rule and only one of them works here.
+From their docs:
+
+> "Pronunciation dictionary phoneme tags only work with `eleven_flash_v2` and
+> `eleven_v3` models. Other models skip dictionary phoneme tags and use the default
+> pronunciation. For other models, use alias tags instead."
+
+The channel runs `eleven_multilingual_v2` — picked for accuracy, and the one model
+where a phoneme rule does nothing. It is not rejected, it is **skipped**: careful IPA
+produces the same wrong reading with no error to tell you. `pronounce.py` warns when a
+lexicon entry looks like IPA on a model that will ignore it.
+
+So the fix is respelling. `lexicon.json`, passed with `--lexicon`:
+
+```json
+{ "words": { "Angolpo": "An-gol-poh", "Hiero": "Hee-air-oh" } }
+```
+
+Whole-word only — a `Hiero` entry cannot corrupt "hierarchy" — and applied **only to
+the text sent to the API**. The read-check still diffs against the real spelling, and
+`humanize.py` still aligns against the real script, so nothing downstream is fooled.
+Respellings are longer than the words they replace, and that is billed.
+
+The read-check feeds it. A word that comes out identically on two takes is exactly
+what a lexicon is for, so those runs print:
+
+```bash
+python3 scripts/pronounce.py --from-check <work>/readcheck.json
+```
+
+which emits a ready-to-fill entry per consistently-misread word. **Decide which are
+real** — most are the transcriber spelling a name its own way, which needs no fix.
+
 ## Before mastering — the curated clause breaks
 
 `humanize.py` wants a file of clause breaks the script forgot to punctuate, one

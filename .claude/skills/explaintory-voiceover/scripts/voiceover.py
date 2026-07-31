@@ -141,6 +141,8 @@ def main():
     ap.add_argument("--profile", help="voiceover_profile.json from Voiceover Studio")
     ap.add_argument("--curated", help="clause-break file for the mastering pass "
                                       "(one 'wordA|wordB' pair per line)")
+    ap.add_argument("--lexicon", help="pronunciation lexicon JSON — names respelled so "
+                                      "the voice reads them right")
     ap.add_argument("--skip-headings", action="store_true", default=None,
                     help="do not read chapter names aloud (default: whatever the profile locked in)")
     ap.add_argument("--max-chunk", type=int, default=None)
@@ -209,6 +211,8 @@ def main():
         gen_cmd += ["--skip-headings"]
     if a.chapter_pause:
         gen_cmd += ["--chapter-pause", a.chapter_pause]
+    if a.lexicon:
+        gen_cmd += ["--lexicon", a.lexicon]
 
     if start <= STAGES.index("generate"):
         run_stage(gen_cmd)
@@ -241,6 +245,9 @@ def main():
             log("consistent across takes, worth a listen: " + "; ".join(
                 f"section {i+1} " + ", ".join(f"“{e}”→“{g}”" for e, g in pairs)
                 for i, pairs in sorted(settled.items())))
+            log(f"if any of those are real mispronunciations, seed the lexicon:\n"
+                f"    python3 {os.path.join(here, 'pronounce.py')} "
+                f"--from-check {check_json}")
             # A plain re-roll fixes a one-off misread. Hesitation is systematic, and
             # the studio's lever for it is a small stability rise — so later rounds
             # nudge rather than rolling the same dice again.

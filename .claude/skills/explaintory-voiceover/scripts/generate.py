@@ -29,6 +29,7 @@ from elevenlabs.client import ElevenLabs
 from elevenlabs.core.api_error import ApiError
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pronounce  # noqa: E402
 from script_prep import (CONTEXT_CHARS, build_sections, chapter_gaps,  # noqa: E402
                          master_script_lines)
 
@@ -304,6 +305,8 @@ def main():
     ap.add_argument("--stitch-only", action="store_true")
     ap.add_argument("--no-level-headings", action="store_true",
                     help="leave chapter announcements at whatever rate they rendered")
+    ap.add_argument("--lexicon", help="pronunciation lexicon JSON — names respelled so "
+                                      "the voice reads them right")
     ap.add_argument("--sections-json", help="write the section manifest here")
     a = ap.parse_args()
 
@@ -315,6 +318,17 @@ def main():
     sections = build_sections(raw_script, a.skip_headings, a.max_chunk)
     if not sections:
         raise SystemExit("Nothing to narrate — the script is empty after removing headings.")
+
+    # Respell before anything measures character counts, and before the API sees the
+    # text — but only in send_text, so the read-check and the mastering alignment
+    # still work against the spelling in the script.
+    lex = pronounce.load_lexicon(a.lexicon)
+    if lex:
+        pronounce.check_lexicon(lex, prof["model"])
+        used = pronounce.apply_to_sections(sections, lex)
+        if used:
+            log("respelled for the voice: " +
+                ", ".join(f"{w}→{lex[w]} (x{n})" for w, n in sorted(used.items())))
 
     parts_dir = a.parts_dir or os.path.splitext(a.out)[0] + "_parts"
     chars = sum(s["chars"] for s in sections)
