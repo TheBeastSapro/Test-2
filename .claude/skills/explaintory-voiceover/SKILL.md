@@ -26,7 +26,33 @@ has a standing rule — never treat a listening model's description of audio as 
 and this obeys it. Every section is transcribed and diffed against its own script
 text. A section only gets re-rendered on evidence.
 
-## One command
+## Confirm the structure first — always
+
+Generation is the one irreversible step. The read-check and the master can be re-run
+for free; characters sent are characters billed. So show the plan and let Sapro
+confirm before spending anything, exactly as the studio's structure panel does:
+
+```bash
+python3 scripts/voiceover.py --script script.txt --profile voiceover_profile.json --plan
+```
+
+```
+  “The Weirdest Warships Ever Built”
+  detected 8 headings · 1 divider — headings read aloud as chapter intros
+  chapters: The Weirdest Warships Ever Built · The Ancient World · The Middle Ages · …
+  pronunciation guide: 31 names held out of the narration
+
+  41 sections (8 of them chapter announcements) · 12,174 chars · ~14:29 audio
+  voice dUHbvtIZto0ZEBkhYiyk · eleven_multilingual_v2 · stability 0.48 · style 0.05 · speed 1.07
+  COST: ~12,174 credits of 82,852 remaining
+```
+
+Report the chapter list back and wait. A wrong heading count means the script is
+structured differently than assumed, and it is far cheaper to find that here than in
+a finished render — a missed heading is a chapter that never gets announced, and a
+spurious one is a sentence read as a chapter title.
+
+## Then run it
 
 ```bash
 python3 scripts/voiceover.py --script script.txt --title "The Weirdest Weapons Ever Built" \

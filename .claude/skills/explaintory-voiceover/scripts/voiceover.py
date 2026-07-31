@@ -23,8 +23,10 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import generate as gen  # noqa: E402
 import readcheck as rc  # noqa: E402
-from script_prep import (build_sections, master_script_lines,  # noqa: E402
-                         split_pronunciation_guide)
+from script_prep import (build_sections, detect_structure,  # noqa: E402
+                         master_script_lines, split_pronunciation_guide)
+
+CHARS_PER_SEC = 14      # the studio's narration-pace constant, for the estimate
 
 STAGES = ["generate", "check", "master"]
 
@@ -124,6 +126,62 @@ def suggest_breaks(script_lines):
     return out
 
 
+def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None):
+    """What the studio's structure panel and estimator show, before a credit is spent.
+
+    Generation is the irreversible part of this pipeline — the read-check and the
+    master can be re-run for free, but characters sent are characters billed. So
+    the same numbers Sapro checks in the browser get printed here, and the run
+    stops until he has seen them.
+    """
+    st = detect_structure(raw)
+    chars = sum(s["chars"] for s in sections)
+    mins, secs_ = divmod(int(chars / CHARS_PER_SEC), 60)
+    heads = [s for s in sections if s["is_heading"]]
+
+    print(f"\n  “{title}”")
+    bits = []
+    if st["headings"]:
+        bits.append(f"{len(st['headings'])} heading" + ("s" if len(st["headings"]) > 1 else ""))
+    if st["directions"]:
+        bits.append(f"{st['directions']} stage direction"
+                    + ("s" if st["directions"] > 1 else ""))
+    if st.get("dividers"):
+        bits.append(f"{st['dividers']} divider" + ("s" if st["dividers"] > 1 else ""))
+    if st["ctas"]:
+        bits.append(f"{st['ctas']} CTA" + ("s" if st["ctas"] > 1 else ""))
+    print(f"  detected {' · '.join(bits) if bits else 'no headings or directions'}"
+          f" — headings {'NOT read aloud' if skip_headings else 'read aloud as chapter intros'}")
+
+    if st["headings"]:
+        print("  chapters: " + " · ".join(h[:34] for h in st["headings"][:8])
+              + (f" · +{len(st['headings'])-8} more" if len(st["headings"]) > 8 else ""))
+    for pv in st["cta_previews"][:3]:
+        print(f"  CTA: “{pv}”")
+    if guide:
+        print(f"  pronunciation guide: {len(guide)} names held out of the narration")
+
+    print(f"\n  {len(sections)} sections ({len(heads)} of them chapter announcements)"
+          f" · {chars:,} chars · ~{mins}:{secs_:02d} audio")
+    print(f"  voice {prof['voice_id']} · {prof['model']} · stability "
+          f"{prof['settings']['stability']} · style {prof['settings']['style']} · "
+          f"speed {prof['settings']['speed']}")
+    print(f"  COST: ~{chars:,} credits", end="")
+
+    if api_key:
+        try:
+            from elevenlabs.client import ElevenLabs
+            sub = ElevenLabs(api_key=api_key).user.subscription.get()
+            left = sub.character_limit - sub.character_count
+            print(f" of {left:,} remaining"
+                  + ("   ** NOT ENOUGH **" if chars > left else ""))
+        except Exception:
+            print("")
+    else:
+        print("")
+    print()
+
+
 def run_stage(cmd):
     log("$ " + " ".join(str(c) for c in cmd))
     p = subprocess.run(cmd)
@@ -160,6 +218,9 @@ def main():
     ap.add_argument("--no-master", action="store_true", help="stop after the read-check")
     ap.add_argument("--suggest-breaks", action="store_true",
                     help="print candidate clause breaks and exit — read them, keep the real ones")
+    ap.add_argument("--plan", action="store_true",
+                    help="show the structure and the credit cost, then stop. Run this "
+                         "first and let Sapro confirm before spending anything.")
     a = ap.parse_args()
 
     # the studio's locked-in calibration supplies the defaults; explicit flags win
@@ -207,6 +268,10 @@ def main():
                   indent=1, ensure_ascii=False)
         log(f"pronunciation guide: {len(guide)} names, held out of the narration "
             f"({', '.join(list(guide)[:5])}{'…' if len(guide) > 5 else ''})")
+
+    if a.plan:
+        show_plan(title, raw, guide, sections, prof, a.skip_headings, prof["api_key"])
+        return 0
 
     start = STAGES.index(a.start)
     here = os.path.dirname(os.path.abspath(__file__))

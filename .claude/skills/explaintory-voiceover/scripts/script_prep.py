@@ -147,7 +147,9 @@ def _classify(s, idx, lines, prev_type):
     if re.fullmatch(r"[-_*=~]{3,}|[—–]{2,}", s):
         # a markdown horizontal rule, the divider above the pronunciation guide.
         # It is punctuation for the eye; narrated it is at best a stray noise.
-        return "direction", False, ""
+        # Counted apart from stage directions so the pre-flight summary does not
+        # claim an "[SFX: …]" line where there is only a rule.
+        return "divider", False, ""
     if re.match(r"^#{1,6}\s+" + _META_LABELS + r"\s*:?\s*$", s, re.I):
         return "heading", True, ""                  # ## Hook
     if re.match(r"^#{1,6}\s+", s):
@@ -183,7 +185,7 @@ def detect_structure(text):
     spoken  = headings normalised into chapter announcements (read mode)
     """
     lines = text.split("\n")
-    items, headings, directions = [], [], 0
+    items, headings, directions, dividers = [], [], 0, 0
     prev_type = None
     for idx, line in enumerate(lines):
         s = line.strip()
@@ -193,6 +195,8 @@ def detect_structure(text):
             headings.append(re.sub(r"^#{1,6}\s+", "", s))
         if typ == "direction":
             directions += 1
+        if typ == "divider":
+            dividers += 1
         prev_type = typ
 
     kept, spoken, cta_previews = [], [], []
@@ -201,7 +205,7 @@ def detect_structure(text):
     ctas = 0
 
     for it in items:
-        if it["type"] in ("heading", "direction"):
+        if it["type"] in ("heading", "direction", "divider"):
             if kept and kept[-1] != "":
                 kept.append("")                     # keep a paragraph break where it was
             if it["type"] == "heading" and it["meta"]:
@@ -248,7 +252,8 @@ def detect_structure(text):
 
     cleaned = re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip()
     spoken_text = re.sub(r"\n{3,}", "\n\n", "\n".join(spoken)).strip()
-    return {"headings": headings, "directions": directions, "ctas": ctas,
+    return {"headings": headings, "directions": directions, "dividers": dividers,
+            "ctas": ctas,
             "cta_previews": cta_previews, "cleaned": cleaned, "spoken": spoken_text,
             "items": items}
 
