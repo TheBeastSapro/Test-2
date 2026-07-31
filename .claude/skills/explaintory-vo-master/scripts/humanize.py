@@ -263,6 +263,9 @@ def align(wav16_path, lines, chunk_s=40):
             for (li, ow), sp in zip(meta, spans)]
 
 # ---------------------------------------------------------------- 4/5. pacing
+# Silence below this at a comma means the voice deliberately read through it.
+RUNTHROUGH = 0.030
+
 ABB = re.compile(r"^[A-Z]\.$")
 NUMY = re.compile(r"^[\d]")
 ERA = re.compile(r"^(BC|AD|BCE|CE)[.,;:]?$", re.I)
@@ -417,6 +420,18 @@ def build(x, words, lines, tgt, curated, tempo, max_wpm=None, min_factor=0.87,
             chunk = _stretch(chunk, f_, str(nb)); nstretch += 1
         out.append(fade(chunk))
         have = true_sil(nb); ins = max(0.0, t-have)
+
+        # When the voice renders a comma with essentially NO silence of its own, it
+        # ran the phrase through on purpose -- "from Cusco to Quito, twelve hundred
+        # and fifty miles" is one breath, and the comma is grammar, not a beat.
+        # Padding that to target does not add pacing, it inserts a stumble into a
+        # line that was already right. Sapro heard it at 0:03 and it survived every
+        # section-level fix, because this ran afterwards and put it back each time.
+        #
+        # Only near-zero counts. A comma the voice gave 40-90 ms still wants
+        # topping up to target; that is the case this pipeline was built for.
+        if kind == "comma" and have < RUNTHROUGH:
+            ins = 0.0
         if ins > 0.005:
             out.append(np.zeros(int(ins*SR), np.float32)); added += ins
             rep.append(dict(time=round(words[nb]["s"]*tempo, 2), kind=kind,
