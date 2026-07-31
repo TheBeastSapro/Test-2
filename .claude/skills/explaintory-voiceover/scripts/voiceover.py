@@ -1,0 +1,271 @@
+#!/usr/bin/env python3
+"""
+Script in, mastered voiceover out. One command.
+
+    generate  -> read-check -> redo bad sections -> master -> "<Title> (final).mp3"
+
+The mastering stage is the existing `explaintory-vo-master` pipeline (humanize.py)
+with its approved settings; nothing here re-tunes them. What this adds in front of
+it is the generation and the automatic read-check, so a misread section is caught
+and re-rendered before mastering instead of after a human has listened to twelve
+minutes of audio.
+
+Every stage writes into --work, so a run can be resumed with --from.
+"""
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import generate as gen  # noqa: E402
+import readcheck as rc  # noqa: E402
+from script_prep import build_sections, master_script_lines  # noqa: E402
+
+STAGES = ["generate", "check", "master"]
+
+# Where explaintory-vo-master keeps humanize.py. It is a separate skill; this one
+# drives it rather than duplicating its 560 lines of measured settings.
+HUMANIZE_CANDIDATES = [
+    "~/.claude/skills/explaintory-vo-master/scripts/humanize.py",
+    "/root/.claude/skills/explaintory-vo-master/scripts/humanize.py",
+    "./.claude/skills/explaintory-vo-master/scripts/humanize.py",
+]
+
+
+def log(m):
+    print(f"[voiceover] {m}", flush=True)
+
+
+def find_humanize(override=None):
+    for c in ([override] if override else []) + HUMANIZE_CANDIDATES:
+        p = os.path.expanduser(c)
+        if os.path.isfile(p):
+            return p
+    raise SystemExit(
+        "Could not find humanize.py from the explaintory-vo-master skill.\n"
+        "Pass --humanize /path/to/humanize.py, or install that skill.")
+
+
+def safe_filename(s):
+    s = re.sub(r"[^\w\-. ]+", "", (s or "").strip())
+    return re.sub(r"\s+", " ", s)[:80] or "Voiceover"
+
+
+def derive_title(script_path, raw, explicit=None):
+    """-> (title, script with the title line removed).
+
+    The script's H1 is the video's title, not its first chapter. Left in place it
+    becomes a spoken chapter announcement and the voiceover opens by reading its
+    own title out loud, so it is stripped from the narration once it has been used
+    for the filename.
+    """
+    lines = raw.split("\n")
+    for i, line in enumerate(lines[:12]):
+        s = line.strip()
+        m = (re.match(r"^#\s+(.{2,80})$", s)
+             or re.match(r"^title\s*[:\-]\s*(.{2,80})$", s, re.I))
+        if m:
+            found = m.group(1).strip()
+            stripped = "\n".join(lines[:i] + lines[i + 1:])
+            return (explicit.strip() if explicit else found), stripped
+    if explicit:
+        return explicit.strip(), raw
+    stem = os.path.splitext(os.path.basename(script_path))[0]
+    return re.sub(r"[_\-]+", " ", stem).strip().title(), raw
+
+
+def suggest_breaks(script_lines):
+    """Candidate clause breaks the script forgot to punctuate.
+
+    A fronted adverbial — "At Angolpo ‖ the Japanese lost…", "Below the garden ‖
+    sat a temple" — wants a beat where the writer put no comma. Finding it means
+    knowing where the phrase ENDS, which is a parse, not a pattern: a regex
+    counting words lands on "lost forty ‖ ships". So this uses spaCy and takes
+    the last token of the modifier's own subtree.
+
+    Candidates only. The vo-master skill is explicit that automatic guesses are
+    wrong about a third of the time — it wants a pause inside "growing on a deck ‖
+    that also mounted a catapult". Read them, keep the real ones. Dates are
+    already handled inside humanize.py, so they are not repeated here.
+    """
+    try:
+        import spacy
+    except ImportError:
+        raise SystemExit("--suggest-breaks needs spaCy: "
+                         "pip install spacy && python3 -m spacy download en_core_web_sm")
+    try:
+        nlp = spacy.load("en_core_web_sm")
+    except OSError:
+        raise SystemExit("spaCy model missing: python3 -m spacy download en_core_web_sm")
+
+    out = []
+    for doc in nlp.pipe(script_lines):
+        for sent in doc.sents:
+            head = sent.root
+            for child in head.children:
+                if child.dep_ not in ("prep", "advmod", "advcl", "npadvmod"):
+                    continue
+                sub = list(child.subtree)
+                if sub[0].i != sent.start:          # only FRONTED phrases
+                    continue
+                last = sub[-1]
+                nxt = doc[last.i + 1] if last.i + 1 < len(doc) else None
+                if nxt is None or nxt.is_punct or nxt.i >= sent.end:
+                    continue                        # already punctuated — nothing to add
+                if len(sub) < 2:                    # a bare "Then," needs no beat
+                    continue
+                if re.fullmatch(r"\d+|BCE?|AD", last.text, re.I):
+                    continue                        # post-date beats are automatic already
+                out.append((last.text, nxt.text, sent.text.strip()))
+    return out
+
+
+def run_stage(cmd):
+    log("$ " + " ".join(str(c) for c in cmd))
+    p = subprocess.run(cmd)
+    if p.returncode not in (0, 1):
+        raise SystemExit(f"stage failed with exit {p.returncode}")
+    return p.returncode
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Script -> mastered ExplainTory voiceover.")
+    ap.add_argument("--script", required=True)
+    ap.add_argument("--title", help="video title; defaults to the script's H1 or filename")
+    ap.add_argument("--out-dir", default=".", help="where the delivered MP3 lands")
+    ap.add_argument("--work", help="working directory (default: <out-dir>/.vo_<title>)")
+    ap.add_argument("--profile", help="voiceover_profile.json from Voiceover Studio")
+    ap.add_argument("--curated", help="clause-break file for the mastering pass "
+                                      "(one 'wordA|wordB' pair per line)")
+    ap.add_argument("--skip-headings", action="store_true", default=None,
+                    help="do not read chapter names aloud (default: whatever the profile locked in)")
+    ap.add_argument("--max-chunk", type=int, default=None)
+    ap.add_argument("--chapter-pause", choices=["tight", "natural", "wide"])
+    ap.add_argument("--asr-model", default=rc.DEFAULT_ASR)
+    ap.add_argument("--max-redos", type=int, default=2,
+                    help="rounds of re-rendering flagged sections before giving up")
+    ap.add_argument("--from", dest="start", choices=STAGES, default="generate")
+    ap.add_argument("--humanize", help="path to humanize.py")
+    ap.add_argument("--no-master", action="store_true", help="stop after the read-check")
+    ap.add_argument("--suggest-breaks", action="store_true",
+                    help="print candidate clause breaks and exit — read them, keep the real ones")
+    a = ap.parse_args()
+
+    # the studio's locked-in calibration supplies the defaults; explicit flags win
+    prof = gen.load_profile(a.profile)
+    if a.skip_headings is None:
+        a.skip_headings = prof["skip_headings"]
+    if a.max_chunk is None:
+        a.max_chunk = prof["chunk_size"] or 450
+
+    title, raw = derive_title(a.script, open(a.script, encoding="utf-8").read(), a.title)
+    lines = master_script_lines(raw, a.skip_headings)
+
+    if a.suggest_breaks:
+        for w1, w2, ctx in suggest_breaks(lines):
+            print(f"{w1}|{w2}\t\t… {ctx.strip()} …")
+        return 0
+
+    work = a.work or os.path.join(a.out_dir, ".vo_" + safe_filename(title).replace(" ", "_"))
+    os.makedirs(work, exist_ok=True)
+    os.makedirs(a.out_dir, exist_ok=True)
+
+    parts_dir = os.path.join(work, "parts")
+    raw_vo = os.path.join(work, "raw_stitched.wav")
+    sections_json = os.path.join(work, "sections.json")
+    script_txt = os.path.join(work, "script_lines.txt")
+    source_txt = os.path.join(work, "narration_source.txt")
+    check_json = os.path.join(work, "readcheck.json")
+    final = os.path.join(a.out_dir, f"{safe_filename(title)} (final).mp3")
+    report = os.path.join(work, "pauses.csv")
+
+    # the title-stripped script every stage works from, so generation and the
+    # alignment used for mastering can never disagree about what was spoken
+    open(source_txt, "w", encoding="utf-8").write(raw)
+    open(script_txt, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+    sections = build_sections(raw, a.skip_headings, a.max_chunk)
+    log(f"“{title}” · {len(sections)} sections · "
+        f"{sum(s['chars'] for s in sections)} chars")
+
+    start = STAGES.index(a.start)
+    here = os.path.dirname(os.path.abspath(__file__))
+
+    # ---------------------------------------------------------- 1. generate
+    gen_cmd = [sys.executable, os.path.join(here, "generate.py"),
+               "--script", source_txt, "--out", raw_vo, "--parts-dir", parts_dir,
+               "--sections-json", sections_json, "--max-chunk", str(a.max_chunk)]
+    if a.profile:
+        gen_cmd += ["--profile", a.profile]
+    if a.skip_headings:
+        gen_cmd += ["--skip-headings"]
+    if a.chapter_pause:
+        gen_cmd += ["--chapter-pause", a.chapter_pause]
+
+    if start <= STAGES.index("generate"):
+        run_stage(gen_cmd)
+    elif not os.path.isfile(sections_json):
+        raise SystemExit(f"--from {a.start} needs an earlier run's {sections_json}")
+
+    # ---------------------------------------------------------- 2. read-check
+    if start <= STAGES.index("check"):
+        man = json.load(open(sections_json, encoding="utf-8"))
+        seen_subs, settled = {}, {}
+        for rnd in range(a.max_redos + 1):
+            results = rc.check_sections(man["sections"], parts_dir, a.asr_model)
+            for r in rc.settle_repeats(results, seen_subs):
+                settled[r["index"]] = r["settled"]
+            bad = rc.report(results)
+            json.dump({"results": results, "asr_model": a.asr_model, "round": rnd},
+                      open(check_json, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+            if not bad:
+                log(f"read-check clean after {rnd} redo round(s)")
+                break
+            if rnd == a.max_redos:
+                log(f"{len(bad)} section(s) still flagged after {a.max_redos} redo rounds — "
+                    "listen to these before publishing: " +
+                    ", ".join(str(r['index'] + 1) for r in bad))
+                break
+
+        # sections that stopped being re-rendered because the render is consistent
+        # still need an ear, so they are named rather than quietly passing
+        if settled:
+            log("consistent across takes, worth a listen: " + "; ".join(
+                f"section {i+1} " + ", ".join(f"“{e}”→“{g}”" for e, g in pairs)
+                for i, pairs in sorted(settled.items())))
+            # A plain re-roll fixes a one-off misread. Hesitation is systematic, and
+            # the studio's lever for it is a small stability rise — so later rounds
+            # nudge rather than rolling the same dice again.
+            redo = gen_cmd + ["--regen", ",".join(str(r["index"] + 1) for r in bad)]
+            if rnd >= 1:
+                nudged = min(1.0, prof["settings"]["stability"] + 0.05 * rnd)
+                log(f"round {rnd+1}: nudging stability to {nudged:.2f}")
+                redo += ["--stability", f"{nudged:.3f}"]
+            else:
+                log(f"re-rendering {len(bad)} flagged section(s), round {rnd+1}")
+            run_stage(redo)
+
+    if a.no_master:
+        log(f"stopping before master; raw stitch at {raw_vo}")
+        return 0
+
+    # ---------------------------------------------------------- 3. master
+    hum = find_humanize(a.humanize)
+    mcmd = [sys.executable, hum, "--audio", raw_vo, "--script", script_txt,
+            "--out", final, "--report", report,
+            "--align-cache", os.path.join(work, "align.json")]
+    if a.curated:
+        mcmd += ["--curated", a.curated]
+    run_stage(mcmd)
+
+    if not os.path.isfile(final):
+        raise SystemExit("mastering produced no file")
+    log(f"delivered {final} ({os.path.getsize(final)/1e6:.1f} MB)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
