@@ -68,8 +68,9 @@ def unmark(t):
 _GUIDE_HEAD = re.compile(
     r"^\s*#{0,6}\s*\**\s*(pronunciation|pronounciation|pronunciations|"
     r"pronounce|how to say|say it)\b[^\n]{0,40}$", re.I)
-# 'Syracusia — sirr-uh-KYOO-zee-uh', also en dash, hyphen, colon, or '='
-_GUIDE_LINE = re.compile(r"^\s*[-*•]?\s*(.+?)\s*[—–\-:=]\s+(.+?)\s*$")
+# '- **Syracusia** — sirr-uh-KYOO-zee-uh', also en dash, hyphen, colon or '='.
+# The bullet class is wide because these arrive pasted out of Google Docs.
+_GUIDE_LINE = re.compile(r"^[\s\t]*[-*•●○·▪‣]?[\s\t]*(.+?)\s*[—–\-:=]\s+(.+?)\s*$")
 
 
 def _looks_like_guide_body(lines):
@@ -143,6 +144,10 @@ def _classify(s, idx, lines, prev_type):
 
     if not s:
         return "blank", False, ""
+    if re.fullmatch(r"[-_*=~]{3,}|[—–]{2,}", s):
+        # a markdown horizontal rule, the divider above the pronunciation guide.
+        # It is punctuation for the eye; narrated it is at best a stray noise.
+        return "direction", False, ""
     if re.match(r"^#{1,6}\s+" + _META_LABELS + r"\s*:?\s*$", s, re.I):
         return "heading", True, ""                  # ## Hook
     if re.match(r"^#{1,6}\s+", s):
