@@ -334,10 +334,14 @@ def available(directory: Path | str = "./storage/motion_presets") -> list[dict]:
             except Exception:
                 continue        # a hand-edited file must not break the picker
             origin = (preset.provenance or {}).get("origin", "learned")
-            out = [item for item in out if item["name"] != preset.name]
+            # Compare slugs, not raw names: resolution goes through the slugified
+            # filename, so that is what actually shadows a built-in.
+            key = slug(preset.name)
+            out = [item for item in out if slug(item["name"]) != key]
             out.append({
                 "name": preset.name, "intensity": preset.intensity,
                 "origin": origin, "path": str(path),
+                "label": (preset.provenance or {}).get("label"),
                 "reference": (preset.provenance or {}).get("reference"),
             })
     return out
@@ -434,7 +438,11 @@ def derive_from_profile(profile: dict, *, name: str = "",
     beat_sync = bool(beats.get("measured") and on_beat and float(on_beat) >= 0.5)
 
     preset = MotionPreset(
-        name=name or f"ref_{slug(reference)[:32]}" or "learned",
+        # The name is the identifier: it is the filename, the lookup key, and what a
+        # user types after --motion-preset. Slugifying here rather than only in save()
+        # keeps those three from drifting — a preset called "Ref Look" that saves to
+        # ref_look.json but reports itself as "Ref Look" makes every hint wrong.
+        name=slug(name) if name else f"ref_{slug(reference)[:32]}",
         intensity=round(intensity, 3),
         entry=entry,
         entry_duration=round(entry_duration, 3),
@@ -456,6 +464,9 @@ def derive_from_profile(profile: dict, *, name: str = "",
         bpm=round(float(bpm), 2) if bpm else None,
         provenance={
             "origin": "reference",
+            # What the operator actually typed, kept for display since the name itself
+            # is normalised.
+            "label": name or reference,
             "reference": reference or (profile.get("source") or {}).get("path", ""),
             "schema_version": profile.get("schema_version", ""),
             "edit_signature": profile.get("edit_signature", []),

@@ -4,6 +4,8 @@
     forgecast-vision analyse clip.mp4 --json profile.json
     forgecast-vision analyse "https://youtube.com/watch?v=..." --max-seconds 120
     forgecast-vision compare a.json b.json
+    forgecast-vision learn-motion "https://youtube.com/watch?v=..." --name my_look
+    forgecast-vision learn-motion profile.json --name my_look --list
 """
 
 from __future__ import annotations
@@ -233,6 +235,71 @@ def cmd_restyle(args) -> int:
     return 0
 
 
+def cmd_learn_motion(args) -> int:
+    """Measure a reference's motion-graphics style and save it as a named preset.
+
+    This is the "give it a link, keep the look" path. It accepts either a media
+    reference or a profile JSON that was already analysed, because re-downloading and
+    re-measuring a clip you have already analysed wastes minutes for nothing.
+    """
+    from ..motion.presets import available, derive_from_profile
+
+    source = Path(args.reference)
+    if source.suffix.lower() == ".json" and source.exists():
+        try:
+            payload = json.loads(source.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"error reading {source}: {exc}", file=sys.stderr)
+            return 1
+        reference = str((payload.get("source") or {}).get("path") or source)
+    else:
+        workdir = (Path(args.workdir) if args.workdir
+                   else Path(tempfile.mkdtemp(prefix="fcvision-")))
+        try:
+            if source.exists() and not args.max_seconds:
+                profile = analyse_file(source)
+            else:
+                profile, acquired = analyse_reference(
+                    args.reference, workdir, max_seconds=args.max_seconds,
+                )
+                if acquired.title:
+                    print(f"# {acquired.title}", file=sys.stderr)
+        except (AcquireError, ProbeError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        payload = profile.as_dict(include_shots=False)
+        reference = args.reference
+
+    preset = derive_from_profile(payload, name=args.name, reference=reference)
+    path = preset.save(args.directory)
+
+    measured = preset.provenance.get("measured", {})
+    print(f"learned '{preset.name}' -> {path}", file=sys.stderr)
+    print(f"  intensity      {preset.intensity:.2f}  "
+          f"(pacing {measured.get('pace_component')}, "
+          f"motion {measured.get('motion_component')}, "
+          f"graphics {measured.get('graphics_component')})")
+    print(f"  entry          {preset.entry} over {preset.entry_duration:.2f}s, "
+          f"{preset.easing}")
+    print(f"  rhythm         stagger {preset.stagger:.2f}s, hold {preset.hold:.2f}s"
+          + (f", beat-synced at {preset.bpm} bpm" if preset.beat_sync else ""))
+    print(f"  type           {preset.caption_style} in the {preset.caption_zone}, "
+          f"{preset.text_height_ratio:.3f} of frame height")
+    print(f"  colour         text {preset.text_colour}, accent {preset.accent_colour}")
+    print(f"  cards          scale {preset.card_scale:.2f}, zoom {preset.card_zoom:.2f}"
+          f", tilt {preset.card_tilt:.3f} rad")
+    print()
+    print("use it with:  --motion-preset " + preset.name)
+    if args.list:
+        print()
+        print("available presets:")
+        for entry in available(args.directory):
+            marker = "*" if entry["origin"] == "reference" else " "
+            print(f"  {marker} {entry['name']:<22} intensity {entry['intensity']:.2f}"
+                  f"  ({entry['origin']})")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="forgecast-vision", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -265,6 +332,22 @@ def build_parser() -> argparse.ArgumentParser:
     restyle_cmd.add_argument("--verify", action="store_true",
                              help="re-analyse the output and compare it to the reference")
     restyle_cmd.set_defaults(func=cmd_restyle)
+
+    learn = sub.add_parser(
+        "learn-motion",
+        help="measure a reference's motion-graphics style and keep it as a preset",
+    )
+    learn.add_argument("reference",
+                       help="local path, media URL, platform URL, or a profile JSON")
+    learn.add_argument("--name", default="",
+                       help="preset name; defaults to one derived from the reference")
+    learn.add_argument("--directory", default="./storage/motion_presets")
+    learn.add_argument("--max-seconds", type=float, default=None,
+                       help="analyse only the first N seconds of a long reference")
+    learn.add_argument("--workdir", default=None)
+    learn.add_argument("--list", action="store_true",
+                       help="also list every preset now available")
+    learn.set_defaults(func=cmd_learn_motion)
     return parser
 
 

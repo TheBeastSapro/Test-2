@@ -217,3 +217,123 @@ def test_kinetic_application_stages_more_than_one_appearance(tmp_path, base_clip
     present = _lit(out) > 40
     appearances = int((present[1:] & ~present[:-1]).sum()) + int(present[0])
     assert appearances >= 3, f"only {appearances} appearance(s)"
+
+
+# ------------------------------------------------------- selection in a run
+
+
+class _FakeChannel:
+    def __init__(self, style: dict) -> None:
+        self.style_profile = style
+
+
+class _FakeContext:
+    """Only the fields `_motion_for` reads. A real NodeContext needs a whole run."""
+
+    def __init__(self, *, options: dict | None = None, params: dict | None = None,
+                 style: dict | None = None) -> None:
+        self.options = options or {}
+        self.params = params or {}
+        self.channel = _FakeChannel(style or {})
+        self.topic = "Why cables break"
+
+
+def _resolve(**kwargs):
+    from forgecast.nodes.finalize import _motion_for
+
+    return _motion_for(_FakeContext(**kwargs), _scenes(3), {"title": "A title"})
+
+
+def test_a_run_option_selects_the_preset():
+    preset, plans = _resolve(options={"motion_preset": "kinetic_type"})
+    assert preset.name == "kinetic_type"
+    assert any(item.active for item in plans)
+
+
+def test_the_run_option_beats_the_channel_default():
+    preset, _ = _resolve(options={"motion_preset": "kinetic_type"},
+                         style={"motion_preset": "lower_third"})
+    assert preset.name == "kinetic_type"
+
+
+def test_the_channel_default_applies_when_the_run_says_nothing():
+    preset, _ = _resolve(style={"motion_preset": "push_in"})
+    assert preset.name == "push_in"
+
+
+def test_measured_intensity_chooses_the_preset_when_no_name_is_given():
+    preset, _ = _resolve(style={"render_spec": {"motion_intensity": 0.88}})
+    assert preset.intensity >= 0.75
+
+
+def test_motion_can_be_switched_off_at_any_level():
+    for kwargs in ({"options": {"motion": False}},
+                   {"params": {"motion": False}},
+                   {"style": {"motion": False}}):
+        preset, plans = _resolve(**kwargs)
+        assert preset is None and plans == []
+
+
+def test_a_run_with_no_settings_at_all_still_gets_motion():
+    """Motion is opt-out: the default path must animate something."""
+    preset, plans = _resolve()
+    assert preset is not None
+    assert any(item.active for item in plans)
+
+
+# ----------------------------------------------------------------- the CLI
+
+
+def test_learn_motion_saves_a_preset_from_an_analysed_profile(tmp_path, capsys):
+    from forgecast.motion.presets import MotionPreset
+    from forgecast.vision.cli import main
+
+    profile = tmp_path / "profile.json"
+    profile.write_text(
+        '{"schema_version": "1.0", "source": {"path": "ref.mp4"},'
+        ' "shot_rhythm": {"cuts_per_minute": 74.0, "shot_length": {"median": 0.8}},'
+        ' "motion": {"mean_magnitude": 0.1},'
+        ' "overlay": {"caption_zone": "bottom_third", "caption_persistence": 0.82,'
+        ' "graphic_density": 0.02},'
+        ' "colour": {"brightness": 120, "palette": [{"hex": "#d94f2b", "share": 0.3}]},'
+        ' "audio": {}, "beat_alignment": {"measured": false}}',
+        encoding="utf-8",
+    )
+
+    code = main(["learn-motion", str(profile), "--name", "Ref Look",
+                 "--directory", str(tmp_path / "presets"), "--list"])
+    assert code == 0
+
+    saved = tmp_path / "presets" / "ref_look.json"
+    assert saved.exists()
+    preset = MotionPreset.load(saved)
+    assert preset.provenance["origin"] == "reference"
+    assert preset.intensity > 0.5, "a 74 cuts/min reference is not a calm look"
+
+    # The name is the identifier, so it matches the filename and the CLI flag.
+    assert preset.name == "ref_look"
+    assert preset.provenance["label"] == "Ref Look"
+
+    out = capsys.readouterr()
+    # The printed hint has to be a flag that actually exists, spelled the way the
+    # resolver will look it up.
+    assert "--motion-preset ref_look" in out.out
+    assert "(reference)" in out.out
+
+
+def test_the_printed_motion_flag_exists_on_the_run_command():
+    from forgecast.cli import build_parser
+
+    args = build_parser().parse_args(
+        ["run", "start", "--channel", "1", "--topic", "t",
+         "--motion-preset", "ref_look"]
+    )
+    assert args.motion_preset == "ref_look"
+
+
+def test_learn_motion_reports_an_unreadable_profile_rather_than_raising(tmp_path):
+    from forgecast.vision.cli import main
+
+    broken = tmp_path / "broken.json"
+    broken.write_text("{not json", encoding="utf-8")
+    assert main(["learn-motion", str(broken), "--directory", str(tmp_path)]) == 1

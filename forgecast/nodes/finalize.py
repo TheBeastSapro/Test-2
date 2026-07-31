@@ -145,10 +145,14 @@ def _motion_for(ctx: NodeContext, scenes: list[Scene], script: dict):
     from ..render.motion_layer import resolve_preset
 
     style = ctx.channel.style_profile or {}
-    if ctx.params.get("motion") is False or style.get("motion") is False:
+    # Three sources, most specific first: what this run asked for, what the pipeline
+    # sets by default, and what the channel always uses.
+    if False in (ctx.options.get("motion"), ctx.params.get("motion"),
+                 style.get("motion")):
         return None, []
 
-    name = str(ctx.params.get("motion_preset") or style.get("motion_preset") or "")
+    name = str(ctx.options.get("motion_preset") or ctx.params.get("motion_preset")
+               or style.get("motion_preset") or "")
     # An analysed reference leaves its measurements on the channel, so a run that has
     # never been given a reference still gets motion sized to the intended pacing.
     measured = style.get("render_spec") or {}
@@ -156,7 +160,7 @@ def _motion_for(ctx: NodeContext, scenes: list[Scene], script: dict):
     preset = resolve_preset(
         name,
         intensity=float(intensity) if isinstance(intensity, (int, float)) else None,
-        directory=ctx.params.get("motion_preset_dir") or "./storage/motion_presets",
+        directory=ctx.options.get("motion_preset_dir") or "./storage/motion_presets",
     )
     headline = str(script.get("title") or ctx.topic or "")
     return preset, plan_motion(scenes, preset=preset, headline=headline)

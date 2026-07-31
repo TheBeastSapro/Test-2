@@ -84,6 +84,10 @@ def cmd_run_start(args) -> int:
         options = {"target_seconds": args.seconds} if args.seconds else {}
         if args.no_publish:
             options["publish"] = False
+        if args.motion_preset:
+            options["motion_preset"] = args.motion_preset
+        if args.no_motion:
+            options["motion"] = False
         try:
             run = create_run(
                 session, channel=channel, topic=args.topic, pipeline=args.pipeline,
@@ -293,6 +297,11 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--pipeline", default="faceless_longform")
     start.add_argument("--seconds", type=int, default=0)
     start.add_argument("--no-publish", action="store_true")
+    start.add_argument("--motion-preset", default="",
+                       help="a preset learned by `forgecast-vision learn-motion`, "
+                            "or a built-in name")
+    start.add_argument("--no-motion", action="store_true",
+                       help="render without motion graphics")
     start.set_defaults(func=cmd_run_start)
 
     advance = run.add_parser("advance")
