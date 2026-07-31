@@ -8,6 +8,8 @@ through a citation-shaped wrapper, so it gets tested from several angles.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from forgecast.providers.search import (
@@ -26,6 +28,21 @@ from forgecast.voice.casting import (
     target_from_reference,
 )
 from forgecast.voice.catalogue import STOCK_VOICES, by_name, pitch_distance
+from forgecast.voice.discover import MeasuredVoice, metadata_score, parse_voice, prerank
+
+# Tests must never read a real cached catalogue: whether one exists on disk depends on
+# whether someone ran a live sync, which would make these results vary by machine.
+NO_CACHE = Path("/nonexistent/voice_catalogue.json")
+
+
+def measured(name, hz, **kw):
+    return MeasuredVoice(
+        voice_id=f"id-{name.lower()}", name=name, pitch_hz=hz,
+        pitch_band=("low" if hz < 110 else "low_mid" if hz < 165 else "mid" if hz < 215
+                    else "high"),
+        voiced_ratio=0.8, measurement="measured", preview_url="https://x.test/p.mp3",
+        **kw,
+    )
 
 # --------------------------------------------------------------- research model
 
@@ -294,7 +311,7 @@ def test_fast_edit_implies_an_energetic_read():
 
 def test_shortlist_prefers_the_matching_pitch_band():
     target = VoiceTarget(pitch_band="low", energy="measured")
-    candidates = shortlist(target, limit=3)
+    candidates = shortlist(target, limit=3, cache_path=NO_CACHE)
     top = candidates[0]
     assert top.catalogue.pitch_band in {"low", "low_mid"}
     assert any("pitch band" in reason for reason in top.reasons)
@@ -302,20 +319,30 @@ def test_shortlist_prefers_the_matching_pitch_band():
 
 def test_shortlist_includes_a_deliberate_contrast():
     """Casting purely on similarity converges on the same three voices forever."""
-    candidates = shortlist(VoiceTarget(pitch_band="low", energy="calm"), limit=3)
+    candidates = shortlist(
+        VoiceTarget(pitch_band="low", energy="calm"), limit=3, cache_path=NO_CACHE
+    )
     assert len(candidates) == 4
     assert any("contrast" in caveat for caveat in candidates[-1].caveats)
 
 
 def test_shortlist_never_selects_silently():
-    """Every candidate is a proposal; nothing in casting marks one as chosen."""
-    candidates = shortlist(VoiceTarget(pitch_band="mid"), limit=3)
-    assert all(candidate.sample_path is None for candidate in candidates)
-    assert all(candidate.voice_id is None for candidate in candidates)
+    """Every candidate is a proposal; nothing in casting marks one as chosen.
+
+    Carrying a resolvable voice_id is fine and desirable — the invariant is that no
+    candidate is flagged as the choice and none has been synthesised yet.
+    """
+    pool = [measured("Alpha", 120.0), measured("Beta", 190.0), measured("Gamma", 230.0)]
+    for candidates in (
+        shortlist(VoiceTarget(pitch_band="mid"), limit=3, cache_path=NO_CACHE),
+        shortlist(VoiceTarget(pitch_hz=125.0), limit=2, measured=pool),
+    ):
+        assert all(candidate.sample_path is None for candidate in candidates)
+        assert not any(getattr(candidate, "selected", False) for candidate in candidates)
 
 
 def test_candidates_admit_when_pitch_could_not_be_compared():
-    candidates = shortlist(VoiceTarget(), limit=2)
+    candidates = shortlist(VoiceTarget(), limit=2, cache_path=NO_CACHE)
     assert all(
         any("pitch could not be compared" in caveat for caveat in candidate.caveats)
         for candidate in candidates
@@ -323,13 +350,15 @@ def test_candidates_admit_when_pitch_could_not_be_compared():
 
 
 def test_every_candidate_carries_a_reason():
-    for candidate in shortlist(VoiceTarget(pitch_band="high", energy="warm"), limit=4):
+    for candidate in shortlist(
+        VoiceTarget(pitch_band="high", energy="warm"), limit=4, cache_path=NO_CACHE
+    ):
         assert candidate.reasons, f"{candidate.name} has no stated reason"
 
 
 def test_summary_tells_the_operator_to_listen():
     target = VoiceTarget(pitch_band="mid", evidence=["reference speaks at ~180Hz"])
-    lines = casting_summary(target, shortlist(target, limit=2))
+    lines = casting_summary(target, shortlist(target, limit=2, cache_path=NO_CACHE))
     joined = "\n".join(lines)
     assert "Cast from:" in joined
     assert "Listen to the samples" in joined
@@ -375,3 +404,113 @@ def test_sample_line_falls_back_to_narration_then_topic():
 
     from_topic = sample_line({}, {}, topic="undersea cables")
     assert "undersea cables" in from_topic
+
+
+# ------------------------------------------------- measured catalogue (live path)
+
+
+def test_measured_catalogue_beats_the_static_fallback():
+    """When a synced catalogue exists it must be used; the static names are stale."""
+    pool = [measured("Alpha", 130.0), measured("Beta", 200.0)]
+    candidates = shortlist(VoiceTarget(pitch_hz=132.0), limit=2, measured=pool)
+    assert {candidate.name for candidate in candidates} <= {"Alpha", "Beta"}
+    assert all(candidate.measured is not None for candidate in candidates)
+    assert all(candidate.voice_id for candidate in candidates)
+
+
+def test_ranking_is_on_measured_hz_not_bands():
+    """Two voices in the same band should still be separated by actual distance."""
+    pool = [measured("Near", 135.0), measured("Far", 163.0)]
+    candidates = shortlist(VoiceTarget(pitch_hz=133.0), limit=2, measured=pool)
+    assert candidates[0].name == "Near"
+    assert any("within" in reason for reason in candidates[0].reasons)
+
+
+def test_static_fallback_declares_itself():
+    """An operator must know when they are seeing possibly-stale names."""
+    candidates = shortlist(VoiceTarget(pitch_band="low"), limit=2, cache_path=NO_CACHE)
+    assert all(
+        any("offline fallback" in caveat for caveat in candidate.caveats)
+        for candidate in candidates
+    )
+    lines = casting_summary(VoiceTarget(pitch_band="low"), candidates)
+    assert any("forgecast-voice sync" in line for line in lines)
+
+
+def test_unmeasurable_voice_is_penalised_not_hidden():
+    good = measured("Good", 130.0)
+    bad = MeasuredVoice(voice_id="id-bad", name="Bad", measurement="no_preview_url")
+    candidates = shortlist(VoiceTarget(pitch_hz=131.0), limit=2, measured=[good, bad])
+    assert candidates[0].name == "Good"
+    names = {candidate.name for candidate in candidates}
+    assert "Bad" in names          # still offered
+    bad_candidate = next(c for c in candidates if c.name == "Bad")
+    assert any("could not be measured" in caveat for caveat in bad_candidate.caveats)
+
+
+def test_parse_voice_splits_descriptors_out_of_the_title():
+    voice = parse_voice({
+        "voice_id": "abc", "name": "Roger - Laid-Back, Casual, Resonant",
+        "category": "premade",
+        "labels": {"gender": "male", "accent": "american", "age": "middle_aged",
+                   "use_case": "conversational", "descriptive": "classy"},
+        "preview_url": "https://x.test/p.mp3",
+    })
+    assert voice.name == "Roger"
+    assert voice.display_name == "Roger - Laid-Back, Casual, Resonant"
+    assert voice.descriptors == ["Laid-Back", "Casual", "Resonant"]
+    assert voice.gender == "male"
+    assert voice.energy == "calm"        # "laid-back" maps to calm
+
+
+def test_energy_mapping_from_vendor_words():
+    assert measured("A", 150.0, use_case="social_media").energy == "energetic"
+    assert measured("B", 150.0, descriptive="soothing").energy == "calm"
+    assert measured("C", 150.0, descriptors=["Warm Storyteller"]).energy == "warm"
+    assert measured("D", 150.0).energy == "measured"
+
+
+def test_prerank_narrows_a_large_pool_without_measuring():
+    """The point of pre-ranking: choose who to measure out of thousands, for free."""
+    pool = [
+        MeasuredVoice(voice_id=f"v{i}", name=f"V{i}",
+                      accent="british" if i % 2 else "american",
+                      use_case="narrative_story" if i % 3 == 0 else "advertisement",
+                      gender="male", preview_url="https://x.test/p.mp3")
+        for i in range(200)
+    ]
+    target = VoiceTarget(pitch_band="low_mid", accent="british", register="documentary")
+    chosen = prerank(target, pool, limit=10)
+
+    assert len(chosen) == 10
+    assert all(voice.measurement == "not_measured" for voice in chosen)
+    # British + narrative_story should dominate the measurement budget.
+    assert sum(1 for voice in chosen if voice.accent == "british") >= 8
+
+
+def test_metadata_score_prefers_requested_accent():
+    target = VoiceTarget(accent="british")
+    british = MeasuredVoice(voice_id="a", name="A", accent="british",
+                            preview_url="https://x/p")
+    american = MeasuredVoice(voice_id="b", name="B", accent="american",
+                             preview_url="https://x/p")
+    assert metadata_score(target, british) > metadata_score(target, american)
+
+
+def test_catalogue_round_trips_through_the_cache(tmp_path):
+    from forgecast.voice.discover import load_catalogue, save_catalogue
+
+    original = [measured("Alpha", 128.0, accent="british", use_case="narrative_story")]
+    path = save_catalogue(original, tmp_path / "cat.json")
+    restored = load_catalogue(path)
+
+    assert len(restored) == 1
+    assert restored[0].name == "Alpha"
+    assert restored[0].pitch_hz == 128.0
+    assert restored[0].voice_id == "id-alpha"
+
+
+def test_missing_cache_is_not_an_error():
+    from forgecast.voice.discover import load_catalogue
+
+    assert load_catalogue(Path("/nonexistent/nope.json")) == []

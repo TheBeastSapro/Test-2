@@ -97,6 +97,73 @@ class ElevenLabsProvider(VoiceProvider):
             for entry in voices
         ]
 
+    async def list_shared_voices(
+        self,
+        *,
+        language: str = "en",
+        page_size: int = 100,
+        max_voices: int = 3000,
+        use_cases: tuple[str, ...] = (),
+    ) -> list[dict]:
+        """Page through the public shared voice library.
+
+        There are ~15,000 shared voices, so this filters server-side and caps the
+        walk. Metadata only — measuring every preview would mean 15,000 downloads,
+        which is why casting measures pitch for a pre-ranked shortlist instead.
+        """
+        key = self._require_key()
+        collected: list[dict] = []
+        page_index = 0
+
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            while len(collected) < max_voices:
+                # Paging is `page`/`page_size`. The response also carries a
+                # `last_sort_id`, which is not a request parameter — passing it as one
+                # is silently ignored and every request returns page 0, capping the
+                # walk at 100 voices.
+                params: dict = {"page": page_index, "page_size": min(page_size, 100)}
+                if language:
+                    params["language"] = language
+                if use_cases:
+                    params["use_cases"] = list(use_cases)
+
+                response = await client.get(
+                    f"{self.base_url}/shared-voices",
+                    headers={"xi-api-key": key},
+                    params=params,
+                )
+                _check(response, self.name)
+                payload = response.json()
+                page = payload.get("voices") or []
+                if not page:
+                    break
+
+                for entry in page:
+                    collected.append(
+                        {
+                            "voice_id": entry.get("voice_id"),
+                            "name": entry.get("name"),
+                            "category": entry.get("category") or "shared",
+                            "labels": {
+                                "gender": entry.get("gender"),
+                                "accent": entry.get("accent"),
+                                "age": entry.get("age"),
+                                "use_case": entry.get("use_case"),
+                                "descriptive": entry.get("descriptive"),
+                                "language": entry.get("language"),
+                            },
+                            "preview_url": entry.get("preview_url"),
+                            "cloned_by_count": entry.get("cloned_by_count") or 0,
+                            "featured": bool(entry.get("featured")),
+                        }
+                    )
+
+                if not payload.get("has_more"):
+                    break
+                page_index += 1
+
+        return collected[:max_voices]
+
     async def synthesize(
         self, text: str, *, voice_id: str, out_path: Path, speed: float = 1.0
     ) -> MediaResult:

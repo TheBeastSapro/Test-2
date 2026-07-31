@@ -1,25 +1,42 @@
 """Voice casting: derive a target from the reference, then shortlist and audition.
 
-The rule this module exists to enforce: **never silently pick a voice.** Voice is the
-single most audible choice in a faceless video and the one an operator has the
-strongest opinion about, so the system proposes a ranked shortlist with reasons and
-audition samples, and a human decides at a gate.
+The rule this module enforces: **never silently pick a voice.** Voice is the most
+audible choice in a faceless video and the one an operator has the strongest opinion
+about, so the system proposes a ranked shortlist with reasons and audition samples,
+and a human decides at a gate.
 
-Ranking is driven by what was actually measured off the reference audio — median
-pitch, speaking rate, energy, silence — not by adjectives. Where the reference gives
-no signal, the candidate says so rather than inventing a justification, because a
-confident-sounding reason for an arbitrary pick is worse than admitting the pick is a
-default.
+Ranking runs on measurements wherever it can. The reference's median pitch comes from
+its audio; each candidate's pitch comes from its own preview clip, analysed with the
+same estimator. That means the central comparison is measured-against-measured on one
+scale, rather than a measurement against an adjective.
+
+Where the vendor supplies only words — `use_case`, `descriptive`, the descriptors in a
+voice's title — those are used as vendor characterisation and labelled as such. And
+where the reference gives no signal, the candidate says so instead of manufacturing a
+justification: a confident reason for an arbitrary pick is worse than an admitted default.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from .catalogue import STOCK_VOICES, CatalogueVoice, pitch_distance
+from .discover import MeasuredVoice, load_catalogue
 
-# Speaking-rate bands, from vision.audio's WPM measurement where a transcript exists.
+# Speaking-rate bands, from the WPM measurement where a transcript exists.
 PACE_BANDS = ((110, "slow"), (150, "measured"), (180, "brisk"), (210, "fast"))
+
+# Use cases that suit a given register, for scoring the vendor's own label.
+REGISTER_USE_CASES = {
+    "documentary": ("narrative_story", "informative_educational", "entertainment_tv"),
+    "explainer": ("informative_educational", "conversational"),
+    "history": ("narrative_story", "informative_educational"),
+    "shorts": ("social_media", "conversational"),
+    "narration": ("narrative_story", "informative_educational"),
+    "news": ("news", "informative_educational"),
+    "advertisement": ("advertisement",),
+}
 
 
 @dataclass
@@ -32,7 +49,7 @@ class VoiceTarget:
     words_per_minute: float | None = None
     energy: str | None = None
     accent: str | None = None
-    register: str | None = None          # from the channel/style, e.g. "documentary"
+    register: str | None = None
     evidence: list[str] = field(default_factory=list)
     gaps: list[str] = field(default_factory=list)
 
@@ -58,9 +75,16 @@ class VoiceCandidate:
     score: float
     reasons: list[str] = field(default_factory=list)
     caveats: list[str] = field(default_factory=list)
-    voice_id: str | None = None          # resolved at synthesis time
+    voice_id: str | None = None
     sample_path: str | None = None
     catalogue: CatalogueVoice | None = None
+    measured: MeasuredVoice | None = None
+
+    @property
+    def pitch_band(self) -> str | None:
+        if self.measured:
+            return self.measured.pitch_band
+        return self.catalogue.pitch_band if self.catalogue else None
 
     def as_dict(self) -> dict:
         payload = {
@@ -71,8 +95,12 @@ class VoiceCandidate:
             "voice_id": self.voice_id,
             "sample_path": self.sample_path,
         }
-        if self.catalogue:
+        if self.measured:
+            payload["profile"] = self.measured.as_dict()
+            payload["source"] = "measured_from_account"
+        elif self.catalogue:
             payload["profile"] = self.catalogue.as_dict()
+            payload["source"] = "static_catalogue"
         return payload
 
 
@@ -98,8 +126,8 @@ def target_from_reference(
 
     pitch_hz = audio.get("pitch_hz")
     voiced_ratio = audio.get("voiced_ratio") or 0.0
-    # A low voiced ratio means the pitch reading came from very little speech —
-    # a music bed or a click track will happily report a confident f0.
+    # A low voiced ratio means the pitch came from very little speech — a music bed
+    # or click track reports a confident f0 that means nothing.
     if pitch_hz and voiced_ratio >= 0.25:
         target.pitch_hz = float(pitch_hz)
         target.pitch_band = audio.get("pitch_band")
@@ -118,13 +146,13 @@ def target_from_reference(
     if words_per_minute:
         target.words_per_minute = words_per_minute
         target.pace = pace_band(words_per_minute)
-        target.evidence.append(f"reference narration runs {words_per_minute:.0f} WPM "
-                               f"({target.pace})")
+        target.evidence.append(
+            f"reference narration runs {words_per_minute:.0f} WPM ({target.pace})"
+        )
     else:
         target.gaps.append("no transcript, so speaking rate is unknown")
 
     silence = audio.get("silence_ratio")
-    loudness_range = audio.get("dynamic_range_db")
     if silence is not None:
         if silence < 0.08:
             target.energy = "energetic"
@@ -136,105 +164,200 @@ def target_from_reference(
             target.evidence.append(f"{silence:.0%} silence — deliberate, paced delivery")
         else:
             target.energy = "measured"
+
+    loudness_range = audio.get("dynamic_range_db")
     if loudness_range and loudness_range > 40:
         target.evidence.append(
             f"wide dynamic range ({loudness_range:.0f}dB) — expressive rather than flat"
         )
 
-    # A fast, hard-cut edit wants a voice that can keep up; the edit is evidence
-    # about delivery even when the audio is inconclusive.
     rhythm = (style_profile or {}).get("shot_rhythm") or {}
     cuts = rhythm.get("cuts_per_minute")
     if cuts and cuts > 30 and target.energy in (None, "measured"):
         target.energy = "energetic"
-        target.evidence.append(
-            f"{cuts:.0f} cuts/min — the edit implies an energetic read"
-        )
+        target.evidence.append(f"{cuts:.0f} cuts/min — the edit implies an energetic read")
 
     return target
+
+
+# --------------------------------------------------------------------- shortlist
+
+
+def _score_measured(target: VoiceTarget, voice: MeasuredVoice) -> tuple[float, list, list]:
+    score = 0.0
+    reasons: list[str] = []
+    caveats: list[str] = []
+
+    # Measured-against-measured: the strongest comparison available.
+    if target.pitch_hz and voice.pitch_hz:
+        difference = abs(target.pitch_hz - voice.pitch_hz)
+        if difference <= 12:
+            score += 4.0
+            reasons.append(
+                f"pitch within {difference:.0f}Hz of the reference "
+                f"({voice.pitch_hz:.0f}Hz vs {target.pitch_hz:.0f}Hz)"
+            )
+        elif difference <= 30:
+            score += 2.5
+            reasons.append(
+                f"pitch {difference:.0f}Hz from the reference ({voice.pitch_hz:.0f}Hz)"
+            )
+        elif difference <= 60:
+            score += 0.5
+            caveats.append(f"pitch {difference:.0f}Hz from the reference")
+        else:
+            caveats.append(
+                f"pitch {difference:.0f}Hz from the reference — a clearly different voice"
+            )
+    elif not target.pitch_hz:
+        caveats.append("no reference pitch to compare against")
+    elif not voice.pitch_hz:
+        caveats.append(f"this voice's pitch could not be measured ({voice.measurement})")
+
+    if target.energy and voice.energy == target.energy:
+        score += 1.5
+        reasons.append(f"vendor labels suggest a {voice.energy} read, matching the reference")
+    elif target.energy and (target.energy, voice.energy) in {
+        ("calm", "energetic"), ("energetic", "calm")
+    }:
+        score -= 1.0
+        caveats.append(f"labelled {voice.energy} against a {target.energy} reference")
+
+    if target.register:
+        wanted = REGISTER_USE_CASES.get(target.register.lower(), ())
+        if voice.use_case and voice.use_case in wanted:
+            score += 1.5
+            reasons.append(f"vendor use case is {voice.use_case}, suited to {target.register}")
+
+    if target.pace in {"brisk", "fast", "very_fast"} and voice.energy == "energetic":
+        score += 0.75
+        reasons.append("labelled energetic, which holds up at the reference's speaking rate")
+    if target.pace == "slow" and voice.energy in {"calm", "measured"}:
+        score += 0.75
+        reasons.append("suits a slow, deliberate read")
+
+    if target.accent:
+        wanted = target.accent.lower()
+        if voice.accent and wanted in voice.accent.lower():
+            score += 1.0
+            reasons.append(f"{voice.accent} accent as requested")
+        elif voice.accent:
+            score -= 0.5
+            caveats.append(f"{voice.accent} accent, not {target.accent}")
+
+    # Prefer a voice whose preview actually resolved over one that did not.
+    if voice.measurement != "measured":
+        score -= 0.5
+
+    if not reasons:
+        reasons.append("nothing in the reference favours or rules it out")
+    return score, reasons, caveats
+
+
+def _score_static(target: VoiceTarget, voice: CatalogueVoice) -> tuple[float, list, list]:
+    score = 0.0
+    reasons: list[str] = []
+    caveats: list[str] = [
+        "from the offline fallback catalogue — descriptors are approximate and the "
+        "name may not exist on your account"
+    ]
+
+    distance = pitch_distance(target.pitch_band, voice.pitch_band)
+    if distance == 0:
+        score += 3.0
+        reasons.append(f"same pitch band as the reference ({voice.pitch_band})")
+    elif distance == 1:
+        score += 1.5
+        reasons.append(f"one band from the reference ({voice.pitch_band})")
+    elif distance == 99:
+        caveats.append("pitch could not be compared — reference gave no usable f0")
+    else:
+        caveats.append(
+            f"{distance} bands from the reference ({voice.pitch_band} vs {target.pitch_band})"
+        )
+
+    if target.energy and voice.energy == target.energy:
+        score += 2.0
+        reasons.append(f"energy matches ({voice.energy})")
+    elif target.energy and (target.energy, voice.energy) in {
+        ("calm", "energetic"), ("energetic", "calm")
+    }:
+        score -= 1.0
+        caveats.append(f"{voice.energy} read against a {target.energy} reference")
+
+    if target.pace in {"brisk", "fast", "very_fast"} and voice.energy == "energetic":
+        score += 1.0
+        reasons.append("holds up at the reference's speaking rate")
+    if target.pace == "slow" and voice.energy in {"calm", "measured"}:
+        score += 1.0
+        reasons.append("suits a slow, deliberate read")
+
+    if target.register and target.register.lower() in {
+        item.lower() for item in voice.best_for
+    }:
+        score += 1.5
+        reasons.append(f"listed for {target.register}")
+
+    if target.accent:
+        if voice.accent == target.accent.lower():
+            score += 1.0
+            reasons.append(f"{voice.accent} accent as requested")
+        else:
+            score -= 0.5
+            caveats.append(f"{voice.accent} accent, not {target.accent}")
+
+    if not reasons:
+        reasons.append("catalogue default — nothing in the reference favours it")
+    return score, reasons, caveats
 
 
 def shortlist(
     target: VoiceTarget,
     *,
     limit: int = 3,
+    measured: list[MeasuredVoice] | None = None,
+    cache_path: Path | None = None,
     catalogue: tuple[CatalogueVoice, ...] = STOCK_VOICES,
 ) -> list[VoiceCandidate]:
-    """Rank catalogue voices against the target. Highest score first."""
+    """Rank voices against the target, highest first.
+
+    Prefers the measured catalogue built from the account. Falls back to the static
+    list only when no cache exists, and says so on every candidate — the static names
+    are known to be stale against current ElevenLabs accounts.
+    """
+    if measured is None:
+        measured = load_catalogue(cache_path)
+
     candidates: list[VoiceCandidate] = []
-
-    for voice in catalogue:
-        score = 0.0
-        reasons: list[str] = []
-        caveats: list[str] = []
-
-        distance = pitch_distance(target.pitch_band, voice.pitch_band)
-        if distance == 0:
-            score += 3.0
-            reasons.append(f"same pitch band as the reference ({voice.pitch_band})")
-        elif distance == 1:
-            score += 1.5
-            reasons.append(f"one band from the reference ({voice.pitch_band})")
-        elif distance == 99:
-            caveats.append("pitch could not be compared — reference gave no usable f0")
-        else:
-            caveats.append(
-                f"{distance} bands from the reference ({voice.pitch_band} vs "
-                f"{target.pitch_band})"
+    if measured:
+        for voice in measured:
+            score, reasons, caveats = _score_measured(target, voice)
+            candidates.append(
+                VoiceCandidate(
+                    name=voice.name, score=score, reasons=reasons, caveats=caveats,
+                    voice_id=voice.voice_id, measured=voice,
+                )
             )
-
-        if target.energy and voice.energy == target.energy:
-            score += 2.0
-            reasons.append(f"energy matches ({voice.energy})")
-        elif target.energy:
-            # Calm against energetic is a real mismatch; the adjacent pairs are not.
-            opposed = {("calm", "energetic"), ("energetic", "calm")}
-            if (target.energy, voice.energy) in opposed:
-                score -= 1.0
-                caveats.append(f"{voice.energy} read against a {target.energy} reference")
-
-        if target.pace in {"brisk", "fast", "very_fast"} and voice.energy == "energetic":
-            score += 1.0
-            reasons.append("holds up at the reference's speaking rate")
-        if target.pace == "slow" and voice.energy in {"calm", "measured"}:
-            score += 1.0
-            reasons.append("suits a slow, deliberate read")
-
-        if target.register and target.register.lower() in {
-            item.lower() for item in voice.best_for
-        }:
-            score += 1.5
-            reasons.append(f"listed for {target.register}")
-
-        if target.accent:
-            if voice.accent == target.accent.lower():
-                score += 1.0
-                reasons.append(f"{voice.accent} accent as requested")
-            else:
-                score -= 0.5
-                caveats.append(f"{voice.accent} accent, not {target.accent}")
-
-        if not reasons:
-            reasons.append("catalogue default — nothing in the reference favours it")
-
-        candidates.append(
-            VoiceCandidate(
-                name=voice.name, score=score, reasons=reasons,
-                caveats=caveats, catalogue=voice,
+    else:
+        for entry in catalogue:
+            score, reasons, caveats = _score_static(target, entry)
+            candidates.append(
+                VoiceCandidate(
+                    name=entry.name, score=score, reasons=reasons,
+                    caveats=caveats, catalogue=entry,
+                )
             )
-        )
 
     candidates.sort(key=lambda item: (-item.score, item.name))
     top = candidates[: max(1, limit)]
 
-    # Deliberately include one voice that is *not* a close match. Casting purely on
-    # similarity converges on the same three voices forever, and the operator often
+    # Always include one voice that is *not* a close match. Casting purely on
+    # similarity converges on the same three voices forever, and an operator often
     # wants to hear the alternative before rejecting it.
     if len(candidates) > limit:
+        chosen = {entry.name for entry in top}
         contrast = next(
-            (item for item in reversed(candidates)
-             if item.name not in {entry.name for entry in top}),
-            None,
+            (item for item in reversed(candidates) if item.name not in chosen), None
         )
         if contrast:
             contrast.caveats.insert(0, "included as a deliberate contrast, not a match")
@@ -250,13 +373,26 @@ def casting_summary(target: VoiceTarget, candidates: list[VoiceCandidate]) -> li
         lines.append("Cast from: " + "; ".join(target.evidence))
     if target.gaps:
         lines.append("Not measurable: " + "; ".join(target.gaps))
+
+    using_measured = any(candidate.measured for candidate in candidates)
+    lines.append(
+        "Candidates ranked against pitch measured from each voice's own preview clip."
+        if using_measured
+        else "No account catalogue cached — ranking from the offline fallback list, "
+             "whose names may not exist on your account. Run `forgecast-voice sync`."
+    )
+
     for index, candidate in enumerate(candidates, start=1):
-        detail = "; ".join(candidate.reasons)
-        lines.append(f"{index}. {candidate.name} — {detail}")
+        pitch = ""
+        if candidate.measured and candidate.measured.pitch_hz:
+            pitch = f" [{candidate.measured.pitch_hz:.0f}Hz]"
+        lines.append(f"{index}. {candidate.name}{pitch} — {'; '.join(candidate.reasons)}")
         for caveat in candidate.caveats:
             lines.append(f"     caveat: {caveat}")
+
     lines.append(
-        "Listen to the samples before choosing. The rankings come from approximate "
-        "catalogue descriptors, so they narrow the field rather than settle it."
+        "Listen to the samples before choosing. Pitch is measured, but everything else "
+        "is the vendor's own characterisation, so the rankings narrow the field rather "
+        "than settle it."
     )
     return lines

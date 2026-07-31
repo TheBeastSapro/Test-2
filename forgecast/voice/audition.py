@@ -68,8 +68,12 @@ async def render_samples(
         return candidates, meta
 
     provider = registry.voice()
-    resolved = await _resolve_ids(provider, candidates)
-    meta["resolved"] = resolved
+    # Candidates from the measured catalogue already carry the account's real IDs;
+    # only the offline-fallback ones need a name lookup.
+    if any(candidate.voice_id is None for candidate in candidates):
+        meta["resolved"] = await _resolve_ids(provider, candidates)
+    else:
+        meta["resolved"] = {"source": "measured_catalogue"}
     credits = 0
 
     for candidate in candidates:
