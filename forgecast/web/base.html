@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Forgecast{% endblock %}</title>
+<style>
+  :root {
+    --bg: #0d1016; --panel: #151a23; --panel-2: #1b2230; --line: #262f3d;
+    --text: #e6e9ef; --muted: #8d99ad; --accent: #4c8dff; --accent-dim: #24365c;
+    --ok: #3ecf8e; --warn: #e0b341; --err: #f2545b; --gate: #b98bff;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  header {
+    display: flex; align-items: center; gap: 18px; padding: 14px 24px;
+    border-bottom: 1px solid var(--line); background: var(--panel);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header .brand { font-weight: 650; letter-spacing: -.2px; }
+  header .spacer { flex: 1; }
+  .pill {
+    font-size: 12px; padding: 3px 9px; border-radius: 999px;
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
+  }
+  .pill.mock { border-color: #5c4a1e; color: var(--warn); }
+  main { max-width: 1180px; margin: 0 auto; padding: 26px 24px 80px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.3px; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .09em;
+       color: var(--muted); margin: 34px 0 12px; font-weight: 600; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px;
+  }
+  .grid { display: grid; gap: 14px; }
+  .grid.two { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 820px) { .grid.two { grid-template-columns: 1fr; } }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  input, select, textarea, button {
+    font: inherit; color: var(--text); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; width: 100%;
+  }
+  textarea { min-height: 72px; resize: vertical; }
+  button {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+    font-weight: 560; cursor: pointer; width: auto; padding: 8px 16px;
+  }
+  button:hover { filter: brightness(1.08); }
+  button.ghost { background: transparent; border-color: var(--line); color: var(--text); }
+  button.danger { background: transparent; border-color: #5c2529; color: var(--err); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px;
+       padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; }
+  .muted { color: var(--muted); }
+  .status { font-size: 12px; padding: 2px 8px; border-radius: 999px;
+            border: 1px solid var(--line); background: var(--panel-2); }
+  .status.completed { color: var(--ok); border-color: #1f4b38; }
+  .status.running   { color: var(--accent); border-color: var(--accent-dim); }
+  .status.queued    { color: var(--muted); }
+  .status.failed    { color: var(--err); border-color: #5c2529; }
+  .status.cancelled { color: var(--muted); }
+  .status.awaiting_approval { color: var(--gate); border-color: #40306b; }
+  .banner { padding: 11px 14px; border-radius: var(--radius); margin-bottom: 16px;
+            border: 1px solid #5c2529; background: #2a1416; color: #ffc9cc; }
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+<header>
+  <span class="brand">◆ Forgecast</span>
+  {% if user %}<a href="/">Dashboard</a>{% endif %}
+  <span class="spacer"></span>
+  {% if settings and settings.is_mock %}
+    <span class="pill mock" title="No provider is called and nothing is charged.">mock mode</span>
+  {% endif %}
+  {% if user %}
+    <span class="pill">{{ credits }} credits</span>
+    <span class="pill">{{ user.email }}</span>
+    <form method="post" action="/logout" style="display:inline">
+      <button class="ghost" style="padding:4px 10px">Sign out</button>
+    </form>
+  {% endif %}
+</header>
+<main>
+{% block body %}{% endblock %}
+</main>
+</body>
+</html>

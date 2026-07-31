@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block title %}Run {{ run.id }} · Forgecast{% endblock %}
+
+{% block head %}
+<style>
+  .graph-wrap { position: relative; overflow-x: auto; padding: 4px 0 8px; }
+  .graph { display: flex; gap: 46px; align-items: flex-start;
+           position: relative; min-width: max-content; padding: 6px 2px; }
+  .layer { display: flex; flex-direction: column; gap: 14px; min-width: 176px; }
+  .node {
+    position: relative; z-index: 2; background: var(--panel-2);
+    border: 1px solid var(--line); border-left: 3px solid var(--line);
+    border-radius: 9px; padding: 11px 12px;
+  }
+  .node .k { font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
+             color: var(--muted); }
+  .node .t { font-size: 13.5px; margin: 3px 0 7px; line-height: 1.35; }
+  .node .s { font-size: 11.5px; }
+  .node[data-status="completed"] { border-left-color: var(--ok); }
+  .node[data-status="running"]   { border-left-color: var(--accent);
+                                   box-shadow: 0 0 0 1px var(--accent-dim); }
+  .node[data-status="failed"]    { border-left-color: var(--err); }
+  .node[data-status="awaiting_approval"] { border-left-color: var(--gate);
+                                           box-shadow: 0 0 0 1px #40306b; }
+  .node[data-status="pending"] { opacity: .62; }
+  .node[data-status="skipped"] { opacity: .42; }
+  .node .gatetag { font-size: 10.5px; color: var(--gate); letter-spacing: .05em; }
+  #wires { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .log { background: #0a0d12; border: 1px solid var(--line); border-radius: var(--radius);
+         padding: 12px 14px; max-height: 330px; overflow-y: auto; }
+  .log div { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
+             padding: 2px 0; color: #b9c3d3; }
+  .log .warning { color: var(--warn); }
+  .log .error { color: var(--err); }
+  .log .nk { color: var(--muted); }
+  .thumbs { display: flex; gap: 12px; flex-wrap: wrap; }
+  .thumbs figure { margin: 0; max-width: 260px; }
+  .thumbs img { width: 100%; border-radius: 8px; border: 1px solid var(--line); }
+  video { width: 100%; max-width: 620px; border-radius: 9px; border: 1px solid var(--line); }
+  .kv { display: grid; grid-template-columns: 150px 1fr; gap: 6px 14px; font-size: 14px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; }
+  details.beat { border-top: 1px solid var(--line); padding: 8px 0; }
+  details.beat summary { cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<div class="row" style="justify-content:space-between;align-items:flex-start">
+  <div>
+    <h1>{{ run.topic }}</h1>
+    <div class="row muted" style="font-size:13px">
+      <span class="mono">run {{ run.id }}</span>
+      <span>·</span><span class="mono">{{ run.pipeline }}</span>
+      <span>·</span>
+      <span class="status {{ run.status.value }}" id="run-status">{{ run.status.value }}</span>
+      <span>·</span>
+      <span><span id="spent">{{ run.credits_spent }}</span> credits spent
+        (${{ '%.2f'|format(usd(run.credits_spent)) }}),
+        {{ run.credits_reserved }} held</span>
+    </div>
+  </div>
+  {% if run.status.value not in ("completed", "failed", "cancelled") %}
+  <form method="post" action="/runs/{{ run.id }}/cancel">
+    <button class="danger" type="submit">Cancel run</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if run.error %}<div class="banner" style="margin-top:16px">{{ run.error }}</div>{% endif %}
+
+<h2>Pipeline</h2>
+<div class="card graph-wrap">
+  <div class="graph" id="graph">
+    <svg id="wires"></svg>
+    {% for layer in layers %}
+      <div class="layer">
+        {% for node in layer %}
+          <div class="node" id="node-{{ node.key }}" data-key="{{ node.key }}"
+               data-deps="{{ node.depends_on|join(',') }}"
+               data-status="{{ node.status.value }}">
+            <div class="k">{{ node.key }}</div>
+            <div class="t">{{ node.title }}</div>
+            <div class="s status {{ node.status.value }}"
+                 data-role="status">{{ node.status.value }}</div>
+            {% if node.requires_approval %}
+              <div class="gatetag" style="margin-top:6px">◆ decision gate</div>
+            {% endif %}
+            {% if node.credits_spent %}
+              <div class="muted" style="font-size:11px;margin-top:5px">
+                {{ node.credits_spent }} cr
+              </div>
+            {% endif %}
+            {% if node.error %}
+              <div class="log error" style="margin-top:7px;padding:6px 8px;font-size:11px">
+                {{ node.error[:180] }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if gate %}
+<h2>Decision gate — {{ gate.title }}</h2>
+<div class="card">
+  {% set out = gate.output or {} %}
+
+  {% if gate.type == "brief" %}
+    <dl class="kv">
+      <dt>Working title</dt><dd>{{ out.get("working_title", "—") }}</dd>
+      <dt>Angle</dt><dd>{{ out.get("angle", "—") }}</dd>
+      <dt>Hook</dt><dd>{{ out.get("hook", "—") }}</dd>
+      <dt>Promise</dt><dd>{{ out.get("promise", "—") }}</dd>
+    </dl>
+    {% for beat in out.get("beats", []) %}
+      <details class="beat">
+        <summary>{{ beat.get("name", "Beat") }}
+          <span class="muted">· {{ beat.get("purpose", "") }}</span></summary>
+        <p style="margin:8px 0 0">{{ beat.get("summary", "") }}</p>
+      </details>
+    {% endfor %}
+
+  {% elif gate.type == "script" %}
+    <dl class="kv">
+      <dt>Title</dt><dd>{{ out.get("title", "—") }}</dd>
+      <dt>Length</dt>
+      <dd>{{ out.get("word_count", 0) }} words ·
+          ~{{ out.get("estimated_seconds", 0)|round|int }}s ·
+          {{ out.get("scenes", [])|length }} scenes</dd>
+    </dl>
+    {% for scene in out.get("scenes", [])[:6] %}
+      <details class="beat">
+        <summary>Scene {{ scene.get("index", 0) + 1 }}
+          <span class="muted">· {{ scene.get("seconds", 0) }}s ·
+          {{ scene.get("visual_kind", "image") }}</span></summary>
+        <p style="margin:8px 0 4px">{{ scene.get("narration", "") }}</p>
+        <p class="muted" style="font-size:13px;margin:0">
+          Visual: {{ scene.get("visual_prompt", "") }}
+        </p>
+      </details>
+    {% endfor %}
+    {% if out.get("scenes", [])|length > 6 %}
+      <p class="muted" style="font-size:13px">
+        …{{ out.get("scenes", [])|length - 6 }} more scenes. Full script in Artifacts below.
+      </p>
+    {% endif %}
+
+  {% elif gate.type == "thumbnail" %}
+    <div class="thumbs">
+      {% for artifact in artifacts if artifact.node_key == "thumbnail" and artifact.kind == "image" %}
+        <figure>
+          <img src="{{ artifact.url }}" alt="thumbnail concept">
+          <figcaption class="muted" style="font-size:12px;margin-top:6px">
+            {{ artifact.meta.get("text_overlay", "") }}
+          </figcaption>
+        </figure>
+      {% endfor %}
+    </div>
+
+  {% elif gate.type == "final_review" %}
+    {% set meta = out.get("metadata", {}) %}
+    {% for artifact in artifacts if artifact.kind == "video" and artifact.meta.get("role") == "final" %}
+      <video controls preload="metadata" src="{{ artifact.url }}"></video>
+      <p class="muted" style="font-size:13px">
+        {{ '%.1f'|format(out.get("duration_seconds", 0)) }}s ·
+        {{ '%.1f'|format(artifact.size_mb) }} MB
+      </p>
+    {% endfor %}
+    <dl class="kv">
+      <dt>Compliance</dt>
+      <dd><span class="status {{ 'completed' if out.get('compliance_verdict') == 'pass' else 'awaiting_approval' }}">
+        {{ out.get("compliance_verdict", "—") }}</span></dd>
+      <dt>Tags</dt><dd class="muted mono">{{ meta.get("tags", [])|join(", ") }}</dd>
+    </dl>
+    {% for issue in out.get("compliance_issues", []) %}
+      <p class="muted" style="font-size:13px;margin:4px 0">
+        <strong>{{ issue.get("severity", "") }}</strong> · {{ issue.get("detail", "") }}
+      </p>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" action="/runs/{{ run.id }}/gate/{{ gate.key }}"
+        style="margin-top:20px;border-top:1px solid var(--line);padding-top:18px">
+    {% if gate.type == "final_review" %}
+      {% set meta = out.get("metadata", {}) %}
+      <label for="title">Title (editable before upload)</label>
+      <input id="title" name="title" value="{{ meta.get('title', '') }}" maxlength="100">
+      <label for="privacy_status">Privacy</label>
+      <select id="privacy_status" name="privacy_status">
+        <option value="private">private</option>
+        <option value="unlisted">unlisted</option>
+        <option value="public">public</option>
+      </select>
+    {% endif %}
+    <label for="feedback">Revision instructions <span class="muted">(only if rejecting)</span></label>
+    <textarea id="feedback" name="feedback"
+              placeholder="Tighten the hook; drop the third beat."></textarea>
+    <p class="muted" style="font-size:12.5px">
+      Rejecting re-runs this stage with your note and resets everything downstream of it.
+      The note is remembered for future runs on this channel.
+    </p>
+    <div class="row">
+      <button name="decision" value="approve" type="submit">Approve & continue</button>
+      <button name="decision" value="revise" type="submit" class="ghost">
+        Request revision
+      </button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<h2>Activity</h2>
+<div class="log" id="log">
+  {% for event in events %}
+    <div class="{{ event.level }}">
+      <span class="nk">{{ '%-13s'|format(event.node_key or 'run') }}</span> {{ event.message }}
+    </div>
+  {% endfor %}
+</div>
+
+<h2>Artifacts</h2>
+{% if artifacts %}
+<div class="card" style="padding:0">
+  <table>
+    <thead><tr><th>Node</th><th>Kind</th><th>Size</th><th></th></tr></thead>
+    <tbody>
+      {% for artifact in artifacts %}
+      <tr>
+        <td class="mono muted">{{ artifact.node_key }}</td>
+        <td>{{ artifact.kind }}
+          {% if artifact.meta.get("role") %}
+            <span class="muted">· {{ artifact.meta.get("role") }}</span>
+          {% endif %}
+        </td>
+        <td class="mono muted">{{ '%.2f'|format(artifact.size_mb) }} MB</td>
+        <td>{% if artifact.url %}<a href="{{ artifact.url }}" target="_blank">open</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted" style="margin:0">Nothing produced yet.</p></div>
+{% endif %}
+
+<script>
+(function () {
+  const graph = document.getElementById("graph");
+  const svg = document.getElementById("wires");
+
+  // Draw dependency edges from the same data the engine schedules on.
+  function drawWires() {
+    const base = graph.getBoundingClientRect();
+    svg.setAttribute("width", graph.scrollWidth);
+    svg.setAttribute("height", graph.scrollHeight);
+    svg.innerHTML = "";
+    for (const node of graph.querySelectorAll(".node")) {
+      const deps = (node.dataset.deps || "").split(",").filter(Boolean);
+      const to = node.getBoundingClientRect();
+      for (const dep of deps) {
+        const source = document.getElementById("node-" + dep);
+        if (!source) continue;
+        const from = source.getBoundingClientRect();
+        const x1 = from.right - base.left, y1 = from.top - base.top + from.height / 2;
+        const x2 = to.left - base.left,   y2 = to.top - base.top + to.height / 2;
+        const mid = (x1 + x2) / 2;
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", `M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}`);
+        path.setAttribute("fill", "none");
+        const done = source.dataset.status === "completed";
+        path.setAttribute("stroke", done ? "#2f6b52" : "#2b3543");
+        path.setAttribute("stroke-width", "1.6");
+        svg.appendChild(path);
+      }
+    }
+  }
+  drawWires();
+  window.addEventListener("resize", drawWires);
+
+  // Live updates. Falls back to a reload loop if EventSource is unavailable.
+  const log = document.getElementById("log");
+  if (!window.EventSource) return;
+  const stream = new EventSource("/api/runs/{{ run.id }}/stream");
+
+  stream.addEventListener("log", (message) => {
+    const event = JSON.parse(message.data);
+    const line = document.createElement("div");
+    line.className = event.level;
+    const key = (event.node_key || "run").padEnd(13, " ");
+    line.innerHTML = `<span class="nk">${key}</span> `;
+    line.appendChild(document.createTextNode(event.message));
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  });
+
+  stream.addEventListener("state", (message) => {
+    const state = JSON.parse(message.data);
+    const runStatus = document.getElementById("run-status");
+    runStatus.textContent = state.status;
+    runStatus.className = "status " + state.status;
+    document.getElementById("spent").textContent = state.credits_spent;
+    let gateAppeared = false;
+    for (const [key, status] of Object.entries(state.nodes)) {
+      const node = document.getElementById("node-" + key);
+      if (!node || node.dataset.status === status) continue;
+      node.dataset.status = status;
+      const badge = node.querySelector('[data-role="status"]');
+      badge.textContent = status;
+      badge.className = "s status " + status;
+      if (status === "awaiting_approval") gateAppeared = true;
+    }
+    drawWires();
+    // The gate panel is server-rendered, so a new gate needs one reload to appear.
+    if (gateAppeared && !document.querySelector("form[action*='/gate/']")) {
+      window.location.reload();
+    }
+  });
+
+  stream.addEventListener("done", () => {
+    stream.close();
+    setTimeout(() => window.location.reload(), 600);
+  });
+})();
+</script>
+{% endblock %}

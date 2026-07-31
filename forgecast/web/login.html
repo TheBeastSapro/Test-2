@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Forgecast{% endblock %}
+{% block body %}
+<div style="max-width:390px;margin:8vh auto">
+  <h1>Forgecast</h1>
+  <p class="muted" style="margin-top:0">
+    Describe a video. Approve each step. Publish what you own.
+  </p>
+
+  {% if error %}<div class="banner">{{ error }}</div>{% endif %}
+
+  <div class="card">
+    <form method="post" action="/login">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" required autocomplete="email">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required
+             autocomplete="current-password" minlength="8">
+      <div class="row" style="margin-top:16px">
+        <button name="action" value="login" type="submit">Sign in</button>
+        <button name="action" value="signup" type="submit" class="ghost">Create account</button>
+      </div>
+    </form>
+  </div>
+  {% if settings and settings.is_mock %}
+  <p class="muted" style="font-size:13px;margin-top:14px">
+    Running in <strong>mock mode</strong>: new accounts get
+    {{ settings.signup_credit_grant }} credits and no provider is ever called.
+  </p>
+  {% endif %}
+</div>
+{% endblock %}

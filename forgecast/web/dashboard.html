@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Forgecast{% endblock %}
+{% block body %}
+
+<h1>Channels</h1>
+<p class="muted" style="margin-top:0">
+  A channel holds the persona — voice, format, and everything the agent has learned
+  from your past approvals.
+</p>
+
+<div class="grid two">
+  <div class="card">
+    <h2 style="margin-top:0">New channel</h2>
+    <form method="post" action="/channels">
+      <label for="name">Name</label>
+      <input id="name" name="name" required placeholder="Deep Field">
+      <label for="niche">Niche</label>
+      <input id="niche" name="niche" placeholder="space, infrastructure, history…">
+      <label for="tone">Tone (learned style seed)</label>
+      <input id="tone" name="tone" placeholder="calm, precise, no hype">
+      <div class="grid two" style="gap:10px">
+        <div>
+          <label for="aspect_ratio">Aspect</label>
+          <select id="aspect_ratio" name="aspect_ratio">
+            <option value="16:9">16:9 — long form</option>
+            <option value="9:16">9:16 — shorts</option>
+            <option value="1:1">1:1</option>
+          </select>
+        </div>
+        <div>
+          <label for="target_duration_seconds">Target length (s)</label>
+          <input id="target_duration_seconds" name="target_duration_seconds"
+                 type="number" value="480" min="15" max="3600">
+        </div>
+      </div>
+      <label for="voice_id">Voice ID <span class="muted">(ElevenLabs, optional)</span></label>
+      <input id="voice_id" name="voice_id" placeholder="leave blank in mock mode">
+      <label for="avatar_id">Avatar ID <span class="muted">(HeyGen, optional)</span></label>
+      <input id="avatar_id" name="avatar_id">
+      <div style="margin-top:16px"><button type="submit">Create channel</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Start a run</h2>
+    {% if channels %}
+      <form method="post" action="/runs">
+        <label for="channel_id">Channel</label>
+        <select id="channel_id" name="channel_id">
+          {% for channel in channels %}
+            <option value="{{ channel.id }}">
+              {{ channel.name }}{% if channel.niche %} · {{ channel.niche }}{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+        <label for="topic">Topic</label>
+        <textarea id="topic" name="topic" required
+                  placeholder="Why deep-sea cables keep breaking"></textarea>
+        <div class="grid two" style="gap:10px">
+          <div>
+            <label for="pipeline">Pipeline</label>
+            <select id="pipeline" name="pipeline">
+              {% for pipeline in pipelines %}
+                <option value="{{ pipeline.name }}">{{ pipeline.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="target_seconds">Length override (s)</label>
+            <input id="target_seconds" name="target_seconds" type="number"
+                   value="0" min="0" max="3600">
+          </div>
+        </div>
+        <div style="margin-top:16px"><button type="submit">Queue run</button></div>
+      </form>
+    {% else %}
+      <p class="muted">Create a channel first — a run needs a persona to inherit.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if channels %}
+<h2>Your channels</h2>
+<div class="card" style="padding:0">
+  <table>
+    <thead><tr><th>Channel</th><th>Niche</th><th>Format</th><th>YouTube</th></tr></thead>
+    <tbody>
+      {% for channel in channels %}
+      <tr>
+        <td>{{ channel.name }}</td>
+        <td class="muted">{{ channel.niche or "—" }}</td>
+        <td class="muted mono">
+          {{ channel.aspect_ratio }} · {{ channel.target_duration_seconds }}s
+        </td>
+        <td>
+          {% if channel.youtube_credentials %}
+            <span class="status completed">connected</span>
+          {% else %}
+            <span class="status">not connected</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<h2>Recent runs</h2>
+{% if runs %}
+<div class="card" style="padding:0">
+  <table>
+    <thead>
+      <tr><th>#</th><th>Topic</th><th>Pipeline</th><th>Status</th><th>Credits</th></tr>
+    </thead>
+    <tbody>
+      {% for run in runs %}
+      <tr>
+        <td class="mono"><a href="/runs/{{ run.id }}">{{ run.id }}</a></td>
+        <td><a href="/runs/{{ run.id }}">{{ run.topic }}</a></td>
+        <td class="muted mono">{{ run.pipeline }}</td>
+        <td><span class="status {{ run.status.value }}">{{ run.status.value }}</span></td>
+        <td class="mono muted">{{ run.credits_spent }} / {{ run.credits_reserved }} held</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted" style="margin:0">No runs yet.</p></div>
+{% endif %}
+
+{% endblock %}
