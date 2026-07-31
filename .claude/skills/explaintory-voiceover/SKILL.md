@@ -14,6 +14,27 @@ Deliver: `<Video Title> (final).mp3`. Report the runtime, the read-check result
 reference. Do not ask which settings to use.
 
 
+
+## One report means sweep the class
+
+When Sapro names a defect, the timestamp he gives is a sample, not the job. Find
+every other instance of the same defect in the file before going back to him,
+and tell him how many there were.
+
+He had to report the forced-comma beat three times — 0:03, then 0:40, then
+"road, spaced" — because each time it was fixed only where he pointed. It was
+one bug in eight places. Later, one report of a tick at "continued strain"
+turned out to be an orphan burst at the end of seven different sections.
+
+So: identify the SIGNATURE, not the timestamp. A -16 dB burst in the last 2 ms
+after 50 ms of silence is a signature; 16:29.9 is not. Then scan every section
+for it, repair them all, and check the mirror case as well — a burst at the end
+of a section means checking the start of one too.
+
+Report it as "you heard one, there were seven". That is the difference between
+him being the detector and him spot-checking the work.
+
+
 ## Confirm a fix on the excerpt, not the whole file
 
 Sapro's rule, and it is faster for both sides: when a defect is fixed, send him
