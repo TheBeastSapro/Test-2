@@ -306,7 +306,16 @@ def main():
     # read — and it is this video's answer key for how each name should sound
     raw, guide = split_pronunciation_guide(raw)
     raw, note = split_read_note(raw)
-    runon = a.chapter_style == "run-on" if a.chapter_style else bool(note_wants_runon(note))
+    # The profile decides the chapter style. A note inside a script is writing
+    # direction, not configuration, and reading it as configuration is how a
+    # screenshot shown for an opinion turned into a silent override of
+    # chapterPause: natural — the sound that was already signed off. If a note
+    # asks for something else, say so and let Sapro choose; never switch quietly.
+    runon = a.chapter_style == "run-on"
+    if not a.chapter_style and note_wants_runon(note):
+        log("NOTE: this script's read note asks for no pause after the chapter "
+            "name. Following the profile (announce) anyway — pass "
+            "--chapter-style run-on if you want the note's version.")
     lines = master_script_lines(raw, a.skip_headings, runon)
 
     if a.suggest_breaks:
