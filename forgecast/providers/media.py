@@ -12,6 +12,7 @@ interface, so a breaking change costs you one file, not the pipeline.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from pathlib import Path
 
 import httpx
@@ -40,10 +41,34 @@ def _check(response: httpx.Response, provider: str) -> None:
         return
     retryable = response.status_code == 429 or response.status_code >= 500
     raise ProviderError(
-        f"{provider} returned {response.status_code}: {response.text[:400]}",
+        f"{provider} returned {response.status_code}: {_body(response)}",
         provider=provider,
         retryable=retryable,
     )
+
+
+async def _acheck(response: httpx.Response, provider: str) -> None:
+    """`_check` for a streaming response.
+
+    A streamed response has no body until it is read, and `response.text` raises
+    `ResponseNotRead` instead of returning one. That turned every ElevenLabs API
+    error into an httpx exception about streaming, which says nothing about what the
+    API actually objected to — a wrong voice id and an expired key looked identical,
+    and neither message named the real problem.
+    """
+    if response.is_success:
+        return
+    with contextlib.suppress(httpx.HTTPError):
+        await response.aread()
+    _check(response, provider)
+
+
+def _body(response: httpx.Response) -> str:
+    """The error body, or an explanation of why there is not one."""
+    try:
+        return response.text[:400]
+    except httpx.ResponseNotRead:  # pragma: no cover - guarded by _acheck
+        return "<streaming body not read>"
 
 
 async def _download(client: httpx.AsyncClient, url: str, out_path: Path) -> Path:
@@ -191,7 +216,7 @@ class ElevenLabsProvider(VoiceProvider):
                 headers={"xi-api-key": key, "accept": "audio/mpeg"},
                 json=body,
             ) as response:
-                _check(response, self.name)
+                await _acheck(response, self.name)
                 with out_path.open("wb") as handle:
                     async for chunk in response.aiter_bytes(65536):
                         handle.write(chunk)

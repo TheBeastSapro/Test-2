@@ -161,6 +161,47 @@ def _composite_overlay(plate: Path, text: str, out_path: Path) -> Path:
 # --------------------------------------------------------------------------- voice
 
 
+def resolve_voice_id(
+    casting: dict, *, channel_voice_id: str = "", param_voice_id: str = ""
+) -> tuple[str, str]:
+    """Decide which voice narrates, and say why. Returns (voice_id, note).
+
+    The order matters and is not obvious. The operator's pick at the gate wins — they
+    heard the auditions. But the gate can be *approved without a pick*: the CLI's
+    auto-approve does exactly that, and a human can too. When that happens the
+    shortlist's top entry is the right fallback, because casting measured it against
+    the live account moments earlier.
+
+    The channel default comes after both. Preferring it is how a run reached
+    ElevenLabs with `voice_id="demo-voice"` — a placeholder left over from whenever
+    the channel was created, which the API rejected as an invalid ID after the run had
+    already paid for research, a script and a thumbnail.
+    """
+    chosen = str(casting.get("selected_voice_id") or "")
+    if chosen:
+        name = casting.get("selected") or chosen
+        return chosen, f"narrating with the cast voice: {name}"
+
+    candidates = casting.get("candidates") or []
+    top = next((c for c in candidates if c.get("voice_id")), None)
+    if top is not None:
+        return (
+            str(top["voice_id"]),
+            "no voice was chosen at the gate — using the top audition: "
+            f"{top.get('name') or top['voice_id']}",
+        )
+
+    fallback = channel_voice_id or param_voice_id
+    if fallback:
+        return fallback, f"no audition available — using the channel voice {fallback}"
+
+    raise ProviderError(
+        "no voice to narrate with: the casting gate selected none, the shortlist is "
+        "empty, and the channel has no voice_id",
+        provider="voice",
+    )
+
+
 @node_handler("voice")
 async def voice_node(ctx: NodeContext) -> NodeResult:
     script = ctx.output("script")
@@ -169,16 +210,13 @@ async def voice_node(ctx: NodeContext) -> NodeResult:
         raise ProviderError("cannot narrate a script with no scenes")
 
     voice = ctx.registry.voice()
-    # Casting wins over the channel default: the operator picked it at the gate for
-    # this run, having actually heard the auditions.
     casting = ctx.upstream_outputs.get("voice_casting") or {}
-    voice_id = (
-        str(casting.get("selected_voice_id") or "")
-        or ctx.channel.voice_id
-        or str(ctx.params.get("voice_id") or "")
+    voice_id, note = resolve_voice_id(
+        casting,
+        channel_voice_id=ctx.channel.voice_id,
+        param_voice_id=str(ctx.params.get("voice_id") or ""),
     )
-    if casting.get("selected"):
-        ctx.log(f"narrating with the cast voice: {casting['selected']}")
+    ctx.log(note)
     speed = float(ctx.options.get("voice_speed") or 1.0)
 
     credits = 0

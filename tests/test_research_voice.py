@@ -11,10 +11,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import ClassVar
 
+import httpx
 import pytest
 
 from forgecast.config import get_settings
+from forgecast.nodes.media import resolve_voice_id
 from forgecast.providers.base import ProviderError
+from forgecast.providers.media import _acheck
 from forgecast.providers.search import (
     FETCH_USER_AGENT,
     FetchedPage,
@@ -25,7 +28,11 @@ from forgecast.providers.search import (
     provider_for,
 )
 from forgecast.research.brief import Claim, ResearchBrief, Source
-from forgecast.research.engine import _normalise, research_topic
+from forgecast.research.engine import (
+    _normalise,
+    _unsupported_numbers,
+    research_topic,
+)
 from forgecast.voice.casting import (
     VoiceTarget,
     casting_summary,
@@ -651,3 +658,163 @@ def test_a_vendor_key_still_wins_over_the_keyless_fallback(monkeypatch):
 
 def test_mock_mode_still_uses_mock_search():
     assert isinstance(provider_for(), MockSearch)
+
+
+# ------------------------------------------------------- which voice narrates
+#
+# Regression for a live failure: the casting gate was approved without a pick, the
+# node fell through to the channel's placeholder voice_id, and ElevenLabs rejected
+# "demo-voice" as an invalid ID — after the run had already paid for research, a
+# script and a thumbnail.
+
+
+def test_the_operators_pick_wins():
+    voice_id, note = resolve_voice_id(
+        {"selected_voice_id": "chosen1", "selected": "Jon New",
+         "candidates": [{"voice_id": "top1", "name": "Top"}]},
+        channel_voice_id="channel1",
+    )
+    assert voice_id == "chosen1"
+    assert "Jon New" in note
+
+
+def test_an_unpicked_gate_falls_back_to_the_top_audition_not_the_channel():
+    voice_id, note = resolve_voice_id(
+        {"selected_voice_id": None,
+         "candidates": [{"voice_id": "top1", "name": "Fiverr Mark 2"},
+                        {"voice_id": "second", "name": "Will"}]},
+        channel_voice_id="demo-voice",
+    )
+    assert voice_id == "top1", "a measured audition beats a stale channel default"
+    assert "Fiverr Mark 2" in note
+
+
+def test_candidates_without_an_id_are_skipped():
+    voice_id, _ = resolve_voice_id(
+        {"candidates": [{"name": "no id here"}, {"voice_id": "real", "name": "Real"}]},
+    )
+    assert voice_id == "real"
+
+
+def test_the_channel_voice_is_used_when_there_was_no_audition():
+    voice_id, note = resolve_voice_id({}, channel_voice_id="channel1")
+    assert voice_id == "channel1"
+    assert "channel voice" in note
+
+
+def test_no_voice_anywhere_fails_with_an_actionable_message():
+    with pytest.raises(ProviderError) as caught:
+        resolve_voice_id({})
+    message = str(caught.value)
+    assert "casting gate" in message and "channel has no voice_id" in message
+
+
+# --------------------------------------------- reading an error off a stream
+
+
+class _UnreadStream(httpx.AsyncByteStream):
+    def __init__(self, payload: bytes) -> None:
+        self._payload = payload
+
+    async def __aiter__(self):
+        yield self._payload
+
+
+async def test_a_streaming_error_body_is_read_before_it_is_reported():
+    """Regression: `response.text` on an unread stream raises ResponseNotRead.
+
+    That turned every ElevenLabs API error into an httpx exception about streaming,
+    so an invalid voice id and an expired key produced the same useless message and
+    neither named the real problem.
+    """
+    response = httpx.Response(
+        400,
+        stream=_UnreadStream(b'{"detail":{"message":"An invalid ID has been received"}}'),
+        request=httpx.Request("POST", "https://api.elevenlabs.io/v1/text-to-speech/x"),
+    )
+    with pytest.raises(httpx.ResponseNotRead):
+        _ = response.text          # the condition that caused the bug
+
+    with pytest.raises(ProviderError) as caught:
+        await _acheck(response, "elevenlabs")
+    assert "An invalid ID has been received" in str(caught.value)
+    assert "400" in str(caught.value)
+
+
+async def test_a_successful_stream_is_left_unread():
+    """`_acheck` must not consume the body it is about to stream to disk."""
+    response = httpx.Response(
+        200,
+        stream=_UnreadStream(b"audio-bytes"),
+        request=httpx.Request("POST", "https://api.elevenlabs.io/v1/text-to-speech/x"),
+    )
+    await _acheck(response, "elevenlabs")
+    with pytest.raises(httpx.ResponseNotRead):
+        _ = response.text
+
+
+# ------------------------------------- claims that distort their own quote
+#
+# A verified quote proves the quote is real, not that the claim reports it faithfully.
+# The first case here is verbatim from a live run: the quote matched the page exactly,
+# so the citation check passed, and the claim overstated a distance ~2000x.
+
+
+@pytest.mark.parametrize(
+    ("label", "claim", "quote", "rejected"),
+    [
+        ("unit swapped for a bigger one",
+         "300 nautical miles of cable was lost",
+         "300 feet (91 m) of cable was lost over a region known as Telegraph Plateau",
+         True),
+        ("figure absent from the quote entirely",
+         "Around 150 cables are damaged each year",
+         "cables are damaged by ships and fishing gear each year",
+         True),
+        ("same number, contradicting unit",
+         "repeaters sit every 70 miles",
+         "repeaters sit every 70 km along the cable",
+         True),
+        ("percentage with no support",
+         "40% of faults are caused by anchors",
+         "anchors account for most faults",
+         True),
+        ("faithful, unit preserved",
+         "Ships are limited to 8 knots while laying cable",
+         "Ships are limited to a speed of 8 knots (15 km/h) while laying cable",
+         False),
+        ("spelled-out numbers are not policed",
+         "Cables are buried three feet under the seafloor",
+         "jets of high-pressure water to bury cable three feet (0.91 m) under the seabed",
+         False),
+        ("thousands separators normalise",
+         "about 15,000 shared voices exist",
+         "roughly 15000 voices in the library",
+         False),
+        ("a year is context, not a lifted figure",
+         "During the 1857 attempt the cable snapped",
+         "the cable snapped during the attempt",
+         False),
+        ("a bare number in the quote keeps its claim",
+         "the cable runs 6,600 km",
+         "the cable runs 6600 between the two landing stations",
+         False),
+        ("percentage preserved",
+         "40% of faults are caused by anchors",
+         "anchors account for 40% of all recorded faults",
+         False),
+    ],
+)
+def test_numeric_faithfulness(label, claim, quote, rejected):
+    assert bool(_unsupported_numbers(claim, quote)) is rejected, label
+
+
+def test_the_rejection_names_the_offending_figure():
+    problems = _unsupported_numbers("300 nautical miles were lost", "300 feet were lost")
+    assert problems == ["300 nautical_mile"]
+
+
+def test_units_are_canonicalised_across_spellings():
+    """"metre", "meters" and "m" are one unit; a claim must not fail on spelling."""
+    assert _unsupported_numbers("buried 91 metres down", "buried 91 m down") == []
+    assert _unsupported_numbers("buried 91 meters down", "buried 91 metre down") == []
