@@ -344,7 +344,10 @@ def chapter_gaps(sections, preset="natural"):
             g = max(g, p["after"])                  # then let the story start fresh
         if c["is_cta"]:
             g = max(g, p["cta"])
-        gaps.append(g)
+        # Nothing precedes the opening line, so there is nothing to breathe after.
+        # The title sits here when it is read aloud, and a beat of silence before
+        # the first word is dead air at the top of the video, not a pause.
+        gaps.append(0.0 if i == 0 else g)
     return gaps
 
 

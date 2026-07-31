@@ -126,6 +126,32 @@ def suggest_breaks(script_lines):
     return out
 
 
+def mark_title_section(sections, title):
+    """Flag the section that is the video's TITLE rather than a chapter.
+
+    With readTitle on, the H1 is spoken, so it becomes a heading section like any
+    other — but it is not a chapter, and counting it as one overstates the chapter
+    count and misreads the script's shape back to Sapro.
+
+    It stays in the heading rate levelling on purpose: the title is the section with
+    no conditioning behind it at all, so it is the one that rushes, and the chapters
+    are what it should be levelled against.
+    """
+    want = title.strip().rstrip(".").lower()
+    for sec in sections:
+        if not sec["is_heading"]:
+            continue
+        if sec["send_text"].strip().rstrip(".").lower() == want:
+            sec["is_title"] = True
+        break                                    # only the first heading can be it
+    return sections
+
+
+def chapter_names(sections):
+    return [s["send_text"].strip().rstrip(".") for s in sections
+            if s["is_heading"] and not s.get("is_title")]
+
+
 def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None):
     """What the studio's structure panel and estimator show, before a credit is spent.
 
@@ -138,11 +164,15 @@ def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None):
     chars = sum(s["chars"] for s in sections)
     mins, secs_ = divmod(int(chars / CHARS_PER_SEC), 60)
     heads = [s for s in sections if s["is_heading"]]
+    titled = any(s.get("is_title") for s in sections)
+    chapters = chapter_names(sections)
 
-    print(f"\n  “{title}”")
+    print(f"\n  TITLE: “{title}”"
+          + ("  (read aloud — readTitle is on)" if titled
+             else "  (not narrated)"))
     bits = []
-    if st["headings"]:
-        bits.append(f"{len(st['headings'])} heading" + ("s" if len(st["headings"]) > 1 else ""))
+    if chapters:
+        bits.append(f"{len(chapters)} chapter" + ("s" if len(chapters) > 1 else ""))
     if st["directions"]:
         bits.append(f"{st['directions']} stage direction"
                     + ("s" if st["directions"] > 1 else ""))
@@ -150,18 +180,19 @@ def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None):
         bits.append(f"{st['dividers']} divider" + ("s" if st["dividers"] > 1 else ""))
     if st["ctas"]:
         bits.append(f"{st['ctas']} CTA" + ("s" if st["ctas"] > 1 else ""))
-    print(f"  detected {' · '.join(bits) if bits else 'no headings or directions'}"
-          f" — headings {'NOT read aloud' if skip_headings else 'read aloud as chapter intros'}")
+    print(f"  detected {' · '.join(bits) if bits else 'no chapters or directions'}"
+          f" — chapter names {'NOT read aloud' if skip_headings else 'read aloud as intros'}")
 
-    if st["headings"]:
-        print("  chapters: " + " · ".join(h[:34] for h in st["headings"][:8])
-              + (f" · +{len(st['headings'])-8} more" if len(st["headings"]) > 8 else ""))
+    for n, name in enumerate(chapters, 1):
+        print(f"    {n}. {name}")
     for pv in st["cta_previews"][:3]:
         print(f"  CTA: “{pv}”")
     if guide:
         print(f"  pronunciation guide: {len(guide)} names held out of the narration")
 
-    print(f"\n  {len(sections)} sections ({len(heads)} of them chapter announcements)"
+    spoken_heads = len(heads) - (1 if titled else 0)
+    print(f"\n  {len(sections)} sections ({spoken_heads} chapter announcements"
+          f"{' + the title' if titled else ''})"
           f" · {chars:,} chars · ~{mins}:{secs_:02d} audio")
     print(f"  voice {prof['voice_id']} · {prof['model']} · stability "
           f"{prof['settings']['stability']} · style {prof['settings']['style']} · "
@@ -259,7 +290,7 @@ def main():
     # alignment used for mastering can never disagree about what was spoken
     open(source_txt, "w", encoding="utf-8").write(raw)
     open(script_txt, "w", encoding="utf-8").write("\n".join(lines) + "\n")
-    sections = build_sections(raw, a.skip_headings, a.max_chunk)
+    sections = mark_title_section(build_sections(raw, a.skip_headings, a.max_chunk), title)
     log(f"“{title}” · {len(sections)} sections · "
         f"{sum(s['chars'] for s in sections)} chars")
     if guide:
