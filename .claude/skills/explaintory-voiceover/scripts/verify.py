@@ -149,24 +149,40 @@ def audit_boundaries(script_path, words=None, sil=None, toks=None,
         if words is None or sil is None:
             bad.append(f"date range “{w} {nxt} {after}” — “…{ctx}…” (audio not checked)")
             continue
-        gap = _gap_after(w, nxt, words, sil)
-        if gap is not None and gap >= min_gap:
+        before = seq[i - 1] if i else ""
+        after2 = seq[i + 3] if i + 3 < len(seq) else ""
+        gap = _gap_after(w, nxt, words, sil, before, after2)
+        if gap is None:
+            bad.append(f"date range “{w} {nxt} {after}” could not be located in the "
+                       f"audio — NOT checked, do not read this as a pass "
+                       f"— “…{ctx}…”")
+        elif gap >= min_gap:
             bad.append(f"{gap*1000:.0f} ms beat inside the date range "
                        f"“{w} {nxt} {after}” — “…{ctx}…”")
     return bad
 
 
-def _gap_after(w, nxt, words, sil):
-    """Silence found between the spoken `w` and the following `nxt`, or None."""
-    nw, nn = norm(w), norm(nxt)
-    for i in range(len(words) - 1):
-        if norm(words[i][0]) != nw:
+def _gap_after(w, nxt, words, sil, before="", after2=""):
+    """Largest silence inside the spoken date range, or None if it cannot be found.
+
+    Does NOT look for the year itself. The transcriber does not return "1547" as
+    one token -- it splits the number -- so matching on it finds nothing and the
+    check silently passes a file that has the defect. The anchors are the ordinary
+    words on either side of the range ("...roads BETWEEN 1547 and 1550, DESCRIBED
+    ..."), which transcribe reliably, and the span between them is searched.
+    """
+    nb, na = norm(before), norm(after2)
+    if not nb or not na:
+        return None
+    for i in range(len(words)):
+        if norm(words[i][0]) != nb:
             continue
-        if norm(words[i + 1][0]) not in (nn, ""):
-            continue
-        lo, hi = words[i][2] - 0.05, words[i + 1][1] + 0.20
-        hits = [b - a for a, b in sil if a >= lo - 0.10 and b <= hi + 0.10]
-        return max(hits) if hits else 0.0
+        for j in range(i + 1, min(i + 12, len(words))):
+            if norm(words[j][0]) != na:
+                continue
+            lo, hi = words[i][2], words[j][1]
+            hits = [b - a for a, b in sil if a >= lo - 0.05 and b <= hi + 0.05]
+            return max(hits) if hits else 0.0
     return None
 
 
@@ -222,7 +238,7 @@ def explain_pauses(words, toks, curated, sil, min_pause=AUDIBLE_PAUSE):
         for k in range(n):
             amap[i + k] = j + k
 
-    explained, unexplained = [], []
+    explained, unexplained, unplaced = [], [], []
     for s0, s1 in sil:
         gap = s1 - s0
         if gap < min_pause:
@@ -238,7 +254,8 @@ def explain_pauses(words, toks, curated, sil, min_pause=AUDIBLE_PAUSE):
             continue
         j = amap.get(i)
         if j is None:
-            continue                       # could not place it; not evidence either way
+            unplaced.append((s0, gap))     # blind here — counted, never silently dropped
+            continue
         w, sent, clause, para, chap = toks[j]
         nxt = toks[j + 1][0] if j + 1 < len(toks) else ""
         after = toks[j + 2][0] if j + 2 < len(toks) else ""
@@ -257,7 +274,7 @@ def explain_pauses(words, toks, curated, sil, min_pause=AUDIBLE_PAUSE):
                "post-date" if postdate else None)
         rec = (s0, gap, w, nxt, why)
         (explained if why else unexplained).append(rec)
-    return explained, unexplained
+    return explained, unexplained, unplaced
 
 
 # ------------------------------------------------------------------ main
@@ -349,12 +366,19 @@ def main():
             if "|" in line:
                 x1, x2 = line.strip().split("|", 1)
                 curated.add((x1.strip().lower(), x2.strip().lower()))
-    ok, bad = explain_pauses(words, toks, curated, sil)
+    ok, bad, unplaced = explain_pauses(words, toks, curated, sil)
     report["pauses_explained"] = len(ok)
     report["pauses_unexplained"] = [
         {"at": round(t, 2), "gap": round(g, 3), "after": w, "before": nx}
         for t, g, w, nx, _ in bad]
-    log(f"{len(ok)} pauses traced to the script, {len(bad)} unexplained")
+    log(f"{len(ok)} pauses traced to the script, {len(bad)} unexplained, "
+        f"{len(unplaced)} could not be placed")
+    if unplaced:
+        big = [(t, g) for t, g in unplaced if g >= 0.20]
+        warns.append(f"{len(unplaced)} silence(s) could not be matched to the script "
+                     f"and were NOT judged"
+                     + (f"; {len(big)} of them over 200 ms, longest "
+                        f"{max(g for _, g in big)*1000:.0f} ms" if big else ""))
     if not a.no_boundary_audit:
         bad_b = audit_boundaries(a.script, words, sil, toks)
         log(f"date ranges: {len(bad_b)} carrying a beat that splits them")
