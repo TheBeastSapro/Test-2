@@ -257,10 +257,15 @@ def level_headings(parts_dir, sections, tol=0.12, floor=0.85, ceil=1.18):
             continue
         factors[idx] = f
         note = f"  heading {idx+1}: {wpm:.0f} wpm vs {target:.0f} median — retiming x{f:.3f}"
-        if abs(want - f) > 1e-3:
+        # Only warn when the clamp actually leaves the heading short of the target.
+        # Rounding both sides to whole wpm printed "lands near 85 wpm, not 85" —
+        # a warning about a miss of less than one word per minute, which reads as a
+        # problem and is not one.
+        landed = wpm * f
+        if abs(want - f) > 1e-3 and abs(landed - target) >= 1.0:
             # past ~15% the stretch itself becomes audible, so the correction stops
             # short rather than trading one artefact for another. Say so.
-            note += (f" (clamped from x{want:.3f}; lands near {wpm*f:.0f} wpm, "
+            note += (f" (clamped from x{want:.3f}; lands near {landed:.0f} wpm, "
                      f"not {target:.0f} — listen)")
         log(note)
     return factors
