@@ -375,7 +375,7 @@ def main():
         man = json.load(open(sections_json, encoding="utf-8"))
         seen_subs, settled = {}, {}
         for rnd in range(a.max_redos + 1):
-            results = rc.check_sections(man["sections"], parts_dir, a.asr_model)
+            results = rc.check_sections(man["sections"], parts_dir, a.asr_model, guide)
             for r in rc.settle_repeats(results, seen_subs):
                 settled[r["index"]] = r["settled"]
             bad = rc.report(results)
@@ -390,15 +390,6 @@ def main():
                     ", ".join(str(r['index'] + 1) for r in bad))
                 break
 
-        # sections that stopped being re-rendered because the render is consistent
-        # still need an ear, so they are named rather than quietly passing
-        if settled:
-            log("consistent across takes, worth a listen: " + "; ".join(
-                f"section {i+1} " + ", ".join(f"“{e}”→“{g}”" for e, g in pairs)
-                for i, pairs in sorted(settled.items())))
-            log(f"if any of those are real mispronunciations, seed the lexicon:\n"
-                f"    python3 {os.path.join(here, 'pronounce.py')} "
-                f"--from-check {check_json}")
             # A plain re-roll fixes a one-off misread. Hesitation is systematic, and
             # the studio's lever for it is a small stability rise — so later rounds
             # nudge rather than rolling the same dice again.
@@ -410,6 +401,16 @@ def main():
             else:
                 log(f"re-rendering {len(bad)} flagged section(s), round {rnd+1}")
             run_stage(redo)
+
+        # sections that stopped being re-rendered because the render is consistent
+        # still need an ear, so they are named rather than quietly passing
+        if settled:
+            log("consistent across takes, worth a listen: " + "; ".join(
+                f"section {i+1} " + ", ".join(f"“{e}”→“{g}”" for e, g in pairs)
+                for i, pairs in sorted(settled.items())))
+            log(f"if any of those are real mispronunciations, seed the lexicon:\n"
+                f"    python3 {os.path.join(here, 'pronounce.py')} "
+                f"--from-check {check_json}")
 
     if a.no_master:
         log(f"stopping before master; raw stitch at {raw_vo}")

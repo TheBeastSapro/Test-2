@@ -38,10 +38,14 @@ import sys
 # usually dropped or repeated text.
 WPM_LOW, WPM_HIGH = 120.0, 240.0
 
-# Share of a section's words that may diverge before it is redone. With a strong
-# ASR model a correct take sits at 0.00-0.02, so this is a real signal, not a
-# tolerance for a weak transcriber.
-WER_FLAG = 0.05
+# Share of a section's words that may diverge before it is redone.
+#
+# Set from measurement, not taste. On a 40-section render of KNOWN-GOOD audio,
+# float32 ASR gives WER 0.000-0.138 with a median of 0.047 — the spread comes from
+# proper-noun density, not from the voice. The original 0.05 sat below the median
+# and flagged 38 of 40 good sections. 0.20 clears the worst good section with room
+# and still catches a render that actually broke down.
+WER_FLAG = 0.20
 
 # A run of words the voice slurred: ASR confidence this low over this many words
 # in a row means the delivery is genuinely unclear, not that a word is rare.
@@ -49,6 +53,14 @@ LOW_CONF = 0.45
 LOW_CONF_RUN = 3
 
 DEFAULT_ASR = "distil-large-v3"
+
+# int8 quantisation invents text on this material. On a clean take it produced
+# "COCA! ChAUDIO carried a message from CuscoCommentary to Kito, 1,250 miles of And
+# quantity" and dropped "A Roman courier with a paved road" entirely — which read
+# as the voice losing words when the words were plainly there. float32 on the same
+# file returns it near-perfectly. The read-check is only worth running if it is
+# right, so it pays the ~2x cost.
+DEFAULT_COMPUTE = "float32"
 
 _NORM = None
 _MODEL = None
@@ -116,7 +128,7 @@ def confidence_index(wordinfo):
     return {k: sum(v) / len(v) for k, v in acc.items()}
 
 
-def classify(spans, conf=None, sure=0.60):
+def classify(spans, conf=None, sure=0.60, guide=None):
     """Which divergences are worth spending credits on.
 
     A dropped or duplicated run of words cannot be anything but a defect. A
@@ -127,9 +139,15 @@ def classify(spans, conf=None, sure=0.60):
     evidence of anything and is left to the WER threshold.
     """
     conf = conf or {}
+    # The script's own pronunciation guide names every word the transcriber is
+    # going to mangle. A span made only of those is the guide doing its job, not
+    # the voice failing, so it is reported without costing a re-render.
+    hard_words = {w.lower() for entry in (guide or {}) for w in entry.split()}
     hard = []
     for kind, exp, heard, ctx in spans:
         e, h = exp.split(), heard.split()
+        if hard_words and e and all(w.lower() in hard_words for w in e):
+            continue
         if kind == "delete" and len(e) >= 2:
             hard.append(("skipped", exp, heard, ctx))
         elif kind == "insert" and len(h) >= 2:
@@ -177,13 +195,13 @@ def measure(path):
 
 
 # ------------------------------------------------------------------ asr
-def load_asr(size=DEFAULT_ASR):
+def load_asr(size=DEFAULT_ASR, compute=DEFAULT_COMPUTE):
     global _MODEL
     if _MODEL is not None:
         return _MODEL
     from faster_whisper import WhisperModel
-    log(f"loading ASR ({size}, cpu int8) — first run downloads the model")
-    _MODEL = WhisperModel(size, device="cpu", compute_type="int8")
+    log(f"loading ASR ({size}, cpu {compute}) — first run downloads the model")
+    _MODEL = WhisperModel(size, device="cpu", compute_type=compute)
     return _MODEL
 
 
@@ -216,7 +234,7 @@ def slurred_runs(words):
 
 
 # ------------------------------------------------------------------ check
-def check_sections(sections, parts_dir, asr_size=DEFAULT_ASR):
+def check_sections(sections, parts_dir, asr_size=DEFAULT_ASR, guide=None):
     model = load_asr(asr_size)
     results = []
     for sec in sections:
@@ -232,7 +250,7 @@ def check_sections(sections, parts_dir, asr_size=DEFAULT_ASR):
 
         heard, wordinfo = transcribe(model, path)
         wer, spans = diff_words(sec["send_text"], heard)
-        hard = classify(spans, confidence_index(wordinfo))
+        hard = classify(spans, confidence_index(wordinfo), guide=guide)
 
         problems, regen = [], False
         for kind, exp, got, ctx in hard:
