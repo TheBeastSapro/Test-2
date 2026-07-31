@@ -299,6 +299,8 @@ def main():
     ap.add_argument("--out", required=True, help="stitched raw VO, .wav recommended")
     ap.add_argument("--profile", help="voiceover_profile.json from Voiceover Studio")
     ap.add_argument("--parts-dir", help="where section takes live (default: alongside --out)")
+    ap.add_argument("--run-on", action="store_true",
+                    help="chapter name leads the first sentence in the same request")
     ap.add_argument("--skip-headings", action="store_true",
                     help="do not read chapter names aloud (studio default is to read them)")
     ap.add_argument("--max-chunk", type=int, default=450)
@@ -320,7 +322,7 @@ def main():
         prof["settings"]["stability"] = max(0.0, min(1.0, a.stability))
     preset = a.chapter_pause or prof["chapter_pause"]
     raw_script = open(a.script, encoding="utf-8").read()
-    sections = build_sections(raw_script, a.skip_headings, a.max_chunk)
+    sections = build_sections(raw_script, a.skip_headings, a.max_chunk, a.run_on)
     if not sections:
         raise SystemExit("Nothing to narrate — the script is empty after removing headings.")
 
@@ -353,7 +355,7 @@ def main():
 
     if a.sections_json:
         json.dump({"sections": sections, "marks": marks,
-                   "script_lines": master_script_lines(raw_script, a.skip_headings)},
+                   "script_lines": master_script_lines(raw_script, a.skip_headings, a.run_on)},
                   open(a.sections_json, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
 
 

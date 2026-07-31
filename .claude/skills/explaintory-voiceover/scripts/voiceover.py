@@ -24,7 +24,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import generate as gen  # noqa: E402
 import readcheck as rc  # noqa: E402
 from script_prep import (build_sections, detect_structure,  # noqa: E402
-                         master_script_lines, split_pronunciation_guide)
+                         master_script_lines, note_wants_runon,
+                         split_pronunciation_guide, split_read_note)
 
 CHARS_PER_SEC = 14      # the studio's narration-pace constant, for the estimate
 
@@ -65,19 +66,32 @@ def derive_title(script_path, raw, explicit=None, read_title=True):
     `readTitle`, not this tool's opinion — the studio reads it by default and that
     is the read Sapro has been publishing.
     """
+    def clean(t):
+        # "EVERY DRUG USED IN WAR EXPLAINED — VOICEOVER SCRIPT" names the document,
+        # not the video. The suffix would be read aloud and would name the file.
+        t = re.sub(r"\s*[—–\-|:]\s*(voice\s*over|voiceover|vo)\s*script\s*$", "", t, flags=re.I)
+        t = re.sub(r"\s*[—–\-|:]\s*(script|draft|final|v\d+(\.\d+)?)\s*$", "", t, flags=re.I)
+        return t.strip()
+
     lines = raw.split("\n")
     for i, line in enumerate(lines[:12]):
         s = line.strip()
         m = (re.match(r"^#\s+(.{2,80})$", s)
              or re.match(r"^title\s*[:\-]\s*(.{2,80})$", s, re.I))
         if m:
-            found = m.group(1).strip()
-            body = raw if read_title else "\n".join(lines[:i] + lines[i + 1:])
-            return (explicit.strip() if explicit else found), body
+            found = clean(m.group(1).strip())
+            shown = (explicit.strip() if explicit else found)
+            if read_title:
+                out = list(lines)
+                out[i] = "# " + shown       # narrate the title, not the document name
+                body = "\n".join(out)
+            else:
+                body = "\n".join(lines[:i] + lines[i + 1:])
+            return shown, body
     if explicit:
         return explicit.strip(), raw
     stem = os.path.splitext(os.path.basename(script_path))[0]
-    return re.sub(r"[_\-]+", " ", stem).strip().title(), raw
+    return clean(re.sub(r"[_\-]+", " ", stem).strip().title()), raw
 
 
 def suggest_breaks(script_lines):
@@ -152,7 +166,8 @@ def chapter_names(sections):
             if s["is_heading"] and not s.get("is_title")]
 
 
-def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None):
+def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None,
+              note=None, runon=False):
     """What the studio's structure panel and estimator show, before a credit is spent.
 
     Generation is the irreversible part of this pipeline — the read-check and the
@@ -162,10 +177,19 @@ def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None):
     """
     st = detect_structure(raw)
     chars = sum(s["chars"] for s in sections)
+    # in run-on mode the name is merged into its section, so it is no longer a
+    # heading section — the chapter list has to come from the structure, not the
+    # sections, or the confirmation screen would show none at all
+    want = title.strip().rstrip(".").lower()
+    st_chapters = [h for h in st["headings"]
+                   if h.strip().rstrip(".").lower() != want]
     mins, secs_ = divmod(int(chars / CHARS_PER_SEC), 60)
     heads = [s for s in sections if s["is_heading"]]
-    titled = any(s.get("is_title") for s in sections)
-    chapters = chapter_names(sections)
+    titled = (any(s.get("is_title") for s in sections)
+              or any(want == s["send_text"].strip().rstrip(".").lower()
+                     for s in sections if s["is_heading"])
+              or (not skip_headings and len(st["headings"]) > len(st_chapters)))
+    chapters = chapter_names(sections) or st_chapters
 
     print(f"\n  TITLE: “{title}”"
           + ("  (read aloud — readTitle is on)" if titled
@@ -189,8 +213,13 @@ def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None):
         print(f"  CTA: “{pv}”")
     if guide:
         print(f"  pronunciation guide: {len(guide)} names held out of the narration")
+    if note:
+        print(f"  READ NOTE: {len(note)} lines held out of the narration")
+        print(f"  chapter style: {'RUN-ON — name leads the first sentence, no beat' if runon else 'announce — a beat around the name'}")
+    elif runon:
+        print("  chapter style: RUN-ON — name leads the first sentence, no beat")
 
-    spoken_heads = len(heads) - (1 if titled else 0)
+    spoken_heads = len(chapters)
     print(f"\n  {len(sections)} sections ({spoken_heads} chapter announcements"
           f"{' + the title' if titled else ''})"
           f" · {chars:,} chars · ~{mins}:{secs_:02d} audio")
@@ -236,6 +265,11 @@ def main():
                     help="do not read chapter names aloud (default: whatever the profile locked in)")
     ap.add_argument("--max-chunk", type=int, default=None)
     ap.add_argument("--chapter-pause", choices=["tight", "natural", "wide"])
+    ap.add_argument("--chapter-style", choices=["announce", "run-on"],
+                    help="announce = a beat around the chapter name (profile default); "
+                         "run-on = the name leads the first sentence in the same "
+                         "request, no inserted silence. Auto-read from the script's "
+                         "READ NOTE when not given.")
     ap.add_argument("--asr-model", default=rc.DEFAULT_ASR)
     ap.add_argument("--max-redos", type=int, default=2,
                     help="rounds of re-rendering flagged sections before giving up")
@@ -266,7 +300,9 @@ def main():
     # the guide at the foot of the script is a note to the reader, never a line to
     # read — and it is this video's answer key for how each name should sound
     raw, guide = split_pronunciation_guide(raw)
-    lines = master_script_lines(raw, a.skip_headings)
+    raw, note = split_read_note(raw)
+    runon = a.chapter_style == "run-on" if a.chapter_style else bool(note_wants_runon(note))
+    lines = master_script_lines(raw, a.skip_headings, runon)
 
     if a.suggest_breaks:
         for w1, w2, ctx in suggest_breaks(lines):
@@ -290,7 +326,8 @@ def main():
     # alignment used for mastering can never disagree about what was spoken
     open(source_txt, "w", encoding="utf-8").write(raw)
     open(script_txt, "w", encoding="utf-8").write("\n".join(lines) + "\n")
-    sections = mark_title_section(build_sections(raw, a.skip_headings, a.max_chunk), title)
+    sections = mark_title_section(
+        build_sections(raw, a.skip_headings, a.max_chunk, runon), title)
     log(f"“{title}” · {len(sections)} sections · "
         f"{sum(s['chars'] for s in sections)} chars")
     if guide:
@@ -301,7 +338,8 @@ def main():
             f"({', '.join(list(guide)[:5])}{'…' if len(guide) > 5 else ''})")
 
     if a.plan:
-        show_plan(title, raw, guide, sections, prof, a.skip_headings, prof["api_key"])
+        show_plan(title, raw, guide, sections, prof, a.skip_headings,
+                  prof["api_key"], note, runon)
         return 0
 
     start = STAGES.index(a.start)
@@ -319,6 +357,8 @@ def main():
         gen_cmd += ["--chapter-pause", a.chapter_pause]
     if a.lexicon:
         gen_cmd += ["--lexicon", a.lexicon]
+    if runon:
+        gen_cmd += ["--run-on"]
 
     if start <= STAGES.index("generate"):
         run_stage(gen_cmd)

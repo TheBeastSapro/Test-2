@@ -113,6 +113,57 @@ def split_pronunciation_guide(text):
     return text, {}
 
 
+# A production note to the reader, at the top of the script: "READ NOTE — please
+# read before recording", then the rules for the session. It is the one block that
+# must never be narrated, and it is also where the delivery instructions live, so
+# it is lifted out and kept rather than merely deleted.
+_NOTE_HEAD = re.compile(
+    r"^\s*[#*_\s]*((read\s*me|read\s*note|note\s*to\s*(the\s*)?(reader|voice|narrator)|"
+    r"voice\s*note|delivery\s*note|recording\s*note|before\s*recording|"
+    r"performance\s*note)s?)\b.{0,60}$", re.I)
+
+
+def split_read_note(text):
+    """-> (script without the production note, [note lines])
+
+    The note runs from its heading to the first divider or chapter heading. Both
+    terminators matter: a script may separate the note with a rule, or go straight
+    into '## Coca'.
+    """
+    lines = text.split("\n")
+    start = None
+    for i, ln in enumerate(lines[:40]):          # it lives at the top, before the body
+        if _NOTE_HEAD.match(ln):
+            start = i
+            break
+    if start is None:
+        return text, []
+
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        s = lines[j].strip()
+        if re.fullmatch(r"[-_*=~]{3,}|[—–]{2,}", s) or re.match(r"^#{1,6}\s+\S", s):
+            end = j
+            break
+    note = [ln.strip() for ln in lines[start:end] if ln.strip()]
+    return "\n".join(lines[:start] + lines[end:]), note
+
+
+def note_wants_runon(note):
+    """Does the production note ask for the chapter name to run into the sentence?
+
+    'Run straight from the chapter name into the first sentence. No pause.' is an
+    instruction about generation, not a line to read, and it contradicts the
+    profile's chapter pause — so it has to be seen rather than narrated past.
+    """
+    blob = " ".join(note).lower()
+    if not blob:
+        return None
+    runon = re.search(r"no pause|without a pause|run (straight|on) (from|into)"
+                      r"|straight into the first sentence|not an announcement", blob)
+    return True if runon else None
+
+
 def is_title_case_heading(s):
     """A standalone Title-Case line — 'Siren Head' — not a sentence."""
     if len(s) > 60:
@@ -178,7 +229,7 @@ def _classify(s, idx, lines, prev_type):
     return "text", False, ""
 
 
-def detect_structure(text):
+def detect_structure(text, runon=False):
     """-> dict(headings, directions, ctas, cta_previews, cleaned, spoken, items)
 
     cleaned = headings removed entirely (skip mode)
@@ -201,6 +252,7 @@ def detect_structure(text):
 
     kept, spoken, cta_previews = [], [], []
     pending_break = False
+    pending_join = False        # runon: glue the next narration line to the chapter name
     prev_was_cta = False
     ctas = 0
 
@@ -219,8 +271,15 @@ def detect_structure(text):
                     h += "."
                 if spoken and spoken[-1] != "":
                     spoken.append("")
-                spoken.append(SECTION_MARK + h + PAUSE_MARK)
-                spoken.append("")
+                if runon:
+                    # The name is a label, not an announcement: it leads the first
+                    # sentence inside the SAME request, so there is no splice, no
+                    # edge silence from the model and no prosodic reset between them.
+                    spoken.append(SECTION_MARK + h)
+                    pending_join = True
+                else:
+                    spoken.append(SECTION_MARK + h + PAUSE_MARK)
+                    spoken.append("")
                 pending_break = False
             elif spoken and spoken[-1] != "":
                 spoken.append("")                   # directions/labels are never narrated
@@ -245,6 +304,13 @@ def detect_structure(text):
             prev_was_cta = is_cta
 
         kept.append(kept_out)
+        if pending_join and not out:
+            continue        # the blank after '## Coca' must not become the join target
+        if pending_join and out:
+            # 'Coca.' + ' The Inca chasqui carried…' -> one unit, one request
+            spoken[-1] = spoken[-1] + " " + out.lstrip(SECTION_MARK + PAUSE_MARK)
+            pending_join = False
+            continue
         if pending_break and out:
             out = SECTION_MARK + out
             pending_break = False
@@ -258,12 +324,12 @@ def detect_structure(text):
             "items": items}
 
 
-def narration_text(raw, skip_headings=True):
+def narration_text(raw, skip_headings=True, runon=False):
     """The text that will actually be narrated. Studio's effectiveScript()."""
     raw = raw.strip()
     if not raw:
         return ""
-    st = detect_structure(raw)
+    st = detect_structure(raw, runon)
     if not st["headings"] and not st["directions"]:
         return raw
     return st["cleaned"] if skip_headings else st["spoken"]
@@ -314,13 +380,13 @@ def split_script(text, max_chunk=MAX_CHUNK):
     return chunks
 
 
-def build_sections(script_text, skip_headings=False, max_chunk=MAX_CHUNK):
+def build_sections(script_text, skip_headings=False, max_chunk=MAX_CHUNK, runon=False):
     """-> list of {index, text, send_text, is_heading, is_cta, chars}
 
     text      keeps the markers (for gap computation)
     send_text is what goes to the TTS endpoint
     """
-    narration = narration_text(script_text, skip_headings=skip_headings)
+    narration = narration_text(script_text, skip_headings=skip_headings, runon=runon)
     out = []
     for i, t in enumerate(split_script(narration, max_chunk)):
         is_heading = bool(re.search(r"\x02\s*$", t)) and "\n" not in t
@@ -351,13 +417,13 @@ def chapter_gaps(sections, preset="natural"):
     return gaps
 
 
-def master_script_lines(script_text, skip_headings=False):
+def master_script_lines(script_text, skip_headings=False, runon=False):
     """The script as humanize.py wants it: one paragraph per line, no markers.
 
     This must describe what was actually SPOKEN, or the forced alignment drifts —
     so it is derived from the same narration text the sections were built from.
     """
-    narration = narration_text(script_text, skip_headings=skip_headings)
+    narration = narration_text(script_text, skip_headings=skip_headings, runon=runon)
     lines = []
     for para in re.split(r"\n\s*\n", narration):
         p = unmark(para).strip()
