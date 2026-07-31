@@ -115,6 +115,23 @@ mastering runs on un-degraded audio and only the delivered file is encoded once;
 the script's H1 is treated as the video's title, not its first chapter, so the
 voiceover does not open by reading its own title aloud.
 
+### The first chapter announcement reads fast
+
+It is the section with the least conditioning behind it — no `previous_text`, no
+`previous_request_ids` — so the model starts cold and rushes it, while later headings
+inherit up to three prior request ids and settle into pace. Sapro hears this in the
+browser tool, where it is most obvious because the H1 is read as section 0 with no
+context at all.
+
+The cause is structural, so re-rolling it does not reliably help. Retiming does, and
+costs nothing: at stitch time every heading's rate is measured **over its spoken span
+only** (a 3-word announcement is mostly edge silence, so dividing by file length would
+make every short heading look slow), and any heading more than 12% off the median of
+the others is stretched to match. Needs 3+ headings — with fewer there is no majority
+to level against. Corrections are clamped to ±15%, past which the stretch is audible
+itself; when the clamp binds it says so and asks for an ear. `--no-level-headings`
+turns it off.
+
 ## Before mastering — the curated clause breaks
 
 `humanize.py` wants a file of clause breaks the script forgot to punctuate, one

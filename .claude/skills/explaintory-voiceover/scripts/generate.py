@@ -179,30 +179,103 @@ def generate_sections(prof, sections, parts_dir, only=None):
 
 
 # ------------------------------------------------------------------ stitch
-def _decode(src, rate=SR):
+def _decode(src, rate=SR, tempo=1.0):
     """-> headerless s16le mono bytes. Byte concatenation of these is sample-exact."""
     with tempfile.NamedTemporaryFile(suffix=".raw", delete=False) as f:
         tmp = f.name
-    run(["ffmpeg", "-v", "error", "-i", src, "-ac", "1", "-ar", str(rate),
-         "-f", "s16le", tmp, "-y"])
+    cmd = ["ffmpeg", "-v", "error", "-i", src, "-ac", "1", "-ar", str(rate)]
+    if abs(tempo - 1.0) > 1e-3:
+        cmd += ["-filter:a", f"atempo={tempo:.4f}"]
+    run(cmd + ["-f", "s16le", tmp, "-y"])
     data = open(tmp, "rb").read()
     os.unlink(tmp)
     return data
 
 
-def stitch(parts_dir, sections, out_path, preset="natural", rate=SR):
+def _speech_wpm(path, text):
+    """Words per minute over the SPOKEN span only.
+
+    A chapter announcement is 2-4 words wrapped in ~0.2 s of model silence at each
+    edge. Divide by the whole file and that padding dominates, so a short heading
+    would look slow no matter how it was read.
+    """
+    import readcheck as rc
+    m = rc.measure(path)
+    dur = m["duration"]
+    if dur <= 0.2:
+        return 0.0, dur
+    lead = next((e for s, e in m["silences"] if s <= 0.05), 0.0)
+    tail = next((dur - s for s, e in m["silences"] if e >= dur - 0.05), 0.0)
+    speech = max(0.2, dur - lead - tail)
+    return len(text.split()) / (speech / 60), speech
+
+
+def level_headings(parts_dir, sections, tol=0.12, floor=0.85, ceil=1.18):
+    """-> {index: tempo factor} evening out chapter announcements against each other.
+
+    The first chapter announcement is the section with the least conditioning behind
+    it — no previous_text, no previous_request_ids — so the model starts cold and
+    reads it faster than the ones that follow, which inherit up to three prior
+    request ids. It is a real, repeatable difference and it is audible.
+
+    Regenerating does not reliably fix it, because the cause is structural rather
+    than a bad roll of the dice. Retiming does, exactly and for free: measure every
+    heading, take the median of the others as the target, and stretch any heading
+    that sits more than `tol` away from it.
+    """
+    heads = [s for s in sections if s["is_heading"]]
+    if len(heads) < 3:
+        # with fewer than three there is no majority to level against, and
+        # levelling to a single other heading would just copy its errors
+        return {}
+
+    rates = {}
+    for s in heads:
+        wpm, _ = _speech_wpm(os.path.join(parts_dir, f"sec_{s['index']:03d}.mp3"),
+                             s["send_text"])
+        if wpm > 0:
+            rates[s["index"]] = wpm
+
+    factors = {}
+    for idx, wpm in rates.items():
+        others = sorted(v for k, v in rates.items() if k != idx)
+        if len(others) < 2:
+            continue
+        mid = len(others) // 2
+        target = others[mid] if len(others) % 2 else (others[mid - 1] + others[mid]) / 2
+        if not target or abs(wpm - target) / target <= tol:
+            continue
+        want = target / wpm                       # >1 speeds up, <1 slows down
+        f = max(floor, min(ceil, want))
+        if abs(f - 1.0) <= 1e-3:
+            continue
+        factors[idx] = f
+        note = f"  heading {idx+1}: {wpm:.0f} wpm vs {target:.0f} median — retiming x{f:.3f}"
+        if abs(want - f) > 1e-3:
+            # past ~15% the stretch itself becomes audible, so the correction stops
+            # short rather than trading one artefact for another. Say so.
+            note += (f" (clamped from x{want:.3f}; lands near {wpm*f:.0f} wpm, "
+                     f"not {target:.0f} — listen)")
+        log(note)
+    return factors
+
+
+def stitch(parts_dir, sections, out_path, preset="natural", rate=SR, level=True):
     """Concatenate the sections with exact digital silence between them.
     Returns [{index, start, end}] so a flagged section maps back to a timestamp."""
     gaps = chapter_gaps(sections, preset)
+    factors = level_headings(parts_dir, sections) if level else {}
     pcm = bytearray()
     marks = []
     for i, sec in enumerate(sections):
         if gaps[i] > 0:
             pcm += b"\x00\x00" * int(round(gaps[i] * rate))
         start = len(pcm) / 2 / rate
-        pcm += _decode(os.path.join(parts_dir, f"sec_{i:03d}.mp3"), rate)
+        pcm += _decode(os.path.join(parts_dir, f"sec_{i:03d}.mp3"), rate,
+                       factors.get(i, 1.0))
         marks.append({"index": i, "start": round(start, 3),
-                      "end": round(len(pcm) / 2 / rate, 3)})
+                      "end": round(len(pcm) / 2 / rate, 3),
+                      "retimed": round(factors.get(i, 1.0), 4)})
 
     with tempfile.NamedTemporaryFile(suffix=".raw", delete=False) as f:
         raw = f.name
@@ -229,6 +302,8 @@ def main():
                     help="override the profile's stability for this run. Raising it "
                          "slightly is the studio's fix for false mid-sentence pauses.")
     ap.add_argument("--stitch-only", action="store_true")
+    ap.add_argument("--no-level-headings", action="store_true",
+                    help="leave chapter announcements at whatever rate they rendered")
     ap.add_argument("--sections-json", help="write the section manifest here")
     a = ap.parse_args()
 
@@ -254,7 +329,7 @@ def main():
         generate_sections(prof, sections, parts_dir, only)
 
     log("stitching")
-    marks = stitch(parts_dir, sections, a.out, preset)
+    marks = stitch(parts_dir, sections, a.out, preset, level=not a.no_level_headings)
     log(f"wrote {a.out}  ({marks[-1]['end']/60:.1f} min)")
 
     if a.sections_json:
