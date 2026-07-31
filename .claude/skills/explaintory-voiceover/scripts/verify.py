@@ -151,7 +151,7 @@ def audit_boundaries(script_path, words=None, sil=None, toks=None,
             continue
         before = seq[i - 1] if i else ""
         after2 = seq[i + 3] if i + 3 < len(seq) else ""
-        gap = _gap_after(w, nxt, words, sil, before, after2)
+        gap = _gap_after(w, nxt, words, sil, before)
         if gap is None:
             bad.append(f"date range “{w} {nxt} {after}” could not be located in the "
                        f"audio — NOT checked, do not read this as a pass "
@@ -162,7 +162,7 @@ def audit_boundaries(script_path, words=None, sil=None, toks=None,
     return bad
 
 
-def _gap_after(w, nxt, words, sil, before="", after2=""):
+def _gap_after(w, nxt, words, sil, before=""):
     """Largest silence inside the spoken date range, or None if it cannot be found.
 
     Does NOT look for the year itself. The transcriber does not return "1547" as
@@ -171,16 +171,25 @@ def _gap_after(w, nxt, words, sil, before="", after2=""):
     words on either side of the range ("...roads BETWEEN 1547 and 1550, DESCRIBED
     ..."), which transcribe reliably, and the span between them is searched.
     """
-    nb, na = norm(before), norm(after2)
-    if not nb or not na:
+    nb, nj = norm(before), norm(nxt)
+    if not nb or not nj:
         return None
     for i in range(len(words)):
         if norm(words[i][0]) != nb:
             continue
-        for j in range(i + 1, min(i + 12, len(words))):
-            if norm(words[j][0]) != na:
+        # Search only as far as the JOINER, never past the second year.
+        #
+        # An earlier version ran the span from the word before the range to the
+        # word after it, which swallowed the legitimate beat that follows the
+        # second year -- the sentence stop in "...between 1966 and 1969. Heroin
+        # was..." -- and reported a correctly-mastered file as split. The defect
+        # lives between the first year and the joiner and nowhere else.
+        for j in range(i + 1, min(i + 8, len(words))):
+            if norm(words[j][0]) != nj:
                 continue
             lo, hi = words[i][2], words[j][1]
+            if hi <= lo:
+                return 0.0
             hits = [b - a for a, b in sil if a >= lo - 0.05 and b <= hi + 0.05]
             return max(hits) if hits else 0.0
     return None
