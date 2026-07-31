@@ -264,7 +264,17 @@ def align(wav16_path, lines, chunk_s=40):
 
 # ---------------------------------------------------------------- 4/5. pacing
 # Silence below this at a comma means the voice deliberately read through it.
-RUNTHROUGH = 0.030
+#
+# Raised from 0.030 after Sapro checked the chapters he had not heard: the
+# forced beats left in Philopon and Heroin sat at 30-50 ms, which is the voice
+# reading through with a little articulatory closure, not a pause it intended.
+# 0.060 clears those. Above it the voice really did leave a gap and topping it
+# up to target is the pacing this pipeline exists to do.
+#
+# Sentence and paragraph boundaries are deliberately NOT covered. When the voice
+# runs two sentences together with no gap that is a generation artefact, and the
+# beat the master adds there is the correct repair.
+RUNTHROUGH = 0.060
 
 ABB = re.compile(r"^[A-Z]\.$")
 NUMY = re.compile(r"^[\d]")
