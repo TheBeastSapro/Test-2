@@ -28,6 +28,18 @@ echo "[audio-tools] mastering"
 "${PIP[@]}" numpy scipy soundfile
 "${PIP[@]}" torch torchaudio --index-url https://download.pytorch.org/whl/cpu
 
+echo "[audio-tools] pronunciation check"
+#   espeak-ng    grapheme-to-phoneme, the reference reading of a word
+#   phonemizer   espeak driver
+#   allosaurus   recognises phones from audio, so a MISREAD word is visible
+#   panphon      phonetic feature distance between expected and heard
+# These were installed by hand in an earlier session and died with the container,
+# because they were never added here. That is why "Quito" was still uncaught a
+# session later: the tools were reported as installed and were not.
+command -v espeak-ng >/dev/null || apt-get install -y espeak-ng >/dev/null 2>&1 \
+  || echo "[audio-tools] WARN: espeak-ng unavailable — pronunciation check will not run"
+"${PIP[@]}" phonemizer panphon allosaurus
+
 echo "[audio-tools] sound design"
 #   scenedetect  finds dissolves the ffmpeg scene score misses entirely
 #   silero-vad   duck on speech rather than on energy
@@ -38,6 +50,7 @@ echo "[audio-tools] sound design"
 python3 - <<'PY'
 import importlib, sys
 mods = ["elevenlabs", "faster_whisper", "jiwer", "whisper_normalizer", "spacy",
+        "phonemizer", "panphon", "allosaurus",
         "numpy", "scipy", "soundfile", "torch", "torchaudio",
         "scenedetect", "librosa", "silero_vad", "cv2"]
 missing = []
