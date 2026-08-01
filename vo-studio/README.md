@@ -3,9 +3,10 @@
 A local Windows app that replaces the ElevenLabs pipeline with **Chatterbox**, running
 on Sapro's own GPU. Zero credits per render.
 
-Status: **partly built.** `vostudio/config.py`, `script_prep.py`, and `generate.py`
-are written against the real library. The UI, mastering chain, and installer are not.
-See "What is left" at the bottom — nothing here is claimed to run end-to-end yet.
+Status: **all modules written; never run end-to-end.** Every piece testable without a
+GPU has been tested on real audio and the results are below. The generation path
+itself has only been exercised on CPU, one phrase at a time — the first full render
+on Sapro's GPU is the real test, and it has not happened.
 
 ## Everything below was measured, not assumed
 
@@ -88,19 +89,39 @@ one and warn before launching rather than letting it take over silently.
 Python, and on Windows the SDK looks for `claude.cmd`. Worth knowing before the
 installer is written — it is a second runtime, not a pip dependency.
 
-## What is left
+## Two bugs the tests caught before they shipped
 
-Not built. Listed honestly rather than implied:
+**The sentence splitter died on any script containing "U.S."** `re.sub(r"\b([A-Z])\.",
+r"\1\x00", ...)` looks right and is not: in a raw replacement string `re`'s template
+parser reads `\x` as a bad escape and raises. Every abbreviation-containing script
+would have crashed at prep.
 
-- `readcheck.py` — ASR verification and re-roll loop
-- `master.py` — the humanize/mastering chain
-- `orphans.py` — port of the detector in `.claude/skills/explaintory-voiceover/scripts/`
-- `pipeline.py` — orchestration
-- `app.py` — Gradio UI (Chatterbox already ships Gradio as a dependency)
-- `setup.bat` / `run.bat` — venv, CUDA torch 2.6.0, Node, CLI, desktop shortcut
-- The assistant tab itself
+**`place_beats` padded every gap that merely looked like a pause.** Measured on 60 s of
+real read: 126 gaps, of which 34 sit in the pause regime — against the 8 commas the
+whole original defect ever involved. Most sub-target gaps are stop consonants and
+plosive closures *inside words*; padding those inserts a beat mid-word. It now locates
+each scripted comma via ASR word timings and pads only the gap that comma lands on.
+With no word timings it does nothing at all, which is the safe direction to fail in.
 
-The pronunciation check is still unbuilt in the ElevenLabs pipeline too, and its
-dependencies (`espeak-ng`, `allosaurus`, `phonemizer`, `panphon`, `kokoro`) are still
-missing from `install-audio-tools.sh`. Whichever pipeline ships first, that gap is the
-same gap.
+Verified on a 12-second excerpt: 4 commas in the script, 4 located, 2 of them sitting
+on 30 ms gaps the voice read through and correctly left alone, 1 padded. Locating all
+4 needed one more fix — ASR writes "1798" where the script says "seventeen
+ninety-eight", so the ASR token is expanded the same way and every word it becomes
+shares that token's end time. Without that, alignment slipped two words at every year
+and silently lost the comma after it.
+
+ASR word timestamps are used only to *locate* words, never to measure a gap. They
+return contiguous spans, so asking one how long a pause is always answers 0.000 s.
+Gap length comes from an RMS envelope.
+
+## What has NOT been proven
+
+- **No full render has ever run.** Chatterbox has produced exactly one phrase, on CPU.
+- **The Windows installer has never executed.** It is written from the measured
+  dependency facts, not from a successful run.
+- **The assistant has never connected.** The SDK surface is verified; the login flow
+  is not.
+- **The mastering chain has not run end-to-end** — its gap logic and loudness stage
+  are tested in isolation on real audio.
+
+First real job on the GPU is the test. Expect something here to be wrong.

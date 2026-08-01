@@ -82,7 +82,9 @@ def split_sentences(text: str) -> list[str]:
     for abbr in ["Dr.", "Mr.", "Mrs.", "Ms.", "St.", "Prof.", "Gen.", "Col.",
                  "Lt.", "Sgt.", "Capt.", "vs.", "etc.", "e.g.", "i.e.", "No."]:
         protected = protected.replace(abbr, abbr.replace(".", "\x00"))
-    protected = re.sub(r"\b([A-Z])\.", r"\1\x00", protected)   # U.S. , F.D.R.
+    # NOT a raw replacement string: r"\1\x00" makes re's template parser read \x as
+    # a bad escape, and the sentence splitter dies on any script containing "U.S."
+    protected = re.sub(r"\b([A-Z])\.", "\\1\x00", protected)   # U.S. , F.D.R.
 
     parts = re.split(r"(?<=[.!?])\s+", protected)
     return [p.replace("\x00", ".").strip() for p in parts if p.strip()]
