@@ -38,10 +38,25 @@ function toast(msg) {
 }
 
 /* ── navigation ─────────────────────────────────────────────────────── */
-$$('.nav').forEach(btn => btn.onclick = () => {
-  $$('.nav').forEach(b => b.classList.toggle('is-active', b === btn));
-  $$('.view').forEach(v => v.classList.toggle('is-active', v.dataset.view === btn.dataset.view));
+const ORDER = ['voice', 'lab', 'render', 'result'];
+const done = new Set();
+
+function go(view) {
+  $$('.view').forEach(v => v.classList.toggle('is-active', v.dataset.view === view));
+  // Mark every earlier step complete, so the flow shows how far you are.
+  const idx = ORDER.indexOf(view);
+  $$('.step').forEach(s => {
+    const i = ORDER.indexOf(s.dataset.view);
+    s.classList.toggle('is-active', s.dataset.view === view);
+    s.classList.toggle('is-done', i > -1 && idx > -1 && i < idx || done.has(s.dataset.view));
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+$$('.step, [data-view]').forEach(b => {
+  if (!b.dataset.view || b.tagName !== 'BUTTON') return;
+  b.onclick = () => go(b.dataset.view);
 });
+$$('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
 
 /* ── hardware badge ─────────────────────────────────────────────────── */
 api('/api/hardware').then(h => {
@@ -68,20 +83,23 @@ async function upload(file) {
   $('#voice-audio').src = '/api/voice/audio?t=' + Date.now();
   $('#voice-name').textContent = `${j.name} · ${j.duration.toFixed(1)}s · peak ${j.peak.toFixed(1)} dBFS`;
   $('#voice-set').hidden = false;
-  if (j.warning) toast(j.warning); else toast('Reference set');
+  done.add('voice');
+  $$('.step').forEach(s => { if (s.dataset.view === 'voice') s.classList.add('is-done'); });
+  if (j.warning) toast(j.warning); else toast('Voice loaded');
 }
 
 /* ── render ─────────────────────────────────────────────────────────── */
 $('#script').addEventListener('input', async e => {
   const t = e.target.value;
   const words = (t.match(/\S+/g) || []).length;
-  $('#script-stat').textContent = `${words} words · ~${Math.max(1, Math.ceil(t.length / 300))} chunks`;
+  $('#script-stat').textContent =
+    `${words} words · about ${Math.max(1, Math.ceil(t.length / 300))} chunks`;
 });
 
 $('#btn-render').onclick = async () => {
   const script = $('#script').value.trim();
   if (!script) return toast('Paste a script first');
-  $('#render-out').hidden = false;
+  go('result');
   $('#render-log').textContent = '';
   $('#render-player').hidden = true;
   const pill = $('#render-pill'); pill.className = 'pill run'; pill.textContent = 'rendering';
@@ -93,9 +111,11 @@ $('#btn-render').onclick = async () => {
       body: JSON.stringify({ script, title: $('#title').value }),
     });
     const reader = res.body.getReader(), dec = new TextDecoder();
-    let done = false;
-    while (!done) {
-      const { value, done: d } = await reader.read(); done = d;
+    // NOT `done` — that name is the completed-steps Set in this scope, and
+    // shadowing it makes done.add('render') throw at the end of a good render.
+    let finished = false;
+    while (!finished) {
+      const { value, done: d } = await reader.read(); finished = d;
       if (!value) continue;
       const log = $('#render-log');
       log.textContent += dec.decode(value, { stream: true });
@@ -106,7 +126,9 @@ $('#btn-render').onclick = async () => {
       $('#render-audio').src = '/api/render/audio?t=' + Date.now();
       $('#render-path').textContent = info.path;
       $('#render-player').hidden = false;
-      pill.className = 'pill ok'; pill.textContent = info.warn ? 'needs an ear' : 'done';
+      pill.className = info.warn ? 'pill warn' : 'pill ok';
+      pill.textContent = info.warn ? 'needs an ear' : 'done';
+      done.add('render');
     } else { pill.className = 'pill bad'; pill.textContent = 'failed'; }
   } catch (e) {
     $('#render-log').textContent += `\n${e}`;
@@ -159,6 +181,7 @@ $('#lab-fb').addEventListener('keydown', async e => {
   const j = await api('/api/lab/feedback', { name: $('#prof').value, feedback: fb });
   const log = $('#lab-log');
   if (log.classList.contains('empty')) { log.classList.remove('empty'); log.textContent = ''; }
+  done.add('lab');
   log.insertAdjacentHTML('beforeend',
     `<div><span class="r-fb">› ${fb}</span>\n` +
     j.changes.map(c => `   <span class="r-ch">${c}</span>`).join('\n') + '\n</div>');
@@ -228,7 +251,7 @@ $('#btn-reset').onclick = async () => { paintSettings(await api('/api/settings/r
 /* ── assistant ──────────────────────────────────────────────────────── */
 api('/api/auth').then(a => {
   $('#auth-card').innerHTML = a.ok
-    ? '<b>Signed in with your Claude subscription.</b> Claude can read and edit this app, confined to its folder with networking off.'
+    ? 'Signed in with your Claude subscription. Claude can read and edit this app, and is confined to its own folder with networking off.'
     : `<b>Not ready.</b><br><span style="white-space:pre-wrap">${a.detail}</span>`;
 });
 async function send() {

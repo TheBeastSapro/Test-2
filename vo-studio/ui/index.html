@@ -1,172 +1,190 @@
-<nav class="rail">
-  <div class="brand">
-    <div class="brand-mark"></div>
-    <div class="brand-text"><b>VO Studio</b><span>ExplainTory</span></div>
+<div class="shell">
+
+  <div class="masthead">
+    <div class="logo"><div class="logo-mark"></div><h1>VO Studio</h1></div>
+    <p>Your script becomes a finished voiceover, rendered on your own machine.</p>
   </div>
 
-  <button class="nav is-active" data-view="render"><i data-i="render"></i>Render</button>
-  <button class="nav" data-view="voice"><i data-i="voice"></i>Voice</button>
-  <button class="nav" data-view="lab"><i data-i="lab"></i>Voice Lab</button>
-  <button class="nav" data-view="settings"><i data-i="settings"></i>Settings</button>
-  <button class="nav" data-view="assistant"><i data-i="assistant"></i>Assistant</button>
+  <!-- the flow. Order carries information: you cannot tune a voice you have
+       not loaded, or render a script without a voice. -->
+  <nav class="steps">
+    <button class="step is-active" data-view="voice"><span class="step-num">1</span>Voice</button>
+    <button class="step" data-view="lab"><span class="step-num">2</span>Tune</button>
+    <button class="step" data-view="render"><span class="step-num">3</span>Script</button>
+    <button class="step" data-view="result"><span class="step-num">4</span>Result</button>
+  </nav>
 
-  <div class="rail-foot">
-    <div class="hw" id="hw"><span class="dot dot-idle"></span><span id="hw-text">checking…</span></div>
+  <div class="aux">
+    <span class="hw" id="hw"><span class="dot dot-idle"></span><span id="hw-text">checking…</span></span>
+    <button class="btn btn-sm btn-ghost" data-view="settings">Settings</button>
+    <button class="btn btn-sm btn-ghost" data-view="assistant">Assistant</button>
   </div>
-</nav>
 
-<main class="stage">
+  <!-- ═══════════════════════════════════════════════ 1 · VOICE -->
+  <section class="view is-active" data-view="voice">
+    <div class="card">
+      <h2>Load a voice to clone</h2>
+      <p class="sub">Everything is rendered in this voice. The best reference you have is your own finished read.</p>
 
-  <!-- ══════════════════════════════════════════════════════ RENDER -->
-  <section class="view is-active" data-view="render">
-    <header class="head">
-      <div><h1>Render</h1><p>Script in, mastered voiceover out.</p></div>
-      <button class="btn btn-primary" id="btn-render"><i data-i="play"></i>Render</button>
-    </header>
-
-    <div class="grid grid-2">
-      <div class="card span-2">
-        <div class="field">
-          <label for="title">Video title</label>
-          <input id="title" type="text" placeholder="Every Drug Used in War Explained">
-        </div>
-        <div class="field">
-          <label for="script">Script</label>
-          <textarea id="script" rows="14" placeholder="Paste the script.
-
-A line on its own with three words or fewer and no full stop becomes a chapter header."></textarea>
-          <div class="hint"><span id="script-stat">0 words · 0 chunks</span></div>
-        </div>
+      <div class="drop" id="voice-drop">
+        <i data-i="upload"></i>
+        <b>Drop an audio file</b>
+        <span>or click to choose</span>
+        <input type="file" id="voice-file" accept="audio/*" hidden>
       </div>
 
-      <div class="card span-2" id="render-out" hidden>
-        <div class="card-head">
-          <h3>Progress</h3>
-          <span class="pill" id="render-pill">running</span>
-        </div>
-        <pre class="log" id="render-log"></pre>
-        <div id="render-player" hidden>
-          <audio controls id="render-audio"></audio>
-          <p class="hint" id="render-path"></p>
-        </div>
+      <div id="voice-set" hidden>
+        <audio controls id="voice-audio"></audio>
+        <p class="hint" id="voice-name"></p>
       </div>
+
+      <div class="note" style="margin-top:22px">
+        <b>What works best:</b> 8–12 seconds of continuous speech, no music, no long
+        pauses, nothing near clipping. A cut from a voiceover you already delivered
+        beats anything recorded fresh.
+      </div>
+    </div>
+
+    <div class="flow-nav">
+      <span></span>
+      <button class="btn btn-primary" data-go="lab">Continue to tuning</button>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════ VOICE -->
-  <section class="view" data-view="voice">
-    <header class="head">
-      <div><h1>Voice</h1><p>The reference everything clones from.</p></div>
-    </header>
-
-    <div class="grid grid-2">
-      <div class="card">
-        <h3>Reference clip</h3>
-        <div class="drop" id="voice-drop">
-          <i data-i="upload"></i>
-          <b>Drop an audio file</b>
-          <span>or click to choose · 8–12 seconds</span>
-          <input type="file" id="voice-file" accept="audio/*" hidden>
-        </div>
-        <div id="voice-set" hidden>
-          <audio controls id="voice-audio"></audio>
-          <p class="hint" id="voice-name"></p>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>What makes a good one</h3>
-        <ul class="list">
-          <li><b>Your own finished read.</b> A cut of a delivered voiceover beats anything recorded fresh.</li>
-          <li><b>8–12 seconds</b> of continuous speech.</li>
-          <li><b>No music, no long pauses,</b> no clipping.</li>
-        </ul>
-        <div class="note note-warn">
-          <b>Expect drift.</b> A zero-shot clone wanders across a long script more than a trained voice does. That is the cost of free generation — the read-check is what catches it.
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════ VOICE LAB -->
+  <!-- ═══════════════════════════════════════════════ 2 · TUNE -->
   <section class="view" data-view="lab">
-    <header class="head">
-      <div><h1>Voice Lab</h1><p>Dial the read in by ear, then lock it.</p></div>
-      <div class="head-actions">
-        <button class="btn" id="btn-revert"><i data-i="undo"></i>Undo round</button>
-        <button class="btn btn-primary" id="btn-sample"><i data-i="play"></i>Render sample</button>
-      </div>
-    </header>
+    <div class="card">
+      <h2>Tune the read</h2>
+      <p class="sub">Render ten seconds, say what is wrong in plain English, and the settings move. Repeat until it sounds right.</p>
 
-    <div class="grid grid-2">
-      <div class="card">
-        <div class="field">
-          <label for="prof">Profile</label>
-          <input id="prof" type="text" value="explaintory">
+      <div class="grid grid-2">
+        <div>
+          <div class="field">
+            <label for="prof">Profile name</label>
+            <input id="prof" type="text" value="explaintory">
+          </div>
+          <div class="params" id="params"></div>
         </div>
-        <div class="params" id="params"></div>
-        <button class="btn btn-ghost w-full" id="btn-lock"><i data-i="lock"></i>Lock this profile</button>
-      </div>
 
-      <div class="card">
-        <h3>Sample</h3>
-        <div id="lab-player" class="empty">Render a sample to hear it</div>
-        <div class="field">
-          <label for="lab-fb">What is wrong with it?</label>
-          <input id="lab-fb" type="text" placeholder="feels bit fast and a little flat">
-          <div class="chips">
-            <button class="chip">too flat</button>
-            <button class="chip">too expressive</button>
-            <button class="chip">feels bit fast</button>
-            <button class="chip">too slow</button>
-            <button class="chip">false pauses</button>
-            <button class="chip">no natural gaps</button>
+        <div>
+          <div id="lab-player" class="empty">Render a sample to hear it</div>
+          <div class="field" style="margin-top:16px">
+            <label for="lab-fb">What is wrong with it?</label>
+            <input id="lab-fb" type="text" placeholder="feels bit fast and a little flat">
+            <div class="chips">
+              <button class="chip">too flat</button>
+              <button class="chip">too expressive</button>
+              <button class="chip">feels bit fast</button>
+              <button class="chip">too slow</button>
+              <button class="chip">false pauses</button>
+              <button class="chip">no natural gaps</button>
+            </div>
+            <p class="hint">Press Enter and it re-renders with the change applied.</p>
           </div>
         </div>
       </div>
 
-      <div class="card span-2">
-        <h3>Rounds</h3>
-        <div id="lab-log" class="rounds empty">No rounds yet.</div>
+      <div style="display:flex;gap:10px;margin-top:24px">
+        <button class="btn btn-primary" id="btn-sample">Render sample</button>
+        <button class="btn" id="btn-revert">Undo last change</button>
+        <button class="btn" id="btn-lock">Save this voice</button>
       </div>
+    </div>
+
+    <div class="card">
+      <h3>Changes so far</h3>
+      <div id="lab-log" class="rounds empty">Nothing changed yet.</div>
+    </div>
+
+    <div class="flow-nav">
+      <button class="btn" data-go="voice">Back</button>
+      <button class="btn btn-primary" data-go="render">Continue to script</button>
     </div>
   </section>
 
-  <!-- ════════════════════════════════════════════════════ SETTINGS -->
-  <section class="view" data-view="settings">
-    <header class="head">
-      <div><h1>Settings</h1><p>Every threshold shows the failure that set it.</p></div>
-      <div class="head-actions">
-        <button class="btn" id="btn-reset">Reset</button>
-        <button class="btn btn-primary" id="btn-save"><i data-i="save"></i>Save</button>
+  <!-- ═══════════════════════════════════════════════ 3 · SCRIPT -->
+  <section class="view" data-view="render">
+    <div class="card">
+      <h2>Paste the script</h2>
+      <p class="sub">A line on its own with three words or fewer and no full stop becomes a chapter header.</p>
+
+      <div class="field">
+        <label for="title">Video title</label>
+        <input id="title" type="text" placeholder="Every Drug Used in War Explained">
       </div>
-    </header>
-    <div class="note">
-      These are not defaults from a docs page. Each one replaced a value that let something broken through. Change one only with a measurement.
+      <div class="field">
+        <label for="script">Script</label>
+        <textarea id="script" rows="16" placeholder="Paste it here."></textarea>
+        <p class="hint" id="script-stat">0 words · about 0 chunks</p>
+      </div>
+    </div>
+
+    <div class="flow-nav">
+      <button class="btn" data-go="lab">Back</button>
+      <button class="btn btn-primary" id="btn-render">Render voiceover</button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ 4 · RESULT -->
+  <section class="view" data-view="result">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:6px">
+        <h2 style="margin:0">Result</h2>
+        <span class="pill" id="render-pill">waiting</span>
+      </div>
+      <p class="sub">The full log is below. Anything that needs your ear is called out at the end.</p>
+
+      <div id="render-player" hidden style="margin-bottom:20px">
+        <audio controls id="render-audio"></audio>
+        <p class="hint" id="render-path"></p>
+      </div>
+
+      <pre class="log" id="render-log">Nothing rendered yet.</pre>
+    </div>
+
+    <div class="flow-nav">
+      <button class="btn" data-go="render">Back to script</button>
+      <span></span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SETTINGS -->
+  <section class="view" data-view="settings">
+    <div class="card">
+      <h2>Settings</h2>
+      <p class="sub">Each value shows the failure that set it. These are not defaults from a docs page — change one only with a measurement.</p>
     </div>
     <div id="settings-groups"></div>
+    <div class="flow-nav">
+      <button class="btn" id="btn-reset">Reset to defaults</button>
+      <button class="btn btn-primary" id="btn-save">Save settings</button>
+    </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════ ASSISTANT -->
+  <!-- ═══════════════════════════════════════════════ ASSISTANT -->
   <section class="view" data-view="assistant">
-    <header class="head">
-      <div><h1>Assistant</h1><p>Claude, editing this app, on your subscription.</p></div>
-      <select id="perm" class="select">
-        <option value="default">Ask every time</option>
-        <option value="acceptEdits">Edit without asking</option>
-        <option value="plan">Propose only</option>
-      </select>
-    </header>
-    <div class="card auth" id="auth-card"></div>
+    <div class="card">
+      <h2>Assistant</h2>
+      <p class="sub" id="auth-card">Checking your Claude sign-in…</p>
+      <div class="field" style="margin:0">
+        <label for="perm">When Claude wants to change something</label>
+        <select id="perm">
+          <option value="default">Ask me every time</option>
+          <option value="acceptEdits">Just do it</option>
+          <option value="plan">Only describe what it would do</option>
+        </select>
+      </div>
+    </div>
+
     <div class="card chat-card">
       <div class="chat" id="chat"><div class="empty">Ask for a change in plain English.</div></div>
       <div class="composer">
         <input id="chat-input" type="text" placeholder="the pauses after commas feel too long">
-        <button class="btn btn-primary" id="btn-send"><i data-i="send"></i></button>
+        <button class="btn btn-primary" id="btn-send">Send</button>
       </div>
     </div>
   </section>
 
-</main>
+</div>
 
 <div class="toast" id="toast"></div>
