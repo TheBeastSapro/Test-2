@@ -15,6 +15,7 @@ from pathlib import Path
 import gradio as gr
 
 from vostudio import config, pipeline
+from vostudio.voice_profile import VoiceProfile, apply_feedback
 from vostudio.assistant import ask, check_auth
 
 APP_ROOT = Path(__file__).resolve().parent
@@ -96,6 +97,64 @@ def do_assistant(message, history, mode):
     return history + [(message, "".join(chunks) or "(no output)")], ""
 
 
+# ---------------------------------------------------------------- Voice Lab
+SAMPLE_TEXT = (
+    "The most spectacular story in this video is the one nobody can prove. "
+    "In 1798, a French army landed in Egypt to cut England off from India."
+)
+
+
+def lab_render(profile_name, reference, sample_text):
+    """
+    Render ~10 seconds at the current settings. Short on purpose.
+
+    Judging a voice on a full script wastes a render per round; the dial-in loop
+    only works if a round costs seconds.
+    """
+    if not reference:
+        return None, "Upload a reference clip on the Voice tab first.", ""
+    prof = VoiceProfile.load(config.VOICES_DIR, profile_name or "default")
+    prof.reference = reference
+
+    from vostudio.generate import Generator
+    gen = Generator(SETTINGS)
+    out = config.VOICES_DIR / (profile_name or "default") / "sample.wav"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        gen.generate_chunk(sample_text or SAMPLE_TEXT, reference, out,
+                           exaggeration=prof.exaggeration,
+                           temperature=prof.temperature,
+                           cfg_weight=prof.cfg_weight,
+                           speed=prof.speed)
+    finally:
+        gen.unload()
+    return str(out), f"Current: {prof.summary()}", ""
+
+
+def lab_feedback(profile_name, reference, sample_text, feedback, log):
+    """His sentence in; moved numbers and a fresh sample out."""
+    prof = VoiceProfile.load(config.VOICES_DIR, profile_name or "default")
+    prof, changes = apply_feedback(prof, feedback)
+    prof.reference = reference or prof.reference
+    prof.save(config.VOICES_DIR)
+
+    entry = f"> {feedback}\n" + "\n".join(f"    {c}" for c in changes)
+    audio, summary, _ = lab_render(profile_name, reference, sample_text)
+    return audio, summary, (log + "\n\n" + entry).strip(), ""
+
+
+def lab_lock(profile_name):
+    prof = VoiceProfile.load(config.VOICES_DIR, profile_name or "default")
+    path = prof.save(config.VOICES_DIR)
+    SETTINGS.active_profile = prof.name
+    SETTINGS.generation.exaggeration = prof.exaggeration
+    SETTINGS.generation.cfg_weight = prof.cfg_weight
+    SETTINGS.generation.temperature = prof.temperature
+    SETTINGS.save()
+    return (f"Locked '{prof.name}'.\n{prof.summary()}\n\nSaved to {path}\n"
+            f"Every render from now on uses it until you change it.")
+
+
 with gr.Blocks(title="ExplainTory VO Studio") as demo:
     gr.Markdown("# ExplainTory VO Studio\nLocal Chatterbox rendering. No credits, no API key.")
 
@@ -125,6 +184,34 @@ with gr.Blocks(title="ExplainTory VO Studio") as demo:
         out_file = gr.Audio(label="Finished voiceover", type="filepath")
         go.click(do_render, [script, title, voice, exaggeration, effort_note],
                  [out_log, out_file])
+
+    with gr.Tab("Voice Lab"):
+        gr.Markdown(
+            "**Dial the voice in by ear, the way you did in Rookcast.** Render ten "
+            "seconds, say what is wrong in plain English, and the settings move. "
+            "Repeat until it is right, then lock it.\n\n"
+            "Words this understands: *flat · too expressive · too fast · too slow · "
+            "false pauses · no natural gaps · doesn't sound like me · inconsistent · "
+            "stiff · repeating*. Steps are deliberately small — big jumps overshoot "
+            "and cost you a round walking them back."
+        )
+        with gr.Row():
+            prof_name = gr.Textbox(label="Profile name", value="explaintory", scale=1)
+            lab_summary = gr.Textbox(label="Current settings", interactive=False, scale=2)
+        lab_text = gr.Textbox(label="Sample line", value=SAMPLE_TEXT, lines=2)
+        with gr.Row():
+            btn_sample = gr.Button("Render sample", variant="primary")
+            btn_lock = gr.Button("Lock this profile")
+        lab_audio = gr.Audio(label="Sample", type="filepath")
+        lab_fb = gr.Textbox(label="What is wrong with it?",
+                            placeholder="e.g. feels bit fast and a little flat")
+        lab_log = gr.Textbox(label="Rounds", lines=12, interactive=False)
+
+        btn_sample.click(lab_render, [prof_name, voice, lab_text],
+                         [lab_audio, lab_summary, lab_fb])
+        lab_fb.submit(lab_feedback, [prof_name, voice, lab_text, lab_fb, lab_log],
+                      [lab_audio, lab_summary, lab_log, lab_fb])
+        btn_lock.click(lab_lock, [prof_name], [lab_summary])
 
     with gr.Tab("Assistant"):
         auth = check_auth()

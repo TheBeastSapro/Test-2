@@ -100,14 +100,16 @@ class Generator:
 
     def generate_chunk(self, text: str, voice_ref: str, out_path: Path,
                        exaggeration: float | None = None,
-                       temperature: float | None = None) -> Path:
+                       temperature: float | None = None,
+                       cfg_weight: float | None = None,
+                       speed: float | None = None) -> Path:
         model = self.load()
         self._seed()
         wav = model.generate(
             text,
             audio_prompt_path=str(voice_ref),
             exaggeration=self.cfg.exaggeration if exaggeration is None else exaggeration,
-            cfg_weight=self.cfg.cfg_weight,
+            cfg_weight=self.cfg.cfg_weight if cfg_weight is None else cfg_weight,
             temperature=self.cfg.temperature if temperature is None else temperature,
             repetition_penalty=self.cfg.repetition_penalty,
             min_p=self.cfg.min_p,
@@ -119,6 +121,13 @@ class Generator:
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
         sf.write(out_path, audio, self.cfg.work_sr, subtype="PCM_24")
+
+        # Chatterbox has no speed parameter, so pace is set here with atempo.
+        # Pitch-preserving; a phase vocoder is NOT (measured at +4.5-8.5% f0).
+        if speed is not None and abs(speed - 1.0) >= 0.005:
+            from .voice_profile import apply_speed
+            import shutil
+            shutil.copy(apply_speed(out_path, speed), out_path)
 
         if self.cfg.empty_cache_between_chunks and self._device == "cuda":
             import torch

@@ -100,6 +100,7 @@ class Settings:
     master: Master = field(default_factory=Master)
     orphans: Orphans = field(default_factory=Orphans)
     active_voice: str = ""
+    active_profile: str = "default"
 
     @classmethod
     def load(cls) -> "Settings":
@@ -111,6 +112,7 @@ class Settings:
                 master=Master(**raw.get("master", {})),
                 orphans=Orphans(**raw.get("orphans", {})),
                 active_voice=raw.get("active_voice", ""),
+                active_profile=raw.get("active_profile", "default"),
             )
         s = cls()
         s.save()
