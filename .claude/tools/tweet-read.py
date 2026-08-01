@@ -11,9 +11,10 @@ Jina Reader, the same channel Agent Reach uses for web pages.
     tweet <url> --no-thread       # just this tweet, no parents
     tweet 20 --json
 
-Two things the open endpoint will not serve, both needing twitter-cli cookies:
-replies *below* a tweet (so a thread read from its first post shows only that
-post), and X's own long-form Articles at x.com/i/article/...
+X's long-form Articles come back in full when a tweet publishes one. What the
+open endpoints will not serve is replies *below* a tweet — a thread read from
+its first post shows only that post, and getting the rest needs twitter-cli
+with cookies.
 """
 
 import argparse
@@ -26,7 +27,18 @@ import urllib.parse
 import urllib.request
 
 ENDPOINT = "https://cdn.syndication.twimg.com/tweet-result"
+FX_ENDPOINT = "https://api.fxtwitter.com/status/"
 READER = "https://r.jina.ai/"
+BLOCK_PREFIX = {
+    "header-one": "# ",
+    "header-two": "## ",
+    "header-three": "### ",
+    "header-four": "#### ",
+    "unordered-list-item": "- ",
+    "ordered-list-item": "1. ",
+    "blockquote": "> ",
+    "code-block": "    ",
+}
 ARTICLE_RE = re.compile(r"(?:twitter|x)\.com/i/article/(\d+)")
 SELF_HOSTS = ("twitter.com", "x.com", "t.co", "pic.twitter.com")
 UA = (
@@ -132,6 +144,32 @@ def linked_urls(tweet):
     return found
 
 
+def fetch_x_article(tid, timeout):
+    """X's long-form Articles are not in the syndication payload, but FixTweet
+    carries the whole body in its tweet object. Returns None when the tweet has
+    no Article attached or the service is unreachable."""
+    result = subprocess.run(
+        ["curl", "-sS", "--max-time", str(timeout), FX_ENDPOINT + tid],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return None
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+    return ((payload.get("tweet") or {}).get("article")) or None
+
+
+def render_x_article(article):
+    """Article bodies arrive as Draft.js blocks — flatten them to markdown."""
+    out = ["# %s" % article.get("title", "(untitled)"), ""]
+    for block in ((article.get("content") or {}).get("blocks") or []):
+        text = block.get("text", "").strip()
+        out.append(BLOCK_PREFIX.get(block.get("type"), "") + text if text else "")
+    return "\n".join(out).strip()
+
+
 def read_article(url, timeout, limit):
     """Pull an article through Jina Reader — the same channel Agent Reach uses
     for web pages, and it needs no key.
@@ -220,10 +258,9 @@ def main():
     article = ARTICLE_RE.search(args.target)
     if article:
         sys.exit(
-            "error: x.com/i/article/%s is one of X's long-form Articles. Those are "
-            "not served to logged-out readers by any public endpoint — reading it "
-            "needs twitter-cli with cookies "
-            "(agent-reach configure twitter-cookies \"...\")." % article.group(1)
+            "error: %s is an Article id, and there is no open way to map one back "
+            "to the tweet that published it. Pass that tweet's URL instead and the "
+            "Article body comes with it." % article.group(1)
         )
 
     try:
@@ -265,6 +302,14 @@ def main():
 
     if args.no_article:
         return
+
+    # A tweet that publishes an Article carries only the link in its text; the
+    # body has to be asked for separately.
+    if ARTICLE_RE.search(full_text(data)):
+        body = fetch_x_article(tid, args.timeout)
+        print("\n" + "=" * 60 + "\nX ARTICLE\n" + "=" * 60 + "\n")
+        print(render_x_article(body) if body else
+              "[the Article body could not be retrieved]")
 
     seen, targets = set(), []
     for tweet, _ in chain:

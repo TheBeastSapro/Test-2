@@ -28,6 +28,11 @@ else's conversation. Quoted tweets are appended.
 printed after it — two by default, 6000 characters each (`--max-articles`,
 `--article-chars`). So "what is this tweet pointing at" is one command, not two.
 
+**X Articles.** When a tweet publishes one of X's long-form Articles, the full
+body comes back with it, rendered as markdown. Pass the *tweet's* URL — an
+`x.com/i/article/<id>` link on its own cannot be mapped back to its tweet.
+`--no-article` suppresses this along with linked pages.
+
 Media URLs it prints are direct — pass them to `yt-dlp` or `curl` if the file
 itself is needed.
 
@@ -40,8 +45,6 @@ The open endpoint addresses tweets by id and nothing else. These need
   thread from its *first* post therefore shows only that post — the output says
   how many replies are hidden. Read from the *last* post to get the whole
   thread logged-out.
-- **X's own long-form Articles** (`x.com/i/article/...`). No public endpoint
-  serves these; the command exits 1 and says so.
 - Searching tweets, profile timelines, followers, likes, and anything that
   posts or replies.
 
