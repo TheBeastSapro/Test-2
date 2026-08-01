@@ -55,6 +55,14 @@ if [ -n "$NODE_BIN" ]; then
   printf -- '--js-runtimes node:%s\n' "$NODE_BIN" > "$HOME/.config/yt-dlp/config"
 fi
 
+# Zero-login tweet reader. twitter-cli needs cookies for everything; reading a
+# single tweet or thread by URL does not, so expose that path as `tweet`.
+REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+if [ -f "$REPO_DIR/.claude/tools/tweet-read.py" ]; then
+  chmod +x "$REPO_DIR/.claude/tools/tweet-read.py"
+  ln -sf "$REPO_DIR/.claude/tools/tweet-read.py" "$BIN_DIR/tweet"
+fi
+
 # Optional: set these as environment secrets on the Claude Code environment to
 # have Twitter and Reddit come up authenticated instead of needing a paste each
 # session. Unset means those channels stay in "needs login" state.
