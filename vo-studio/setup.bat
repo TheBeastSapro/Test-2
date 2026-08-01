@@ -48,12 +48,12 @@ where ffmpeg >nul 2>&1 || (
   pause & exit /b 1
 )
 
-echo  [1/6] Creating isolated environment...
+echo  [1/7] Creating isolated environment...
 if not exist ".venv" python -m venv .venv
 call .venv\Scripts\activate.bat
 python -m pip install --upgrade pip -q
 
-echo  [2/6] Installing PyTorch with CUDA 12.4 (large download, be patient)...
+echo  [2/7] Installing PyTorch with CUDA 12.4 (large download, be patient)...
 REM  cu124 matches the nvidia-*-cu12 12.4 runtime Chatterbox pulls in.
 pip install -q torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
 if errorlevel 1 (
@@ -61,12 +61,13 @@ if errorlevel 1 (
   pause & exit /b 1
 )
 
-echo  [3/6] Installing Chatterbox...
+echo  [3/7] Installing Chatterbox...
 pip install -q chatterbox-tts
 
-echo  [4/6] Installing the QC stack...
+echo  [4/7] Installing the QC stack...
 REM  espeak-ng is the one piece with no pip wheel - it is a native binary.
-pip install -q faster-whisper soundfile scipy pyloudnorm phonemizer panphon allosaurus gradio
+pip install -q faster-whisper soundfile scipy pyloudnorm phonemizer panphon allosaurus
+pip install -q fastapi uvicorn python-multipart pywebview pillow
 where espeak-ng >nul 2>&1 || (
   echo.
   echo  [NOTE] espeak-ng not found. The pronunciation check needs it:
@@ -75,7 +76,7 @@ where espeak-ng >nul 2>&1 || (
   echo.
 )
 
-echo  [5/6] Installing the Claude Code CLI for the assistant...
+echo  [5/7] Installing the Claude Code CLI for the assistant...
 where npm >nul 2>&1 && (
   call npm install -g @anthropic-ai/claude-code
   pip install -q claude-agent-sdk
@@ -91,14 +92,20 @@ where npm >nul 2>&1 && (
   echo         Rendering works fine without it.
 )
 
-echo  [6/6] Verifying...
-python -c "import torch, chatterbox, faster_whisper, soundfile, gradio; print('   torch', torch.__version__, '| CUDA', torch.cuda.is_available()); print('   GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NONE - generation will be ~10x realtime on CPU')"
+echo  [6/7] Verifying...
+python -c "import torch, chatterbox, faster_whisper, soundfile, fastapi, webview; print('   torch', torch.__version__, '| CUDA', torch.cuda.is_available()); print('   GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NONE - generation will be ~10x realtime on CPU')"
 if errorlevel 1 (
   echo  [ERROR] Verification failed - something above did not install.
   pause & exit /b 1
 )
 
 echo.
-echo  Done. Start the app with run.bat
+echo  [7/7] Building VOStudio.exe...
+pip install -q pyinstaller
+pyinstaller --onefile --noconsole --clean --name VOStudio --icon assets\icon.ico --distpath . --workpath build\work --specpath build launcher.py >nul 2>&1
+rmdir /s /q build 2>nul
+if exist VOStudio.exe ( echo    VOStudio.exe ready ) else ( echo    exe build skipped -- use run.bat instead )
+
+echo  Done. Double-click VOStudio.exe
 echo.
 pause
