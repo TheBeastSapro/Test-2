@@ -1,24 +1,34 @@
 #!/usr/bin/env python3
-"""Read a public tweet (and its thread) with no login, the way yt-dlp reads a
-YouTube URL.
+"""Read a public tweet, its thread, and whatever article it links to — no login,
+the way yt-dlp reads a YouTube URL.
 
 Uses the same public endpoint X serves to embedded tweets on third-party sites,
-so nothing here needs cookies or an API key. Search and profile timelines have
-no equivalent open endpoint — those still need twitter-cli with cookies.
+so nothing here needs cookies or an API key. Linked articles are pulled through
+Jina Reader, the same channel Agent Reach uses for web pages.
 
     tweet https://x.com/jack/status/20
+    tweet <url> --no-article      # skip fetching linked articles
+    tweet <url> --no-thread       # just this tweet, no parents
     tweet 20 --json
-    tweet <url> --no-thread
+
+Two things the open endpoint will not serve, both needing twitter-cli cookies:
+replies *below* a tweet (so a thread read from its first post shows only that
+post), and X's own long-form Articles at x.com/i/article/...
 """
 
 import argparse
 import json
 import re
+import subprocess
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 ENDPOINT = "https://cdn.syndication.twimg.com/tweet-result"
+READER = "https://r.jina.ai/"
+ARTICLE_RE = re.compile(r"(?:twitter|x)\.com/i/article/(\d+)")
+SELF_HOSTS = ("twitter.com", "x.com", "t.co", "pic.twitter.com")
 UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
@@ -105,6 +115,51 @@ def media_lines(tweet):
     return lines
 
 
+def linked_urls(tweet):
+    """External links worth reading. X's own links point at media or at quoted
+    tweets, both of which are already rendered inline."""
+    found = []
+    for url in ((tweet.get("entities") or {}).get("urls") or []):
+        target = url.get("expanded_url") or url.get("url")
+        if not target:
+            continue
+        host = urllib.parse.urlparse(target).netloc.lower()
+        host = host[4:] if host.startswith("www.") else host
+        if any(host == h or host.endswith("." + h) for h in SELF_HOSTS):
+            continue
+        if target not in found:
+            found.append(target)
+    return found
+
+
+def read_article(url, timeout, limit):
+    """Pull an article through Jina Reader — the same channel Agent Reach uses
+    for web pages, and it needs no key.
+
+    Shelling out to curl with its own user agent is deliberate. Jina sits
+    behind Cloudflare, which checks that the user agent matches the TLS
+    fingerprint: urllib gets a challenge page, and so does curl if it claims to
+    be Chrome. Left alone, curl passes."""
+    result = subprocess.run(
+        ["curl", "-sS", "--max-time", str(timeout), READER + url],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        raise ValueError((result.stderr or "curl exited %d" % result.returncode).strip())
+    text = result.stdout.strip()
+    if not text:
+        raise ValueError("reader returned nothing")
+    if text.startswith("{") and '"code":4' in text[:150]:
+        raise ValueError("reader refused the page: %s" % text[:160])
+    if "<title>Just a moment..." in text[:400]:
+        raise ValueError("blocked by a Cloudflare challenge")
+    if len(text) > limit:
+        text = text[:limit].rstrip() + (
+            "\n\n… [truncated at %d chars — raise with --article-chars]" % limit
+        )
+    return text
+
+
 def render(tweet, label=None):
     user = tweet.get("user") or {}
     handle = user.get("screen_name", "unknown")
@@ -134,12 +189,16 @@ def render(tweet, label=None):
 
 
 def collect(tweet, follow_thread, depth):
-    """Walk up the reply chain so a mid-thread link reads in order."""
+    """Walk up the reply chain so a mid-thread link reads in order. A parent by
+    the same author is the tweet's own thread; a parent by someone else is the
+    conversation it answers."""
+    author = ((tweet.get("user") or {}).get("screen_name") or "").lower()
     chain = [(tweet, None)]
     node = tweet
     while follow_thread and node.get("parent") and len(chain) <= depth:
         node = node["parent"]
-        chain.insert(0, (node, "in reply to"))
+        speaker = ((node.get("user") or {}).get("screen_name") or "").lower()
+        chain.insert(0, (node, "earlier in thread" if speaker == author else "replying to"))
     quoted = tweet.get("quoted_tweet")
     if quoted:
         chain.append((quoted, "quoted"))
@@ -151,9 +210,21 @@ def main():
     parser.add_argument("target", help="tweet URL or id")
     parser.add_argument("--json", action="store_true", help="print the raw payload")
     parser.add_argument("--no-thread", action="store_true", help="skip parent tweets")
+    parser.add_argument("--no-article", action="store_true", help="do not fetch linked articles")
     parser.add_argument("--depth", type=int, default=20, help="max parents to walk (default 20)")
+    parser.add_argument("--max-articles", type=int, default=2, help="linked articles to fetch (default 2)")
+    parser.add_argument("--article-chars", type=int, default=6000, help="per-article character cap")
     parser.add_argument("--timeout", type=int, default=30)
     args = parser.parse_args()
+
+    article = ARTICLE_RE.search(args.target)
+    if article:
+        sys.exit(
+            "error: x.com/i/article/%s is one of X's long-form Articles. Those are "
+            "not served to logged-out readers by any public endpoint — reading it "
+            "needs twitter-cli with cookies "
+            "(agent-reach configure twitter-cookies \"...\")." % article.group(1)
+        )
 
     try:
         tid = tweet_id(args.target)
@@ -179,7 +250,39 @@ def main():
                                                        " (deleted, private, or age-restricted)"))
 
     chain = collect(data, not args.no_thread, args.depth)
-    print(("\n\n" + "-" * 60 + "\n\n").join(render(t, label) for t, label in chain))
+    rule = "\n\n" + "-" * 60 + "\n\n"
+    print(rule.join(render(t, label) for t, label in chain))
+
+    # Anything below this tweet — the author's own continuation included — lives
+    # behind the conversation API, which is not open. Say so rather than let the
+    # output imply the thread ended here.
+    replies = data.get("conversation_count")
+    if replies and not args.no_thread:
+        print(
+            "\n[%s replies below this tweet are not readable logged-out; "
+            "twitter-cli with cookies can fetch them]" % replies
+        )
+
+    if args.no_article:
+        return
+
+    seen, targets = set(), []
+    for tweet, _ in chain:
+        for url in linked_urls(tweet):
+            if url not in seen:
+                seen.add(url)
+                targets.append(url)
+
+    for url in targets[: args.max_articles]:
+        print("\n" + "=" * 60 + "\nLINKED ARTICLE: %s\n" % url + "=" * 60 + "\n")
+        try:
+            print(read_article(url, args.timeout, args.article_chars))
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            print("[could not read this link: %s]" % exc)
+
+    if len(targets) > args.max_articles:
+        print("\n[%d more linked page(s) not fetched; raise --max-articles]"
+              % (len(targets) - args.max_articles))
 
 
 if __name__ == "__main__":
