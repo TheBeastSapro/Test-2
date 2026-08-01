@@ -79,6 +79,37 @@ of a section means checking the start of one too.
 Report it as "you heard one, there were seven". That is the difference between
 him being the detector and him spot-checking the work.
 
+### The timestamp he gives may not contain the defect
+
+Sweeping the class is not enough if the search stays inside the window reported.
+Sapro gave 261.690-262.300 for the Hashish header. The word in that window was
+fine. The defect was a 133 ms copy of its final "sh" stranded at 262.469 — 169 ms
+past the end of the window, in the silence. Six repairs and three fresh takes all
+aimed inside the window and could not have worked.
+
+He hears "the glitch is at the header". He cannot hear "the glitch is 169 ms
+after the header, in the gap". Take his timestamp as the centre of a search, not
+its bounds, and scan the whole file for the signature anyway:
+
+    python3 scripts/orphans.py --audio "Title (final).mp3"
+
+It finds short bursts fenced by silence on BOTH sides, then decides each one by
+muting it and re-transcribing. Words lost -> KEEP, it is speech. Nothing lost ->
+ORPHAN, safe to cut. It never edits the file.
+
+Two things that sweep taught, both of which broke an earlier version:
+
+- **A gained word is not a change to defend.** Muting the Hashish fragment made
+  ASR *recover* "Hashish" — the fragment was corrupting the word badly enough to
+  erase it from the transcript. A rule that flagged any transcript change called
+  that KEEP and protected the exact defect it was built to find. Test for words
+  LOST, one-sided, never for words different.
+- **Decoded MP3 has no digital silence.** A master writes exact zeros between
+  sections; lame plus a decoder puts about -51 dBFS of noise in their place. An
+  exact-zero fence finds nothing on an MP3, and a fence below the codec noise
+  finds nothing either. The script auto-detects which case it is and prints it.
+  Believe a floor figure only after reading that line.
+
 
 ## Confirm a fix on the excerpt, not the whole file
 

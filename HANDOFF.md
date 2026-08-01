@@ -1,28 +1,56 @@
-# Voiceover session handoff — 2026-07-31
+# Voiceover session handoff — updated 2026-08-01
 
 ## State
 
-`FINAL v10.mp3` is the good file. 703.39s (11:43), QC clean, every word verified
-complete by transcript. It lives in the session scratchpad, not the repo.
+`FINAL v11.mp3` is the good file. 703.392s (11:43), 320 kbps, 48 kHz mono.
+Sapro confirmed it: "now it's perfect". It lives in the session scratchpad, not
+the repo — see "the container is not storage" below.
 
-Work dir: `.vo_Every_Drug_Used_in_War_Explained/` — sections.json, parts/,
-raw_final10.wav, pauses_final10.csv, and every intermediate stitch/master.
+The Hashish defect that was open at the last handoff is **closed**.
 
-**Credits: 27,406 spent this session, 55,446 left.** ~12,300 was the actual job.
-~15,100 was my errors — the breakdown is in the "what went wrong" section.
+## How the Hashish defect was actually fixed
 
-## The one open defect
+It was never the word. Sapro reported the window 261.690–262.300 and the word in
+that window was fine — which is why six repairs failed, two of them damaged the
+audio, and three fresh takes all sounded wrong to him.
 
-The **Hashish chapter header** (261.690–262.300 in v10). Sapro hears a glitch.
+The defect was a **133 ms duplicate of the word's final "sh"**, stranded alone at
+262.469–262.601 — 169 ms past the end of the window he gave. Fenced by 178 ms of
+silence before and 252 ms after. Spectrally a dead match for the word's own tail
+(centroid 5075 Hz vs 5080 Hz, ZCR 8290 vs 7471). Left behind by one of the
+earlier repair attempts.
 
-Six repair attempts failed; two of them damaged the audio (one cut the word to
-"Hashi", one cut "vented" out of "invented" elsewhere and was deleted). A fresh
-take was rolled 3x and he says it is still not right. He is generating a
-replacement himself.
+The fix: clear 261.500–262.853 (both edges inside existing digital silence, so no
+click is possible), place his replacement clip verbatim at 261.690. No tempo, no
+gain, no EQ, no fade — his clip's tail already decays to −76 dBFS. The stray
+fricative goes with the clearance.
 
-**When his clip arrives: plain swap at 261.690–262.300. No tempo change, no
-gain, no EQ.** He asked for exactly that twice and both times I added processing
-that broke it.
+His insistence on no gain was right on the measurements: his clip is −13.76 dB
+RMS against −13.11 and −13.20 for the neighbouring lines. Within 0.6 dB unaided.
+
+Verified: duration identical to the sample; everything outside 261.500–262.853
+bit-identical to v10, asserted sample-for-sample; orphan sweep 1 → 0; transcript
+41 words in both, identical sequence.
+
+## The lesson worth keeping
+
+**His timestamp is the centre of a search, not its bounds.** He can hear "the
+glitch is at the header". He cannot hear "the glitch is 169 ms after the header,
+in the gap". Sweeping the defect class is not enough if the sweep stays inside
+the window reported.
+
+`scripts/orphans.py` now does this by measurement in seconds. It finds short
+bursts fenced by silence on both sides and adjudicates each by muting it and
+re-transcribing: words lost → KEEP, it is speech; nothing lost → ORPHAN. It never
+edits audio. Building it surfaced two traps, both documented in SKILL.md:
+
+- The mute test must be **one-sided** — test for words LOST, not words changed.
+  Muting the Hashish fragment *recovered* the word "Hashish" in the transcript,
+  so a change-detecting rule called it KEEP and defended the defect.
+- **Decoded MP3 has no exact zeros.** Codec noise sits around −51 dBFS where the
+  master wrote digital silence. One island appeared to vanish at 281.208s for
+  this reason alone; the audio there was bit-identical. Verify before believing
+  a detector delta.
 
 ## Rules he set, in his words
 
@@ -31,50 +59,57 @@ that broke it.
 2. **Check the raw take before proposing a re-render.** Clean raw + bad delivered
    = the stitch or master did it. Fix it there.
 3. **Never assume it is checked.** Measure the delivered file, not the log line.
-4. **One report means sweep the class.** His timestamp is a sample. Find every
-   instance, fix them all, tell him the count.
+4. **One report means sweep the class** — and sweep outside his window too.
+   His timestamp is a sample. Find every instance, fix them all, tell him the
+   count.
 5. **Confirm on a six-second excerpt, not the whole file.** And cut it from the
    MASTERED file if mastering can affect the defect.
-6. **Tell him before spending >2000 characters.** Enforced in generate.py now.
+6. **Tell him before spending >2000 characters.** Enforced in generate.py.
 7. **Transcribe after every destructive edit** and confirm no words were lost.
-   Both times I skipped this I shipped damaged audio.
 
-## What was actually wrong, and is now fixed in the pipeline
+## Fixed in the pipeline (unchanged from the last handoff)
 
-- **read-check ran at int8** and hallucinated dropped words → float32
-- **WER threshold 0.05** sat below the 0.047 median on good audio → 0.20
-- **redo block sat outside its loop** → re-rendered at the wrong stability
-- **a read note overrode his profile** → profile always wins
-- **chapter names failed rate/WER checks** that cannot apply to 1-2 words → exempt
-- **section joins clicked** → 3 ms edge fade, splice step 0.6155 → 0.0224
-- **numerals were dropped from alignment** → spelled out, so beats land on real
-  punctuation. This one bug caused the 0:57 stumble AND the missing comma after
-  "1550," AND 21 unplaceable silences.
-- **master padded every comma to 160 ms** even where the voice read through →
-  RUNTHROUGH 0.060. This was 8 places in one script and is why "0:03" survived
-  five upstream fixes: the master ran last and put it back every time.
+- read-check ran at int8 and hallucinated dropped words → float32
+- WER threshold 0.05 sat below the 0.047 median on good audio → 0.20
+- redo block sat outside its loop → re-rendered at the wrong stability
+- a read note overrode his profile → profile always wins
+- chapter names failed rate/WER checks that cannot apply to 1–2 words → exempt
+- section joins clicked → 3 ms edge fade, splice step 0.6155 → 0.0224
+- numerals were dropped from alignment → spelled out
+- master padded every comma to 160 ms even where the voice read through →
+  RUNTHROUGH 0.060
 
 ## Still broken / not built
 
 - **No pronunciation check.** "Quito" was misread and passed every automated
-  gate. Sapro caught it by ear. Tools are installed (allosaurus, phonemizer,
-  panphon, espeak-ng) but the check itself does not exist. **Build this before
-  the next script, not during one.**
+  gate. Sapro caught it by ear. **Build this cold, before the next script.**
+  Note: the last handoff said the tools were installed. They were installed by
+  hand and died with the container — `allosaurus`, `phonemizer`, `panphon`,
+  `espeak-ng` and `kokoro` are **not** in `install-audio-tools.sh`. Add them to
+  the installer as step one, or the next container loses them again.
 - **ASR word timestamps are useless for gaps** — faster-whisper returns
-  contiguous spans, so a 150 ms hole reads as 0.000 s. Use silencedetect or the
-  installed silero-vad. This cost hours tonight.
+  contiguous spans, so a 150 ms hole reads as 0.000 s. Use silencedetect, an RMS
+  envelope, or silero-vad. Confirmed again this session: ASR placed "In" at
+  262.620 inside 178 ms of digital silence.
 - **verify.py has a known hole** and should not be trusted as a pass.
 - Three lines he says feel fast — Temmler 6:31, Kamikaze 8:32, Nixon 9:31.
-  Measured at 185/134/168 wpm against a 180 median, so it is NOT tempo. Cause
+  Measured 185/134/168 wpm against a 180 median, so it is NOT tempo. Cause
   unknown. Do not "fix" by slowing them.
-- "two million former ones" (8:51) — he flagged it, never diagnosed.
+- "two million former ones" (8:51) — flagged, never diagnosed.
 
-## How the time was wasted, so it is not repeated
+## The container is not storage
 
-Three tools built mid-delivery — a verifier, a click detector, a sentence
-splicer. None shipped. The verifier alone took an hour of debugging its own
-false positives while he waited on a file.
+Every audio file and the whole work dir from the previous session were gone at
+the start of this one, and so was the entire toolchain. `install-audio-tools.sh`
+rebuilds the toolchain in one pass. Nothing rebuilds the audio. Anything worth
+keeping has to leave the container.
 
-Build tooling cold, against Kokoro-generated test audio (free, installed).
-Deliver files fast. He finds defects by ear better than any measurement here
-does, and his time is worth more than the credits.
+## How time gets wasted here
+
+Tooling built mid-delivery while he waits. Build it cold, against free
+Kokoro-generated test audio, and test it against a known-bad file AND a decoy —
+`orphans.py` was wrong in exactly the way that matters until the decoy caught it,
+and that decoy took two minutes.
+
+He finds defects by ear better than any measurement here does. His time is worth
+more than the credits.
