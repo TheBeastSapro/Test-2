@@ -49,9 +49,81 @@ def spell_number(n: int) -> str:
     return head + (" " + spell_number(rest) if rest else "")
 
 
+_ORDINAL = {1: "first", 2: "second", 3: "third", 5: "fifth", 8: "eighth",
+            9: "ninth", 12: "twelfth"}
+
+
+def spell_ordinal(n: int) -> str:
+    """3rd -> third. Irregular below thirteen, then -th on the last word."""
+    if n in _ORDINAL:
+        return _ORDINAL[n]
+    words = spell_number(n)
+    head, _, last = words.rpartition(" ")
+    stem, _, tail = last.rpartition("-")
+    base = tail or last
+    if base in _ORDINAL_STEM:
+        base = _ORDINAL_STEM[base]
+    elif base.endswith("y"):
+        base = base[:-1] + "ieth"
+    else:
+        base = base + "th"
+    last = (stem + "-" + base) if tail else base
+    return (head + " " + last).strip()
+
+
+_ORDINAL_STEM = {"one": "first", "two": "second", "three": "third", "five": "fifth",
+                 "eight": "eighth", "nine": "ninth", "twelve": "twelfth"}
+
+
+def _decimal(whole: str, frac: str) -> str:
+    """12.5 -> twelve point five. Digits after the point are read one by one,
+    which is how they are said aloud: 'point four five', never 'point 45'."""
+    digits = " ".join(_ONES[int(d)] for d in frac)
+    return f"{spell_number(int(whole.replace(',', '')))} point {digits}"
+
+
+def _money(whole: str, cents: str | None) -> str:
+    """$3,400 -> three thousand four hundred dollars. $9.99 -> nine dollars
+    ninety-nine. The symbol must not survive: every TTS reads a bare $ as
+    'dollar sign', and it reads it in the wrong place -- before the number."""
+    n = int(whole.replace(",", ""))
+    head = f"{spell_number(n)} dollar{'' if n == 1 else 's'}"
+    if cents and int(cents):
+        return f"{head} {spell_number(int(cents.ljust(2, '0')))}"
+    return head
+
+
 def spell_numerals(text: str) -> str:
-    return re.sub(r"\b\d[\d,]*\b",
+    """
+    Everything a voice cannot read as a symbol, turned into words.
+
+    ORDER MATTERS, and it is the whole reason this is one function rather than
+    several. Spell the bare numbers first and '$3,400' becomes
+    '$three thousand four hundred' -- the dollar sign survives, gets read
+    literally, and lands in front of the number where nobody says it. Money and
+    percentages have to be consumed WITH their symbol, before anything else
+    touches the digits.
+    """
+    # $3,400 / $9.99 / $1
+    text = re.sub(r"\$\s?(\d[\d,]*)(?:\.(\d{1,2}))?",
+                  lambda m: _money(m.group(1), m.group(2)), text)
+    # 45% / 12.5%
+    text = re.sub(r"(\d[\d,]*)(?:\.(\d+))?\s?%",
+                  lambda m: (_decimal(m.group(1), m.group(2)) if m.group(2)
+                             else spell_number(int(m.group(1).replace(",", "")))) + " percent",
+                  text)
+    # 3rd -> third
+    text = re.sub(r"\b(\d[\d,]*)(?:st|nd|rd|th)\b",
+                  lambda m: spell_ordinal(int(m.group(1).replace(",", ""))), text)
+    # 12.5 on its own
+    text = re.sub(r"\b(\d[\d,]*)\.(\d+)\b",
+                  lambda m: _decimal(m.group(1), m.group(2)), text)
+    # everything left
+    text = re.sub(r"\b\d[\d,]*\b",
                   lambda m: spell_number(int(m.group(0).replace(",", ""))), text)
+    # & is read as 'ampersand' by some engines and skipped by others
+    text = re.sub(r"\s&\s", " and ", text)
+    return text
 
 
 @dataclass
