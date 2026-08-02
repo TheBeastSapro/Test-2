@@ -88,7 +88,7 @@ def main() -> int:
         "ExplainTory VO Studio",
         f"http://127.0.0.1:{port}",
         width=1240, height=880, min_size=(940, 640),
-        background_color="#14120f",     # matches the theme, so no white flash
+        background_color="#0a0a0b",     # matches app.css --bg, so no flash on open
         confirm_close=True,             # a render in progress dies with the window
     )
     webview.start(icon=str(icon) if icon.exists() else None, private_mode=False)
