@@ -233,6 +233,23 @@ def lab_sample(payload: dict):
     if payload.get("text"):
         STATE["lab_text"] = payload["text"].strip()
     text = STATE.get("lab_text") or SAMPLE
+
+    # A take is ONE generate() call, and generate() stops at max_new_tokens=1000
+    # -- about 40 s of speech -- by truncating, not by raising. Paste four
+    # paragraphs here and the tail would vanish with nothing said about it, and
+    # you would be tuning against a read you never heard the end of. So the
+    # sample is cut to one chunk at a sentence boundary, using the same splitter
+    # the pipeline uses, and the reply says what was actually read.
+    from vostudio.script_prep import chunk_text
+    limit = SETTINGS.generation.max_chars_per_chunk
+    note = ""
+    if len(text) > limit:
+        pieces = chunk_text(text, limit)
+        text = pieces[0] if pieces else text[:limit]
+        note = (f"Read the first {len(text)} characters — a take is a single "
+                f"pass and anything past roughly 40 seconds gets cut off. "
+                f"Step 3 chunks a full script for you.")
+
     started = time.perf_counter()
     prof = VoiceProfile.load(config.VOICES_DIR, name)
     prof.reference = STATE["voice"]
@@ -252,7 +269,8 @@ def lab_sample(payload: dict):
         gen.unload()
     prof.save(config.VOICES_DIR)
     took = time.perf_counter() - started
-    return {"profile": asdict(prof), "text": text, "seconds": round(took, 1)}
+    return {"profile": asdict(prof), "text": text,
+            "seconds": round(took, 1), "note": note}
 
 
 # The line the voice reads while you tune it. Two sentences with a comma, a
