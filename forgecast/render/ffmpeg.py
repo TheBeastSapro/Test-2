@@ -7,10 +7,13 @@ use `asyncio.to_thread`, which is what the render node does.
 from __future__ import annotations
 
 import json
+import logging
 import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
+
+log = logging.getLogger("forgecast.render")
 
 FFMPEG = shutil.which("ffmpeg") or "ffmpeg"
 FFPROBE = shutil.which("ffprobe") or "ffprobe"
@@ -306,11 +309,11 @@ def write_srt(scenes: list[Scene], out_path: Path) -> Path:
     cursor = 0.0
     counter = 1
     for scene in scenes:
-        if scene.narration.strip():
+        for start, end, text in cue_times(scene.narration, scene.seconds):
             lines += [
                 str(counter),
-                f"{stamp(cursor)} --> {stamp(cursor + scene.seconds)}",
-                _wrap(scene.narration.strip(), 42),
+                f"{stamp(cursor + start)} --> {stamp(cursor + end)}",
+                text,
                 "",
             ]
             counter += 1
@@ -318,6 +321,87 @@ def write_srt(scenes: list[Scene], out_path: Path) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines), encoding="utf-8")
     return out_path
+
+
+# Caption discipline. Two lines maximum — three is unreadable on a phone — and no cue
+# held longer than MAX_CUE, because a caption that outlasts the sentence reads as a
+# frozen video. The previous version put one cue on screen for a whole scene, so a
+# 20-second scene showed the same block of text for 20 seconds.
+MAX_LINE_CHARS = 40
+MAX_LINES = 2
+MAX_CUE_SECONDS = 4.0
+MIN_CUE_SECONDS = 1.0
+_SENTENCE_END = (". ", "! ", "? ", "; ")
+
+
+def split_cues(narration: str) -> list[str]:
+    """Break narration into blocks that fit two lines, preferring sentence ends."""
+    text = " ".join(str(narration).split())
+    if not text:
+        return []
+
+    budget = MAX_LINE_CHARS * MAX_LINES
+    # Sentences first: a caption that breaks where the speaker breathes reads far
+    # better than one that breaks where the character count ran out.
+    pieces: list[str] = [text]
+    for separator in _SENTENCE_END:
+        expanded: list[str] = []
+        for piece in pieces:
+            parts = piece.split(separator)
+            for index, part in enumerate(parts):
+                tail = separator.strip() if index < len(parts) - 1 else ""
+                joined = (part + tail).strip()
+                if joined:
+                    expanded.append(joined)
+        pieces = expanded
+
+    cues: list[str] = []
+    current = ""
+    for piece in pieces:
+        candidate = f"{current} {piece}".strip()
+        if current and len(candidate) > budget:
+            cues.append(current)
+            current = piece
+        else:
+            current = candidate
+        while len(current) > budget:
+            head = current[:budget].rsplit(" ", 1)[0]
+            if not head:
+                break
+            cues.append(head)
+            current = current[len(head):].strip()
+    if current:
+        cues.append(current)
+    return cues
+
+
+def cue_times(narration: str, seconds: float) -> list[tuple[float, float, str]]:
+    """Time the cues across a scene, weighted by length and clamped for readability.
+
+    Time is shared out by character count rather than evenly: a six-word cue and a
+    twenty-word cue do not take the same time to say, and giving them equal slots puts
+    the captions out of step with the voice by the end of the scene.
+    """
+    cues = split_cues(narration)
+    if not cues or seconds <= 0:
+        return []
+
+    total_chars = sum(len(cue) for cue in cues) or 1
+    timings: list[tuple[float, float, str]] = []
+    cursor = 0.0
+    for index, cue in enumerate(cues):
+        share = seconds * (len(cue) / total_chars)
+        # The last cue absorbs the rounding so captions never run past the scene.
+        span = (seconds - cursor) if index == len(cues) - 1 else share
+        span = max(min(span, MAX_CUE_SECONDS), min(MIN_CUE_SECONDS, seconds - cursor))
+        if span <= 0:
+            break
+        end = min(cursor + span, seconds)
+        timings.append((cursor, end, _wrap(cue, MAX_LINE_CHARS)))
+        cursor = end
+        if cursor >= seconds:
+            break
+    return timings
 
 
 def _wrap(text: str, width: int) -> str:
@@ -330,7 +414,7 @@ def _wrap(text: str, width: int) -> str:
             line = f"{line} {word}".strip()
     if line:
         out.append(line)
-    return "\n".join(out[:3])
+    return "\n".join(out[:MAX_LINES])
 
 
 def burn_subtitles(video_path: Path, srt_path: Path, out_path: Path) -> Path:
@@ -367,6 +451,7 @@ def assemble_video(
     motion_preset=None,
     motion_plans=None,
     motion_backend: str = "ffmpeg",
+    loudness_target: str = "youtube",
 ) -> Path:
     """Turn scenes + narration into one finished file.
 
@@ -430,6 +515,25 @@ def assemble_video(
         srt = write_srt(scenes, workdir / "captions.srt")
         if srt.stat().st_size > 0:
             staged = burn_subtitles(staged, srt, workdir / "with_captions.mp4")
+
+    # Last, after every pass that could touch the audio. Voice providers disagree on
+    # output level by more than 10 dB, so without this one video plays quiet and the
+    # next plays hot — and the platform turns the hot one down anyway.
+    if loudness_target and loudness_target != "archive":
+        from .audio import normalise_video_audio
+
+        try:
+            measured = normalise_video_audio(
+                staged, workdir / "mastered.mp4", platform=loudness_target,
+            )
+            if measured is not None and (workdir / "mastered.mp4").exists():
+                staged = workdir / "mastered.mp4"
+                log.info("mastered to %.2f LUFS (peak %.2f dBFS)",
+                         measured.integrated_lufs, measured.true_peak_dbfs)
+        except (RenderError, OSError) as exc:
+            # An un-mastered video is worse than a mastered one but far better than
+            # no video, and every earlier stage has already been paid for.
+            log.warning("loudness mastering failed, shipping unmastered: %s", exc)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(staged, out_path)
