@@ -14,7 +14,7 @@ WHY THIS AND NOT A SINGLE .EXE
 
     What actually delivers "it feels like an app" is a native window plus a
     Start-menu and desktop shortcut with an icon — which is this file plus the
-    shortcut setup.bat creates. Double-click, a window opens. No terminal, no
+    shortcut setup creates. Double-click, a window opens. No terminal, no
     browser, no localhost URL to remember.
 
     On Windows the renderer is WebView2, which ships with Windows 11 — nothing

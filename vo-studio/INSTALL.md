@@ -1,9 +1,12 @@
 # Install VO Studio
 
-**Two steps.** Nothing gets installed on your machine — Python, ffmpeg, Node and
-espeak-ng all download into a `runtime` folder inside this one. No registry, no
-Add/Remove Programs, no change to your system PATH. Deleting this folder is the
-uninstall.
+**Two steps.** Nothing gets installed on your machine — ffmpeg, Node, espeak-ng
+and every Python package land in a `runtime` folder inside this one. No registry,
+no Add/Remove Programs, no change to your system PATH. Deleting this folder is
+the uninstall.
+
+Setup happens **inside the app**, in a window with a progress bar. There is no
+console scrolling pip output at you.
 
 ---
 
@@ -14,38 +17,55 @@ uninstall.
 **Not** Desktop and **not** OneDrive — OneDrive will try to sync several GB of
 model weights, and paths with spaces cause trouble in the toolchain.
 
-## 2. Double-click `setup.bat`
+## 2. Double-click `VO Studio.bat`
 
-That is the whole install. It downloads, in order:
+A setup window opens. It checks what is already on the machine first and marks
+those steps **already installed** — your Python counts, and so does anything a
+previous run finished before it stopped. Only what is missing gets downloaded,
+and only what is missing moves the bar.
 
 | Step | What | Size |
 |---|---|---|
-| 1 | Python 3.11 (embeddable — no installer, no registry) | ~11 MB |
+| 1 | Python — an isolated environment built from yours, or a 3.11 download if you have none | 0–11 MB |
 | 2 | ffmpeg (static build) | ~80 MB |
 | 3 | Node + the Claude Code CLI — only for the Assistant | ~30 MB |
 | 4 | PyTorch with CUDA 12.4 | ~2.5 GB |
-| 5 | Chatterbox, the QC stack, espeak-ng | ~500 MB |
-| 6 | Verify, then build `VOStudio.exe` | — |
+| 5 | Chatterbox and the QC stack | ~500 MB |
+| 6 | espeak-ng | ~5 MB |
+| 7 | Verify, then build `VOStudio.exe` | — |
 
 **Give it 20–40 minutes on a normal connection.** Step 4 is most of it.
+
+> **You already have Python, so step 1 is nearly free.** It is not installed
+> into — a separate environment is built from it inside `runtime`. 2.5 GB of
+> CUDA PyTorch dropped into your system Python is exactly what this avoids, and
+> it would break the next project that wants a different torch.
+
+Close the window at any point and nothing is lost. The next launch re-checks,
+shows what is already there, and picks up the rest.
 
 ### What you want to see at the end
 
 ```
-   torch 2.6.0+cu124 | CUDA True
-   GPU: NVIDIA GeForce RTX ____
+CUDA True NVIDIA GeForce RTX ____
 ```
 
 **`CUDA True` and your GPU named = it worked.**
 
-If it says `CUDA False` / `GPU: NONE`, generation still works but runs on CPU at
-about 10× realtime — roughly two hours for a twelve-minute script. That almost
-always means the NVIDIA driver is older than CUDA 12.4 needs. Update it from
-nvidia.com and run `setup.bat` again; it skips whatever already downloaded.
+If it says `CPU only`, generation still works but runs at about 10× realtime —
+roughly two hours for a twelve-minute script. That almost always means the
+NVIDIA driver is older than CUDA 12.4 needs. Update it from nvidia.com and open
+the app again; it re-checks and only redoes what it has to.
 
 ## 3. Open `VOStudio.exe`
 
-A window opens. No browser, no terminal, no localhost address to remember.
+Setup builds it as its last step, so it appears in this folder once and stays
+there. From then on that is what you open — a real window, no browser, no
+terminal, no localhost address to remember.
+
+`VO Studio.bat` exists only because a Windows `.exe` cannot be built anywhere
+except on Windows, so the very first launch has nothing else to start from.
+After that first run you can ignore it.
 
 If the exe did not build, `run.bat` does the same thing with a console attached
 so you can see errors.
@@ -115,12 +135,13 @@ real GPU yet.
 
 | What you see | What it means |
 |---|---|
-| `Python download failed` | No connection, or a proxy is blocking python.org |
-| `CUDA False` | NVIDIA driver older than CUDA 12.4 wants — update, rerun |
+| `Python was not found` in a console | No Python on PATH — install 3.11 or 3.12 from python.org, tick *Add to PATH* |
+| Setup window says a step failed | Read the line under the bar; closing and reopening resumes from there |
+| `CPU only` at the end | NVIDIA driver older than CUDA 12.4 wants — update, reopen |
 | `CUDA out of memory` | Settings → Max characters per chunk, drop 300 → 200 |
-| `ffmpeg download failed` | gyan.dev unreachable; rerun, it resumes |
+| `ffmpeg failed` | gyan.dev unreachable; reopen, it retries just that step |
 | espeak-ng note during setup | Only the pronunciation check is affected |
 | Assistant says the CLI is missing | Run the `claude.cmd login` line above |
 
-**Copy the whole log box and send it.** The exact error is what is needed —
-guessing at it is how time gets burned.
+**Copy the line under the progress bar and send it.** The exact error is what is
+needed — guessing at it is how time gets burned.

@@ -1,22 +1,33 @@
-<header class="topbar">
-  <div class="logo"><div class="logo-mark"></div><span>VO Studio</span></div>
-  <div class="topbar-right">
-    <span class="hw" id="hw"><span class="dot dot-idle"></span><span id="hw-text">checking…</span></span>
-    <button class="btn btn-sm btn-ghost" data-view="settings">Settings</button>
-    <button class="btn btn-sm btn-ghost" data-view="assistant">Assistant</button>
-  </div>
-</header>
+<!-- One left column that never moves, the way ElevenLabs does it: the work is
+     in the middle and everything else — where you are, settings, the assistant,
+     the GPU — lives on the left. Settings and the assistant were buttons in the
+     top-right corner, which made them feel like they belonged to a different
+     application than the one below them. -->
+<div class="app">
 
-<div class="shell">
+<aside class="side">
+  <div class="brand"><div class="logo-mark"></div><span>VO Studio</span></div>
 
-  <!-- the flow. Order carries information: you cannot tune a voice you have
-       not loaded, or render a script without a voice. -->
-  <nav class="steps" aria-label="Progress">
-    <button class="step is-active" data-view="voice"><span class="step-num">1</span>Voice</button>
-    <button class="step" data-view="lab"><span class="step-num">2</span>Tune</button>
-    <button class="step" data-view="render"><span class="step-num">3</span>Script</button>
-    <button class="step" data-view="result"><span class="step-num">4</span>Result</button>
+  <nav class="nav" aria-label="Main">
+    <!-- Order carries information: you cannot tune a voice you have not
+         loaded, or render a script without a voice. -->
+    <p class="nav-label">Create</p>
+    <button class="nav-item step is-active" data-view="voice"><span class="step-num">1</span>Voice</button>
+    <button class="nav-item step" data-view="lab"><span class="step-num">2</span>Tune</button>
+    <button class="nav-item step" data-view="render"><span class="step-num">3</span>Script</button>
+    <button class="nav-item step" data-view="result"><span class="step-num">4</span>Result</button>
+
+    <p class="nav-label">Workspace</p>
+    <button class="nav-item" data-view="settings"><i data-i="settings"></i>Settings</button>
+    <button class="nav-item" data-view="assistant"><i data-i="assistant"></i>Assistant</button>
   </nav>
+
+  <div class="side-foot">
+    <span class="hw" id="hw"><span class="dot dot-idle"></span><span id="hw-text">checking…</span></span>
+  </div>
+</aside>
+
+<main class="main"><div class="shell">
 
   <!-- ═══════════════════════════════════════════════ 1 · VOICE -->
   <section class="view is-active" data-view="voice">
@@ -148,14 +159,23 @@
 
   <!-- ═══════════════════════════════════════════════ SETTINGS -->
   <section class="view" data-view="settings">
-    <div class="card">
+    <div class="page-head">
       <h2>Settings</h2>
       <p class="sub">Each value shows the failure that set it. These are not defaults from a docs page — change one only with a measurement.</p>
     </div>
-    <div id="settings-groups"></div>
-    <div class="flow-nav">
-      <button class="btn" id="btn-reset">Reset to defaults</button>
-      <button class="btn btn-primary" id="btn-save">Save settings</button>
+
+    <!-- Categories on the left, one panel at a time on the right. Seven
+         accordions stacked down the page meant scrolling past six things you
+         were not looking for to reach the seventh. -->
+    <div class="split">
+      <div class="split-nav" id="settings-nav"></div>
+      <div class="split-body">
+        <div id="settings-groups"></div>
+        <div class="flow-nav">
+          <button class="btn" id="btn-reset">Reset to defaults</button>
+          <button class="btn btn-primary" id="btn-save">Save settings</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -183,6 +203,7 @@
     </div>
   </section>
 
+</div></main>
 </div>
 
 <div class="toast" id="toast"></div>

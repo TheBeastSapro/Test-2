@@ -58,19 +58,44 @@ html, body {
 }
 ::selection { background: rgba(139,92,246,.3); }
 
-/* ── top bar ────────────────────────────────────────────────────────
-   Utilities live up here, out of the vertical flow. They were a centred row
-   between the steps and the first card, which put four stacked centred bars
-   in front of the content and made the page read as all chrome. Status and
-   the two side doors are not steps; they should not sit in the step column. */
-.topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; padding: 14px 24px;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg); position: sticky; top: 0; z-index: 20;
+/* ── the left column ────────────────────────────────────────────────
+   Everything that is not the work itself: where you are, the two side doors,
+   the GPU. It is fixed and full height, so the middle scrolls under it and the
+   frame of the app never moves. */
+.app { display: grid; grid-template-columns: 244px minmax(0, 1fr); min-height: 100vh; }
+.side {
+  position: sticky; top: 0; align-self: start;
+  height: 100vh; display: flex; flex-direction: column;
+  padding: 20px 14px 16px; gap: 4px;
+  border-right: 1px solid var(--line); background: var(--bg);
 }
-.topbar-right { display: flex; align-items: center; gap: 8px; }
-.logo { display: inline-flex; align-items: center; gap: 10px; }
+.main { min-width: 0; }
+
+.brand { display: inline-flex; align-items: center; gap: 10px; padding: 4px 10px 22px; }
+.brand span { font-size: 15px; font-weight: 580; letter-spacing: -.018em; }
+
+.nav { display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; }
+.nav-label {
+  margin: 20px 0 7px; padding: 0 10px;
+  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--faint);
+}
+.nav-label:first-child { margin-top: 0; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: none; border: 0; border-radius: var(--r-sm);
+  padding: 9px 10px; color: var(--muted);
+  font: inherit; font-size: 14px; font-weight: 500; text-align: left; cursor: pointer;
+  transition: color .16s var(--ease), background .16s var(--ease);
+}
+.nav-item i { width: 17px; height: 17px; flex: none; color: var(--faint); }
+.nav-item:hover { color: var(--text); background: var(--raise); }
+.nav-item.is-active { color: var(--text); background: var(--raise-2); font-weight: 560; }
+.nav-item.is-active i { color: var(--text); }
+
+.side-foot { padding-top: 14px; border-top: 1px solid var(--line); }
+.side-foot .hw { width: 100%; justify-content: center; }
+
 .logo-mark {
   width: 26px; height: 26px; border-radius: 8px; background: var(--grad);
   position: relative; flex: none;
@@ -80,28 +105,13 @@ html, body {
   width: 5px; height: 9px; border-radius: 3px; background: #fff;
   box-shadow: 0 11px 0 -4px #fff, 0 7px 0 -4px #fff;
 }
-.logo span { font-size: 15px; font-weight: 580; letter-spacing: -.018em; }
+.shell { max-width: 860px; margin: 0 auto; padding: 44px 40px 96px; }
 
-.shell { max-width: 880px; margin: 0 auto; padding: 34px 28px 96px; }
+.page-head { margin-bottom: 26px; }
+.page-head h2 { margin: 0 0 6px; font-size: 22px; font-weight: 600; letter-spacing: -.024em; }
+.page-head .sub { margin: 0; color: var(--muted); font-size: 14.5px; max-width: 68ch; }
 
-/* ── the flow ────────────────────────────────────────────────────────
-   Left-aligned under a rule, not a centred pill. A centred capsule reads as
-   a second navigation bar arguing with the top one; a rule reads as progress
-   through the thing below it. */
-.steps {
-  display: flex; align-items: center; gap: 2px;
-  margin: 0 0 30px; max-width: 100%; overflow-x: auto;
-  padding-bottom: 12px; border-bottom: 1px solid var(--line);
-}
-.step {
-  display: flex; align-items: center; gap: 8px;
-  background: none; border: 0; border-radius: var(--r-sm);
-  padding: 7px 13px; color: var(--faint);
-  font: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer;
-  white-space: nowrap; transition: color .18s var(--ease), background .18s var(--ease);
-}
-.step:hover { color: var(--muted); background: var(--raise); }
-.step.is-active { color: var(--text); font-weight: 560; }
+/* ── the numbered flow, inside the left column ─────────────────────── */
 .step-num {
   width: 19px; height: 19px; flex: none; border-radius: 50%;
   display: grid; place-items: center;
@@ -112,6 +122,24 @@ html, body {
 }
 .step.is-active .step-num { background: var(--grad); color: #fff; }
 .step.is-done .step-num { background: rgba(74,222,128,.14); color: var(--green); }
+
+/* Narrow window: the rail lies down across the top rather than eating half
+   the width. pywebview opens at 1280 so this is the resize case, not the
+   normal one. */
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .side {
+    position: static; height: auto; flex-direction: row; align-items: center;
+    gap: 14px; overflow-x: auto; padding: 12px 16px;
+    border-right: 0; border-bottom: 1px solid var(--line);
+  }
+  .brand { padding: 0 8px 0 0; }
+  .nav { flex-direction: row; align-items: center; gap: 4px; }
+  .nav-label { display: none; }
+  .nav-item { width: auto; white-space: nowrap; }
+  .side-foot { padding: 0; border: 0; margin-left: auto; }
+  .shell { padding: 30px 22px 80px; }
+}
 
 /* ── panels ─────────────────────────────────────────────────────────── */
 .view { display: none; }
@@ -246,16 +274,31 @@ audio { width: 100%; height: 40px; margin-top: 14px; }
 }
 
 /* ── settings ───────────────────────────────────────────────────────── */
+.split { display: grid; grid-template-columns: 186px minmax(0, 1fr); gap: 26px; align-items: start; }
+@media (max-width: 780px) { .split { grid-template-columns: 1fr; gap: 14px; } }
+
+.split-nav { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 26px; }
+.split-nav button {
+  background: none; border: 0; border-radius: var(--r-sm);
+  padding: 9px 12px; text-align: left; color: var(--muted);
+  font: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer;
+  transition: color .16s var(--ease), background .16s var(--ease);
+}
+.split-nav button:hover { color: var(--text); background: var(--raise); }
+.split-nav button.is-active { color: var(--text); background: var(--raise-2); font-weight: 560; }
+@media (max-width: 780px) {
+  .split-nav { position: static; flex-direction: row; overflow-x: auto; }
+  .split-nav button { white-space: nowrap; }
+}
+
 .group {
   background: var(--raise); border: 1px solid var(--line);
-  border-radius: var(--r); margin-bottom: 12px; overflow: hidden;
+  border-radius: var(--r); overflow: hidden; display: none;
 }
-.group-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; cursor: pointer; user-select: none; }
-.group-head h3 { margin: 0; font-size: 15.5px; font-weight: 560; color: var(--text); letter-spacing: -.015em; }
-.group-head i { width: 16px; height: 16px; color: var(--faint); transition: transform .24s var(--ease); }
-.group.open .group-head i { transform: rotate(90deg); }
-.group-body { display: none; padding: 0 24px 24px; }
-.group.open .group-body { display: block; }
+.group.open { display: block; }
+.group-head { padding: 22px 26px 4px; }
+.group-head h3 { margin: 0; font-size: 16px; font-weight: 560; color: var(--text); letter-spacing: -.015em; }
+.group-body { padding: 0 26px 22px; }
 
 .setting { padding: 22px 0; border-top: 1px solid var(--line); }
 .setting:first-child { border-top: 0; padding-top: 4px; }

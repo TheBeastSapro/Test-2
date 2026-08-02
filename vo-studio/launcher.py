@@ -50,18 +50,44 @@ def main() -> int:
 
     # Everything lives in .\runtime — nothing is installed on the machine, so
     # there is no system Python to fall back to and none is wanted.
+    # Setup either unpacks the embeddable Python flat, or — when a supported
+    # Python is already on the machine — builds a venv from it, which nests the
+    # interpreter under Scripts\. Both layouts are normal; take the first that
+    # exists, preferring pythonw so no console flashes.
     rt = root / "runtime"
-    pyw = rt / "python" / "pythonw.exe"
-    py = rt / "python" / "python.exe"
-    interpreter = pyw if pyw.exists() else py
+    interpreter = next(
+        (p for p in (rt / "python" / "Scripts" / "pythonw.exe",
+                     rt / "python" / "pythonw.exe",
+                     rt / "python" / "Scripts" / "python.exe",
+                     rt / "python" / "python.exe") if p.exists()),
+        rt / "python" / "python.exe")
 
     if not interpreter.exists():
-        return die("VO Studio — not set up yet",
-                   "The app's own runtime folder is missing.\n\n"
-                   "Run setup.bat once in this folder, then launch again. It "
-                   "downloads everything into .\\runtime and installs nothing "
-                   "on your machine.\n\n"
-                   f"Looked in:\n{interpreter}")
+        # First run. Setup happens in a window of the app's own, not in a
+        # console — you double-clicked an app, so an app is what should open.
+        try:
+            import bootstrap
+        except Exception as exc:
+            return die("VO Studio — cannot set up",
+                       f"The setup module is missing ({exc}).\n\n"
+                       "Re-download and unzip the folder.")
+        if not bootstrap.show(root):
+            # Either it failed — the window already said why — or it was closed
+            # part-way. Downloads resume where they stopped on the next launch.
+            return 1
+        # Re-resolve: a venv nests the interpreter under Scripts\, the
+        # embeddable build does not, and which one was used is only known now.
+        rt = root / "runtime"
+        for cand in (rt / "python" / "Scripts" / "pythonw.exe",
+                     rt / "python" / "Scripts" / "python.exe",
+                     rt / "python" / "pythonw.exe", rt / "python" / "python.exe"):
+            if cand.exists():
+                interpreter = cand
+                break
+        else:
+            return die("VO Studio — setup did not finish",
+                       "Setup reported success but no interpreter is in "
+                       f".\\runtime.\n\nLooked under:\n{rt / 'python'}")
 
     entry = root / "desktop.py"
     if not entry.exists():

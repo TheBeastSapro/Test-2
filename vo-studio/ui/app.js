@@ -43,16 +43,17 @@ const done = new Set();
 
 function go(view) {
   $$('.view').forEach(v => v.classList.toggle('is-active', v.dataset.view === view));
-  // Mark every earlier step complete, so the flow shows how far you are.
+  // Settings and Assistant are in the same rail, so highlight every row the
+  // same way — but only the four numbered ones carry progress.
+  $$('.nav-item').forEach(n => n.classList.toggle('is-active', n.dataset.view === view));
   const idx = ORDER.indexOf(view);
   $$('.step').forEach(s => {
     const i = ORDER.indexOf(s.dataset.view);
-    s.classList.toggle('is-active', s.dataset.view === view);
     s.classList.toggle('is-done', i > -1 && idx > -1 && i < idx || done.has(s.dataset.view));
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-$$('.step, [data-view]').forEach(b => {
+$$('.nav-item, [data-view]').forEach(b => {
   if (!b.dataset.view || b.tagName !== 'BUTTON') return;
   b.onclick = () => go(b.dataset.view);
 });
@@ -203,13 +204,20 @@ $('#btn-revert').onclick = async () => {
 let SCHEMA = null;
 function paintSettings(schema) {
   SCHEMA = schema;
+  // Categories on the left, one panel showing. Every panel stays in the DOM so
+  // saving still reads all of them — only one is displayed at a time.
+  $('#settings-nav').innerHTML = schema.map((g, gi) =>
+    `<button class="${gi === 0 ? 'is-active' : ''}" data-group="${g.key}">${g.title}</button>`).join('');
   $('#settings-groups').innerHTML = schema.map((g, gi) => `
-    <div class="group${gi === 0 ? ' open' : ''}">
-      <div class="group-head"><h3>${g.title}</h3><i data-i="chev"></i></div>
+    <div class="group${gi === 0 ? ' open' : ''}" data-group="${g.key}">
+      <div class="group-head"><h3>${g.title}</h3></div>
       <div class="group-body">${g.items.map(it => settingRow(g.key, it)).join('')}</div>
     </div>`).join('');
   drawIcons($('#settings-groups'));
-  $$('.group-head').forEach(h => h.onclick = () => h.parentElement.classList.toggle('open'));
+  $$('#settings-nav button').forEach(b => b.onclick = () => {
+    $$('#settings-nav button').forEach(o => o.classList.toggle('is-active', o === b));
+    $$('.group').forEach(g => g.classList.toggle('open', g.dataset.group === b.dataset.group));
+  });
   $$('#settings-groups input[type=range]').forEach(r => r.oninput = () => {
     r.closest('.setting').querySelector('.setting-val').textContent =
       (+r.value).toFixed(r.dataset.dp || 2) + (r.dataset.unit || '');

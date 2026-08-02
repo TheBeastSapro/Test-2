@@ -81,7 +81,7 @@ quietly bill an API account instead of using the subscription. An empty
 `ANTHROPIC_API_KEY=""` still occupies the slot and still wins; the variable has to be
 genuinely unset, not blanked.
 
-So `setup.bat` must **never** set `ANTHROPIC_API_KEY`, and `run.bat` should check for
+So setup must **never** set `ANTHROPIC_API_KEY`, and `run.bat` should check for
 one and warn before launching rather than letting it take over silently.
 
 **It requires the Claude Code CLI**, not just the Python package:
