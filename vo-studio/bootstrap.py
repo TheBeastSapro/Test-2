@@ -301,7 +301,12 @@ class Setup:
                 msi = self.rt / "es.msi"
                 self._fetch(ESPEAK_URL, msi, label, w)
                 raw = self.rt / "esraw"
-                subprocess.run(["msiexec", "/a", str(msi), "/qn", f"TARGETDIR={raw}"],
+                # One command STRING, not a list. msiexec wants TARGETDIR="path"
+                # with the quotes around the value only; Python's list quoting
+                # would wrap the whole TARGETDIR=... argument instead, and the
+                # extraction silently goes nowhere the moment the app folder has
+                # a space in it (D:\My Tools\VOStudio).
+                subprocess.run(f'msiexec /a "{msi}" /qn TARGETDIR="{raw}"',
                                capture_output=True,
                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
                 found = next(raw.rglob("espeak-ng.exe"), None)

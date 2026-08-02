@@ -12,10 +12,23 @@ console scrolling pip output at you.
 
 ## 1. Put the folder somewhere simple
 
-`C:\VOStudio` is ideal.
+**Any drive.** `C:\VOStudio`, `D:\VOStudio`, `E:\Tools\VOStudio` — nothing
+is written outside the folder you unzip to, so put it wherever the space is.
+Allow about **10 GB**: ~3 GB of runtime and another ~1 GB of Chatterbox weights
+on first render, plus room for your projects.
 
-**Not** Desktop and **not** OneDrive — OneDrive will try to sync several GB of
-model weights, and paths with spaces cause trouble in the toolchain.
+Three places to avoid, and only these:
+
+- **OneDrive / Dropbox / any synced folder.** It will try to upload several GB
+  of model weights, and re-download them on you.
+- **A USB stick or network drive.** Not a correctness problem — torch loads
+  thousands of small files at startup and it crawls.
+- **A drive that is not NTFS.** exFAT USB drives break on the long nested paths
+  inside site-packages.
+
+Spaces in the path are fine (`D:\My Tools\VOStudio` works). Move the folder to
+another drive later and it keeps working — nothing inside stores an absolute
+path.
 
 ## 2. Double-click `VO Studio.bat`
 
