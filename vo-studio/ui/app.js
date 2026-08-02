@@ -246,21 +246,46 @@ function labSay(html, cls = 'ai') {
   return el;
 }
 
-/* A take on a 3050 is tens of seconds, which is long enough that a still
-   screen reads as a hang. There is no progress to report inside one
-   generate() call, so the bar sweeps and the clock counts real seconds —
-   and when it lands, the elapsed time stays on the message. */
+/* A status bar, not a spinner. Nothing can be measured from INSIDE one
+   generate() call, but the two things that make a take slow are measurable
+   from outside it: the first run pulls ~1 GB of weights, so the bar tracks the
+   cache directory filling up, and every take after that runs at roughly the
+   pace of the last one, so the bar tracks elapsed against that. The server
+   owns both numbers; this polls it. */
 function startClock(el, label) {
   const t0 = performance.now();
   el.innerHTML = `<div class="prog inline">
-      <div class="prog-track"><div class="prog-fill sweep"></div></div>
-      <div class="prog-meta"><span>${label}</span><span class="tick">0:00</span></div>
+      <div class="prog-track"><div class="prog-fill"></div></div>
+      <div class="prog-meta"><span class="what">${label}</span><span class="tick">0:00</span></div>
     </div>`;
+  const fill = el.querySelector('.prog-fill');
+  const what = el.querySelector('.what');
   const tick = el.querySelector('.tick');
-  const id = setInterval(() => {
+  let polling = false;
+
+  const id = setInterval(async () => {
     const s = Math.round((performance.now() - t0) / 1000);
     tick.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-  }, 250);
+    if (polling) return;
+    polling = true;
+    try {
+      const j = await api('/api/job');
+      if (j.label) what.textContent = j.label;
+      if (j.phase === 'loading' && j.mb_total) {
+        fill.classList.remove('sweep');
+        fill.style.width = Math.min(99, j.mb / j.mb_total * 100).toFixed(1) + '%';
+      } else if (j.phase === 'generating' && j.expect) {
+        // Held at 97 rather than allowed to sit at 100 while still working —
+        // a bar that finishes before the thing does is worse than no bar.
+        fill.classList.remove('sweep');
+        fill.style.width = Math.min(97, j.elapsed / j.expect * 100).toFixed(1) + '%';
+      } else {
+        fill.classList.add('sweep');
+      }
+    } catch { /* the take is what matters; the bar is not worth an error */ }
+    polling = false;
+  }, 700);
+
   return { stop: () => { clearInterval(id); return (performance.now() - t0) / 1000; } };
 }
 
@@ -270,7 +295,7 @@ async function labRender(bubble, text) {
   const target = bubble || labSay('');
   const holder = document.createElement('div');
   target.append(holder);
-  const clock = startClock(holder, text ? 'reading your line…' : 'rendering a take…');
+  const clock = startClock(holder, 'starting…');
   target.dataset.busy = '1';
   $('#btn-sample').disabled = true;
   $('#btn-lab-send').disabled = true;

@@ -12,6 +12,7 @@ desktop.py. Nothing is reachable from the network.
 """
 import asyncio
 import json
+import os
 import time
 import shutil
 import tempfile
@@ -68,6 +69,53 @@ async def save_upload(file: UploadFile, dest: Path, limit: int | None = None) ->
                                  f"{limit / 1024**3:.1f} GB limit — raise it in Settings")
             out.write(chunk)
     return total
+
+
+# ---------------------------------------------------------------- progress
+# A take is one generate() call with nothing to report from inside it, so a
+# sweeping bar was all there was. But the two things that make it slow ARE
+# measurable from outside: the first run downloads ~1 GB of weights (watch the
+# cache directory grow) and every run after that takes about as long as the
+# last one did (remember it). Between them there is a real status bar.
+JOB: dict = {"phase": "idle", "started": 0.0, "chars": 0}
+
+# Written on the first successful take and used to predict the next. Seeded
+# from a 3050 so the very first bar is not wildly wrong; it corrects itself
+# after one take on your own machine.
+PACE: dict = {"secs_per_char": 0.045}
+
+
+def _dir_mb(path: Path) -> float:
+    try:
+        return sum(f.stat().st_size for f in path.rglob("*") if f.is_file()) / 1e6
+    except OSError:
+        return 0.0
+
+
+@app.get("/api/job")
+def job_state():
+    """Polled while a take runs. Cheap enough at 1 Hz; the cache walk is the
+    only real cost and it only happens while weights are still arriving."""
+    phase = JOB["phase"]
+    elapsed = (time.perf_counter() - JOB["started"]) if JOB["started"] else 0.0
+    out = {"phase": phase, "elapsed": round(elapsed, 1)}
+
+    if phase == "loading":
+        cache = Path(os.environ.get("HF_HOME", "")) if os.environ.get("HF_HOME") else None
+        got = _dir_mb(cache) if cache and cache.exists() else 0.0
+        out["mb"] = round(got, 1)
+        # Turbo and Standard are both a little over a gigabyte. Approximate, and
+        # labelled as approximate rather than dressed up as a real total.
+        out["mb_total"] = 1150
+        out["label"] = (f"downloading the voice model — {got:.0f} MB of ~1.1 GB"
+                        if got < 1100 else "loading the model onto the GPU")
+    elif phase == "generating":
+        expect = max(2.0, JOB["chars"] * PACE["secs_per_char"])
+        out["expect"] = round(expect, 1)
+        left = max(0.0, expect - elapsed)
+        out["label"] = (f"generating — about {left:.0f}s left" if left > 1
+                        else "generating — almost there")
+    return out
 
 
 def friendly(exc: BaseException) -> str:
@@ -258,17 +306,30 @@ def lab_sample(payload: dict):
     gen = Generator(SETTINGS)
     out = config.VOICES_DIR / name / "sample.wav"
     out.parent.mkdir(parents=True, exist_ok=True)
+    JOB.update(phase="loading", started=time.perf_counter(), chars=len(text))
     try:
+        # Loading is separated from generating so the bar can say which one it
+        # is waiting on -- they fail differently and they feel different, and
+        # "downloading 1 GB" reads very differently from "hung".
+        gen.load()
+        JOB.update(phase="generating", started=time.perf_counter())
         gen.generate_chunk(text, STATE["voice"], out,
                            exaggeration=prof.exaggeration,
                            temperature=prof.temperature,
                            cfg_weight=prof.cfg_weight, speed=prof.speed)
     except Exception as exc:
+        JOB.update(phase="idle", started=0.0)
         return {"error": friendly(exc)}
     finally:
         gen.unload()
     prof.save(config.VOICES_DIR)
     took = time.perf_counter() - started
+    # Learn this machine's pace from the generate phase only -- folding a
+    # one-off 1 GB download into the average would poison every later estimate.
+    gen_secs = time.perf_counter() - JOB["started"]
+    if JOB["phase"] == "generating" and len(text) > 20:
+        PACE["secs_per_char"] = max(0.005, gen_secs / len(text))
+    JOB.update(phase="idle", started=0.0)
     return {"profile": asdict(prof), "text": text,
             "seconds": round(took, 1), "note": note}
 

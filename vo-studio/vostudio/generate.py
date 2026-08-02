@@ -72,12 +72,19 @@ class Generator:
             from chatterbox.tts import ChatterboxTTS as Model
             self.log(f"Loading Chatterbox on {device} ...")
         self._model = Model.from_pretrained(device=device)
-        if self.cfg.use_fp16 and device == "cuda":
-            try:
-                self._model.t3 = self._model.t3.half()
-                self.log("fp16 enabled for the T3 stage (fits 6-8 GB comfortably)")
-            except Exception as exc:                       # pragma: no cover
-                self.log(f"fp16 unavailable, staying at fp32: {exc}")
+        # NOT self._model.t3.half().
+        #
+        #     RuntimeError: mat1 and mat2 must have the same dtype,
+        #                   but got Float and Half
+        #
+        # Casting one stage to fp16 leaves everything feeding it -- the speaker
+        # conditioning, the reference embedding -- in fp32, and the first matmul
+        # that meets both dies. Half the model in half precision is not a
+        # memory optimisation, it is a type error waiting for a reference clip.
+        #
+        # autocast is the correct tool: it decides per operation, keeps the
+        # accumulations that need range in fp32, and casts nothing permanently.
+        # Applied at generate() time, in _generate below.
         if self._model.sr != self.cfg.model_sr:
             self.log(f"NOTE: model reports {self._model.sr} Hz, config expects "
                      f"{self.cfg.model_sr} Hz. Trusting the model.")
@@ -101,6 +108,28 @@ class Generator:
         torch.manual_seed(self.cfg.seed)
         random.seed(self.cfg.seed)
         np.random.seed(self.cfg.seed)
+
+    def _generate(self, model, text: str, kwargs: dict):
+        """
+        Run the model, in mixed precision where that is safe.
+
+        With a fallback, because 6 GB is exactly the size where fp16 is worth
+        having and also where an unexpected dtype ends the render. If autocast
+        trips over a dtype anyway, the chunk is retried in plain fp32: slower
+        and hungrier, but it produces audio instead of a traceback.
+        """
+        import torch
+        if not (self.cfg.use_fp16 and self.resolve_device() == "cuda"):
+            return model.generate(text, **kwargs)
+        try:
+            with torch.autocast(device_type="cuda", dtype=torch.float16):
+                return model.generate(text, **kwargs)
+        except RuntimeError as exc:
+            if "dtype" not in str(exc).lower() and "half" not in str(exc).lower():
+                raise
+            self.log(f"fp16 path failed ({exc}); retrying this chunk in fp32")
+            torch.cuda.empty_cache()
+            return model.generate(text, **kwargs)
 
     def generate_chunk(self, text: str, voice_ref: str, out_path: Path,
                        exaggeration: float | None = None,
@@ -126,7 +155,7 @@ class Generator:
             # stage for control of level; the master measures and sets LUFS, so
             # this is off and the master keeps the decision.
             kwargs["norm_loudness"] = False
-        wav = model.generate(text, **kwargs)
+        wav = self._generate(model, text, kwargs)
         audio = wav.squeeze(0).detach().cpu().float().numpy()
         audio = apply_headroom(audio, self.log)
         audio = resample(audio, self.cfg.model_sr, self.cfg.work_sr)
