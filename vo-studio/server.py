@@ -25,7 +25,13 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
                                StreamingResponse)
 
-from vostudio import config, pipeline
+from vostudio import config, winfix
+
+# Before pipeline, which pulls in torch and huggingface_hub. Patching after the
+# hub has already cached its symlink-support answer is too late.
+winfix.apply()
+
+from vostudio import pipeline
 from vostudio.assistant import ask, check_auth, start_login
 from vostudio.voice_profile import VoiceProfile, apply_feedback
 
@@ -62,6 +68,21 @@ async def save_upload(file: UploadFile, dest: Path, limit: int | None = None) ->
                                  f"{limit / 1024**3:.1f} GB limit — raise it in Settings")
             out.write(chunk)
     return total
+
+
+def friendly(exc: BaseException) -> str:
+    """Turn the errors we have actually hit into something actionable."""
+    text = f"{type(exc).__name__}: {exc}"
+    if "1314" in text or "required privilege" in text.lower():
+        return (text + "\n\nWindows blocked a symlink while unpacking the model "
+                "cache. The app now copies instead, so close and reopen it and the "
+                "download resumes. If it happens again, turn on Settings > System > "
+                "For developers > Developer Mode, which allows symlinks without "
+                "admin, and delete runtime\\models to start the cache clean.")
+    if "CUDA out of memory" in text:
+        return (text + "\n\n6 GB is tight for this model. Settings > Voice & "
+                "generation > Max characters per chunk: drop 300 to 200.")
+    return text
 
 
 SETTINGS = config.Settings.load()
@@ -153,7 +174,7 @@ async def render(payload: dict):
             STATE["render"] = pipeline.run(script, safe, Path(STATE["voice"]),
                                            SETTINGS, project, log=lines.append)
         except Exception as exc:
-            lines.append(f"FAILED: {type(exc).__name__}: {exc}")
+            lines.append("FAILED: " + friendly(exc))
             STATE["render"] = "error"
 
     threading.Thread(target=work, daemon=True).start()
@@ -226,7 +247,7 @@ def lab_sample(payload: dict):
                            temperature=prof.temperature,
                            cfg_weight=prof.cfg_weight, speed=prof.speed)
     except Exception as exc:
-        return {"error": f"{type(exc).__name__}: {exc}"}
+        return {"error": friendly(exc)}
     finally:
         gen.unload()
     prof.save(config.VOICES_DIR)

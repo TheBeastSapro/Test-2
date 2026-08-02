@@ -38,6 +38,14 @@ for _d in (_rt / "ffmpeg" / "bin", _rt / "espeak", _rt / "node"):
         os.environ["PATH"] = str(_d) + os.pathsep + os.environ.get("PATH", "")
 os.environ.setdefault("HF_HOME", str(_rt / "models"))
 
+# Windows blocks symlink creation without Developer Mode, which is what breaks
+# the Hugging Face cache mid-download with WinError 1314. See vostudio/winfix.py.
+try:
+    from vostudio import winfix
+    winfix.apply()
+except Exception:
+    pass
+
 
 def free_port() -> int:
     """Ask the OS for an unused port rather than hoping 7860 is free."""
