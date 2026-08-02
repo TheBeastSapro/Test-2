@@ -374,7 +374,13 @@ def show(root_dir: Path) -> bool:
     win = tk.Tk()
     win.title("VO Studio — Setup")
     win.configure(bg=BG)
-    win.geometry("560x330")
+    # Tall enough for all seven rows AND the button underneath them. At 330 the
+    # last step and the Close button fell off the bottom edge, which during a
+    # 40-minute install means you cannot see the step you are waiting on.
+    # Measured, not guessed: 30+28+20+20+20+24+30+7*18+16+34+30 = 378, plus room
+    # for the detail line wrapping to two.
+    win.geometry("560x440")
+    win.minsize(560, 440)
     win.resizable(False, False)
     try:
         win.iconbitmap(str(root_dir / "assets" / "icon.ico"))
@@ -404,7 +410,7 @@ def show(root_dir: Path) -> bool:
     bar.pack(anchor="w", pady=(10, 8))
 
     detail = tk.Label(wrap, text="", bg=BG, fg=MUTED, font=("Consolas", 8),
-                      anchor="w", justify="left", wraplength=492)
+                      anchor="nw", justify="left", wraplength=492, height=2)
     detail.pack(anchor="w", fill="x")
 
     # One label per step rather than one multi-line label, so a finished step can
