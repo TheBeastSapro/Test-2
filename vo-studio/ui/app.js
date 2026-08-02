@@ -340,6 +340,26 @@ function paintAuth(a) {
 }
 const refreshAuth = () => api('/api/auth').then(paintAuth).catch(() => {});
 refreshAuth();
+
+/* Model and Confirm calls live in the composer, because that is where you
+   decide them — and they save on change, so the choice survives the window. */
+api('/api/assistant/prefs').then(p => {
+  $('#model-pick').innerHTML = p.models.map(m =>
+    `<option value="${m.id}"${m.id === p.model ? ' selected' : ''} title="${m.note}">${m.label}</option>`).join('');
+  $('#confirm-calls').checked = p.confirm_calls;
+}).catch(() => {});
+
+const savePrefs = body => api('/api/assistant/prefs', body).catch(() => {});
+$('#model-pick').onchange = e => {
+  savePrefs({ model: e.target.value });
+  toast(`Answering with ${e.target.selectedOptions[0].textContent}`);
+};
+$('#confirm-calls').onchange = e => {
+  savePrefs({ confirm_calls: e.target.checked });
+  toast(e.target.checked
+    ? 'Every edit will ask first'
+    : 'It will edit without asking — projects and voices stay off limits');
+};
 $('#btn-login').onclick = async () => {
   const j = await api('/api/auth/login', {});
   toast(j.message);
@@ -425,7 +445,7 @@ async function send() {
   bubble.className = 'msg ai'; bubble.textContent = '…';
   chat.append(bubble); chat.scrollTop = chat.scrollHeight;
   try {
-    const j = await api('/api/assistant', { message: text, files, mode: $('#perm').value });
+    const j = await api('/api/assistant', { message: text, files });
     bubble.textContent = j.reply || '(no output)';
   } catch (e) { bubble.textContent = String(e); }
   chat.scrollTop = chat.scrollHeight;

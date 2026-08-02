@@ -466,6 +466,38 @@ def assistant_detach(payload: dict):
     return {"ok": True}
 
 
+# What the model picker offers. Availability follows your plan, not this list —
+# an Opus-only plan limit is reported by the CLI, not predicted here.
+MODELS = [
+    {"id": "claude-sonnet-5", "label": "Sonnet 5",
+     "note": "The default. Fast, and cheap enough on a subscription to keep going."},
+    {"id": "claude-opus-5", "label": "Opus 5",
+     "note": "Strongest. Use it for the changes you would not want to review twice."},
+    {"id": "claude-haiku-4-5-20251001", "label": "Haiku 4.5",
+     "note": "Quickest. Good for reading files and answering, not for edits."},
+]
+
+
+@app.get("/api/assistant/prefs")
+def assistant_prefs():
+    return {"model": SETTINGS.app.assistant_model,
+            "confirm_calls": SETTINGS.app.confirm_calls,
+            "models": MODELS}
+
+
+@app.post("/api/assistant/prefs")
+def set_assistant_prefs(payload: dict):
+    """Saved immediately. The composer is the place these are actually decided,
+    so making you find Settings afterwards to keep the choice would be silly."""
+    if "model" in payload and any(m["id"] == payload["model"] for m in MODELS):
+        SETTINGS.app.assistant_model = payload["model"]
+    if "confirm_calls" in payload:
+        SETTINGS.app.confirm_calls = bool(payload["confirm_calls"])
+    SETTINGS.save()
+    return {"model": SETTINGS.app.assistant_model,
+            "confirm_calls": SETTINGS.app.confirm_calls}
+
+
 @app.post("/api/assistant")
 async def assistant(payload: dict):
     # Only paths inside ATTACH_DIR. The client sends these back, and a client is
@@ -486,7 +518,10 @@ async def assistant(payload: dict):
         message = (f"Sapro attached these files to this message:\n{listing}\n\n"
                    f"{message}")
 
+    # Confirm calls on = every edit prompts. Off = it edits and reports after.
+    mode = "default" if SETTINGS.app.confirm_calls else "acceptEdits"
+
     out: list[str] = []
     await ask(message, ROOT, on_text=out.append,
-              permission_mode=payload.get("mode", "default"))
+              permission_mode=mode, model=SETTINGS.app.assistant_model)
     return {"reply": "".join(out)}

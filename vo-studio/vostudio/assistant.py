@@ -148,7 +148,8 @@ def start_login() -> tuple[bool, str]:
 
 
 def build_options(app_root: Path, permission_mode: str = "default",
-                  allow_network: bool = False, budget_usd: float | None = 5.0):
+                  allow_network: bool = False, budget_usd: float | None = 5.0,
+                  model: str | None = None):
     """
     Confine the agent to this app, on disk and on the network.
 
@@ -172,8 +173,13 @@ def build_options(app_root: Path, permission_mode: str = "default",
                     else {"allowManagedDomainsOnly": True, "allowLocalBinding": True}),
     }
 
+    # Only passed when set. An empty model= would override the CLI's own default
+    # with nothing, which is a worse outcome than not asking.
+    extra = {"model": model} if model else {}
+
     return ClaudeAgentOptions(
         cwd=str(app_root),
+        **extra,
         add_dirs=[],                       # nothing outside the app root
         sandbox=sandbox,
         permission_mode=permission_mode,

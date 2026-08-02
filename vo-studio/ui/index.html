@@ -191,24 +191,24 @@
         <button class="btn btn-primary" id="btn-login">Sign in</button>
         <button class="btn" id="btn-recheck">Check again</button>
       </div>
-      <div class="field" style="margin:0">
-        <label for="perm">When Claude wants to change something</label>
-        <select id="perm">
-          <option value="default">Ask me every time</option>
-          <option value="acceptEdits">Just do it</option>
-          <option value="plan">Only describe what it would do</option>
-        </select>
-      </div>
     </div>
 
     <div class="card chat-card" id="chat-card">
       <div class="chat" id="chat"><div class="empty">Ask for a change in plain English. Drop in a screenshot or a clip and it looks at that too.</div></div>
       <div class="attached" id="attached" hidden></div>
       <div class="composer">
-        <button class="icon-btn" id="btn-attach" title="Attach an image or a clip"><i data-i="clip"></i></button>
-        <input type="file" id="attach-file" multiple hidden>
         <input id="chat-input" type="text" placeholder="ask, or drop in a screenshot or a clip">
-        <button class="send-btn" id="btn-send" title="Send"><i data-i="up"></i></button>
+        <div class="composer-tools">
+          <button class="icon-btn" id="btn-attach" title="Attach an image or a clip"><i data-i="clip"></i></button>
+          <input type="file" id="attach-file" multiple hidden>
+          <span class="agent-tag">Claude agent</span>
+          <select id="model-pick" class="mini-select" title="Which model answers"></select>
+          <label class="mini-toggle" title="On: every edit asks first. Off: it edits, then tells you.">
+            <input type="checkbox" id="confirm-calls" checked><span></span>Confirm calls
+          </label>
+          <span class="grow"></span>
+          <button class="send-btn" id="btn-send" title="Send"><i data-i="up"></i></button>
+        </div>
       </div>
     </div>
   </section>

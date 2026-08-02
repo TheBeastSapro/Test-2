@@ -121,6 +121,18 @@ class App:
     # than a constant because the right answer depends on the machine.
     max_upload_gb: float = 2.0
 
+    # Which Claude answers in the Assistant. Sonnet by default: this is code
+    # editing in a folder you can read, not research, and on a subscription the
+    # cheaper model means more turns before the limit bites.
+    assistant_model: str = "claude-sonnet-5"
+
+    # "Confirm calls" in the composer. On = every edit prompts. Off = it edits
+    # and tells you after. Default on, because the failure mode of unattended
+    # edits here is not a crash -- it is a silently changed threshold in
+    # config.py that alters every voiceover after it, found weeks later in a
+    # delivered file.
+    confirm_calls: bool = True
+
 
 @dataclass
 class Settings:
