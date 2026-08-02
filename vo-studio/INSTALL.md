@@ -1,182 +1,126 @@
-# Installing VO Studio on your PC
+# Install VO Studio
 
-Windows 11. Takes about 30–40 minutes, most of it downloads.
-
-You do **not** need to know Python or Git. Every command below is copy-paste.
+**Two steps.** Nothing gets installed on your machine — Python, ffmpeg, Node and
+espeak-ng all download into a `runtime` folder inside this one. No registry, no
+Add/Remove Programs, no change to your system PATH. Deleting this folder is the
+uninstall.
 
 ---
 
-## Step 1 — Install the four prerequisites
+## 1. Put the folder somewhere simple
 
-Open **PowerShell as Administrator** (press Start, type `powershell`, right-click
-→ *Run as administrator*) and paste these one at a time:
+`C:\VOStudio` is ideal.
 
-```powershell
-winget install Python.Python.3.11
-winget install Gyan.FFmpeg
-winget install OpenJS.NodeJS
-winget install eSpeak-NG.eSpeak-NG
-```
+**Not** Desktop and **not** OneDrive — OneDrive will try to sync several GB of
+model weights, and paths with spaces cause trouble in the toolchain.
 
-If any of those say "no package found", install it from the website instead:
+## 2. Double-click `setup.bat`
 
-| What | Where | Note |
+That is the whole install. It downloads, in order:
+
+| Step | What | Size |
 |---|---|---|
-| Python 3.11 | python.org/downloads | **Tick "Add python.exe to PATH"** on the first screen. Easy to miss, and nothing works without it. |
-| ffmpeg | gyan.dev/ffmpeg/builds → "release essentials" | Unzip, then add its `bin` folder to PATH |
-| Node.js | nodejs.org → LTS | |
-| eSpeak NG | github.com/espeak-ng/espeak-ng/releases | Only used by the pronunciation check |
+| 1 | Python 3.11 (embeddable — no installer, no registry) | ~11 MB |
+| 2 | ffmpeg (static build) | ~80 MB |
+| 3 | Node + the Claude Code CLI — only for the Assistant | ~30 MB |
+| 4 | PyTorch with CUDA 12.4 | ~2.5 GB |
+| 5 | Chatterbox, the QC stack, espeak-ng | ~500 MB |
+| 6 | Verify, then build `VOStudio.exe` | — |
 
-**Now close PowerShell and open a new one.** Installers change PATH and the old
-window won't see it.
+**Give it 20–40 minutes on a normal connection.** Step 4 is most of it.
 
-Check it worked:
-
-```powershell
-python --version
-ffmpeg -version
-node --version
-```
-
-Three version numbers = good. Any "not recognized" = that one didn't install or
-PATH wasn't updated — reinstall it, tick the PATH box, reopen the window.
-
----
-
-## Step 2 — Get the app onto your PC
-
-In your browser:
-
-1. Go to **github.com/TheBeastSapro/Test-2**
-2. Click the branch dropdown (it says `main`) and pick
-   **`claude/voiceover-qc-automation-xh0an3`**
-3. Green **Code** button → **Download ZIP**
-4. Unzip it somewhere simple — `C:\VOStudio` is ideal. Avoid Desktop and
-   OneDrive: OneDrive syncs the whole model cache and paths with spaces cause
-   trouble.
-
-You want to end up with `C:\VOStudio\vo-studio\setup.bat` existing.
-
----
-
-## Step 3 — Run the installer
-
-Open the `vo-studio` folder, **double-click `setup.bat`**.
-
-It will take 15–30 minutes — PyTorch with CUDA is a ~2.5 GB download. Leave it.
-
-It prints `[1/6]` through `[6/6]`. The last step tells you what it found:
+### What you want to see at the end
 
 ```
    torch 2.6.0+cu124 | CUDA True
    GPU: NVIDIA GeForce RTX ____
 ```
 
-**`CUDA True` and your GPU named = you're set.**
+**`CUDA True` and your GPU named = it worked.**
 
-If it says `CUDA False` or `GPU: NONE`, generation will run on CPU at about 10×
-slower than realtime — roughly 2 hours for a 12-minute script. Usually means the
-NVIDIA driver is old: update it from nvidia.com and run `setup.bat` again.
+If it says `CUDA False` / `GPU: NONE`, generation still works but runs on CPU at
+about 10× realtime — roughly two hours for a twelve-minute script. That almost
+always means the NVIDIA driver is older than CUDA 12.4 needs. Update it from
+nvidia.com and run `setup.bat` again; it skips whatever already downloaded.
 
----
+## 3. Open `VOStudio.exe`
 
-## Step 4 — Sign in with your Claude subscription
+A window opens. No browser, no terminal, no localhost address to remember.
 
-Only needed for the Assistant tab. Skip if you just want to render voiceovers.
-
-In PowerShell:
-
-```powershell
-claude login
-```
-
-A browser opens — sign in with your normal Claude account. That's it. **No API
-key, and don't create one.**
-
-> **If setup.bat warned you about `ANTHROPIC_API_KEY`:** you have one set from
-> something earlier, and it silently overrides your subscription — meaning the
-> assistant would bill an API account instead. Remove it:
-> ```powershell
-> setx ANTHROPIC_API_KEY ""
-> ```
-> then close and reopen PowerShell. Setting it to empty isn't enough on its own;
-> the launcher also ignores it per-session so you're covered either way.
+If the exe did not build, `run.bat` does the same thing with a console attached
+so you can see errors.
 
 ---
 
-## Step 5 — Start it
+## Signing in for the Assistant
 
-**Double-click `run.bat`.** A browser tab opens at `127.0.0.1`.
-
-It's local only — nothing is exposed to the internet.
-
----
-
-## Step 6 — Your first render
-
-**Voice tab** — upload a reference clip. The best one you have is your own
-finished voiceover: cut 8–12 seconds of clean speech out of
-`Every Drug Used in War Explained FINAL v11.mp3`, no music, no silence at the
-edges. That's what the clone copies.
-
-**Render tab** —
-
-- **Video title** — becomes the output filename
-- **Script** — paste it. A line on its own with three words or fewer and no full
-  stop is treated as a chapter header (so `Hashish` on its own line works the way
-  you already write them).
-- **Exaggeration** — leave at 0.5. Above ~0.7 it starts acting.
-- Click **Render**
-
-Progress streams into the box. Expect a few minutes for a full script on GPU.
-
-When it finishes you get a player and a file at:
+Only needed for the Assistant screen — rendering does not use it.
 
 ```
-C:\Users\<you>\ExplainTory VO Studio\projects\<Title>\<Title> (final).mp3
+runtime\node\claude.cmd login
 ```
 
-**Read the summary at the bottom of the log.** If it says
-`NEEDS AN EAR — N chunk(s) never passed the read-check`, those chunks failed
-three takes and the best one was kept. Listen to them before using the file.
+That opens a browser and signs you in with your **normal Claude subscription**.
+There is no API key and you should not create one.
+
+> If `ANTHROPIC_API_KEY` is already set on this machine, the app ignores it for
+> its own process. That variable silently outranks a subscription login, so
+> leaving it active would quietly bill an API account instead of using your plan.
 
 ---
 
-## Step 7 — The Assistant tab
+## Using it
 
-Type what you want changed, in plain English:
+The app walks you through four steps.
 
-> *"The pauses after commas feel too long, make them shorter"*
+**1 · Voice** — drop in a reference clip. The best one you have is a cut of a
+voiceover you already delivered: 8–12 seconds of continuous speech, no music, no
+long pauses. It warns you if the clip is too short, too long, or clipping.
 
-It will show you what it plans to change and ask before touching anything. That's
-deliberate — it can edit the code that renders your audio, so it asks every time.
+**2 · Tune** — press *Render sample*, listen, then type what is wrong in plain
+English: *"feels bit fast"*, *"too flat"*, *"false pauses"*. The settings move
+and it re-renders. Repeat until it sounds right, then *Save this voice*.
 
-The **Permission mode** control:
+**3 · Script** — paste it. A line on its own with three words or fewer and no
+full stop becomes a chapter header.
 
-- **default** — asks before every edit. Leave it here.
-- **acceptEdits** — stops asking. Only for a change you've already agreed to.
-- **plan** — describes what it would do and changes nothing. Good for "what's
-  wrong with this?"
+**4 · Result** — the player plus the full log. Read the end of it: if it says
+`NEEDS AN EAR`, some chunks never passed the read-check and the best take was
+kept. Listen to those before using the file.
 
-It can't reach the internet and can't touch anything outside the app folder.
-Your renders and voice reference are off-limits to it — they aren't in Git and
-can't be recovered.
+Output lands in `Documents\ExplainTory VO Studio\projects\<title>\`.
+
+> **Do your first render on something short — 30 seconds, not a full video.**
+> It tells you in five minutes whether the voice is good enough. A full render
+> that turns out unusable costs an hour.
+
+---
+
+## Standard vs Turbo
+
+Settings → Model. **They are not the same model with a speed switch.**
+
+Turbo reads neutrally at exaggeration `0.0` and reference adherence `0.0`;
+Standard reads neutrally at `0.5` and `0.5`. Carrying numbers from one to the
+other does not mistune the voice slightly — it gives you a different voice.
+
+**Switch models, then re-tune in step 2.** Do not copy the settings across.
 
 ---
 
 ## When something breaks
 
-It probably will on the first run — nothing here has been run end-to-end on a
+It probably will on the first run. Nothing here has been run end-to-end on a
 real GPU yet.
 
 | What you see | What it means |
 |---|---|
-| `'python' is not recognized` | PATH box wasn't ticked. Reinstall Python, tick it, new window. |
-| `CUDA False` | Driver too old. Update from nvidia.com, rerun `setup.bat`. |
-| `CUDA out of memory` | Chunk too big for your VRAM. Lower `max_chars_per_chunk` from 300 to 200 in `vostudio\config.py`. |
-| `ffmpeg not found` | Installed but not on PATH. Reopen the window; if still missing, add its `bin` folder manually. |
-| Assistant says the CLI is missing | `npm install -g @anthropic-ai/claude-code` then `claude login` |
-| Render finishes but sounds wrong | Send me the log box contents and a 6-second clip of the bad part. |
+| `Python download failed` | No connection, or a proxy is blocking python.org |
+| `CUDA False` | NVIDIA driver older than CUDA 12.4 wants — update, rerun |
+| `CUDA out of memory` | Settings → Max characters per chunk, drop 300 → 200 |
+| `ffmpeg download failed` | gyan.dev unreachable; rerun, it resumes |
+| espeak-ng note during setup | Only the pronunciation check is affected |
+| Assistant says the CLI is missing | Run the `claude.cmd login` line above |
 
-**Copy the whole log box when you report a problem.** The exact error matters —
-guessing at it is how the last session lost hours.
+**Copy the whole log box and send it.** The exact error is what is needed —
+guessing at it is how time gets burned.
