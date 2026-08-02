@@ -311,7 +311,8 @@ async function labRender(bubble, text) {
       LAB_TEXT = j.text || LAB_TEXT;
       holder.innerHTML =
         (j.note ? `<div class="msg-bad">${j.note}</div>` : '') +
-        `<audio controls src="/api/lab/audio?t=${Date.now()}"></audio>` +
+        `<audio controls src="/api/lab/audio?name=${encodeURIComponent($('#prof').value)}` +
+        `&file=${encodeURIComponent(j.audio || '')}"></audio>` +
         `<div class="took">${(j.seconds ?? took).toFixed(1)}s on the GPU</div>`;
       done.add('lab');
     }

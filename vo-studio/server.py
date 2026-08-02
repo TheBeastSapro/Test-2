@@ -304,8 +304,18 @@ def lab_sample(payload: dict):
 
     from vostudio.generate import Generator
     gen = Generator(SETTINGS)
-    out = config.VOICES_DIR / name / "sample.wav"
-    out.parent.mkdir(parents=True, exist_ok=True)
+    # A FILE PER TAKE, not one sample.wav rewritten every round.
+    #
+    # Every take used to overwrite the same path, and every player in the
+    # transcript pointed at it. So an old bubble either replayed the newest
+    # take, or -- worse -- streamed a file that changed length underneath it
+    # and came out as buzz. Keeping the takes separate is also the point of
+    # having a history: round 4 is only comparable with round 6 if round 4 is
+    # still there to play.
+    takes = config.VOICES_DIR / name / "takes"
+    takes.mkdir(parents=True, exist_ok=True)
+    STATE["take_no"] = STATE.get("take_no", 0) + 1
+    out = takes / f"take-{STATE['take_no']:04d}.wav"
     JOB.update(phase="loading", started=time.perf_counter(), chars=len(text))
     try:
         # Loading is separated from generating so the bar can say which one it
@@ -322,6 +332,16 @@ def lab_sample(payload: dict):
         return {"error": friendly(exc)}
     finally:
         gen.unload()
+    # 16-bit for the browser. generate_chunk writes PCM_24 because that is what
+    # the pipeline carries, and a listening copy has no use for the extra bits
+    # -- while WebView2's decoder is one more thing that could be making the
+    # noise. Cheap to rule out.
+    try:
+        audio, rate = sf.read(out)
+        sf.write(out, audio, rate, subtype="PCM_16")
+    except Exception:
+        pass
+
     prof.save(config.VOICES_DIR)
     took = time.perf_counter() - started
     # Learn this machine's pace from the generate phase only -- folding a
@@ -330,7 +350,7 @@ def lab_sample(payload: dict):
     if JOB["phase"] == "generating" and len(text) > 20:
         PACE["secs_per_char"] = max(0.005, gen_secs / len(text))
     JOB.update(phase="idle", started=0.0)
-    return {"profile": asdict(prof), "text": text,
+    return {"profile": asdict(prof), "text": text, "audio": out.name,
             "seconds": round(took, 1), "note": note}
 
 
@@ -342,8 +362,19 @@ SAMPLE = ("The most spectacular story in this video is the one nobody can prove.
 
 
 @app.get("/api/lab/audio")
-def lab_audio(name: str = "explaintory"):
-    p = config.VOICES_DIR / name / "sample.wav"
+def lab_audio(name: str = "explaintory", file: str = ""):
+    """One take, by name. `file` is validated rather than trusted -- it arrives
+    from the page, and a page is not where path rules belong."""
+    folder = (config.VOICES_DIR / name / "takes").resolve()
+    if file:
+        try:
+            p = (folder / Path(file).name).resolve()
+            p.relative_to(folder)
+        except (ValueError, OSError):
+            return JSONResponse({}, 404)
+    else:
+        takes = sorted(folder.glob("take-*.wav")) if folder.exists() else []
+        p = takes[-1] if takes else config.VOICES_DIR / name / "sample.wav"
     return FileResponse(p) if p.exists() else JSONResponse({}, 404)
 
 
