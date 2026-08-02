@@ -113,6 +113,23 @@ $('#btn-render').onclick = async () => {
   const pill = $('#render-pill'); pill.className = 'pill run'; pill.textContent = 'rendering';
   $('#btn-render').disabled = true;
 
+  // Real progress, not a spinner: the pipeline already logs "chunk 7/42", so
+  // the bar tracks chunks actually finished and the estimate comes from how
+  // long THIS machine took over the ones already done — not a guess.
+  const t0 = performance.now();
+  const bar = $('#render-bar'), stage = $('#render-stage'), clockEl = $('#render-clock');
+  $('#render-prog').hidden = false;
+  bar.style.width = '0%';
+  bar.classList.add('sweep');
+  stage.textContent = 'loading the model…';
+  const mmss = s => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+  let seen = 0, total = 0;
+  const clock = setInterval(() => {
+    const el = (performance.now() - t0) / 1000;
+    clockEl.textContent = mmss(el) + (seen && total > seen
+      ? ` · about ${mmss((el / seen) * (total - seen))} left` : '');
+  }, 500);
+
   try {
     const res = await fetch('/api/render', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -126,9 +143,30 @@ $('#btn-render').onclick = async () => {
       const { value, done: d } = await reader.read(); finished = d;
       if (!value) continue;
       const log = $('#render-log');
-      log.textContent += dec.decode(value, { stream: true });
+      const text = dec.decode(value, { stream: true });
+      log.textContent += text;
       log.scrollTop = log.scrollHeight;
+
+      const m = [...text.matchAll(/chunk (\d+)\/(\d+)/g)].pop();
+      if (m) {
+        seen = +m[1]; total = +m[2];
+        bar.classList.remove('sweep');
+        bar.style.width = (seen / total * 100).toFixed(1) + '%';
+        stage.textContent = `chunk ${seen} of ${total}`;
+      } else if (/Transcribing the delivered file/.test(text)) {
+        // Generation is done; the checks that follow have no chunk count.
+        bar.style.width = '100%';
+        stage.textContent = 'checking the delivered file…';
+      } else if (/Mastering|mastering/.test(text)) {
+        stage.textContent = 'mastering…';
+      }
     }
+    clearInterval(clock);
+    const elapsed = (performance.now() - t0) / 1000;
+    bar.classList.remove('sweep');
+    bar.style.width = '100%';
+    stage.textContent = `finished in ${mmss(elapsed)}`;
+    clockEl.textContent = total ? `${total} chunks · ${(elapsed / total).toFixed(1)}s each` : '';
     const info = await api('/api/render/result');
     if (info.path) {
       $('#render-audio').src = '/api/render/audio?t=' + Date.now();
@@ -139,6 +177,8 @@ $('#btn-render').onclick = async () => {
       done.add('render');
     } else { pill.className = 'pill bad'; pill.textContent = 'failed'; }
   } catch (e) {
+    clearInterval(clock);
+    $('#render-prog').hidden = true;
     $('#render-log').textContent += `\n${e}`;
     pill.className = 'pill bad'; pill.textContent = 'failed';
   }
@@ -147,16 +187,39 @@ $('#btn-render').onclick = async () => {
 
 /* ── voice lab ──────────────────────────────────────────────────────── */
 const RANGES = { exaggeration: [.2, .9], cfg_weight: [.2, .9], temperature: [.4, 1.1], speed: [.85, 1.25] };
+
+/* Draggable, not a read-out. These were progress bars that happened to sit
+   next to numbers, so they looked adjustable and were not. The feedback loop
+   is still the main way in — but when you already know it is the speed and you
+   want it 0.02 slower, arguing with a chat about it is absurd. */
 function paintParams(p) {
   $('#params').innerHTML = Object.entries(RANGES).map(([k, [lo, hi]]) => {
-    const v = p[k], pct = ((v - lo) / (hi - lo)) * 100;
+    const v = p[k];
     const name = k === 'cfg_weight' ? 'reference adherence' : k;
     return `<div class="param">
       <span class="param-name">${name}</span>
-      <span class="param-val">${k === 'speed' ? v.toFixed(2) + '×' : v.toFixed(2)}</span>
-      <div class="param-bar"><div class="param-fill" style="width:${pct}%"></div></div>
+      <span class="param-val" id="pv-${k}">${k === 'speed' ? v.toFixed(2) + '×' : v.toFixed(2)}</span>
+      <input type="range" class="param-range" data-key="${k}"
+             min="${lo}" max="${hi}" step="0.01" value="${v}">
     </div>`;
   }).join('');
+
+  $$('.param-range').forEach(r => {
+    const out = $(`#pv-${r.dataset.key}`);
+    r.oninput = () => {
+      out.textContent = (+r.value).toFixed(2) + (r.dataset.key === 'speed' ? '×' : '');
+    };
+    // Saved on release, not per pixel — dragging fires input dozens of times
+    // and each one would be a write to disk.
+    r.onchange = async () => {
+      const j = await api('/api/lab/params', {
+        name: $('#prof').value, values: { [r.dataset.key]: +r.value },
+      }).catch(() => null);
+      if (!j) return;
+      labSay(`<div class="chg"><span>${r.dataset.key} set to ${(+r.value).toFixed(2)}` +
+             `</span></div>Render another take to hear it.`);
+    };
+  });
 }
 async function loadProfile() {
   paintParams(await api('/api/profile?name=' + encodeURIComponent($('#prof').value)));
@@ -183,34 +246,72 @@ function labSay(html, cls = 'ai') {
   return el;
 }
 
-async function labRender(bubble) {
+/* A take on a 3050 is tens of seconds, which is long enough that a still
+   screen reads as a hang. There is no progress to report inside one
+   generate() call, so the bar sweeps and the clock counts real seconds —
+   and when it lands, the elapsed time stays on the message. */
+function startClock(el, label) {
+  const t0 = performance.now();
+  el.innerHTML = `<div class="prog inline">
+      <div class="prog-track"><div class="prog-fill sweep"></div></div>
+      <div class="prog-meta"><span>${label}</span><span class="tick">0:00</span></div>
+    </div>`;
+  const tick = el.querySelector('.tick');
+  const id = setInterval(() => {
+    const s = Math.round((performance.now() - t0) / 1000);
+    tick.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }, 250);
+  return { stop: () => { clearInterval(id); return (performance.now() - t0) / 1000; } };
+}
+
+async function labRender(bubble, text) {
   // One turn = one take. Rendering into the bubble that announced the change
   // keeps "what moved" and "what it sounds like" together.
-  const target = bubble || labSay('<span class="msg-wait">rendering a take…</span>');
+  const target = bubble || labSay('');
+  const holder = document.createElement('div');
+  target.append(holder);
+  const clock = startClock(holder, text ? 'reading your line…' : 'rendering a take…');
   target.dataset.busy = '1';
   $('#btn-sample').disabled = true;
+  $('#btn-lab-send').disabled = true;
   try {
-    const j = await api('/api/lab/sample', { name: $('#prof').value });
+    const body = { name: $('#prof').value };
+    if (text) body.text = text;
+    const j = await api('/api/lab/sample', body);
+    const took = clock.stop();
     if (j.error) {
-      target.innerHTML = `<span class="msg-bad">${j.error}</span>`;
+      holder.innerHTML = `<span class="msg-bad">${j.error}</span>`;
     } else {
       paintParams(j.profile);
-      target.querySelector('.msg-wait')?.remove();
-      target.insertAdjacentHTML('beforeend',
-        `<audio controls src="/api/lab/audio?t=${Date.now()}"></audio>`);
+      LAB_TEXT = j.text || LAB_TEXT;
+      holder.innerHTML =
+        `<audio controls src="/api/lab/audio?t=${Date.now()}"></audio>` +
+        `<div class="took">${(j.seconds ?? took).toFixed(1)}s on the GPU</div>`;
       done.add('lab');
     }
   } catch (e) {
-    target.innerHTML = `<span class="msg-bad">${e}</span>`;
+    clock.stop();
+    holder.innerHTML = `<span class="msg-bad">${e}</span>`;
   }
   delete target.dataset.busy;
   $('#btn-sample').disabled = false;
+  $('#btn-lab-send').disabled = false;
   labChat().scrollTop = labChat().scrollHeight;
 }
 
+let LAB_TEXT = '';
+api('/api/lab/text').then(t => {
+  LAB_TEXT = t.text;
+  const box = $('#lab-empty');
+  if (box) box.innerHTML =
+    `It will read this line:<div class="test-line">${t.text}</div>` +
+    `Press <b>Render a first take</b> to hear it — or paste a line from your own ` +
+    `script below with <b>Read this line</b> selected.`;
+}).catch(() => {});
+
 $('#btn-sample').onclick = () => {
   $('#btn-sample').textContent = 'Render another take';
-  labRender(labSay('<span class="msg-wait">rendering a take…</span>'));
+  labRender(labSay(''));
 };
 
 $$('#lab-chips .chip').forEach(c => c.onclick = () => {
@@ -224,13 +325,22 @@ async function labSend() {
   if (!fb) return;
   input.value = ''; input.style.height = 'auto';
   labSay(fb, 'me');
+
+  // "Read this line" swaps the words being tested; "Fix the read" changes the
+  // settings and re-reads the SAME words. Two different questions, and mixing
+  // them means never knowing which change you are hearing.
+  if ($('#lab-mode').value === 'text') {
+    const b = labSay('<div class="chg"><span>test line changed</span></div>');
+    $('#btn-sample').textContent = 'Render another take';
+    return labRender(b, fb);
+  }
+
   const bubble = labSay('<span class="msg-wait">…</span>');
   try {
     const j = await api('/api/lab/feedback', { name: $('#prof').value, feedback: fb });
     const changes = (j.changes || []);
     bubble.innerHTML = changes.length
-      ? `<div class="chg">${changes.map(c => `<span>${c}</span>`).join('')}</div>` +
-        `<span class="msg-wait">rendering a new take…</span>`
+      ? `<div class="chg">${changes.map(c => `<span>${c}</span>`).join('')}</div>`
       : `<span class="msg-bad">I could not tell what to change from that. Try naming the ` +
         `problem — too fast, too flat, false pauses.</span>`;
     if (!changes.length) return;

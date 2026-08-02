@@ -264,12 +264,14 @@ select { cursor: pointer; }
 audio { width: 100%; height: 44px; margin-top: 14px; }
 
 /* ── voice lab ──────────────────────────────────────────────────────── */
-.params { display: flex; flex-direction: column; gap: 20px; }
-.param { display: grid; grid-template-columns: 1fr auto; gap: 9px 12px; align-items: baseline; }
+.params { display: flex; flex-direction: column; gap: 10px; }
+.param { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
 .param-name { font-size: 14px; font-weight: 500; color: var(--muted); text-transform: capitalize; }
 .param-val { font-family: var(--mono); font-size: 13.5px; font-variant-numeric: tabular-nums; color: var(--text); }
-.param-bar { grid-column: 1 / -1; height: 4px; background: var(--raise-3); border-radius: 999px; overflow: hidden; }
-.param-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s var(--ease); }
+/* Full-width row so the whole line is grabbable, same thumb as Settings. */
+.param-range { grid-column: 1 / -1; height: 34px; margin: 0; }
+.param-range::-webkit-slider-thumb { width: 18px; height: 18px; margin-top: -6px; }
+.param-range::-webkit-slider-runnable-track { height: 6px; }
 
 /* ── tune ───────────────────────────────────────────────────────────── */
 .tune { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 20px; align-items: start; }
@@ -292,7 +294,43 @@ audio { width: 100%; height: 44px; margin-top: 14px; }
 .msg-bad { color: var(--amber); }
 .msg audio { width: 100%; max-width: 460px; height: 44px; margin-top: 10px; }
 
-#lab-chips { width: 100%; max-width: 816px; margin: 0 auto; padding: 0 0 18px; }
+#lab-chips { width: 100%; max-width: 816px; margin: 0 auto; padding: 0 0 12px; }
+
+/* ── progress ────────────────────────────────────────────────────────
+   Two kinds. A full render logs "chunk 7/42", so that bar is real and the
+   estimate comes from how long THIS machine took over the chunks already
+   done. A single tuning take has nothing to report from inside one
+   generate() call, so its bar sweeps and only the clock is truthful —
+   a fake percentage would be worse than none. */
+.prog { margin: 4px 0 20px; }
+.prog.inline { margin: 10px 0 0; max-width: 420px; }
+.prog-track {
+  height: 6px; border-radius: 999px; background: var(--raise-3); overflow: hidden;
+}
+.prog-fill {
+  height: 100%; width: 0; border-radius: 999px; background: var(--accent);
+  transition: width .4s var(--ease);
+}
+.prog-fill.sweep {
+  width: 34%; animation: sweep 1.5s var(--ease) infinite;
+}
+@keyframes sweep {
+  0% { margin-left: -34%; } 100% { margin-left: 100%; }
+}
+.prog-meta {
+  display: flex; justify-content: space-between; gap: 12px; margin-top: 9px;
+  font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.took { margin-top: 8px; font-size: 12.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* The line being tuned against, quoted so it is obvious it is the words and
+   not an instruction. */
+.test-line {
+  margin: 12px 0; padding: 12px 15px;
+  background: var(--raise-2); border-left: 2px solid var(--accent-line);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  color: var(--text); font-size: 14.5px; line-height: 1.7;
+}
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .chip {
@@ -458,7 +496,7 @@ input[type=range]::-webkit-slider-runnable-track {
 .composer textarea {
   width: 100%; flex: 1; resize: none; overflow-y: auto;
   background: none; border: 0; border-radius: 0;
-  padding: 13px 10px 8px; min-height: 62px; max-height: 220px;
+  padding: 14px 10px 8px; min-height: 68px; max-height: 220px;
   font: inherit; font-size: 15px; line-height: 1.62; color: var(--text);
 }
 .composer textarea:focus { outline: 0; box-shadow: none; border: 0; }

@@ -74,15 +74,7 @@
     <div class="tune">
       <div class="card chat-card" id="lab-card">
         <div class="chat" id="lab-chat">
-          <div class="empty">Press <b>Render a first take</b> to hear where the voice is starting from.</div>
-        </div>
-        <div class="composer">
-          <textarea id="lab-fb" rows="1" placeholder="talk to it — what is wrong with the read? Enter sends, Shift+Enter for a new line"></textarea>
-          <div class="composer-tools">
-            <span class="agent-tag">Voice coach</span>
-            <span class="grow"></span>
-            <button class="send-btn" id="btn-lab-send" title="Send"><i data-i="up"></i></button>
-          </div>
+          <div class="empty" id="lab-empty">Loading the test line…</div>
         </div>
         <div class="chips" id="lab-chips">
           <button class="chip">too flat</button>
@@ -91,6 +83,18 @@
           <button class="chip">too slow</button>
           <button class="chip">false pauses</button>
           <button class="chip">no natural gaps</button>
+        </div>
+        <div class="composer">
+          <textarea id="lab-fb" rows="1" placeholder="what is wrong with the read?"></textarea>
+          <div class="composer-tools">
+            <span class="agent-tag">Voice coach</span>
+            <select id="lab-mode" class="mini-select" title="What to do with what you typed">
+              <option value="feedback">Fix the read</option>
+              <option value="text">Read this line</option>
+            </select>
+            <span class="grow"></span>
+            <button class="send-btn" id="btn-lab-send" title="Send"><i data-i="up"></i></button>
+          </div>
         </div>
       </div>
 
@@ -149,6 +153,14 @@
         <span class="pill" id="render-pill">waiting</span>
       </div>
       <p class="sub">The full log is below. Anything that needs your ear is called out at the end.</p>
+
+      <div class="prog" id="render-prog" hidden>
+        <div class="prog-track"><div class="prog-fill" id="render-bar"></div></div>
+        <div class="prog-meta">
+          <span id="render-stage">starting…</span>
+          <span id="render-clock">0:00</span>
+        </div>
+      </div>
 
       <div id="render-player" hidden style="margin-bottom:20px">
         <audio controls id="render-audio"></audio>

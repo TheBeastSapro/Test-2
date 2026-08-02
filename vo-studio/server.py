@@ -12,6 +12,7 @@ desktop.py. Nothing is reachable from the network.
 """
 import asyncio
 import json
+import time
 import shutil
 import tempfile
 import threading
@@ -193,11 +194,25 @@ def get_profile(name: str = "default"):
     return asdict(VoiceProfile.load(config.VOICES_DIR, name))
 
 
+@app.get("/api/lab/text")
+def lab_text():
+    """Whatever line is currently being tuned against."""
+    return {"text": STATE.get("lab_text") or SAMPLE, "default": SAMPLE}
+
+
 @app.post("/api/lab/sample")
 def lab_sample(payload: dict):
     name = payload.get("name") or "default"
     if not STATE.get("voice"):
         return {"error": "Set a reference clip on the Voice tab first."}
+
+    # A line you paste sticks, so every take after it is the same words at
+    # different settings. Re-rendering a different sentence each round means
+    # comparing two things at once and learning nothing from either.
+    if payload.get("text"):
+        STATE["lab_text"] = payload["text"].strip()
+    text = STATE.get("lab_text") or SAMPLE
+    started = time.perf_counter()
     prof = VoiceProfile.load(config.VOICES_DIR, name)
     prof.reference = STATE["voice"]
 
@@ -206,7 +221,7 @@ def lab_sample(payload: dict):
     out = config.VOICES_DIR / name / "sample.wav"
     out.parent.mkdir(parents=True, exist_ok=True)
     try:
-        gen.generate_chunk(payload.get("text") or SAMPLE, STATE["voice"], out,
+        gen.generate_chunk(text, STATE["voice"], out,
                            exaggeration=prof.exaggeration,
                            temperature=prof.temperature,
                            cfg_weight=prof.cfg_weight, speed=prof.speed)
@@ -215,9 +230,13 @@ def lab_sample(payload: dict):
     finally:
         gen.unload()
     prof.save(config.VOICES_DIR)
-    return {"profile": asdict(prof)}
+    took = time.perf_counter() - started
+    return {"profile": asdict(prof), "text": text, "seconds": round(took, 1)}
 
 
+# The line the voice reads while you tune it. Two sentences with a comma, a
+# date and a proper noun, because those are the things that go wrong -- a
+# neutral "hello world" tells you nothing about how it handles a real script.
 SAMPLE = ("The most spectacular story in this video is the one nobody can prove. "
           "In 1798, a French army landed in Egypt to cut England off from India.")
 
@@ -248,6 +267,27 @@ def lab_lock(payload: dict):
     SETTINGS.generation.temperature = prof.temperature
     SETTINGS.save()
     return {"message": f"Locked · {prof.summary()}"}
+
+
+# What each dial may be set to from the Tune panel. Same bounds the sliders
+# draw, enforced here as well -- a client is not where limits live.
+PARAM_RANGE = {"exaggeration": (0.2, 0.9), "cfg_weight": (0.2, 0.9),
+               "temperature": (0.4, 1.1), "speed": (0.85, 1.25)}
+
+
+@app.post("/api/lab/params")
+def lab_params(payload: dict):
+    """Set a dial by hand. The feedback loop is the main way in, but sometimes
+    you already know it is the speed and want to move it 0.02 yourself."""
+    name = payload.get("name") or "default"
+    prof = VoiceProfile.load(config.VOICES_DIR, name)
+    for key, value in (payload.get("values") or {}).items():
+        if key not in PARAM_RANGE:
+            continue
+        lo, hi = PARAM_RANGE[key]
+        setattr(prof, key, max(lo, min(hi, float(value))))
+    prof.save(config.VOICES_DIR)
+    return {"profile": asdict(prof)}
 
 
 @app.post("/api/lab/revert")
