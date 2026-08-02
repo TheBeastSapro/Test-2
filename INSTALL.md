@@ -95,7 +95,47 @@ encrypted at rest with the key in `.env`.
 
 ---
 
-## Command-line flags
+## The command-line tools
+
+Some things belong outside the window — learning a style means measuring video, which
+takes minutes and is better watched in a terminal than behind a spinner.
+
+The launcher installs the project into `.venv` rather than onto your PATH, so run
+these **from the Forgecast folder** with the venv's own copy. A bare
+`forgecast-vision` only works if you have activated the environment yourself.
+
+```bash
+# macOS / Linux
+./.venv/bin/forgecast-vision  --help
+./.venv/bin/forgecast         --help
+
+# Windows
+.venv\Scripts\forgecast-vision --help
+.venv\Scripts\forgecast        --help
+```
+
+**Learn an editing style** from a creator's videos. Several, not one — a single video
+is an anecdote, and a style is what survives across their work:
+
+```bash
+./.venv/bin/forgecast-vision learn-style ep1.mp4 ep2.mp4 ep3.mp4 --name "Their Look"
+```
+
+It prints what it measured, then every departure the upgrade pass made and why. Add
+`--raw` to keep exactly what was measured. The result shows up on the Styles tab,
+where you can apply it to a channel or mix it with another.
+
+**Render a world map** without a run — free, so iterating on one costs nothing:
+
+```bash
+./.venv/bin/forgecast map "Rotterdam" "Suez Canal" "Singapore" --style blueprint
+./.venv/bin/forgecast map --list-styles
+./.venv/bin/forgecast map --list-places
+```
+
+---
+
+## Launcher flags
 
 ```
 python launcher.py [options]
