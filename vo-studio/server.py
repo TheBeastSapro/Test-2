@@ -186,6 +186,8 @@ async def set_voice(file: UploadFile = File(...)):
     dur = len(a) / sr
     peak = float(20 * np.log10(np.abs(a).max() + 1e-12))
     STATE["voice"] = str(dest)
+    STATE["voice_duration"] = round(dur, 1)
+    STATE["voice_peak"] = round(peak, 1)
 
     # Say what is wrong with the clip now, not after a bad render.
     warning = ""
@@ -201,6 +203,49 @@ async def set_voice(file: UploadFile = File(...)):
 @app.get("/api/voice/audio")
 def voice_audio():
     return FileResponse(STATE["voice"]) if STATE.get("voice") else JSONResponse({}, 404)
+
+
+@app.get("/api/voice/status")
+def voice_status():
+    """Is there a reference loaded, and what does it look like? The chat asks
+    this on open so it can say "ready" or "drop me a clip" instead of guessing."""
+    path = STATE.get("voice")
+    if not path or not Path(path).exists():
+        return {"loaded": False}
+    return {"loaded": True, "name": Path(path).name,
+            "duration": STATE.get("voice_duration"), "peak": STATE.get("voice_peak")}
+
+
+@app.post("/api/script/analyse")
+def analyse_script(payload: dict):
+    """
+    What the script becomes, before an hour is spent on it.
+
+    Same parser the render uses -- not an approximation of it. A count that
+    disagrees with what actually gets rendered would be worse than no count,
+    because it would be believed.
+    """
+    from vostudio.script_prep import parse_script
+
+    raw = (payload.get("script") or "").strip()
+    if not raw:
+        return {"error": "Nothing to read."}
+
+    sections = parse_script(raw, SETTINGS.generation.max_chars_per_chunk)
+    headers = [s.title for s in sections if s.is_chapter]
+    chunks = sum(len(s.chunks) for s in sections)
+    words = len(raw.split())
+
+    # ~150 wpm is the measured pace of the delivered reads, and the render
+    # estimate comes from the same per-character pace the take bar learned on
+    # this machine -- so it gets better after the first take rather than being
+    # a number from a docs page.
+    speech_s = words / 150 * 60
+    render_s = len(raw) * PACE["secs_per_char"]
+    return {"words": words, "sections": len(sections), "chunks": chunks,
+            "headers": headers, "speech_seconds": round(speech_s),
+            "render_seconds": round(render_s),
+            "profile": SETTINGS.active_profile or "explaintory"}
 
 
 # ----------------------------------------------------------------- render

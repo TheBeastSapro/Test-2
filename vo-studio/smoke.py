@@ -62,7 +62,8 @@ def main() -> int:
     # The UI is served as one inlined page; a missing file shows up as a blank
     # window rather than an error, so check the shell actually contains it.
     page = client.get("/").text
-    for marker in ("id=\"lab-chat\"", "id=\"chat-input\"", "--accent", "function go("):
+    for marker in ("id=\"chat\"", "id=\"chat-input\"", "id=\"params\"",
+                   "--accent", "function send("):
         present = marker in page
         failed += not present
         print(f"  {'ok  ' if present else 'FAIL'} page contains {marker}")

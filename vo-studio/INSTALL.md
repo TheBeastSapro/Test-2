@@ -41,7 +41,7 @@ and only what is missing moves the bar.
 |---|---|---|
 | 1 | Python — an isolated environment built from yours, or a 3.11 download if you have none | 0–11 MB |
 | 2 | ffmpeg (static build) | ~80 MB |
-| 3 | Node + the Claude Code CLI — only for the Assistant | ~30 MB |
+| 3 | Node + the Claude Code CLI — only for Claude | ~30 MB |
 | 4 | PyTorch with CUDA 12.4 | ~2.5 GB |
 | 5 | Chatterbox and the QC stack | ~500 MB |
 | 6 | espeak-ng | ~5 MB |
@@ -85,9 +85,10 @@ so you can see errors.
 
 ---
 
-## Signing in for the Assistant
+## Signing in for Claude
 
-Only needed for the Assistant screen — rendering does not use it.
+Only needed for the parts Claude answers — loading a voice, tuning it and
+rendering never touch it.
 
 ```
 runtime\node\claude.cmd login
@@ -104,28 +105,44 @@ There is no API key and you should not create one.
 
 ## Using it
 
-The app walks you through four steps.
+**One screen.** Everything happens in the conversation.
 
-**1 · Voice** — drop in a reference clip. The best one you have is a cut of a
-voiceover you already delivered: 8–12 seconds of continuous speech, no music, no
-long pauses. It warns you if the clip is too short, too long, or clipping.
+**Drop an audio clip into the chat** — that becomes the voice. The best
+reference you have is a cut of a voiceover you already delivered: 8–12 seconds
+of continuous speech, no music, no long pauses. It tells you the duration and
+peak, and warns you if the clip is too short, too long, or clipping.
 
-**2 · Tune** — press *Render sample*, listen, then type what is wrong in plain
-English: *"feels bit fast"*, *"too flat"*, *"false pauses"*. The settings move
-and it re-renders. Repeat until it sounds right, then *Save this voice*.
+**Press Render a take** to hear where the voice is starting from, then say what
+is wrong in plain English — *"feels bit fast"*, *"too flat"*, *"false pauses"*.
+It moves the settings, says which numbers moved, and hands back a new take on
+the same words. Repeat until it sounds right, then **Save this voice**.
 
-**3 · Script** — paste it. A line on its own with three words or fewer and no
-full stop becomes a chapter header.
+The dials on the right are draggable if you already know what you want to
+change. Nothing saves the profile except the button.
 
-**4 · Result** — the player plus the full log. Read the end of it: if it says
+**Paste your script** and it tells you what it will become before spending an
+hour on it: the voice and profile it will use, words, sections, chunks, the
+chapter headers it found, roughly how long the finished read will be and
+roughly how long the render will take. Nothing starts until you press
+**Render it**.
+
+A line on its own with three words or fewer and no full stop is a chapter
+header. Those get the 0.30 s gap and are exempt from the rate and word-error
+checks, which cannot mean anything on one word.
+
+**The render reports chunk 7 of 42** with a real estimate from your own
+machine's pace, and the log lands under it. Read the end of it: if it says
 `NEEDS AN EAR`, some chunks never passed the read-check and the best take was
-kept. Listen to those before using the file.
+kept — listen to those before using the file.
 
 Output lands in `Documents\ExplainTory VO Studio\projects\<title>\`.
 
 > **Do your first render on something short — 30 seconds, not a full video.**
 > It tells you in five minutes whether the voice is good enough. A full render
 > that turns out unusable costs an hour.
+
+Anything the app does not recognise goes to Claude, along with any screenshot
+or clip you attach. Model and *Confirm calls* are in the composer.
 
 ---
 
@@ -137,7 +154,7 @@ Turbo reads neutrally at exaggeration `0.0` and reference adherence `0.0`;
 Standard reads neutrally at `0.5` and `0.5`. Carrying numbers from one to the
 other does not mistune the voice slightly — it gives you a different voice.
 
-**Switch models, then re-tune in step 2.** Do not copy the settings across.
+**Switch models, then re-tune.** Do not copy the settings across.
 
 ---
 
@@ -154,7 +171,7 @@ real GPU yet.
 | `CUDA out of memory` | Settings → Max characters per chunk, drop 300 → 200 |
 | `ffmpeg failed` | gyan.dev unreachable; reopen, it retries just that step |
 | espeak-ng note during setup | Only the pronunciation check is affected |
-| Assistant says the CLI is missing | Run the `claude.cmd login` line above |
+| Claude says it is not signed in | Press **Sign in** in the right-hand panel |
 
 **Copy the line under the progress bar and send it.** The exact error is what is
 needed — guessing at it is how time gets burned.

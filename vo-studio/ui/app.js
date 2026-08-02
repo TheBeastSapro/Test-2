@@ -1,22 +1,30 @@
-/* VO Studio front-end. Talks to the FastAPI backend in server.py. */
+/* VO Studio front-end. Talks to the FastAPI backend in server.py.
+
+   ONE SURFACE, AND A ROUTER RATHER THAN A MODEL DECIDING
+
+   Everything happens in the chat, but what a message MEANS is worked out here,
+   not by Claude. Dropping a clip sets the voice; a long paste is a script; a
+   short line is feedback if the profile table recognises it. Those are the
+   three things this app does, and routing them locally means the pipeline
+   works whether or not you are signed in — and that a forty-minute render is
+   never something a model decided to start on your behalf.
+
+   Claude gets everything the router does not recognise, plus anything you ask
+   it for directly. That is the split: deterministic where a mistake costs an
+   hour of GPU, conversational everywhere else. */
 
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 const ICONS = {
-  render:'M5 3v18l15-9z', voice:'M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3zM5 10v1a7 7 0 0 0 14 0v-1M12 19v3',
-  lab:'M9 2v6L4 18a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3L15 8V2M9 2h6M7 14h10',
   settings:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-4l-.4 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6c.06-.3.1-.66.1-1z',
   assistant:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
-  play:'M5 3v18l15-9z', upload:'M12 16V4m0 0L7 9m5-5 5 5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2',
-  undo:'M3 7v6h6M3 13a9 9 0 1 0 3-7', lock:'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
-  save:'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8',
-  send:'M22 2 11 13M22 2l-7 20-4-9-9-4z', chev:'M9 18l6-6-6-6',
   clip:'M21.4 11.05 12.25 20.2a6 6 0 0 1-8.49-8.49l9.2-9.19a4 4 0 0 1 5.65 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48',
   close:'M18 6 6 18M6 6l12 12', up:'M12 19V5M5 12l7-7 7 7',
   image:'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M8.5 9.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
   wave:'M3 12h2l2-7 3 16 3-11 2 5h6',
   file:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6',
+  chev:'M9 18l6-6-6-6',
 };
 function drawIcons(root = document) {
   $$('i[data-i]', root).forEach(el => {
@@ -36,6 +44,12 @@ const api = async (path, body) => {
   return r.json();
 };
 
+const esc = s => String(s).replace(/[&<>"]/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// Text into HTML, keeping the line breaks a person typed.
+const asText = s => esc(s).replace(/\n/g, '<br>');
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+
 let toastTimer;
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -43,220 +57,35 @@ function toast(msg) {
 }
 
 /* ── navigation ─────────────────────────────────────────────────────── */
-const ORDER = ['voice', 'lab', 'render', 'result'];
-const done = new Set();
-
 function go(view) {
   $$('.view').forEach(v => v.classList.toggle('is-active', v.dataset.view === view));
-  // Settings and Assistant are in the same rail, so highlight every row the
-  // same way — but only the four numbered ones carry progress.
   $$('.nav-item').forEach(n => n.classList.toggle('is-active', n.dataset.view === view));
-  const idx = ORDER.indexOf(view);
-  $$('.step').forEach(s => {
-    const i = ORDER.indexOf(s.dataset.view);
-    s.classList.toggle('is-done', i > -1 && idx > -1 && i < idx || done.has(s.dataset.view));
-  });
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-$$('.nav-item, [data-view]').forEach(b => {
-  if (!b.dataset.view || b.tagName !== 'BUTTON') return;
-  b.onclick = () => go(b.dataset.view);
-});
-$$('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+$$('.nav-item').forEach(b => b.onclick = () => go(b.dataset.view));
 
-/* ── hardware badge ─────────────────────────────────────────────────── */
-api('/api/hardware').then(h => {
-  $('#hw-text').textContent = h.label;
-  $('#hw .dot').className = 'dot ' + (h.gpu ? 'dot-ok' : 'dot-warn');
-}).catch(() => { $('#hw-text').textContent = 'backend unreachable'; });
-
-/* ── voice reference ────────────────────────────────────────────────── */
-const drop = $('#voice-drop'), fileInput = $('#voice-file');
-drop.onclick = () => fileInput.click();
-['dragenter', 'dragover'].forEach(e => drop.addEventListener(e, ev => {
-  ev.preventDefault(); drop.classList.add('over');
-}));
-['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => {
-  ev.preventDefault(); drop.classList.remove('over');
-}));
-drop.addEventListener('drop', ev => ev.dataTransfer.files[0] && upload(ev.dataTransfer.files[0]));
-fileInput.onchange = () => fileInput.files[0] && upload(fileInput.files[0]);
-
-async function upload(file) {
-  const fd = new FormData(); fd.append('file', file);
-  const r = await fetch('/api/voice', { method: 'POST', body: fd });
-  const j = await r.json();
-  // 413 is the size cap. Saying so beats a silent no-op on a big file.
-  if (!r.ok || j.error) return toast(j.error || `Upload failed (${r.status})`);
-  $('#voice-audio').src = '/api/voice/audio?t=' + Date.now();
-  $('#voice-name').textContent = `${j.name} · ${j.duration.toFixed(1)}s · peak ${j.peak.toFixed(1)} dBFS`;
-  $('#voice-set').hidden = false;
-  done.add('voice');
-  $$('.step').forEach(s => { if (s.dataset.view === 'voice') s.classList.add('is-done'); });
-  if (j.warning) toast(j.warning); else toast('Voice loaded');
-}
-
-/* ── render ─────────────────────────────────────────────────────────── */
-$('#script').addEventListener('input', async e => {
-  const t = e.target.value;
-  const words = (t.match(/\S+/g) || []).length;
-  $('#script-stat').textContent =
-    `${words} words · about ${Math.max(1, Math.ceil(t.length / 300))} chunks`;
-});
-
-$('#btn-render').onclick = async () => {
-  const script = $('#script').value.trim();
-  if (!script) return toast('Paste a script first');
-  go('result');
-  $('#render-log').textContent = '';
-  $('#render-player').hidden = true;
-  const pill = $('#render-pill'); pill.className = 'pill run'; pill.textContent = 'rendering';
-  $('#btn-render').disabled = true;
-
-  // Real progress, not a spinner: the pipeline already logs "chunk 7/42", so
-  // the bar tracks chunks actually finished and the estimate comes from how
-  // long THIS machine took over the ones already done — not a guess.
-  const t0 = performance.now();
-  const bar = $('#render-bar'), stage = $('#render-stage'), clockEl = $('#render-clock');
-  $('#render-prog').hidden = false;
-  bar.style.width = '0%';
-  bar.classList.add('sweep');
-  stage.textContent = 'loading the model…';
-  const mmss = s => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
-  let seen = 0, total = 0;
-  const clock = setInterval(() => {
-    const el = (performance.now() - t0) / 1000;
-    clockEl.textContent = mmss(el) + (seen && total > seen
-      ? ` · about ${mmss((el / seen) * (total - seen))} left` : '');
-  }, 500);
-
-  try {
-    const res = await fetch('/api/render', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ script, title: $('#title').value }),
-    });
-    const reader = res.body.getReader(), dec = new TextDecoder();
-    // NOT `done` — that name is the completed-steps Set in this scope, and
-    // shadowing it makes done.add('render') throw at the end of a good render.
-    let finished = false;
-    while (!finished) {
-      const { value, done: d } = await reader.read(); finished = d;
-      if (!value) continue;
-      const log = $('#render-log');
-      const text = dec.decode(value, { stream: true });
-      log.textContent += text;
-      log.scrollTop = log.scrollHeight;
-
-      const m = [...text.matchAll(/chunk (\d+)\/(\d+)/g)].pop();
-      if (m) {
-        seen = +m[1]; total = +m[2];
-        bar.classList.remove('sweep');
-        bar.style.width = (seen / total * 100).toFixed(1) + '%';
-        stage.textContent = `chunk ${seen} of ${total}`;
-      } else if (/Transcribing the delivered file/.test(text)) {
-        // Generation is done; the checks that follow have no chunk count.
-        bar.style.width = '100%';
-        stage.textContent = 'checking the delivered file…';
-      } else if (/Mastering|mastering/.test(text)) {
-        stage.textContent = 'mastering…';
-      }
-    }
-    clearInterval(clock);
-    const elapsed = (performance.now() - t0) / 1000;
-    bar.classList.remove('sweep');
-    bar.style.width = '100%';
-    stage.textContent = `finished in ${mmss(elapsed)}`;
-    clockEl.textContent = total ? `${total} chunks · ${(elapsed / total).toFixed(1)}s each` : '';
-    const info = await api('/api/render/result');
-    if (info.path) {
-      $('#render-audio').src = '/api/render/audio?t=' + Date.now();
-      $('#render-path').textContent = info.path;
-      $('#render-player').hidden = false;
-      pill.className = info.warn ? 'pill warn' : 'pill ok';
-      pill.textContent = info.warn ? 'needs an ear' : 'done';
-      done.add('render');
-    } else { pill.className = 'pill bad'; pill.textContent = 'failed'; }
-  } catch (e) {
-    clearInterval(clock);
-    $('#render-prog').hidden = true;
-    $('#render-log').textContent += `\n${e}`;
-    pill.className = 'pill bad'; pill.textContent = 'failed';
-  }
-  $('#btn-render').disabled = false;
-};
-
-/* ── voice lab ──────────────────────────────────────────────────────── */
-const RANGES = { exaggeration: [.2, .9], cfg_weight: [.2, .9], temperature: [.4, 1.1], speed: [.85, 1.25] };
-
-/* Draggable, not a read-out. These were progress bars that happened to sit
-   next to numbers, so they looked adjustable and were not. The feedback loop
-   is still the main way in — but when you already know it is the speed and you
-   want it 0.02 slower, arguing with a chat about it is absurd. */
-function paintParams(p) {
-  $('#params').innerHTML = Object.entries(RANGES).map(([k, [lo, hi]]) => {
-    const v = p[k];
-    const name = k === 'cfg_weight' ? 'reference adherence' : k;
-    return `<div class="param">
-      <span class="param-name">${name}</span>
-      <span class="param-val" id="pv-${k}">${k === 'speed' ? v.toFixed(2) + '×' : v.toFixed(2)}</span>
-      <input type="range" class="param-range" data-key="${k}"
-             min="${lo}" max="${hi}" step="0.01" value="${v}">
-    </div>`;
-  }).join('');
-
-  $$('.param-range').forEach(r => {
-    const out = $(`#pv-${r.dataset.key}`);
-    r.oninput = () => {
-      out.textContent = (+r.value).toFixed(2) + (r.dataset.key === 'speed' ? '×' : '');
-    };
-    // Saved on release, not per pixel — dragging fires input dozens of times
-    // and each one would be a write to disk.
-    r.onchange = async () => {
-      const j = await api('/api/lab/params', {
-        name: $('#prof').value, values: { [r.dataset.key]: +r.value },
-      }).catch(() => null);
-      if (!j) return;
-      labSay(`<div class="chg"><span>${r.dataset.key} set to ${(+r.value).toFixed(2)}` +
-             `</span></div>Render another take to hear it.`);
-    };
-  });
-}
-async function loadProfile() {
-  paintParams(await api('/api/profile?name=' + encodeURIComponent($('#prof').value)));
-}
-$('#prof').addEventListener('change', loadProfile);
-
-/* The tuning loop as a conversation: you say what is wrong, it says what it
-   moved, and it hands back a take you can play in the same thread. The whole
-   history stays on screen, which is what makes it possible to hear that round 4
-   was better than round 6 and go back. */
-const labChat = () => $('#lab-chat');
-
-function labClear() {
-  const c = labChat();
+/* ── the transcript ─────────────────────────────────────────────────── */
+const chat = () => $('#chat');
+function say(html, cls = 'ai') {
+  const c = chat();
   if (c.firstElementChild?.classList.contains('empty')) c.innerHTML = '';
-}
-function labSay(html, cls = 'ai') {
-  labClear();
   const el = document.createElement('div');
   el.className = `msg ${cls}`;
   el.innerHTML = html;
-  labChat().append(el);
-  labChat().scrollTop = labChat().scrollHeight;
+  c.append(el);
+  drawIcons(el);
+  c.scrollTop = c.scrollHeight;
   return el;
 }
 
-/* A status bar, not a spinner. Nothing can be measured from INSIDE one
-   generate() call, but the two things that make a take slow are measurable
-   from outside it: the first run pulls ~1 GB of weights, so the bar tracks the
-   cache directory filling up, and every take after that runs at roughly the
-   pace of the last one, so the bar tracks elapsed against that. The server
-   owns both numbers; this polls it. */
+/* A status bar, not a spinner. Nothing is measurable from INSIDE one
+   generate() call, but the two things that make it slow are measurable from
+   outside: the first run pulls ~1 GB of weights, and every take after that
+   runs at roughly the pace of the last. The server owns both; this polls it. */
 function startClock(el, label) {
   const t0 = performance.now();
   el.innerHTML = `<div class="prog inline">
-      <div class="prog-track"><div class="prog-fill"></div></div>
-      <div class="prog-meta"><span class="what">${label}</span><span class="tick">0:00</span></div>
+      <div class="prog-track"><div class="prog-fill sweep"></div></div>
+      <div class="prog-meta"><span class="what">${esc(label)}</span><span class="tick">0:00</span></div>
     </div>`;
   const fill = el.querySelector('.prog-fill');
   const what = el.querySelector('.what');
@@ -264,8 +93,7 @@ function startClock(el, label) {
   let polling = false;
 
   const id = setInterval(async () => {
-    const s = Math.round((performance.now() - t0) / 1000);
-    tick.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    tick.textContent = mmss((performance.now() - t0) / 1000);
     if (polling) return;
     polling = true;
     try {
@@ -289,133 +117,404 @@ function startClock(el, label) {
   return { stop: () => { clearInterval(id); return (performance.now() - t0) / 1000; } };
 }
 
-async function labRender(bubble, text) {
-  // One turn = one take. Rendering into the bubble that announced the change
-  // keeps "what moved" and "what it sounds like" together.
-  const target = bubble || labSay('');
-  const holder = document.createElement('div');
-  target.append(holder);
-  const clock = startClock(holder, 'starting…');
-  target.dataset.busy = '1';
-  $('#btn-sample').disabled = true;
-  $('#btn-lab-send').disabled = true;
+/* Buttons inside a reply. The router proposes, you press — nothing that costs
+   GPU time starts because a message was ambiguous. */
+function actions(el) {
+  $$('[data-act]', el).forEach(b => b.onclick = () => {
+    const act = b.dataset.act;
+    $$('[data-act]', el).forEach(x => x.disabled = true);
+    if (act === 'render') renderScript(b.dataset.script);
+    if (act === 'line') readLine(b.dataset.text);
+    if (act === 'claude') askClaude(b.dataset.text);
+    if (act === 'take') renderTake();
+  });
+}
+
+/* ── voice reference ────────────────────────────────────────────────── */
+let VOICE = { loaded: false };
+
+function paintVoice(v) {
+  VOICE = v;
+  $('#ref-empty').hidden = !!v.loaded;
+  $('#ref-set').hidden = !v.loaded;
+  if (!v.loaded) return;
+  $('#ref-audio').src = '/api/voice/audio?t=' + Date.now();
+  $('#ref-name').textContent =
+    `${v.name}${v.duration ? ` · ${v.duration}s` : ''}${v.peak != null ? ` · peak ${v.peak} dBFS` : ''}`;
+}
+
+const AUDIO_EXT = /\.(wav|mp3|flac|m4a|aac|ogg|opus)$/i;
+
+async function takeFiles(files) {
+  for (const f of files) {
+    if (AUDIO_EXT.test(f.name)) await useAsVoice(f);
+    else await attach(f);
+  }
+}
+
+async function useAsVoice(file) {
+  say(`<b>${esc(file.name)}</b>`, 'me');
+  const holder = say('<span class="msg-wait">reading the clip…</span>');
+  const fd = new FormData(); fd.append('file', file);
+  try {
+    const r = await fetch('/api/voice', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!r.ok || j.error) { holder.innerHTML = `<span class="msg-bad">${esc(j.error || r.status)}</span>`; return; }
+    paintVoice({ loaded: true, name: j.name, duration: +j.duration.toFixed(1), peak: +j.peak.toFixed(1) });
+    holder.innerHTML =
+      `That is the voice now — <b>${esc(j.name)}</b>, ${j.duration.toFixed(1)}s, peak ${j.peak.toFixed(1)} dBFS.` +
+      (j.warning ? `<div class="msg-bad" style="margin-top:8px">${esc(j.warning)}</div>` : '') +
+      `<div class="acts"><button class="btn btn-sm btn-primary" data-act="take">Render a take</button></div>`;
+    actions(holder);
+    suggest([]);
+  } catch (e) { holder.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
+}
+
+/* ── attachments for Claude ─────────────────────────────────────────── */
+let ATTACHED = [];
+const fileURL = a => '/api/assistant/file?path=' + encodeURIComponent(a.path);
+
+function attBody(a) {
+  if (a.kind === 'image') return `<img src="${fileURL(a)}" alt="${esc(a.name)}">`;
+  if (a.kind === 'audio') return `<audio controls preload="metadata" src="${fileURL(a)}"></audio>`;
+  return `<span class="att-plain"><i data-i="file"></i><b>${esc(a.name)}</b></span>`;
+}
+function paintAttached() {
+  const box = $('#attached');
+  box.hidden = !ATTACHED.length;
+  box.innerHTML = ATTACHED.map((a, i) => `
+    <span class="att att-${a.kind}" title="${esc(a.path)}">
+      ${attBody(a)}
+      <span class="att-meta"><b>${esc(a.name)}</b>
+        <span class="att-kind">${a.kind === 'audio' ? 'measured, not heard' : a.kind}</span></span>
+      <button data-drop="${i}" aria-label="Remove"><i data-i="close"></i></button>
+    </span>`).join('');
+  drawIcons(box);
+  $$('#attached [data-drop]').forEach(b => b.onclick = () => {
+    const [gone] = ATTACHED.splice(+b.dataset.drop, 1);
+    paintAttached();
+    api('/api/assistant/detach', { path: gone.path }).catch(() => {});
+  });
+}
+async function attach(f) {
+  const fd = new FormData(); fd.append('file', f);
+  try {
+    const r = await fetch('/api/assistant/attach', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || `failed (${r.status})`);
+    ATTACHED.push(j); paintAttached();
+  } catch (e) { toast(`${f.name} — ${e.message || e}`); }
+}
+
+$('#btn-attach').onclick = () => $('#attach-file').click();
+$('#attach-file').onchange = e => { takeFiles(e.target.files); e.target.value = ''; };
+
+const card = $('#chat-card');
+['dragenter', 'dragover'].forEach(ev => card.addEventListener(ev, e => {
+  e.preventDefault(); card.classList.add('over');
+}));
+['dragleave', 'drop'].forEach(ev => card.addEventListener(ev, e => {
+  e.preventDefault(); card.classList.remove('over');
+}));
+card.addEventListener('drop', e => e.dataTransfer.files.length && takeFiles(e.dataTransfer.files));
+
+/* ── suggestion chips ───────────────────────────────────────────────── */
+const FEEDBACK_CHIPS = ['too flat', 'too expressive', 'feels bit fast', 'too slow',
+                        'false pauses', 'no natural gaps'];
+function suggest(list) {
+  const box = $('#chips');
+  box.hidden = !list.length;
+  box.innerHTML = list.map(t => `<button class="chip">${esc(t)}</button>`).join('');
+  $$('#chips .chip').forEach(c => c.onclick = () => {
+    const i = $('#chat-input');
+    i.value = i.value ? `${i.value} and ${c.textContent}` : c.textContent;
+    i.focus();
+  });
+}
+
+/* ── the router ─────────────────────────────────────────────────────── */
+// A script is not a sentence. Two blank-line-separated blocks, or a lot of
+// words, is the difference — and when it is close, it asks rather than
+// committing forty minutes of GPU to a guess.
+const looksLikeScript = t =>
+  t.split(/\n\s*\n/).filter(b => b.trim()).length >= 2 ||
+  t.split(/\s+/).length >= 60;
+
+async function send() {
+  const input = $('#chat-input'), text = input.value.trim();
+  if (!text && !ATTACHED.length) return;
+  input.value = ''; input.style.height = 'auto';
+
+  const files = ATTACHED.map(a => a.path);
+  const shown = ATTACHED.map(a =>
+    a.kind === 'image' ? `<img class="att-sent-img" src="${fileURL(a)}" alt="">`
+    : a.kind === 'audio' ? `<audio class="att-sent-audio" controls preload="metadata" src="${fileURL(a)}"></audio>`
+    : `<span class="att-sent">${esc(a.name)}</span>`).join('');
+  ATTACHED = []; paintAttached();
+  say((shown ? `<div class="att-row">${shown}</div>` : '') + asText(text), 'me');
+
+  if (files.length) return askClaude(text, files);
+  if (!text) return;
+
+  if (looksLikeScript(text)) return offerScript(text);
+
+  // Short line: feedback if the profile table understands it, otherwise ask.
+  if (VOICE.loaded) {
+    const holder = say('<span class="msg-wait">…</span>');
+    try {
+      const j = await api('/api/lab/feedback', { name: $('#prof').value, feedback: text });
+      if (j.changes?.length) {
+        holder.innerHTML = `<div class="chg">${j.changes.map(c => `<span>${esc(c)}</span>`).join('')}</div>`;
+        paintParams(j.profile);
+        return renderTake(holder);
+      }
+      holder.innerHTML =
+        `I could not read that as a note about the read.` +
+        `<div class="acts">` +
+        `<button class="btn btn-sm btn-primary" data-act="line" data-text="${esc(text)}">Read it as a line</button>` +
+        `<button class="btn btn-sm" data-act="claude" data-text="${esc(text)}">Ask Claude</button></div>`;
+      actions(holder);
+    } catch (e) { holder.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
+    return;
+  }
+  return askClaude(text);
+}
+
+/* ── script ─────────────────────────────────────────────────────────── */
+async function offerScript(script) {
+  const holder = say('<span class="msg-wait">reading the script…</span>');
+  try {
+    const j = await api('/api/script/analyse', { script });
+    if (j.error) { holder.innerHTML = `<span class="msg-bad">${esc(j.error)}</span>`; return; }
+    // Everything you would want to check BEFORE an hour goes into it, and the
+    // counts come from the parser the render itself uses — an estimate that
+    // disagreed with the render would be worse than none, because it would be
+    // believed.
+    holder.innerHTML = `
+      <div class="brief">
+        <div class="brief-row"><span>Voice</span><b>${esc(VOICE.loaded ? VOICE.name : 'none loaded')}</b></div>
+        <div class="brief-row"><span>Profile</span><b>${esc($('#prof').value)}</b></div>
+        <div class="brief-row"><span>Words</span><b>${j.words}</b></div>
+        <div class="brief-row"><span>Sections</span><b>${j.sections}</b></div>
+        <div class="brief-row"><span>Chunks</span><b>${j.chunks}</b></div>
+        <div class="brief-row"><span>Chapter headers</span><b>${j.headers.length}</b></div>
+        ${j.headers.length ? `<div class="brief-heads">${j.headers.map(h => `<span>${esc(h)}</span>`).join('')}</div>` : ''}
+        <div class="brief-row"><span>Finished length</span><b>about ${mmss(j.speech_seconds)}</b></div>
+        <div class="brief-row"><span>Render time</span><b>about ${mmss(j.render_seconds)}</b></div>
+      </div>` +
+      (VOICE.loaded
+        ? `<div class="acts"><button class="btn btn-sm btn-primary" data-act="render">Render it</button></div>`
+        : `<div class="msg-bad" style="margin-top:10px">Drop an audio clip in first — there is no voice to read it in.</div>`);
+    if (VOICE.loaded) {
+      // The script rides on the button rather than a global, so pasting a
+      // second script before pressing the first cannot render the wrong one.
+      $('[data-act="render"]', holder).dataset.script = script;
+      actions(holder);
+    }
+  } catch (e) { holder.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
+}
+
+async function renderScript(script) {
+  const holder = say('');
+  const bar = document.createElement('div');
+  const logBox = document.createElement('pre');
+  logBox.className = 'log'; logBox.style.marginTop = '12px';
+  holder.append(bar, logBox);
+
+  const t0 = performance.now();
+  bar.innerHTML = `<div class="prog inline">
+      <div class="prog-track"><div class="prog-fill sweep"></div></div>
+      <div class="prog-meta"><span class="what">loading the model…</span><span class="tick">0:00</span></div>
+    </div>`;
+  const fill = bar.querySelector('.prog-fill'), what = bar.querySelector('.what'),
+        tick = bar.querySelector('.tick');
+  let seen = 0, total = 0;
+  const clock = setInterval(() => {
+    const el = (performance.now() - t0) / 1000;
+    tick.textContent = mmss(el) + (seen && total > seen
+      ? ` · about ${mmss((el / seen) * (total - seen))} left` : '');
+  }, 500);
+
+  try {
+    const res = await fetch('/api/render', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ script, title: firstHeader(script) }),
+    });
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let finished = false;
+    while (!finished) {
+      const { value, done } = await reader.read(); finished = done;
+      if (!value) continue;
+      const text = dec.decode(value, { stream: true });
+      logBox.textContent += text;
+      logBox.scrollTop = logBox.scrollHeight;
+
+      const m = [...text.matchAll(/chunk (\d+)\/(\d+)/g)].pop();
+      if (m) {
+        seen = +m[1]; total = +m[2];
+        fill.classList.remove('sweep');
+        fill.style.width = (seen / total * 100).toFixed(1) + '%';
+        what.textContent = `chunk ${seen} of ${total}`;
+      } else if (/Transcribing the delivered file/.test(text)) {
+        fill.style.width = '100%'; what.textContent = 'checking the delivered file…';
+      }
+    }
+    clearInterval(clock);
+    const elapsed = (performance.now() - t0) / 1000;
+    fill.classList.remove('sweep'); fill.style.width = '100%';
+    what.textContent = `finished in ${mmss(elapsed)}`;
+
+    const info = await api('/api/render/result');
+    if (info.path) {
+      holder.insertBefore(Object.assign(document.createElement('div'), {
+        innerHTML: `<audio controls src="/api/render/audio?t=${Date.now()}"></audio>` +
+          `<div class="took">${esc(info.path)}</div>` +
+          (info.warn ? `<div class="msg-bad" style="margin-top:8px">Some chunks never passed the ` +
+            `read-check and the best take was kept. Read the end of the log and listen to those.</div>` : ''),
+      }), bar);
+    } else {
+      what.textContent = 'failed';
+    }
+  } catch (e) {
+    clearInterval(clock);
+    logBox.textContent += `\n${e}`;
+  }
+}
+
+// The title names the output folder, so a chapter header beats "Untitled".
+const firstHeader = s => (s.split(/\n\s*\n/).map(b => b.trim())
+  .find(b => b && !b.includes('\n') && b.split(/\s+/).length <= 3 && !/[.!?]$/.test(b)))
+  || 'Untitled';
+
+/* ── takes ──────────────────────────────────────────────────────────── */
+async function renderTake(into, text) {
+  if (!VOICE.loaded) { say('<span class="msg-bad">No voice loaded — drop an audio clip in first.</span>'); return; }
+  const holder = into || say('');
+  const slot = document.createElement('div');
+  holder.append(slot);
+  const clock = startClock(slot, 'starting…');
+  $('#btn-take').disabled = true;
   try {
     const body = { name: $('#prof').value };
     if (text) body.text = text;
     const j = await api('/api/lab/sample', body);
     const took = clock.stop();
-    if (j.error) {
-      holder.innerHTML = `<span class="msg-bad">${j.error}</span>`;
-    } else {
+    if (j.error) { slot.innerHTML = `<span class="msg-bad">${esc(j.error)}</span>`; }
+    else {
       paintParams(j.profile);
-      LAB_TEXT = j.text || LAB_TEXT;
-      holder.innerHTML =
-        (j.note ? `<div class="msg-bad">${j.note}</div>` : '') +
+      slot.innerHTML =
+        (j.note ? `<div class="msg-bad">${esc(j.note)}</div>` : '') +
         `<audio controls src="/api/lab/audio?name=${encodeURIComponent($('#prof').value)}` +
         `&file=${encodeURIComponent(j.audio || '')}"></audio>` +
         `<div class="took">${(j.seconds ?? took).toFixed(1)}s on the GPU</div>`;
-      done.add('lab');
+      suggest(FEEDBACK_CHIPS);
     }
-  } catch (e) {
-    clock.stop();
-    holder.innerHTML = `<span class="msg-bad">${e}</span>`;
-  }
-  delete target.dataset.busy;
-  $('#btn-sample').disabled = false;
-  $('#btn-lab-send').disabled = false;
-  labChat().scrollTop = labChat().scrollHeight;
+  } catch (e) { clock.stop(); slot.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
+  $('#btn-take').disabled = false;
+  chat().scrollTop = chat().scrollHeight;
 }
+const readLine = text => renderTake(null, text);
+$('#btn-take').onclick = () => renderTake();
 
-let LAB_TEXT = '';
-api('/api/lab/text').then(t => {
-  LAB_TEXT = t.text;
-  const box = $('#lab-empty');
-  if (box) box.innerHTML =
-    `It will read this line:<div class="test-line">${t.text}</div>` +
-    `Press <b>Render a first take</b> to hear it — or paste a line from your own ` +
-    `script below with <b>Read this line</b> selected.`;
-}).catch(() => {});
-
-$('#btn-sample').onclick = () => {
-  $('#btn-sample').textContent = 'Render another take';
-  labRender(labSay(''));
-};
-
-$$('#lab-chips .chip').forEach(c => c.onclick = () => {
-  const i = $('#lab-fb');
-  i.value = i.value ? `${i.value} and ${c.textContent}` : c.textContent;
-  i.focus();
-});
-
-async function labSend() {
-  const input = $('#lab-fb'), fb = input.value.trim();
-  if (!fb) return;
-  input.value = ''; input.style.height = 'auto';
-  labSay(fb, 'me');
-
-  // "Read this line" swaps the words being tested; "Fix the read" changes the
-  // settings and re-reads the SAME words. Two different questions, and mixing
-  // them means never knowing which change you are hearing.
-  if ($('#lab-mode').value === 'text') {
-    const b = labSay('<div class="chg"><span>test line changed</span></div>');
-    $('#btn-sample').textContent = 'Render another take';
-    return labRender(b, fb);
-  }
-
-  const bubble = labSay('<span class="msg-wait">…</span>');
-  try {
-    const j = await api('/api/lab/feedback', { name: $('#prof').value, feedback: fb });
-    const changes = (j.changes || []);
-    bubble.innerHTML = changes.length
-      ? `<div class="chg">${changes.map(c => `<span>${c}</span>`).join('')}</div>`
-      : `<span class="msg-bad">I could not tell what to change from that. Try naming the ` +
-        `problem — too fast, too flat, false pauses.</span>`;
-    if (!changes.length) return;
-    paintParams(j.profile);
-    $('#btn-sample').textContent = 'Render another take';
-    await labRender(bubble);
-  } catch (e) { bubble.innerHTML = `<span class="msg-bad">${e}</span>`; }
+/* ── voice profile panel ────────────────────────────────────────────── */
+const RANGES = { exaggeration: [.2, .9], cfg_weight: [.2, .9], temperature: [.4, 1.1], speed: [.85, 1.25] };
+function paintParams(p) {
+  $('#params').innerHTML = Object.entries(RANGES).map(([k, [lo, hi]]) => {
+    const v = p[k], name = k === 'cfg_weight' ? 'reference adherence' : k;
+    return `<div class="param">
+      <span class="param-name">${name}</span>
+      <span class="param-val" id="pv-${k}">${k === 'speed' ? v.toFixed(2) + '×' : v.toFixed(2)}</span>
+      <input type="range" class="param-range" data-key="${k}"
+             min="${lo}" max="${hi}" step="0.01" value="${v}">
+    </div>`;
+  }).join('');
+  $$('.param-range').forEach(r => {
+    const out = $(`#pv-${r.dataset.key}`);
+    r.oninput = () => {
+      out.textContent = (+r.value).toFixed(2) + (r.dataset.key === 'speed' ? '×' : '');
+    };
+    // Saved on release, not per pixel — dragging fires input dozens of times.
+    r.onchange = async () => {
+      await api('/api/lab/params', {
+        name: $('#prof').value, values: { [r.dataset.key]: +r.value },
+      }).catch(() => null);
+      say(`<div class="chg"><span>${r.dataset.key} set to ${(+r.value).toFixed(2)}</span></div>` +
+          `Render a take to hear it.`);
+    };
+  });
 }
-$('#btn-lab-send').onclick = labSend;
+const loadProfile = () => api('/api/profile?name=' + encodeURIComponent($('#prof').value))
+  .then(paintParams).catch(() => {});
+$('#prof').addEventListener('change', loadProfile);
 
 $('#btn-lock').onclick = async () => {
   const j = await api('/api/lab/lock', { name: $('#prof').value });
-  labSay(`<b>Saved.</b> ${j.message}`);
-  toast(j.message);
+  say(`<b>Saved.</b> ${esc(j.message)}`); toast(j.message);
 };
 $('#btn-revert').onclick = async () => {
   const j = await api('/api/lab/revert', { name: $('#prof').value });
   paintParams(j.profile);
-  labSay(`<b>Reverted.</b> ${j.message} Render another take to hear it.`);
+  say(`<b>Reverted.</b> ${esc(j.message)} Render a take to hear it.`);
+};
+
+/* ── Claude ─────────────────────────────────────────────────────────── */
+async function askClaude(text, files = []) {
+  const bubble = say('<span class="msg-wait">…</span>');
+  try {
+    const j = await api('/api/assistant', { message: text, files });
+    bubble.innerHTML = asText(j.reply || '(no output)');
+  } catch (e) { bubble.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
+  chat().scrollTop = chat().scrollHeight;
+}
+
+function paintAuth(a) {
+  $('#auth-card').innerHTML = a.ok ? esc(a.detail)
+    : `<b>Not ready.</b><br><span style="white-space:pre-wrap">${esc(a.detail)}</span>`;
+  $('#auth-actions').hidden = a.ok;
+  $('#btn-login').hidden = !a.can_login;
+}
+const refreshAuth = () => api('/api/auth').then(paintAuth).catch(() => {});
+$('#btn-login').onclick = async () => toast((await api('/api/auth/login', {})).message);
+$('#btn-recheck').onclick = () => refreshAuth().then(() => toast('Checked'));
+
+api('/api/assistant/prefs').then(p => {
+  $('#model-pick').innerHTML = p.models.map(m =>
+    `<option value="${m.id}"${m.id === p.model ? ' selected' : ''} title="${esc(m.note)}">${esc(m.label)}</option>`).join('');
+  $('#confirm-calls').checked = p.confirm_calls;
+}).catch(() => {});
+const savePrefs = body => api('/api/assistant/prefs', body).catch(() => {});
+$('#model-pick').onchange = e => {
+  savePrefs({ model: e.target.value });
+  toast(`Answering with ${e.target.selectedOptions[0].textContent}`);
+};
+$('#confirm-calls').onchange = e => {
+  savePrefs({ confirm_calls: e.target.checked });
+  toast(e.target.checked ? 'Every edit will ask first'
+                         : 'It will edit without asking — projects and voices stay off limits');
 };
 
 /* ── settings ───────────────────────────────────────────────────────── */
-let SCHEMA = null;
 function paintSettings(schema) {
-  SCHEMA = schema;
-  // Categories on the left, one panel showing. Every panel stays in the DOM so
-  // saving still reads all of them — only one is displayed at a time.
   $('#settings-nav').innerHTML = schema.map((g, gi) =>
-    `<button class="${gi === 0 ? 'is-active' : ''}" data-group="${g.key}">${g.title}</button>`).join('');
+    `<button class="${gi === 0 ? 'is-active' : ''}" data-group="${g.key}">${esc(g.title)}</button>`).join('');
   $('#settings-groups').innerHTML = schema.map((g, gi) => `
     <div class="group${gi === 0 ? ' open' : ''}" data-group="${g.key}">
-      <div class="group-head"><h3>${g.title}</h3></div>
+      <div class="group-head"><h3>${esc(g.title)}</h3></div>
       <div class="group-body">${g.items.map(it => settingRow(g.key, it)).join('')}</div>
     </div>`).join('');
-  drawIcons($('#settings-groups'));
   $$('#settings-nav button').forEach(b => b.onclick = () => {
     $$('#settings-nav button').forEach(o => o.classList.toggle('is-active', o === b));
     $$('.group').forEach(g => g.classList.toggle('open', g.dataset.group === b.dataset.group));
   });
-  // The slider and the box are two views of one value. Dragging to 0.040 with a
-  // 0.005 step is a fight you should not have to have — type it instead.
+  // The slider and the box are two views of one value. Dragging to 0.040 with
+  // a 0.005 step is a fight you should not have to have — type it instead.
   $$('#settings-groups input[type=range]').forEach(r => {
     const box = r.closest('.setting').querySelector('.setting-num');
     r.oninput = () => { box.value = (+r.value).toFixed(+r.dataset.dp || 2); };
     box.oninput = () => { if (box.value !== '') r.value = box.value; };
     box.onchange = () => {
-      // Clamp on commit, not on every keystroke — clamping mid-type makes "0.04"
-      // impossible to reach because "0.0" gets snapped to the minimum first.
+      // Clamp on commit, not per keystroke — clamping mid-type makes "0.04"
+      // unreachable because "0.0" gets snapped to the minimum first.
       const v = Math.min(+r.max, Math.max(+r.min, +box.value || +r.min));
       r.value = v; box.value = v.toFixed(+r.dataset.dp || 2);
     };
@@ -426,188 +525,66 @@ function settingRow(group, it) {
   const control = it.type === 'bool'
     ? `<label class="switch"><input type="checkbox" id="${id}" data-group="${group}" data-key="${it.key}" ${it.value ? 'checked' : ''}><span></span></label>`
     : it.type === 'choice'
-      ? `<select class="select" id="${id}" data-group="${group}" data-key="${it.key}">${it.options.map(o => `<option${o === it.value ? ' selected' : ''}>${o}</option>`).join('')}</select>`
+      ? `<select class="select" id="${id}" data-group="${group}" data-key="${it.key}">${it.options.map(o => `<option${o === it.value ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`
       : '';
   const slider = it.type === 'number'
-    ? `<input type="range" data-dp="${it.dp}" min="${it.min}" max="${it.max}" step="${it.step}" value="${it.value}">`
-    : '';
-  // The typed box is the one carrying data-key, so what you typed is what saves
-  // — even if the slider's step cannot land on it exactly.
+    ? `<input type="range" data-dp="${it.dp}" min="${it.min}" max="${it.max}" step="${it.step}" value="${it.value}">` : '';
   const num = it.type === 'number'
     ? `<span class="setting-val">
-         <input class="setting-num" type="number" id="${id}"
-                data-group="${group}" data-key="${it.key}"
-                min="${it.min}" max="${it.max}" step="${it.step}"
-                value="${(+it.value).toFixed(it.dp)}">
-         ${it.unit ? `<em>${it.unit.trim()}</em>` : ''}
-       </span>`
-    : '';
+         <input class="setting-num" type="number" id="${id}" data-group="${group}" data-key="${it.key}"
+                min="${it.min}" max="${it.max}" step="${it.step}" value="${(+it.value).toFixed(it.dp)}">
+         ${it.unit ? `<em>${esc(it.unit.trim())}</em>` : ''}</span>` : '';
   return `<div class="setting">
-    <div class="setting-top">
-      <span class="setting-name">${it.name}</span>
-      ${it.type === 'number' ? num : control}
-    </div>
+    <div class="setting-top"><span class="setting-name">${esc(it.name)}</span>
+      ${it.type === 'number' ? num : control}</div>
     ${slider}
-    ${it.why ? `<div class="setting-why">${it.why}</div>` : ''}
+    ${it.why ? `<div class="setting-why">${esc(it.why)}</div>` : ''}
   </div>`;
 }
-api('/api/settings').then(paintSettings);
-
+api('/api/settings').then(paintSettings).catch(() => {});
 $('#btn-save').onclick = async () => {
   const values = {};
   $$('#settings-groups [data-key]').forEach(el => {
     values[`${el.dataset.group}.${el.dataset.key}`] =
       el.type === 'checkbox' ? el.checked : (el.tagName === 'SELECT' ? el.value : +el.value);
   });
-  const j = await api('/api/settings', { values });
-  toast(j.message);
+  toast((await api('/api/settings', { values })).message);
 };
-$('#btn-reset').onclick = async () => { paintSettings(await api('/api/settings/reset', {})); toast('Reset — not saved yet'); };
-
-/* ── assistant ──────────────────────────────────────────────────────── */
-function paintAuth(a) {
-  $('#auth-card').innerHTML = a.ok
-    ? a.detail
-    : `<b>Not ready.</b><br><span style="white-space:pre-wrap">${a.detail}</span>`;
-  // The Sign in button only appears when signing in is actually the problem.
-  // Offering it for a missing CLI would just fail differently.
-  $('#auth-actions').hidden = a.ok;
-  $('#btn-login').hidden = !a.can_login;
-}
-const refreshAuth = () => api('/api/auth').then(paintAuth).catch(() => {});
-refreshAuth();
-
-/* Model and Confirm calls live in the composer, because that is where you
-   decide them — and they save on change, so the choice survives the window. */
-api('/api/assistant/prefs').then(p => {
-  $('#model-pick').innerHTML = p.models.map(m =>
-    `<option value="${m.id}"${m.id === p.model ? ' selected' : ''} title="${m.note}">${m.label}</option>`).join('');
-  $('#confirm-calls').checked = p.confirm_calls;
-}).catch(() => {});
-
-const savePrefs = body => api('/api/assistant/prefs', body).catch(() => {});
-$('#model-pick').onchange = e => {
-  savePrefs({ model: e.target.value });
-  toast(`Answering with ${e.target.selectedOptions[0].textContent}`);
+$('#btn-reset').onclick = async () => {
+  paintSettings(await api('/api/settings/reset', {})); toast('Reset — not saved yet');
 };
-$('#confirm-calls').onchange = e => {
-  savePrefs({ confirm_calls: e.target.checked });
-  toast(e.target.checked
-    ? 'Every edit will ask first'
-    : 'It will edit without asking — projects and voices stay off limits');
-};
-$('#btn-login').onclick = async () => {
-  const j = await api('/api/auth/login', {});
-  toast(j.message);
-};
-$('#btn-recheck').onclick = () => refreshAuth().then(() => toast('Checked'));
-/* Attachments. Uploaded on drop rather than on send, so an unreadable file or a
-   name clash surfaces while you are still typing — not after you hit Send. */
-let ATTACHED = [];
-const ICON_FOR = { image: 'image', audio: 'wave', file: 'file' };
 
-const fileURL = a => '/api/assistant/file?path=' + encodeURIComponent(a.path);
-
-/* An image is worth showing, not naming — you attached it because of what is
-   in it. Audio gets a player for the same reason: so you can confirm it is the
-   right take before asking about it. */
-function attBody(a) {
-  if (a.kind === 'image') return `<img src="${fileURL(a)}" alt="${a.name}">`;
-  if (a.kind === 'audio') return `<audio controls preload="metadata" src="${fileURL(a)}"></audio>`;
-  return `<span class="att-plain"><i data-i="file"></i><b>${a.name}</b></span>`;
-}
-
-function paintAttached() {
-  const box = $('#attached');
-  box.hidden = !ATTACHED.length;
-  box.innerHTML = ATTACHED.map((a, i) => `
-    <span class="att att-${a.kind}" title="${a.path}">
-      ${attBody(a)}
-      <span class="att-meta">
-        <b>${a.name}</b>
-        <span class="att-kind">${a.kind === 'audio' ? 'measured, not heard' : a.kind}</span>
-      </span>
-      <button data-drop="${i}" aria-label="Remove"><i data-i="close"></i></button>
-    </span>`).join('');
-  drawIcons(box);
-  $$('#attached [data-drop]').forEach(b => b.onclick = async () => {
-    const [gone] = ATTACHED.splice(+b.dataset.drop, 1);
-    paintAttached();
-    api('/api/assistant/detach', { path: gone.path }).catch(() => {});
-  });
-}
-
-async function attach(files) {
-  for (const f of files) {
-    const fd = new FormData(); fd.append('file', f);
-    try {
-      const r = await fetch('/api/assistant/attach', { method: 'POST', body: fd });
-      const j = await r.json();
-      if (!r.ok || j.error) throw new Error(j.error || `failed (${r.status})`);
-      ATTACHED.push(j);
-      paintAttached();
-    } catch (e) { toast(`${f.name} — ${e.message || e}`); }
-  }
-}
-
-$('#btn-attach').onclick = () => $('#attach-file').click();
-$('#attach-file').onchange = e => { attach(e.target.files); e.target.value = ''; };
-
-const chatCard = $('#chat-card');
-['dragenter', 'dragover'].forEach(ev => chatCard.addEventListener(ev, e => {
-  e.preventDefault(); chatCard.classList.add('over');
-}));
-['dragleave', 'drop'].forEach(ev => chatCard.addEventListener(ev, e => {
-  e.preventDefault(); chatCard.classList.remove('over');
-}));
-chatCard.addEventListener('drop', e => e.dataTransfer.files.length && attach(e.dataTransfer.files));
-
-async function send() {
-  const input = $('#chat-input'), text = input.value.trim();
-  if (!text && !ATTACHED.length) return;
-  input.value = ''; input.style.height = 'auto';
-  const chat = $('#chat');
-  if (chat.firstElementChild?.classList.contains('empty')) chat.innerHTML = '';
-  const files = ATTACHED.map(a => a.path);
-  const shown = ATTACHED.map(a =>
-    a.kind === 'image' ? `<img class="att-sent-img" src="${fileURL(a)}" alt="${a.name}">`
-    : a.kind === 'audio' ? `<audio class="att-sent-audio" controls preload="metadata" src="${fileURL(a)}"></audio>`
-    : `<span class="att-sent">${a.name}</span>`).join('');
-  ATTACHED = []; paintAttached();
-  chat.insertAdjacentHTML('beforeend',
-    `<div class="msg me">${shown ? `<div class="att-row">${shown}</div>` : ''}${text}</div>`);
-  drawIcons(chat);
-  const bubble = document.createElement('div');
-  bubble.className = 'msg ai'; bubble.textContent = '…';
-  chat.append(bubble); chat.scrollTop = chat.scrollHeight;
-  try {
-    const j = await api('/api/assistant', { message: text, files });
-    bubble.textContent = j.reply || '(no output)';
-  } catch (e) { bubble.textContent = String(e); }
-  chat.scrollTop = chat.scrollHeight;
-}
+/* ── composer ───────────────────────────────────────────────────────── */
 $('#btn-send').onclick = send;
-
-/* Enter sends, Shift+Enter breaks the line — the convention every chat uses,
-   and the reason the box is a textarea rather than an input. Auto-grow is
-   capped in CSS so a pasted paragraph scrolls instead of shoving Send away. */
-function wireComposer(el, onSend) {
-  const grow = () => {
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 220) + 'px';
-  };
+(function wireComposer(el) {
+  const grow = () => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 220) + 'px'; };
   el.addEventListener('input', grow);
   el.addEventListener('keydown', e => {
+    // Enter sends, Shift+Enter breaks the line — and a pasted script arrives
+    // through paste, not keystrokes, so this never eats one.
     if (e.key !== 'Enter' || e.shiftKey) return;
-    e.preventDefault();
-    onSend();
-    // Back to its resting height, or the box keeps the size of the message
-    // that just left it.
+    e.preventDefault(); send();
     requestAnimationFrame(() => { el.style.height = 'auto'; });
   });
-}
-wireComposer($('#chat-input'), send);
-wireComposer($('#lab-fb'), labSend);
+})($('#chat-input'));
+
+/* ── open ───────────────────────────────────────────────────────────── */
+api('/api/hardware').then(h => {
+  $('#hw-text').textContent = h.label;
+  $('#hw .dot').className = 'dot ' + (h.gpu ? 'dot-ok' : 'dot-warn');
+}).catch(() => { $('#hw-text').textContent = 'backend unreachable'; });
 
 drawIcons();
-loadProfile().catch(() => {});
+loadProfile();
+refreshAuth();
+
+api('/api/voice/status').then(v => {
+  paintVoice(v);
+  const box = $('#chat-empty');
+  if (!box) return;
+  box.innerHTML = v.loaded
+    ? `Voice is <b>${esc(v.name)}</b>. Paste a script and I will tell you what it ` +
+      `becomes before rendering it — or press <b>Render a take</b> to hear where the voice is.`
+    : `Drop an audio clip anywhere in here and it becomes the voice. 8–12 seconds ` +
+      `of continuous speech, no music. Then paste a script.`;
+}).catch(() => {});

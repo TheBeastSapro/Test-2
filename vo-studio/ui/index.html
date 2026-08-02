@@ -1,25 +1,21 @@
-<!-- One left column that never moves, the way ElevenLabs does it: the work is
-     in the middle and everything else — where you are, settings, the assistant,
-     the GPU — lives on the left. Settings and the assistant were buttons in the
-     top-right corner, which made them feel like they belonged to a different
-     application than the one below them. -->
+<!-- ONE SURFACE.
+     Four tabs for a job that only ever runs in one order was friction: you
+     cannot tune a voice you have not loaded or render a script without one, so
+     the steps were never really choices — they were a wizard wearing tabs.
+
+     Everything happens in the conversation now. Drop a clip and it becomes the
+     voice. Paste a script and it tells you what it will become — profile,
+     chapter headers, chunks, how long it will take — before an hour is spent.
+     The panel on the right is not another screen, it is the state of the thing
+     you are talking about. -->
 <div class="app">
 
 <aside class="side">
   <div class="brand"><div class="logo-mark"></div><span>VO Studio</span></div>
 
   <nav class="nav" aria-label="Main">
-    <!-- Order carries information: you cannot tune a voice you have not
-         loaded, or render a script without a voice. -->
-    <p class="nav-label">Create</p>
-    <button class="nav-item step is-active" data-view="voice"><span class="step-num">1</span>Voice</button>
-    <button class="nav-item step" data-view="lab"><span class="step-num">2</span>Tune</button>
-    <button class="nav-item step" data-view="render"><span class="step-num">3</span>Script</button>
-    <button class="nav-item step" data-view="result"><span class="step-num">4</span>Result</button>
-
-    <p class="nav-label">Workspace</p>
+    <button class="nav-item is-active" data-view="studio"><i data-i="assistant"></i>Studio</button>
     <button class="nav-item" data-view="settings"><i data-i="settings"></i>Settings</button>
-    <button class="nav-item" data-view="assistant"><i data-i="assistant"></i>Assistant</button>
   </nav>
 
   <div class="side-foot">
@@ -29,150 +25,72 @@
 
 <main class="main"><div class="shell">
 
-  <!-- ═══════════════════════════════════════════════ 1 · VOICE -->
-  <section class="view is-active" data-view="voice">
-    <div class="card">
-      <h2>Load a voice to clone</h2>
-      <p class="sub">Everything is rendered in this voice. The best reference you have is your own finished read.</p>
-
-      <div class="drop" id="voice-drop">
-        <i data-i="upload"></i>
-        <b>Drop an audio file</b>
-        <span>or click to choose</span>
-        <input type="file" id="voice-file" accept="audio/*" hidden>
-      </div>
-
-      <div id="voice-set" hidden>
-        <audio controls id="voice-audio"></audio>
-        <p class="hint" id="voice-name"></p>
-      </div>
-
-      <div class="note" style="margin-top:22px">
-        <b>What works best:</b> 8–12 seconds of continuous speech, no music, no long
-        pauses, nothing near clipping. A cut from a voiceover you already delivered
-        beats anything recorded fresh.
-      </div>
-    </div>
-
-    <div class="flow-nav">
-      <span></span>
-      <button class="btn btn-primary" data-go="lab">Continue to tuning</button>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════ 2 · TUNE -->
-  <!-- A conversation, not a control panel. You describe what is wrong the way
-       you would to a person, it moves the settings and hands back a new take.
-       The parameters are still visible on the right, because knowing WHICH
-       number moved is what stops this being a slot machine. -->
-  <section class="view" data-view="lab">
-    <div class="page-head">
-      <h2>Tune the read</h2>
-      <p class="sub">Say what is wrong in plain English. It changes the settings, renders a new sample, and you listen. Repeat until it sounds right, then save it.</p>
-    </div>
-
+  <!-- ═══════════════════════════════════════════════ STUDIO -->
+  <section class="view is-active" data-view="studio">
     <div class="tune">
-      <div class="card chat-card" id="lab-card">
-        <div class="chat" id="lab-chat">
-          <div class="empty" id="lab-empty">Loading the test line…</div>
+      <div class="card chat-card" id="chat-card">
+        <div class="chat" id="chat">
+          <div class="empty" id="chat-empty">Starting up…</div>
         </div>
-        <div class="chips" id="lab-chips">
-          <button class="chip">too flat</button>
-          <button class="chip">too expressive</button>
-          <button class="chip">feels bit fast</button>
-          <button class="chip">too slow</button>
-          <button class="chip">false pauses</button>
-          <button class="chip">no natural gaps</button>
-        </div>
+
+        <div class="attached" id="attached" hidden></div>
+
+        <div class="chips" id="chips" hidden></div>
+
         <div class="composer">
-          <textarea id="lab-fb" rows="1" placeholder="what is wrong with the read?"></textarea>
+          <textarea id="chat-input" rows="1"
+            placeholder="paste a script, say what is wrong with a take, or ask for a change"></textarea>
           <div class="composer-tools">
-            <span class="agent-tag">Voice coach</span>
-            <select id="lab-mode" class="mini-select" title="What to do with what you typed">
-              <option value="feedback">Fix the read</option>
-              <option value="text">Read this line</option>
-            </select>
+            <button class="icon-btn" id="btn-attach" title="Attach a clip, a screenshot or a file"><i data-i="clip"></i></button>
+            <input type="file" id="attach-file" multiple hidden>
+            <span class="agent-tag">Claude agent</span>
+            <select id="model-pick" class="mini-select" title="Which model answers"></select>
+            <label class="mini-toggle" title="On: every edit asks first. Off: it edits, then tells you.">
+              <input type="checkbox" id="confirm-calls" checked><span></span>Confirm calls
+            </label>
             <span class="grow"></span>
-            <button class="send-btn" id="btn-lab-send" title="Send"><i data-i="up"></i></button>
+            <button class="send-btn" id="btn-send" title="Send"><i data-i="up"></i></button>
           </div>
         </div>
       </div>
 
+      <!-- State, not a step. What the conversation is currently working on. -->
       <aside class="tune-side">
         <div class="card">
-          <h3>This voice</h3>
-          <div class="field">
-            <label for="prof">Profile name</label>
+          <h3>Voice</h3>
+          <div class="ref" id="ref-box">
+            <div class="ref-empty" id="ref-empty">
+              No reference yet — drop an audio clip into the chat.
+            </div>
+            <div id="ref-set" hidden>
+              <audio controls id="ref-audio"></audio>
+              <p class="hint" id="ref-name"></p>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:18px">
+            <label for="prof">Profile</label>
             <input id="prof" type="text" value="explaintory">
           </div>
+
           <div class="params" id="params"></div>
+
           <div class="tune-acts">
-            <button class="btn w-full" id="btn-sample">Render a first take</button>
+            <button class="btn w-full" id="btn-take">Render a take</button>
             <button class="btn w-full" id="btn-revert">Undo last change</button>
-            <!-- Saving is the one thing it never does on its own. -->
             <button class="btn btn-primary w-full" id="btn-lock">Save this voice</button>
           </div>
         </div>
-      </aside>
-    </div>
 
-    <div class="flow-nav">
-      <button class="btn" data-go="voice">Back</button>
-      <button class="btn btn-primary" data-go="render">Continue to script</button>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════ 3 · SCRIPT -->
-  <section class="view" data-view="render">
-    <div class="card">
-      <h2>Paste the script</h2>
-      <p class="sub">A line on its own with three words or fewer and no full stop becomes a chapter header.</p>
-
-      <div class="field">
-        <label for="title">Video title</label>
-        <input id="title" type="text" placeholder="Every Drug Used in War Explained">
-      </div>
-      <div class="field">
-        <label for="script">Script</label>
-        <textarea id="script" rows="16" placeholder="Paste it here."></textarea>
-        <p class="hint" id="script-stat">0 words · about 0 chunks</p>
-      </div>
-    </div>
-
-    <div class="flow-nav">
-      <button class="btn" data-go="lab">Back</button>
-      <button class="btn btn-primary" id="btn-render">Render voiceover</button>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════ 4 · RESULT -->
-  <section class="view" data-view="result">
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:6px">
-        <h2 style="margin:0">Result</h2>
-        <span class="pill" id="render-pill">waiting</span>
-      </div>
-      <p class="sub">The full log is below. Anything that needs your ear is called out at the end.</p>
-
-      <div class="prog" id="render-prog" hidden>
-        <div class="prog-track"><div class="prog-fill" id="render-bar"></div></div>
-        <div class="prog-meta">
-          <span id="render-stage">starting…</span>
-          <span id="render-clock">0:00</span>
+        <div class="card" id="auth-card-wrap">
+          <h3>Claude</h3>
+          <p class="sub" id="auth-card" style="margin:0">Checking your sign-in…</p>
+          <div id="auth-actions" class="auth-actions" hidden>
+            <button class="btn btn-sm btn-primary" id="btn-login">Sign in</button>
+            <button class="btn btn-sm" id="btn-recheck">Check again</button>
+          </div>
         </div>
-      </div>
-
-      <div id="render-player" hidden style="margin-bottom:20px">
-        <audio controls id="render-audio"></audio>
-        <p class="hint" id="render-path"></p>
-      </div>
-
-      <pre class="log" id="render-log">Nothing rendered yet.</pre>
-    </div>
-
-    <div class="flow-nav">
-      <button class="btn" data-go="render">Back to script</button>
-      <span></span>
+      </aside>
     </div>
   </section>
 
@@ -183,9 +101,6 @@
       <p class="sub">Each value shows the failure that set it. These are not defaults from a docs page — change one only with a measurement.</p>
     </div>
 
-    <!-- Categories on the left, one panel at a time on the right. Seven
-         accordions stacked down the page meant scrolling past six things you
-         were not looking for to reach the seventh. -->
     <div class="split">
       <div class="split-nav" id="settings-nav"></div>
       <div class="split-body">
@@ -193,37 +108,6 @@
         <div class="flow-nav">
           <button class="btn" id="btn-reset">Reset to defaults</button>
           <button class="btn btn-primary" id="btn-save">Save settings</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════ ASSISTANT -->
-  <section class="view" data-view="assistant">
-    <div class="card">
-      <h2>Assistant</h2>
-      <p class="sub" id="auth-card">Checking your Claude sign-in…</p>
-      <div id="auth-actions" class="auth-actions" hidden>
-        <button class="btn btn-primary" id="btn-login">Sign in</button>
-        <button class="btn" id="btn-recheck">Check again</button>
-      </div>
-    </div>
-
-    <div class="card chat-card" id="chat-card">
-      <div class="chat" id="chat"><div class="empty">Ask for a change in plain English. Drop in a screenshot or a clip and it looks at that too.</div></div>
-      <div class="attached" id="attached" hidden></div>
-      <div class="composer">
-        <textarea id="chat-input" rows="1" placeholder="ask, edit, or drop in a screenshot or a clip"></textarea>
-        <div class="composer-tools">
-          <button class="icon-btn" id="btn-attach" title="Attach an image or a clip"><i data-i="clip"></i></button>
-          <input type="file" id="attach-file" multiple hidden>
-          <span class="agent-tag">Claude agent</span>
-          <select id="model-pick" class="mini-select" title="Which model answers"></select>
-          <label class="mini-toggle" title="On: every edit asks first. Off: it edits, then tells you.">
-            <input type="checkbox" id="confirm-calls" checked><span></span>Confirm calls
-          </label>
-          <span class="grow"></span>
-          <button class="send-btn" id="btn-send" title="Send"><i data-i="up"></i></button>
         </div>
       </div>
     </div>

@@ -276,8 +276,9 @@ audio { width: 100%; height: 44px; margin-top: 14px; }
 /* ── tune ───────────────────────────────────────────────────────────── */
 .tune { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 20px; align-items: start; }
 @media (max-width: 900px) { .tune { grid-template-columns: 1fr; } }
-.tune .chat-card { height: calc(100vh - 250px); min-height: 480px; }
+.tune .chat-card { height: auto; min-height: 420px; }
 .tune-side .card { padding: 22px 22px 24px; }
+.tune-side .card:last-child { margin-bottom: 0; }
 .tune-acts { display: flex; flex-direction: column; gap: 9px; margin-top: 24px; }
 .tune-side .params { margin-top: 20px; }
 .tune-side .field { margin-bottom: 0; }
@@ -294,7 +295,7 @@ audio { width: 100%; height: 44px; margin-top: 14px; }
 .msg-bad { color: var(--amber); }
 .msg audio { width: 100%; max-width: 460px; height: 44px; margin-top: 10px; }
 
-#lab-chips { width: 100%; max-width: 816px; margin: 0 auto; padding: 0 0 12px; }
+#chips { width: 100%; max-width: 816px; margin: 0 auto; padding: 0 0 12px; }
 
 /* ── progress ────────────────────────────────────────────────────────
    Two kinds. A full render logs "chunk 7/42", so that bar is real and the
@@ -323,6 +324,32 @@ audio { width: 100%; height: 44px; margin-top: 14px; }
   font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums;
 }
 .took { margin-top: 8px; font-size: 12.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* ── in-message cards ────────────────────────────────────────────────
+   A reply can carry a fact table or a decision. Kept flat rather than boxed —
+   a card inside a message that is already inside a panel is two frames too
+   many. */
+.brief { margin: 4px 0 2px; max-width: 460px; }
+.brief-row {
+  display: flex; justify-content: space-between; gap: 18px;
+  padding: 7px 0; border-bottom: 1px solid var(--line);
+  font-size: 13.5px; color: var(--muted);
+}
+.brief-row:last-child { border-bottom: 0; }
+.brief-row b { color: var(--text); font-weight: 560; font-variant-numeric: tabular-nums; }
+.brief-heads { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 0 4px; }
+.brief-heads span {
+  font-family: var(--mono); font-size: 12px; color: var(--accent);
+  background: var(--accent-dim); border: 1px solid var(--accent-line);
+  border-radius: 6px; padding: 4px 8px;
+}
+.acts { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+.acts .btn:disabled { opacity: .35; }
+
+/* the reference clip, in the panel */
+.ref-empty { color: var(--faint); font-size: 13.5px; line-height: 1.6; }
+#ref-audio { height: 38px; margin-top: 0; }
+#ref-name { margin-top: 8px; font-size: 12.5px; }
 
 /* The line being tuned against, quoted so it is obvious it is the words and
    not an instruction. */
@@ -436,18 +463,16 @@ input[type=range]::-webkit-slider-runnable-track {
 /* The two chat screens own the window height: header at the top, transcript
    taking whatever is left, composer pinned under it. Fixed heights meant the
    composer fell off the bottom edge as soon as anything sat above it. */
-.view[data-view="assistant"].is-active,
-.view[data-view="lab"].is-active { display: flex; flex-direction: column; height: calc(100vh - 78px); }
-.view[data-view="assistant"] .chat-card,
-.view[data-view="lab"] .chat-card { flex: 1; height: auto; min-height: 0; }
+.view[data-view="studio"].is-active { display: flex; flex-direction: column; height: calc(100vh - 78px); }
+.view[data-view="studio"] .chat-card { flex: 1; height: auto; min-height: 0; }
 /* stretch, not start: the chat column has to fill the row or the composer
    floats halfway up the window whenever the transcript is short. */
-.view[data-view="lab"] .tune { flex: 1; min-height: 0; align-items: stretch; }
-.view[data-view="lab"] .tune-side { align-self: start; }
-.view[data-view="lab"] .tune-side { max-height: 100%; overflow-y: auto; }
+.view[data-view="studio"] .tune { flex: 1; min-height: 0; align-items: stretch; }
+.view[data-view="studio"] .tune-side { align-self: start; max-height: 100%; overflow-y: auto; }
+
 /* The status strip lines up with the conversation instead of spanning a
    1920 px window on its own. */
-.view[data-view="assistant"] > .card { width: 100%; max-width: 816px; margin: 0 auto 8px; }
+
 
 /* ── chat ────────────────────────────────────────────────────────────
    Rookcast's shape. The transcript fills the window rather than sitting in a
@@ -472,7 +497,10 @@ input[type=range]::-webkit-slider-runnable-track {
   align-content: start; row-gap: 30px;
 }
 .chat > * { grid-column: 2; }
-.msg { font-size: 15.5px; line-height: 1.78; white-space: pre-wrap; }
+/* NOT pre-wrap. A reply can be a fact table or a set of buttons, and pre-wrap
+   renders the indentation of the HTML that builds them as blank lines. Plain
+   text keeps its line breaks by being converted, not by CSS. */
+.msg { font-size: 15.5px; line-height: 1.78; }
 .msg.me {
   justify-self: end; max-width: 78%;
   background: var(--accent-dim); border: 1px solid var(--accent-line);
