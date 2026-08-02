@@ -12,6 +12,11 @@ const ICONS = {
   undo:'M3 7v6h6M3 13a9 9 0 1 0 3-7', lock:'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
   save:'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8',
   send:'M22 2 11 13M22 2l-7 20-4-9-9-4z', chev:'M9 18l6-6-6-6',
+  clip:'M21.4 11.05 12.25 20.2a6 6 0 0 1-8.49-8.49l9.2-9.19a4 4 0 0 1 5.65 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48',
+  close:'M18 6 6 18M6 6l12 12',
+  image:'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M8.5 9.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+  wave:'M3 12h2l2-7 3 16 3-11 2 5h6',
+  file:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6',
 };
 function drawIcons(root = document) {
   $$('i[data-i]', root).forEach(el => {
@@ -257,23 +262,85 @@ $('#btn-save').onclick = async () => {
 $('#btn-reset').onclick = async () => { paintSettings(await api('/api/settings/reset', {})); toast('Reset — not saved yet'); };
 
 /* ── assistant ──────────────────────────────────────────────────────── */
-api('/api/auth').then(a => {
+function paintAuth(a) {
   $('#auth-card').innerHTML = a.ok
-    ? 'Signed in with your Claude subscription. Claude can read and edit this app, and is confined to its own folder with networking off.'
+    ? a.detail
     : `<b>Not ready.</b><br><span style="white-space:pre-wrap">${a.detail}</span>`;
-});
+  // The Sign in button only appears when signing in is actually the problem.
+  // Offering it for a missing CLI would just fail differently.
+  $('#auth-actions').hidden = a.ok;
+  $('#btn-login').hidden = !a.can_login;
+}
+const refreshAuth = () => api('/api/auth').then(paintAuth).catch(() => {});
+refreshAuth();
+$('#btn-login').onclick = async () => {
+  const j = await api('/api/auth/login', {});
+  toast(j.message);
+};
+$('#btn-recheck').onclick = () => refreshAuth().then(() => toast('Checked'));
+/* Attachments. Uploaded on drop rather than on send, so an unreadable file or a
+   name clash surfaces while you are still typing — not after you hit Send. */
+let ATTACHED = [];
+const ICON_FOR = { image: 'image', audio: 'wave', file: 'file' };
+
+function paintAttached() {
+  const box = $('#attached');
+  box.hidden = !ATTACHED.length;
+  box.innerHTML = ATTACHED.map((a, i) => `
+    <span class="att" title="${a.path}">
+      <i data-i="${ICON_FOR[a.kind] || 'file'}"></i>
+      <b>${a.name}</b>
+      <span class="att-kind">${a.kind === 'audio' ? 'measured, not heard' : a.kind}</span>
+      <button data-drop="${i}" aria-label="Remove"><i data-i="close"></i></button>
+    </span>`).join('');
+  drawIcons(box);
+  $$('#attached [data-drop]').forEach(b => b.onclick = async () => {
+    const [gone] = ATTACHED.splice(+b.dataset.drop, 1);
+    paintAttached();
+    api('/api/assistant/detach', { path: gone.path }).catch(() => {});
+  });
+}
+
+async function attach(files) {
+  for (const f of files) {
+    const fd = new FormData(); fd.append('file', f);
+    try {
+      const r = await fetch('/api/assistant/attach', { method: 'POST', body: fd });
+      if (!r.ok) throw new Error(await r.text());
+      ATTACHED.push(await r.json());
+      paintAttached();
+    } catch (e) { toast(`${f.name} — ${e}`); }
+  }
+}
+
+$('#btn-attach').onclick = () => $('#attach-file').click();
+$('#attach-file').onchange = e => { attach(e.target.files); e.target.value = ''; };
+
+const chatCard = $('#chat-card');
+['dragenter', 'dragover'].forEach(ev => chatCard.addEventListener(ev, e => {
+  e.preventDefault(); chatCard.classList.add('over');
+}));
+['dragleave', 'drop'].forEach(ev => chatCard.addEventListener(ev, e => {
+  e.preventDefault(); chatCard.classList.remove('over');
+}));
+chatCard.addEventListener('drop', e => e.dataTransfer.files.length && attach(e.dataTransfer.files));
+
 async function send() {
   const input = $('#chat-input'), text = input.value.trim();
-  if (!text) return;
+  if (!text && !ATTACHED.length) return;
   input.value = '';
   const chat = $('#chat');
   if (chat.firstElementChild?.classList.contains('empty')) chat.innerHTML = '';
-  chat.insertAdjacentHTML('beforeend', `<div class="msg me">${text}</div>`);
+  const files = ATTACHED.map(a => a.path);
+  const shown = ATTACHED.map(a => `<span class="att-sent">${a.name}</span>`).join('');
+  ATTACHED = []; paintAttached();
+  chat.insertAdjacentHTML('beforeend',
+    `<div class="msg me">${shown ? `<div class="att-row">${shown}</div>` : ''}${text}</div>`);
   const bubble = document.createElement('div');
   bubble.className = 'msg ai'; bubble.textContent = '…';
   chat.append(bubble); chat.scrollTop = chat.scrollHeight;
   try {
-    const j = await api('/api/assistant', { message: text, mode: $('#perm').value });
+    const j = await api('/api/assistant', { message: text, files, mode: $('#perm').value });
     bubble.textContent = j.reply || '(no output)';
   } catch (e) { bubble.textContent = String(e); }
   chat.scrollTop = chat.scrollHeight;

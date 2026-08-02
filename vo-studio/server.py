@@ -25,11 +25,39 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
                                StreamingResponse)
 
 from vostudio import config, pipeline
-from vostudio.assistant import ask, check_auth
+from vostudio.assistant import ask, check_auth, start_login
 from vostudio.voice_profile import VoiceProfile, apply_feedback
 
 ROOT = Path(__file__).resolve().parent
 UI = ROOT / "ui"
+
+# 1 GB. A full-length raw render or a long screen recording is the point -- the
+# assistant is most useful on the big file you cannot describe in words.
+MAX_UPLOAD = 1024 * 1024 * 1024
+CHUNK = 1 << 20
+
+
+async def save_upload(file: UploadFile, dest: Path, limit: int = MAX_UPLOAD) -> int:
+    """
+    Stream an upload to disk, refusing anything over the limit.
+
+    Chunked, not `dest.write_bytes(await file.read())`: read() materialises the
+    whole upload in memory first, so a 1 GB file costs 1 GB of RAM on top of the
+    model already loaded on the GPU box.
+    """
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    total = 0
+    with open(dest, "wb") as out:
+        while chunk := await file.read(CHUNK):
+            total += len(chunk)
+            if total > limit:
+                out.close()
+                dest.unlink(missing_ok=True)
+                raise ValueError(f"{file.filename} is over the {limit / 1e9:.0f} GB limit")
+            out.write(chunk)
+    return total
+
+
 SETTINGS = config.Settings.load()
 config.ensure_dirs()
 
@@ -69,9 +97,11 @@ def hardware():
 # ------------------------------------------------------------------ voice
 @app.post("/api/voice")
 async def set_voice(file: UploadFile = File(...)):
-    dest = config.VOICES_DIR / "reference" / file.filename
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(await file.read())
+    dest = config.VOICES_DIR / "reference" / Path(file.filename or "voice").name
+    try:
+        await save_upload(file, dest)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, 413)
 
     wav = dest.with_suffix(".probe.wav")
     import subprocess
@@ -335,12 +365,103 @@ def reset_settings(payload: dict = None):
 @app.get("/api/auth")
 def auth():
     s = check_auth()
-    return {"ok": s.ok, "detail": s.detail}
+    return {"ok": s.ok, "detail": s.detail, "can_login": s.can_login}
+
+
+@app.post("/api/auth/login")
+def auth_login(payload: dict = None):
+    ok, message = start_login()
+    return {"ok": ok, "message": message}
+
+
+# Inside the app root on purpose. The assistant is sandboxed to that folder, so
+# a file dropped anywhere else is a path it is not allowed to open — attaching it
+# would look like it worked and then quietly fail at the Read.
+ATTACH_DIR = ROOT / "attachments"
+
+IMAGE_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+AUDIO_EXT = {".wav", ".mp3", ".flac", ".m4a", ".aac", ".ogg", ".opus"}
+
+
+def _describe(path: Path) -> dict:
+    """What this file is, and what Claude can honestly do with it."""
+    ext = path.suffix.lower()
+    if ext in IMAGE_EXT:
+        return {"kind": "image",
+                "note": "an image — open it with the Read tool, you can see it"}
+    if ext in AUDIO_EXT:
+        detail = ""
+        try:
+            import subprocess
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries",
+                 "format=duration:stream=sample_rate,channels",
+                 "-of", "default=nw=1:nk=1", str(path)],
+                capture_output=True, text=True, timeout=20)
+            vals = [v for v in probe.stdout.split() if v]
+            if vals:
+                detail = " (" + ", ".join(vals[:3]) + ")"
+        except Exception:
+            pass
+        return {"kind": "audio",
+                # Stated plainly because the failure is otherwise invisible: a
+                # model that cannot hear will happily describe audio anyway.
+                "note": (f"audio{detail} — you CANNOT listen to it. Measure it "
+                         "instead: ffprobe, soundfile, or the checks in vostudio/")}
+    return {"kind": "file", "note": "a file — read it with the Read tool"}
+
+
+@app.post("/api/assistant/attach")
+async def assistant_attach(file: UploadFile = File(...)):
+    ATTACH_DIR.mkdir(parents=True, exist_ok=True)
+    raw = Path(file.filename or "file").name
+    safe = "".join(c for c in raw if c.isalnum() or c in " .-_()").strip() or "file"
+    dest = ATTACH_DIR / safe
+    n = 1
+    while dest.exists():                       # never clobber an earlier attachment
+        dest = ATTACH_DIR / f"{Path(safe).stem}-{n}{Path(safe).suffix}"
+        n += 1
+    try:
+        size = await save_upload(file, dest)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, 413)
+    info = _describe(dest)
+    return {"name": dest.name, "path": str(dest), "size": size, **info}
+
+
+@app.post("/api/assistant/detach")
+def assistant_detach(payload: dict):
+    """Removing a chip deletes the file — attachments are context, not a library."""
+    try:
+        p = Path(payload.get("path", "")).resolve()
+        p.relative_to(ATTACH_DIR.resolve())    # refuse anything outside the folder
+        p.unlink(missing_ok=True)
+    except (ValueError, OSError):
+        pass
+    return {"ok": True}
 
 
 @app.post("/api/assistant")
 async def assistant(payload: dict):
+    # Only paths inside ATTACH_DIR. The client sends these back, and a client is
+    # not a place to enforce where the agent may read from.
+    files = []
+    for raw in payload.get("files") or []:
+        try:
+            p = Path(raw).resolve()
+            p.relative_to(ATTACH_DIR.resolve())
+            if p.is_file():
+                files.append(p)
+        except (ValueError, OSError):
+            continue
+
+    message = payload.get("message", "")
+    if files:
+        listing = "\n".join(f"  {p}  — {_describe(p)['note']}" for p in files)
+        message = (f"Sapro attached these files to this message:\n{listing}\n\n"
+                   f"{message}")
+
     out: list[str] = []
-    await ask(payload.get("message", ""), ROOT, on_text=out.append,
+    await ask(message, ROOT, on_text=out.append,
               permission_mode=payload.get("mode", "default"))
     return {"reply": "".join(out)}

@@ -42,11 +42,45 @@ class AuthStatus:
     detail: str
     api_key_shadowing: bool = False
     cli_found: bool = False
+    # True when the only thing missing is the sign-in — the one case the app can
+    # actually do something about, so the UI offers a button instead of prose.
+    can_login: bool = False
+
+
+def find_cli() -> str | None:
+    """The CLI on PATH, or the copy setup put in .\\runtime\\node."""
+    found = shutil.which("claude") or shutil.which("claude.cmd")
+    if found:
+        return found
+    local = Path(__file__).resolve().parent.parent / "runtime" / "node"
+    for name in ("claude.cmd", "claude"):
+        if (local / name).exists():
+            return str(local / name)
+    return None
+
+
+def logged_in() -> bool:
+    """
+    Is there a subscription login on this machine?
+
+    Checked from the credentials on disk rather than by making a request. The
+    alternative -- send a probe prompt and see if it fails -- spends tokens to
+    answer a question the filesystem already answers, on every page load.
+    """
+    home = Path.home()
+    if (home / ".claude" / ".credentials.json").exists():
+        return True
+    try:
+        import json
+        raw = json.loads((home / ".claude.json").read_text(encoding="utf-8"))
+        return bool(raw.get("oauthAccount") or raw.get("userID"))
+    except Exception:
+        return False
 
 
 def check_auth() -> AuthStatus:
     """Run before offering the assistant. Reports rather than guesses."""
-    cli = shutil.which("claude") or shutil.which("claude.cmd")
+    cli = find_cli()
     key = os.environ.get("ANTHROPIC_API_KEY")
 
     if key is not None:
@@ -64,13 +98,53 @@ def check_auth() -> AuthStatus:
         return AuthStatus(
             ok=False,
             detail=("The Claude Code CLI was not found. The SDK drives it, so the "
-                    "assistant cannot start without it:\n\n"
-                    "    npm install -g @anthropic-ai/claude-code\n"
-                    "    claude login"),
+                    "assistant cannot start without it. Open the app folder and run:\n\n"
+                    "    runtime\\node\\npm.cmd install -g @anthropic-ai/claude-code "
+                    "--prefix runtime\\node"),
             cli_found=False)
 
-    return AuthStatus(True, "Claude Code CLI found; using your subscription login.",
+    if not logged_in():
+        # This was the bug behind "Signed in with your Claude subscription" sitting
+        # above a chat that answered "Not logged in - Please run /login": the CLI
+        # being present was treated as the CLI being signed in.
+        return AuthStatus(
+            ok=False,
+            detail=("Not signed in yet. Press Sign in — a terminal opens running "
+                    "Claude Code. Type /login in it, finish in the browser, then "
+                    "close it and press Check again.\n\n"
+                    "It is your normal Claude subscription. There is no API key and "
+                    "you should not create one."),
+            cli_found=True, can_login=True)
+
+    return AuthStatus(True, "Signed in with your Claude subscription. Claude can read "
+                            "and edit this app, and is confined to its own folder with "
+                            "networking off.",
                       cli_found=True)
+
+
+def start_login() -> tuple[bool, str]:
+    """
+    Open a terminal running the CLI so the browser sign-in can happen.
+
+    A visible console, deliberately. /login is an interactive command inside
+    Claude Code -- there is no `claude login` subcommand to run silently -- so
+    the sign-in cannot be driven from behind the UI. Hiding the window would
+    just mean nothing happens.
+    """
+    cli = find_cli()
+    if not cli:
+        return False, "The Claude Code CLI was not found."
+    try:
+        import subprocess
+        if os.name == "nt":
+            subprocess.Popen(["cmd", "/k", cli],
+                             creationflags=subprocess.CREATE_NEW_CONSOLE)
+        else:
+            subprocess.Popen(["x-terminal-emulator", "-e", cli])
+        return True, ("A terminal opened. Type /login there, finish in the browser, "
+                      "then close it and press Check again.")
+    except Exception as exc:
+        return False, f"Could not open a terminal: {type(exc).__name__}: {exc}"
 
 
 def build_options(app_root: Path, permission_mode: str = "default",

@@ -337,8 +337,43 @@ input[type=range]::-webkit-slider-thumb {
 .msg { max-width: 74%; padding: 13px 17px; border-radius: var(--r); font-size: 14.5px; line-height: 1.7; white-space: pre-wrap; }
 .msg.me { align-self: flex-end; background: var(--text); color: var(--bg); }
 .msg.ai { align-self: flex-start; background: var(--raise-2); border: 1px solid var(--line); color: var(--muted); }
-.composer { display: flex; gap: 10px; padding: 18px 22px; border-top: 1px solid var(--line); }
+.composer { display: flex; align-items: center; gap: 10px; padding: 18px 22px; border-top: 1px solid var(--line); }
 .composer input { flex: 1; }
+.btn-icon { padding: 12px; flex: none; }
+.btn-icon i { width: 17px; height: 17px; color: var(--muted); }
+.btn-icon:hover i { color: var(--text); }
+
+/* ── attachments ────────────────────────────────────────────────────
+   Staged above the composer rather than inside the message, so you can see
+   what is going with the question before you ask it — and drop one that
+   should not be. */
+.attached {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 14px 22px 0; border-top: 1px solid var(--line);
+}
+.att {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--raise-2); border: 1px solid var(--line-lit);
+  border-radius: 999px; padding: 6px 8px 6px 12px; font-size: 13px; max-width: 100%;
+}
+.att i { width: 14px; height: 14px; color: var(--muted); flex: none; }
+.att b { font-weight: 520; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.att-kind { color: var(--faint); font-size: 12px; }
+.att button {
+  background: none; border: 0; padding: 2px; cursor: pointer; color: var(--faint);
+  display: grid; place-items: center; border-radius: 50%;
+}
+.att button:hover { color: var(--text); background: var(--raise-3); }
+
+.att-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.att-sent {
+  background: rgba(0,0,0,.14); border-radius: 6px;
+  padding: 3px 8px; font-size: 12px; font-weight: 520;
+}
+
+/* Drop anywhere on the panel, not onto a small target. */
+.chat-card.over { border-color: var(--faint); }
+.chat-card.over .chat { background: var(--raise-2); }
 
 /* ── hardware chip ──────────────────────────────────────────────────── */
 .hw {
