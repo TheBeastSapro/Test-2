@@ -475,6 +475,8 @@ MODELS = [
      "note": "Strongest. Use it for the changes you would not want to review twice."},
     {"id": "claude-haiku-4-5-20251001", "label": "Haiku 4.5",
      "note": "Quickest. Good for reading files and answering, not for edits."},
+    {"id": "claude-fable-5", "label": "Fable 5",
+     "note": "The writing model. For script and copy, not for editing code."},
 ]
 
 

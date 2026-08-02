@@ -27,6 +27,11 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* An inline display: wins over the UA rule for [hidden], so a hidden element
+   with style="display:flex" stays on screen. That is exactly how the Sign in
+   button survived signing in. */
+[hidden] { display: none !important; }
+
 :root {
   /* Rookcast's palette: near-black with a green cast rather than a blue one,
      and mint as the only accent. The violet went with it -- two accents is how
@@ -507,6 +512,8 @@ input[type=range]::-webkit-slider-runnable-track {
 .send-btn:hover { filter: brightness(1.08); }
 .send-btn:active { transform: translateY(1px); }
 .send-btn:disabled { opacity: .45; cursor: default; }
+
+.auth-actions { display: flex; gap: 10px; margin: 0 0 4px; }
 /* Quiet round button that lives inside the composer box. */
 .icon-btn {
   width: 34px; height: 34px; flex: none; border: 0; border-radius: 9px;
