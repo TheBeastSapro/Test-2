@@ -445,15 +445,23 @@ input[type=range]::-webkit-slider-runnable-track {
   transition: border-color .16s var(--ease);
 }
 .composer:focus-within { border-color: var(--accent-line); }
-.composer input[type=text] {
-  flex: 1; background: none; border: 0; padding: 12px 8px; font-size: 15px;
-}
-.composer input[type=text]:focus { outline: 0; box-shadow: none; border: 0; }
 
-/* The assistant composer is a column: the field, then the controls that decide
-   how the turn is answered. Which model and whether it asks first belong here
-   next to Send, not in a card further up the page you set once and forget. */
-.composer:has(.composer-tools) { flex-direction: column; align-items: stretch; padding: 4px 6px 6px; }
+/* A writing box, not a search field. Rookcast's is several lines tall before
+   you type a word, which is what tells you a paragraph is welcome here — a
+   one-line input says "keyword". It grows with the text and stops at 220 px so
+   a long paste cannot push the send button off screen. */
+.composer textarea {
+  width: 100%; flex: 1; resize: none; overflow-y: auto;
+  background: none; border: 0; border-radius: 0;
+  padding: 13px 10px 8px; min-height: 62px; max-height: 220px;
+  font: inherit; font-size: 15px; line-height: 1.62; color: var(--text);
+}
+.composer textarea:focus { outline: 0; box-shadow: none; border: 0; }
+
+/* The field, then the controls that decide how the turn is answered. Which
+   model and whether it asks first belong here next to Send, not in a card
+   further up the page you set once and forget. */
+.composer { flex-direction: column; align-items: stretch; padding: 4px 6px 6px; }
 .composer-tools { display: flex; align-items: center; gap: 8px; padding: 0 2px 0 0; }
 .grow { flex: 1; }
 

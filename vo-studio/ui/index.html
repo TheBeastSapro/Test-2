@@ -77,8 +77,12 @@
           <div class="empty">Press <b>Render a first take</b> to hear where the voice is starting from.</div>
         </div>
         <div class="composer">
-          <input id="lab-fb" type="text" placeholder="talk to it — what is wrong with the read?">
-          <button class="send-btn" id="btn-lab-send" title="Send"><i data-i="up"></i></button>
+          <textarea id="lab-fb" rows="1" placeholder="talk to it — what is wrong with the read? Enter sends, Shift+Enter for a new line"></textarea>
+          <div class="composer-tools">
+            <span class="agent-tag">Voice coach</span>
+            <span class="grow"></span>
+            <button class="send-btn" id="btn-lab-send" title="Send"><i data-i="up"></i></button>
+          </div>
         </div>
         <div class="chips" id="lab-chips">
           <button class="chip">too flat</button>
@@ -197,7 +201,7 @@
       <div class="chat" id="chat"><div class="empty">Ask for a change in plain English. Drop in a screenshot or a clip and it looks at that too.</div></div>
       <div class="attached" id="attached" hidden></div>
       <div class="composer">
-        <input id="chat-input" type="text" placeholder="ask, or drop in a screenshot or a clip">
+        <textarea id="chat-input" rows="1" placeholder="ask, edit, or drop in a screenshot or a clip"></textarea>
         <div class="composer-tools">
           <button class="icon-btn" id="btn-attach" title="Attach an image or a clip"><i data-i="clip"></i></button>
           <input type="file" id="attach-file" multiple hidden>

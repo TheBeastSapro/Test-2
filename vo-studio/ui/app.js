@@ -222,7 +222,7 @@ $$('#lab-chips .chip').forEach(c => c.onclick = () => {
 async function labSend() {
   const input = $('#lab-fb'), fb = input.value.trim();
   if (!fb) return;
-  input.value = '';
+  input.value = ''; input.style.height = 'auto';
   labSay(fb, 'me');
   const bubble = labSay('<span class="msg-wait">…</span>');
   try {
@@ -240,7 +240,6 @@ async function labSend() {
   } catch (e) { bubble.innerHTML = `<span class="msg-bad">${e}</span>`; }
 }
 $('#btn-lab-send').onclick = labSend;
-$('#lab-fb').addEventListener('keydown', e => e.key === 'Enter' && labSend());
 
 $('#btn-lock').onclick = async () => {
   const j = await api('/api/lab/lock', { name: $('#prof').value });
@@ -429,7 +428,7 @@ chatCard.addEventListener('drop', e => e.dataTransfer.files.length && attach(e.d
 async function send() {
   const input = $('#chat-input'), text = input.value.trim();
   if (!text && !ATTACHED.length) return;
-  input.value = '';
+  input.value = ''; input.style.height = 'auto';
   const chat = $('#chat');
   if (chat.firstElementChild?.classList.contains('empty')) chat.innerHTML = '';
   const files = ATTACHED.map(a => a.path);
@@ -451,7 +450,27 @@ async function send() {
   chat.scrollTop = chat.scrollHeight;
 }
 $('#btn-send').onclick = send;
-$('#chat-input').addEventListener('keydown', e => e.key === 'Enter' && send());
+
+/* Enter sends, Shift+Enter breaks the line — the convention every chat uses,
+   and the reason the box is a textarea rather than an input. Auto-grow is
+   capped in CSS so a pasted paragraph scrolls instead of shoving Send away. */
+function wireComposer(el, onSend) {
+  const grow = () => {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 220) + 'px';
+  };
+  el.addEventListener('input', grow);
+  el.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    e.preventDefault();
+    onSend();
+    // Back to its resting height, or the box keeps the size of the message
+    // that just left it.
+    requestAnimationFrame(() => { el.style.height = 'auto'; });
+  });
+}
+wireComposer($('#chat-input'), send);
+wireComposer($('#lab-fb'), labSend);
 
 drawIcons();
 loadProfile().catch(() => {});
