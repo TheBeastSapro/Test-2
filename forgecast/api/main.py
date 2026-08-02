@@ -12,8 +12,10 @@ from ..config import get_settings
 from ..db import init_db
 from ..providers import ProviderError
 from . import runner
+from .local import router as local_router
 from .media import router as media_router
 from .routes_api import router as api_router
+from .routes_preview import router as preview_router
 from .routes_web import router as web_router
 
 log = logging.getLogger("forgecast.api")
@@ -41,10 +43,18 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router)
     app.include_router(web_router)
+    # The studio: watch a run before it renders. Registered after the web routes so
+    # `/runs/{id}/preview` is matched by its own handler rather than swallowed by the
+    # run detail route's path converter.
+    app.include_router(preview_router)
     # Artifacts are served through signed, expiring, per-user URLs rather than a
     # static mount of the storage directory. See `api.media` — a plain mount hands
     # every run's video to anyone who can guess a path.
     app.include_router(media_router)
+    # Desktop-only routes. They are registered unconditionally and refuse themselves
+    # when `local_mode` is off, so that whether a route exists does not depend on the
+    # order in which settings were loaded.
+    app.include_router(local_router)
     settings.storage_dir.mkdir(parents=True, exist_ok=True)
 
     @app.exception_handler(ProviderError)
@@ -56,7 +66,13 @@ def create_app() -> FastAPI:
 
     @app.get("/healthz", include_in_schema=False)
     async def healthz() -> dict:
-        return {"ok": True, "provider_mode": settings.provider_mode}
+        from ..render.ffmpeg import ffmpeg_available
+
+        return {
+            "ok": True,
+            "provider_mode": settings.provider_mode,
+            "ffmpeg": ffmpeg_available(),
+        }
 
     return app
 

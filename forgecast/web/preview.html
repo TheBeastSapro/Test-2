@@ -1,0 +1,614 @@
+{% extends "base.html" %}
+{% block title %}Studio · run {{ run.id }} · Forgecast{% endblock %}
+
+{% block head %}
+<style>
+  .studio { display: grid; grid-template-columns: 320px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 1000px) { .studio { grid-template-columns: 1fr; } }
+
+  /* ------------------------------------------------------------------ plan */
+  .plan { background: var(--panel); border: 1px solid var(--line);
+          border-radius: var(--radius); overflow: hidden; position: sticky; top: 74px; }
+  .plan header { display: flex; align-items: baseline; gap: 8px; padding: 11px 14px;
+                 border-bottom: 1px solid var(--line); background: var(--panel-2);
+                 position: static; }
+  .plan h3 { margin: 0; font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+             color: var(--muted); font-weight: 600; }
+  .plan .count { margin-left: auto; font-size: 12px; color: var(--muted); }
+  .plan .bar { height: 2px; background: var(--line); }
+  .plan .bar i { display: block; height: 100%; background: var(--ok); width: 0;
+                 transition: width .35s ease; }
+  .plan ol { list-style: none; margin: 0; padding: 6px 0; max-height: 62vh; overflow-y: auto; }
+  .plan li { display: flex; gap: 9px; align-items: flex-start; padding: 6px 14px;
+             font-size: 13.5px; line-height: 1.4; }
+  .plan .mark { flex: none; width: 16px; text-align: center; margin-top: 1px; }
+  .plan li.completed .label, .plan li.skipped .label {
+    text-decoration: line-through; color: var(--muted); }
+  .plan li.completed .mark { color: var(--ok); }
+  .plan li.skipped   .mark { color: var(--muted); }
+  .plan li.running   .mark { color: var(--accent); }
+  .plan li.running   .label { color: var(--text); }
+  .plan li.failed    .mark, .plan li.failed .label { color: var(--err); }
+  .plan li.awaiting_approval .mark, .plan li.awaiting_approval .label { color: var(--gate); }
+  .plan li.pending .label, .plan li.ready .label { color: var(--muted); }
+  .plan li .spin { display: inline-block; animation: spin 1.1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------------------------------------------------------------- player */
+  .stage { background: var(--panel); border: 1px solid var(--line);
+           border-radius: var(--radius); overflow: hidden; }
+  .stage header { display: flex; align-items: center; gap: 10px; padding: 9px 13px;
+                  border-bottom: 1px solid var(--line); background: var(--panel-2);
+                  position: static; }
+  .stage header .name { font-size: 13px; font-weight: 600; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .dot.live { background: var(--ok); box-shadow: 0 0 7px var(--ok); }
+  #frame { position: relative; width: 100%; background: #000; overflow: hidden; }
+  #frame .layer { position: absolute; inset: 0; }
+  #frame img.bed, #frame video.bed { width: 100%; height: 100%; object-fit: cover; }
+  #frame .txt { position: absolute; display: flex; justify-content: center;
+                pointer-events: none; }
+  #frame .txt span { font-weight: 700; text-align: center; line-height: 1.15;
+                     text-shadow: 0 2px 12px rgba(0,0,0,.55); }
+  #frame .card { position: absolute; }
+  #frame .card img { width: 100%; display: block; }
+  #empty { position: absolute; inset: 0; display: flex; flex-direction: column;
+           align-items: center; justify-content: center; gap: 6px; color: var(--muted);
+           text-align: center; padding: 24px; }
+  .transport { display: flex; align-items: center; gap: 12px; padding: 10px 13px;
+               border-top: 1px solid var(--line); background: var(--panel-2); }
+  .transport button.play { width: 34px; height: 34px; padding: 0; border-radius: 50%;
+                           display: grid; place-items: center; flex: none; }
+  #scrub { flex: 1; -webkit-appearance: none; appearance: none; height: 4px; padding: 0;
+           border: 0; border-radius: 3px; background: var(--line); cursor: pointer; }
+  #scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px;
+           border-radius: 50%; background: var(--accent); }
+  #scrub::-moz-range-thumb { width: 13px; height: 13px; border: 0; border-radius: 50%;
+           background: var(--accent); }
+  .clock { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
+           color: var(--muted); flex: none; }
+  .ticks { display: flex; gap: 2px; padding: 0 13px 11px; }
+  .ticks i { height: 4px; border-radius: 2px; background: var(--panel-2);
+             border: 1px solid var(--line); cursor: pointer; }
+  .ticks i.on { background: var(--accent-dim); border-color: var(--accent); }
+  .caption { padding: 9px 13px; border-top: 1px solid var(--line); font-size: 13px;
+             color: var(--muted); min-height: 38px; }
+
+  /* -------------------------------------------------------------- timeline */
+  #timeline { border-top: 1px solid var(--line); background: #0b0e14; }
+  #timeline[hidden] { display: none; }
+  .tl-ruler { position: relative; height: 20px; border-bottom: 1px solid var(--line);
+              font-size: 10px; color: var(--muted); user-select: none; }
+  .tl-ruler span { position: absolute; top: 4px; transform: translateX(-50%);
+                   padding: 0 3px; }
+  .tl-ruler span::before { content: ""; position: absolute; left: 50%; top: -4px;
+                           height: 5px; border-left: 1px solid var(--line); }
+  .tl-track { position: relative; display: flex; gap: 2px; padding: 8px;
+              overflow-x: auto; }
+  .tl-clip { position: relative; flex: none; min-width: 26px; height: 62px;
+             border: 1px solid var(--line); border-radius: 5px; overflow: hidden;
+             background: var(--panel-2) center/cover no-repeat; cursor: pointer; }
+  .tl-clip.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .tl-clip .meta { position: absolute; inset: auto 0 0 0;
+                   background: linear-gradient(transparent, rgba(0,0,0,.85));
+                   padding: 10px 5px 3px; font-size: 10px; line-height: 1.25;
+                   color: #dfe4ee; white-space: nowrap; overflow: hidden;
+                   text-overflow: ellipsis; }
+  .tl-clip .badge { position: absolute; top: 3px; left: 3px; font-size: 9px;
+                    padding: 1px 5px; border-radius: 999px; background: rgba(0,0,0,.7);
+                    border: 1px solid var(--accent-dim); color: var(--accent); }
+  .tl-clip .badge.none { color: var(--muted); border-color: var(--line); }
+  .tl-audio { display: flex; gap: 2px; padding: 0 8px 8px; }
+  .tl-audio i { flex: none; height: 14px; border-radius: 3px;
+                background: var(--accent-dim); border: 1px solid var(--accent-dim); }
+  .tl-audio i.silent { background: transparent; border: 1px dashed var(--line); }
+  .tl-head { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--err);
+             pointer-events: none; z-index: 3; }
+  .tl-head::before { content: ""; position: absolute; top: 0; left: -4px;
+                     border: 4px solid transparent; border-top-color: var(--err); }
+  .tl-lane { font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+             color: var(--muted); padding: 0 9px 3px; }
+  .notice { padding: 10px 13px; border-top: 1px solid var(--line); font-size: 12.5px;
+            color: var(--muted); }
+  .notice ul { margin: 6px 0 0; padding-left: 18px; }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<div class="row" style="justify-content:space-between; margin-bottom:14px">
+  <div>
+    <h1 style="margin:0">Studio</h1>
+    <p class="muted" style="margin:2px 0 0">
+      Run {{ run.id }} · {{ run.topic }} —
+      <a href="/runs/{{ run.id }}">graph and artifacts</a>
+    </p>
+  </div>
+</div>
+
+<div class="studio">
+
+  <!-- The plan is the graph, not a copy of it: same nodes, same order, live status. -->
+  <div class="plan">
+    <header>
+      <h3>Plan</h3>
+      <span class="count" id="plan-count">—</span>
+    </header>
+    <div class="bar"><i id="plan-bar"></i></div>
+    <ol id="plan-list">
+      {% for node in plan_nodes %}
+        <li class="{{ node.status.value }}" data-key="{{ node.key }}">
+          <span class="mark"></span>
+          <span class="label">{{ node.title }}</span>
+        </li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  <div class="stage">
+    <header>
+      <span class="dot" id="stage-dot"></span>
+      <span class="name">Preview</span>
+      <span class="muted" id="stage-note" style="font-size:12px"></span>
+      <span class="spacer" style="flex:1"></span>
+      <button class="ghost" style="padding:4px 10px" id="tl-toggle"
+              aria-expanded="false">▾ Timeline</button>
+      <button class="ghost" style="padding:4px 10px" onclick="reload()">Refresh</button>
+    </header>
+
+    <div id="frame"><div id="empty">Loading the timeline…</div></div>
+
+    <div class="transport">
+      <button class="play" id="play" title="Play/pause (space)">▶</button>
+      <input type="range" id="scrub" min="0" max="1000" value="0" step="1">
+      <span class="clock" id="clock">00:00 / 00:00</span>
+    </div>
+    <div class="ticks" id="ticks"></div>
+
+    <!-- The whole video at a glance: every scene, its length, its visual and whether
+         it has audio. Collapsed by default because the frame is what you look at
+         most of the time, and a permanently open timeline halves it. -->
+    <div id="timeline" hidden>
+      <div class="tl-ruler" id="tl-ruler"></div>
+      <div class="tl-lane" style="padding-top:7px">Scenes</div>
+      <div class="tl-track" id="tl-track"><div class="tl-head" id="tl-head"></div></div>
+      <div class="tl-lane">Narration</div>
+      <div class="tl-audio" id="tl-audio"></div>
+    </div>
+
+    <div class="caption" id="caption"></div>
+    <div class="notice" id="notice"></div>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------- the plan panel
+//
+// Nothing here decides what the plan *is*. The steps are the run's nodes, rendered by
+// the template, and this only repaints their state from the same SSE stream the run
+// page uses. A plan panel that maintained its own list would be a second source of
+// truth about what the pipeline does, and it would be wrong the first time a pipeline
+// changed.
+
+const MARKS = {
+  completed: "✓", skipped: "–", failed: "✕",
+  awaiting_approval: "◆", running: '<span class="spin">◠</span>',
+  ready: "○", pending: "○",
+};
+
+function paintPlan(statuses) {
+  const items = document.querySelectorAll("#plan-list li");
+  let done = 0;
+  items.forEach((li) => {
+    const state = statuses[li.dataset.key] || li.className || "pending";
+    li.className = state;
+    li.querySelector(".mark").innerHTML = MARKS[state] || "○";
+    if (state === "completed" || state === "skipped") done += 1;
+  });
+  document.getElementById("plan-count").textContent = `${done}/${items.length}`;
+  document.getElementById("plan-bar").style.width =
+    items.length ? `${(done / items.length) * 100}%` : "0";
+}
+
+paintPlan({});
+
+const stream = new EventSource("/api/runs/{{ run.id }}/stream");
+stream.addEventListener("state", (event) => {
+  const payload = JSON.parse(event.data);
+  paintPlan(payload.nodes || {});
+  // A stage finishing usually means there is more of the video to see.
+  scheduleReload();
+});
+stream.addEventListener("done", () => { stream.close(); scheduleReload(); });
+
+let reloadTimer = null;
+function scheduleReload() {
+  clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(reload, 900);   // debounce a burst of node transitions
+}
+
+// ------------------------------------------------------------------- the player
+//
+// The easing curves and the alpha envelope are ported from `remotion/src/easing.ts`,
+// which is itself a port of `forgecast/motion/keyframe.py`. Three copies of five
+// short functions is worse than one, and still much better than three renderers that
+// quietly disagree about what "ease_out" means.
+
+const ease = (curve, p) => {
+  p = Math.max(0, Math.min(1, p));
+  switch (curve) {
+    case "linear": return p;
+    case "ease_in": return p * p;
+    case "ease_out": return 1 - (1 - p) ** 2;
+    case "ease_in_out": return p * p * (3 - 2 * p);
+    case "hold": return 0;
+    default: return p;
+  }
+};
+
+const between = (t, from, to, a, b, curve) => {
+  if (to <= from) return b;
+  const p = (t - from) / (to - from);
+  if (p <= 0) return a;
+  if (p >= 1) return b;
+  return a + (b - a) * ease(curve || "ease_out", p);
+};
+
+const envelope = (local, duration, rise, fall) => {
+  const up = Math.min(rise, duration * 0.45);
+  const down = Math.min(fall, duration * 0.35);
+  if (local < 0 || local > duration) return 0;
+  if (local < up) return ease("ease_out", local / Math.max(up, 1e-6));
+  if (local > duration - down) {
+    return 1 - ease("ease_in", (local - (duration - down)) / Math.max(down, 1e-6));
+  }
+  return 1;
+};
+
+const TRAVEL = { slide: 0.16, wipe: 0.3, pop: 0, rise: 0 };
+
+const frame = document.getElementById("frame");
+const scrub = document.getElementById("scrub");
+const clock = document.getElementById("clock");
+const playButton = document.getElementById("play");
+
+let timeline = null;
+let playing = false;
+let time = 0;             // seconds on the run timeline
+let lastTick = 0;
+let audio = null;         // the <audio> element for the scene currently on screen
+let audioScene = -1;
+
+function mmss(seconds) {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function sceneAt(t) {
+  if (!timeline || !timeline.scenes.length) return null;
+  for (const scene of timeline.scenes) {
+    if (t >= scene.start && t < scene.start + scene.seconds) return scene;
+  }
+  return timeline.scenes[timeline.scenes.length - 1];
+}
+
+function sizeFrame() {
+  if (!timeline) return;
+  // The stage keeps the video's aspect ratio whatever the panel width is, so a Short
+  // previews as a Short rather than a letterboxed landscape frame.
+  frame.style.aspectRatio = `${timeline.width} / ${timeline.height}`;
+}
+
+function drawScene(scene, local) {
+  const width = frame.clientWidth;
+  const height = frame.clientHeight;
+  const plan = scene.plan;
+  const parts = [];
+
+  parts.push(`<div class="layer" style="background:${plan.background.colour || "#101418"}"></div>`);
+  if (scene.background_url && scene.background_kind === "image") {
+    parts.push(`<img class="bed layer" src="${scene.background_url}" alt="">`);
+  } else if (scene.background_url) {
+    parts.push(
+      `<video class="bed layer" src="${scene.background_url}" muted playsinline
+        data-seek="${local.toFixed(2)}"></video>`);
+  }
+
+  for (const element of plan.elements || []) {
+    const t = local - element.start;
+    if (t < 0 || t > element.duration) continue;
+
+    if (element.kind === "band") {
+      const opacity = element.opacity * envelope(t, element.duration, 0.2, 0.2);
+      parts.push(
+        `<div style="position:absolute;left:0;top:${element.y * height}px;
+          width:${width * element.widthFraction}px;
+          height:${height * element.heightFraction}px;
+          background:${element.colour};opacity:${opacity}"></div>`);
+
+    } else if (element.kind === "text") {
+      const opacity = envelope(t, element.duration, element.entryDuration, element.exitDuration);
+      const travel = TRAVEL[element.entry] ?? 0;
+      const x = (element.entry === "slide" || element.entry === "wipe")
+        ? between(t, 0, element.entryDuration, element.x - travel, element.x, element.easing)
+        : element.x;
+      const y = element.entry === "rise"
+        ? between(t, 0, element.entryDuration, element.y + 0.06, element.y, element.easing)
+        : element.y;
+      const scale = element.entry === "pop"
+        ? between(t, 0, element.entryDuration, 0.82, 1, element.easing)
+        : 1;
+      const fontSize = Math.max(11, element.sizeRatio * height);
+
+      if (element.style === "band") {
+        parts.push(
+          `<div style="position:absolute;left:0;top:${(y - 0.07) * height}px;
+            width:${width}px;height:${height * 0.15}px;
+            background:rgba(0,0,0,${element.bandOpacity});opacity:${opacity}"></div>`);
+      }
+      const boxed = element.style === "box";
+      parts.push(
+        `<div class="txt" style="left:0;top:${y * height}px;width:${width}px;
+          opacity:${opacity};transform:translateX(${(x - 0.5) * width}px) scale(${scale})">
+          <span style="font-family:${plan.fontFamily};font-size:${fontSize}px;
+            color:${element.colour};max-width:${width * 0.86}px;
+            padding:${boxed ? `${fontSize * 0.3}px ${fontSize * 0.5}px` : 0};
+            background:${boxed ? `rgba(0,0,0,${element.bandOpacity})` : "transparent"};
+            border-radius:${boxed ? fontSize * 0.18 : 0}px;
+            -webkit-text-stroke:${element.style === "outline"
+              ? `${Math.max(2, fontSize * 0.045)}px #000` : "0"};
+            paint-order:stroke fill">${escapeHtml(element.text)}</span>
+        </div>`);
+
+    } else if (element.kind === "card" && element.src) {
+      const opacity = envelope(t, element.duration, element.fadeIn, element.fadeOut);
+      const zoom = between(t, 0, element.duration, 1 / element.zoom, element.zoom, element.easing);
+      const tilt = between(t, 0, Math.min(element.duration, element.fadeIn * 2.2 + 0.2),
+                           element.tilt, 0, element.easing);
+      parts.push(
+        `<div class="card" style="left:${element.x * width}px;top:${element.y * height}px;
+          width:${element.scale * width}px;opacity:${opacity};
+          transform:translate(-50%,-50%) scale(${zoom}) rotate(${tilt}rad);
+          filter:${element.shadow ? "drop-shadow(0 18px 34px rgba(0,0,0,.45))" : "none"}">
+          <img src="${element.src}" alt=""></div>`);
+    }
+  }
+
+  frame.innerHTML = parts.join("");
+
+  // A background clip is scrubbed rather than played: the timeline, not the clip,
+  // owns the playhead, and letting the clip run free desynchronises it from the voice.
+  const bed = frame.querySelector("video.bed");
+  if (bed) {
+    bed.currentTime = Math.min(local, Math.max(0, scene.seconds - 0.05));
+    if (playing) bed.play().catch(() => {});
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function syncAudio(scene, local) {
+  if (!scene.audio_url) {
+    if (audio) { audio.pause(); audio = null; audioScene = -1; }
+    return;
+  }
+  if (audioScene !== scene.index) {
+    if (audio) audio.pause();
+    audio = new Audio(scene.audio_url);
+    audioScene = scene.index;
+  }
+  // Only correct real drift. Assigning currentTime every frame restarts the decoder
+  // and produces a stutter that sounds like a broken file.
+  if (Math.abs(audio.currentTime - local) > 0.3) audio.currentTime = local;
+  if (playing && audio.paused) audio.play().catch(() => {});
+  if (!playing && !audio.paused) audio.pause();
+}
+
+function render() {
+  if (!timeline || !timeline.scenes.length) return;
+  const scene = sceneAt(time);
+  const local = Math.max(0, time - scene.start);
+  drawScene(scene, local);
+  syncAudio(scene, local);
+
+  scrub.value = String(Math.round((time / Math.max(timeline.duration, 0.001)) * 1000));
+  clock.textContent = `${mmss(time)} / ${mmss(timeline.duration)}`;
+  document.getElementById("caption").textContent = scene.narration || "";
+  const current = timeline.scenes.indexOf(scene);
+  document.querySelectorAll("#ticks i").forEach((tick, index) => {
+    tick.classList.toggle("on", index === current);
+  });
+  paintPlayhead(current);
+}
+
+// ------------------------------------------------------------------ the timeline
+//
+// Laid out in pixels-per-second rather than flex ratios so that a 0.8s scene and a
+// 40s scene are drawn to the same scale. Proportional flex collapses the short ones
+// to a sliver and makes the long ones unreadable, which is the opposite of what a
+// timeline is for.
+
+const PX_PER_SECOND = 26;
+const MIN_CLIP_PX = 26;
+let timelineOpen = false;
+
+const toggle = document.getElementById("tl-toggle");
+toggle.addEventListener("click", () => {
+  timelineOpen = !timelineOpen;
+  document.getElementById("timeline").hidden = !timelineOpen;
+  toggle.setAttribute("aria-expanded", String(timelineOpen));
+  toggle.textContent = timelineOpen ? "▴ Timeline" : "▾ Timeline";
+  if (timelineOpen) buildTimeline();
+});
+
+function clipWidth(seconds) {
+  return Math.max(MIN_CLIP_PX, seconds * PX_PER_SECOND);
+}
+
+function buildTimeline() {
+  if (!timeline || !timeline.scenes.length) return;
+
+  // The ruler is marked at whichever interval keeps the labels from colliding.
+  const step = [1, 2, 5, 10, 15, 30, 60, 120, 300]
+    .find((candidate) => candidate * PX_PER_SECOND >= 54) || 300;
+  const marks = [];
+  for (let t = 0; t <= timeline.duration; t += step) {
+    marks.push(`<span style="left:${8 + t * PX_PER_SECOND}px">${mmss(t)}</span>`);
+  }
+  document.getElementById("tl-ruler").innerHTML = marks.join("");
+
+  const track = document.getElementById("tl-track");
+  track.innerHTML =
+    '<div class="tl-head" id="tl-head"></div>' +
+    timeline.scenes.map((scene, index) => {
+      const bed = scene.background_kind === "image" && scene.background_url
+        ? `background-image:url('${scene.background_url}')` : "";
+      const label = scene.motion_kind === "none" ? "no motion" : scene.motion_kind;
+      return `<div class="tl-clip" data-index="${index}"
+                style="width:${clipWidth(scene.seconds)}px;${bed}"
+                title="${escapeHtml(scene.narration).slice(0, 160)}">
+                <span class="badge ${scene.motion_kind === "none" ? "none" : ""}">${label}</span>
+                <span class="meta">${index + 1} · ${scene.seconds.toFixed(1)}s</span>
+              </div>`;
+    }).join("");
+
+  track.querySelectorAll(".tl-clip").forEach((clip) => {
+    clip.addEventListener("click", () => {
+      time = timeline.scenes[Number(clip.dataset.index)].start;
+      render();
+    });
+  });
+
+  document.getElementById("tl-audio").innerHTML = timeline.scenes
+    .map((scene) =>
+      `<i class="${scene.audio_url ? "" : "silent"}"
+          style="width:${clipWidth(scene.seconds)}px"
+          title="${scene.audio_url ? "narrated" : "no audio yet"}"></i>`)
+    .join("");
+
+  paintPlayhead(0);
+}
+
+function paintPlayhead(currentIndex) {
+  if (!timelineOpen || !timeline) return;
+  const head = document.getElementById("tl-head");
+  if (!head) return;
+
+  // Clips are drawn at a minimum width, so a very short scene occupies more pixels
+  // than its duration deserves. The playhead is positioned by walking the same
+  // widths rather than by (time x scale), or it drifts away from the clip it is in.
+  let x = 8;
+  for (let i = 0; i < timeline.scenes.length; i += 1) {
+    const scene = timeline.scenes[i];
+    const width = clipWidth(scene.seconds);
+    if (i === currentIndex) {
+      const within = Math.min(1, Math.max(0, (time - scene.start) / scene.seconds));
+      x += width * within;
+      break;
+    }
+    x += width + 2;                    // + the gap between clips
+  }
+  head.style.left = `${x}px`;
+
+  document.querySelectorAll(".tl-clip").forEach((clip, index) => {
+    clip.classList.toggle("on", index === currentIndex);
+  });
+}
+
+function tick(now) {
+  if (playing && timeline) {
+    time += (now - lastTick) / 1000;
+    if (time >= timeline.duration) { time = timeline.duration; setPlaying(false); }
+    render();
+  }
+  lastTick = now;
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame((now) => { lastTick = now; requestAnimationFrame(tick); });
+
+function setPlaying(next) {
+  playing = next;
+  playButton.textContent = next ? "❚❚" : "▶";
+  document.getElementById("stage-dot").classList.toggle("live", next);
+  if (!next && audio) audio.pause();
+}
+
+playButton.addEventListener("click", () => {
+  if (!timeline || !timeline.scenes.length) return;
+  if (!playing && time >= timeline.duration) time = 0;
+  setPlaying(!playing);
+});
+
+scrub.addEventListener("input", () => {
+  if (!timeline) return;
+  time = (Number(scrub.value) / 1000) * timeline.duration;
+  render();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.code === "Space" && event.target === document.body) {
+    event.preventDefault();
+    playButton.click();
+  }
+});
+
+// --------------------------------------------------------------------- loading
+
+async function reload() {
+  let payload;
+  try {
+    const response = await fetch("/api/runs/{{ run.id }}/preview");
+    if (!response.ok) {
+      frame.innerHTML =
+        '<div id="empty">Nothing to preview yet.<br><span style="font-size:12.5px">' +
+        'The preview appears once the script stage has finished.</span></div>';
+      return;
+    }
+    payload = await response.json();
+  } catch (error) {
+    return;                       // a dropped fetch is not worth clearing the screen for
+  }
+
+  const wasPlaying = playing;
+  timeline = payload;
+  sizeFrame();
+
+  document.getElementById("ticks").innerHTML = timeline.scenes
+    .map((scene) => `<i style="flex:${scene.seconds}" title="scene ${scene.index}"></i>`)
+    .join("");
+  document.querySelectorAll("#ticks i").forEach((tick, index) => {
+    tick.addEventListener("click", () => {
+      time = timeline.scenes[index].start;
+      render();
+    });
+  });
+
+  const missing = timeline.missing.length
+    ? `no ${timeline.missing.join(" or ")} yet`
+    : `${timeline.scenes.length} scenes · ${mmss(timeline.duration)}`;
+  document.getElementById("stage-note").textContent =
+    `${missing}${timeline.preset_name ? " · " + timeline.preset_name : ""}`;
+
+  document.getElementById("notice").innerHTML = timeline.scenes.length
+    ? "<strong>This is a preview, not the render.</strong><ul>" +
+      timeline.divergences.map((line) => `<li>${escapeHtml(line)}</li>`).join("") + "</ul>"
+    : "";
+
+  if (!timeline.scenes.length) {
+    frame.innerHTML = '<div id="empty">The script has no scenes yet.</div>';
+    return;
+  }
+  time = Math.min(time, timeline.duration);
+  if (timelineOpen) buildTimeline();
+  render();
+  if (wasPlaying) setPlaying(true);
+}
+
+window.addEventListener("resize", () => { sizeFrame(); render(); });
+reload();
+</script>
+{% endblock %}

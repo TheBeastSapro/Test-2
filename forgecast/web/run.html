@@ -61,11 +61,14 @@
         {{ run.credits_reserved }} held</span>
     </div>
   </div>
-  {% if run.status.value not in ("completed", "failed", "cancelled") %}
-  <form method="post" action="/runs/{{ run.id }}/cancel">
-    <button class="danger" type="submit">Cancel run</button>
-  </form>
-  {% endif %}
+  <div class="row">
+    <a href="/runs/{{ run.id }}/preview"><button class="ghost">▶ Studio</button></a>
+    {% if run.status.value not in ("completed", "failed", "cancelled") %}
+    <form method="post" action="/runs/{{ run.id }}/cancel">
+      <button class="danger" type="submit">Cancel run</button>
+    </form>
+    {% endif %}
+  </div>
 </div>
 
 {% if run.error %}<div class="banner" style="margin-top:16px">{{ run.error }}</div>{% endif %}

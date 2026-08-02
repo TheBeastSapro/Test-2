@@ -71,6 +71,8 @@
   .status.awaiting_approval { color: var(--gate); border-color: #40306b; }
   .banner { padding: 11px 14px; border-radius: var(--radius); margin-bottom: 16px;
             border: 1px solid #5c2529; background: #2a1416; color: #ffc9cc; }
+  .banner.warn { border-color: #5c4a1e; background: #251f10; color: #f0d79a; }
+  .pill.local { border-color: #1f4b38; color: var(--ok); }
 </style>
 {% block head %}{% endblock %}
 </head>
@@ -82,16 +84,43 @@
   {% if settings and settings.is_mock %}
     <span class="pill mock" title="No provider is called and nothing is charged.">mock mode</span>
   {% endif %}
+  {% if settings and settings.local_mode %}
+    <span class="pill local" title="Running as a local application on this machine.">on this machine</span>
+  {% endif %}
   {% if user %}
     <span class="pill">{{ credits }} credits</span>
     <span class="pill">{{ user.email }}</span>
-    <form method="post" action="/logout" style="display:inline">
-      <button class="ghost" style="padding:4px 10px">Sign out</button>
-    </form>
+    {% if settings and settings.local_mode %}
+      <button class="ghost" style="padding:4px 10px" onclick="forgecastQuit()">Quit</button>
+    {% else %}
+      <form method="post" action="/logout" style="display:inline">
+        <button class="ghost" style="padding:4px 10px">Sign out</button>
+      </form>
+    {% endif %}
   {% endif %}
 </header>
 <main>
+{% if user and not ffmpeg_ok() %}
+  <div class="banner warn">
+    <strong>ffmpeg was not found.</strong> Research, scripts and voice all work;
+    the render stage will fail. Install it and restart the app —
+    <code>winget install Gyan.FFmpeg</code> on Windows,
+    <code>brew install ffmpeg</code> on macOS,
+    <code>apt install ffmpeg</code> on Linux.
+  </div>
+{% endif %}
 {% block body %}{% endblock %}
 </main>
+{% if settings and settings.local_mode %}
+<script>
+  async function forgecastQuit() {
+    if (!confirm("Stop Forgecast? Any run in progress will resume when you reopen it.")) return;
+    document.body.innerHTML =
+      '<main style="padding:80px 24px;text-align:center;color:#8d99ad">Forgecast has stopped. You can close this window.</main>';
+    // The server dies mid-response, so a network error here is the success case.
+    try { await fetch("/local/quit", {method: "POST"}); } catch (e) {}
+  }
+</script>
+{% endif %}
 </body>
 </html>

@@ -21,11 +21,16 @@ from ..db import get_session
 from ..graph.engine import create_run
 from ..graph.pipelines import PIPELINE_META
 from ..models import Channel, Node, Run, RunEvent, User
+from ..render.ffmpeg import ffmpeg_available
 from . import runner
 from .routes_api import _owned_run, artifact_url
 
 router = APIRouter(include_in_schema=False)
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "web"))
+# Exposed as a template global rather than passed per-route: every page wants to warn
+# about a missing ffmpeg, and threading it through each context is how one page ends up
+# silently not warning.
+TEMPLATES.env.globals["ffmpeg_ok"] = ffmpeg_available
 
 COOKIE = "forgecast_session"
 

@@ -34,6 +34,21 @@ class Settings(BaseSettings):
     # permanent key to the file.
     media_url_ttl_seconds: int = 60 * 60 * 6
 
+    # ------------------------------------------------------------- desktop mode
+    # Set by the desktop launcher, never edited by hand. It turns on two things that
+    # only make sense when the server is a local application: the one-time sign-in
+    # handoff (so double-clicking the icon does not land on a password prompt) and the
+    # in-app Quit button. Both are refused for any request that did not arrive on the
+    # loopback interface, so a tunnelled or forwarded port still gets the login page.
+    local_mode: bool = False
+    local_handoff_token: str = ""
+    # The handoff is only accepted for this long after the process starts. The window
+    # opens within a second or two; anything later is not the launcher.
+    local_handoff_ttl_seconds: int = 300
+
+    owner_email: str = ""
+    owner_password: str = ""
+
     # "mock" never touches the network and never spends money.
     provider_mode: Literal["mock", "live"] = "mock"
 

@@ -43,27 +43,48 @@ class Worker:
         log.info("worker %s draining", self.worker_id)
         self._stop.set()
 
-    def _claimable_runs(self) -> list[int]:
+    def _claimable_runs(self) -> list[tuple[int, RunStatus]]:
+        """Runs worth looking at, with the status they had when we looked.
+
+        The status travels with the id because the poll loop needs to know whether a
+        tick changed anything — see `tick`.
+        """
         with session_scope() as session:
             rows = session.execute(
-                select(Run.id)
+                select(Run.id, Run.status)
                 .where(Run.status.in_(CLAIMABLE))
                 .order_by(Run.updated_at)
                 .limit(10)
-            ).scalars().all()
-            return list(rows)
+            ).all()
+            return [(row[0], row[1]) for row in rows]
 
     async def tick(self) -> int:
-        run_ids = self._claimable_runs()
-        for run_id in run_ids:
+        """Advance every claimable run. Returns how many actually *moved*.
+
+        Counting moves rather than candidates is what keeps the loop from spinning.
+        A run can be claimable and yet unadvanceable — most commonly because the API
+        process is already driving it in-process, or because every remaining node is
+        waiting on a gate. Returning the candidate count made those cases look like
+        work, so the loop skipped its sleep and re-polled immediately, at 100% of a
+        core, for as long as the condition lasted.
+
+        In a container that only wasted a core. In the desktop app the worker shares
+        an interpreter with the server, so the spin held the GIL and made the render it
+        was waiting on take minutes instead of seconds.
+        """
+        progressed = 0
+        for run_id, previous in self._claimable_runs():
             if self._stop.is_set():
                 break
             try:
                 status = await self.engine.advance(run_id)
-                log.info("run %s -> %s", run_id, status.value)
             except Exception:
                 log.exception("run %s crashed the engine", run_id)
-        return len(run_ids)
+                continue
+            if status is not previous:
+                log.info("run %s -> %s", run_id, status.value)
+                progressed += 1
+        return progressed
 
     async def run_forever(self) -> None:
         init_db()
@@ -74,8 +95,8 @@ class Worker:
             get_settings().worker_concurrency,
         )
         while not self._stop.is_set():
-            handled = await self.tick()
-            if handled == 0:
+            moved = await self.tick()
+            if not moved:
                 # Sleep until the poll interval elapses, or wake early on shutdown.
                 with contextlib.suppress(TimeoutError):
                     await asyncio.wait_for(self._stop.wait(), timeout=self.poll_seconds)

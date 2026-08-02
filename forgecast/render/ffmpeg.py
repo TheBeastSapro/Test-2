@@ -27,6 +27,16 @@ class RenderError(RuntimeError):
     pass
 
 
+def ffmpeg_available() -> bool:
+    """Whether both binaries this module shells out to are actually present.
+
+    Checked at the front door rather than at the render node. Without it the desktop
+    app looks entirely healthy — research, script and voice all succeed — and then
+    fails at the one stage that costs the most to reach.
+    """
+    return bool(shutil.which(FFMPEG) and shutil.which(FFPROBE))
+
+
 @dataclass
 class Scene:
     """One beat of the video: a visual, how long it holds, and its narration."""
