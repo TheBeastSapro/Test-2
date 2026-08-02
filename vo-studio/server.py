@@ -92,6 +92,28 @@ def _dir_mb(path: Path) -> float:
         return 0.0
 
 
+def friendly(exc: BaseException) -> str:
+    """Turn the errors we have actually hit into something actionable."""
+    text = f"{type(exc).__name__}: {exc}"
+    if "1314" in text or "required privilege" in text.lower():
+        return (text + "\n\nWindows blocked a symlink while unpacking the model "
+                "cache. The app now copies instead, so close and reopen it and the "
+                "download resumes. If it happens again, turn on Settings > System > "
+                "For developers > Developer Mode, which allows symlinks without "
+                "admin, and delete runtime\\models to start the cache clean.")
+    if "CUDA out of memory" in text:
+        return (text + "\n\n6 GB is tight for this model. Settings > Voice & "
+                "generation > Max characters per chunk: drop 300 to 200.")
+    return text
+
+
+SETTINGS = config.Settings.load()
+config.ensure_dirs()
+
+app = FastAPI(title="ExplainTory VO Studio")
+STATE: dict = {"voice": None, "render": None, "log": []}
+
+
 @app.get("/api/job")
 def job_state():
     """Polled while a take runs. Cheap enough at 1 Hz; the cache walk is the
@@ -116,28 +138,6 @@ def job_state():
         out["label"] = (f"generating — about {left:.0f}s left" if left > 1
                         else "generating — almost there")
     return out
-
-
-def friendly(exc: BaseException) -> str:
-    """Turn the errors we have actually hit into something actionable."""
-    text = f"{type(exc).__name__}: {exc}"
-    if "1314" in text or "required privilege" in text.lower():
-        return (text + "\n\nWindows blocked a symlink while unpacking the model "
-                "cache. The app now copies instead, so close and reopen it and the "
-                "download resumes. If it happens again, turn on Settings > System > "
-                "For developers > Developer Mode, which allows symlinks without "
-                "admin, and delete runtime\\models to start the cache clean.")
-    if "CUDA out of memory" in text:
-        return (text + "\n\n6 GB is tight for this model. Settings > Voice & "
-                "generation > Max characters per chunk: drop 300 to 200.")
-    return text
-
-
-SETTINGS = config.Settings.load()
-config.ensure_dirs()
-
-app = FastAPI(title="ExplainTory VO Studio")
-STATE: dict = {"voice": None, "render": None, "log": []}
 
 
 # ------------------------------------------------------------------ shell
