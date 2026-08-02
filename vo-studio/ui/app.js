@@ -417,7 +417,14 @@ function settingRow(group, it) {
     ? `<label class="switch"><input type="checkbox" id="${id}" data-group="${group}" data-key="${it.key}" ${it.value ? 'checked' : ''}><span></span></label>`
     : it.type === 'choice'
       ? `<select class="select" id="${id}" data-group="${group}" data-key="${it.key}">${it.options.map(o => `<option${o === it.value ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`
-      : '';
+      // A key is masked on screen. It still lands in settings.json in plain
+      // text, which the row's own note says — hiding it here and pretending
+      // otherwise would be worse than not hiding it.
+      : it.type === 'text'
+        ? `<input class="setting-text" type="${it.key.includes('key') ? 'password' : 'text'}"
+                  id="${id}" data-group="${group}" data-key="${it.key}"
+                  value="${esc(it.value ?? '')}" spellcheck="false">`
+        : '';
   const slider = it.type === 'number'
     ? `<input type="range" data-dp="${it.dp}" min="${it.min}" max="${it.max}" step="${it.step}" value="${it.value}">` : '';
   const num = it.type === 'number'
@@ -437,7 +444,9 @@ $('#btn-save').onclick = async () => {
   const values = {};
   $$('#settings-groups [data-key]').forEach(el => {
     values[`${el.dataset.group}.${el.dataset.key}`] =
-      el.type === 'checkbox' ? el.checked : (el.tagName === 'SELECT' ? el.value : +el.value);
+      el.type === 'checkbox' ? el.checked
+        : (el.tagName === 'SELECT' || el.type === 'text' || el.type === 'password')
+          ? el.value : +el.value;
   });
   toast((await api('/api/settings', { values })).message);
 };

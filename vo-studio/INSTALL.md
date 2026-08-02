@@ -146,6 +146,37 @@ or clip you attach. Model and *Confirm calls* are in the composer.
 
 ---
 
+## ElevenLabs (optional)
+
+Chatterbox is the default and costs nothing — it runs on your GPU and clones
+the reference clip. ElevenLabs is there for the two cases where that is not
+enough: a script Chatterbox cannot hold, or a job that has to be right first
+time and the budget is not the constraint.
+
+Settings → Engine → `elevenlabs`, then set a key and a voice. Or just ask in
+the chat — it can list the voices on your account and switch for you.
+
+```
+setx ELEVENLABS_API_KEY "your-key"     then reopen the app
+```
+
+The environment variable wins over the Settings field. Pasted into Settings
+instead, the key sits in plain text in `settings.json` in your Documents
+folder — fine on your own machine, wrong for anything shared.
+
+**Two things change when you switch, and nothing else does.** ElevenLabs reads
+in one of *its* voices, so your reference clip is not used. And it costs about
+**$0.18 per 1000 characters** — a twelve-minute script is roughly $2. The
+read-check, the orphan sweep, the comma work and the mastering all run exactly
+as before.
+
+The four ElevenLabs dials — Stability, Similarity, Style, Speaker boost — are
+in Settings with what each one does. Unlike the Chatterbox numbers, these are
+**starting points from the published guidance, not values measured on this
+channel.** Tune them the same way: render a take, listen, adjust.
+
+---
+
 ## Standard vs Turbo
 
 Settings → Model. **They are not the same model with a speed switch.**

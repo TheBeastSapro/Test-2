@@ -36,6 +36,7 @@ class Generator:
     """Owns the model. Load once; loading costs ~30 s and most of your VRAM."""
 
     def __init__(self, settings, device: str | None = None, log=print):
+        self._settings = settings
         self.cfg = settings.generation
         self.log = log
         self._model = None
@@ -136,6 +137,21 @@ class Generator:
                        temperature: float | None = None,
                        cfg_weight: float | None = None,
                        speed: float | None = None) -> Path:
+        # The engine decides where the audio comes from and nothing else. The
+        # headroom, the resample, the speed pass and everything downstream are
+        # the same either way -- which is the point of switching here rather
+        # than forking the pipeline.
+        if getattr(self.cfg, "engine", "chatterbox") == "elevenlabs":
+            from . import eleven
+            self.log(f"ElevenLabs: {len(text)} chars "
+                     f"(about ${eleven.estimate_usd(text):.3f})")
+            eleven.synthesize(text, out_path, self._settings, self.cfg.work_sr)
+            if speed is not None and abs(speed - 1.0) >= 0.005:
+                from .voice_profile import apply_speed
+                import shutil
+                shutil.copy(apply_speed(out_path, speed), out_path)
+            return out_path
+
         model = self.load()
         self._seed()
         kwargs = dict(

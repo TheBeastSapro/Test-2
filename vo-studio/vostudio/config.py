@@ -32,6 +32,14 @@ MODEL_DEFAULTS = {
 
 @dataclass
 class Generation:
+    # Which engine produces the audio. "chatterbox" runs locally on the GPU for
+    # nothing, which is why it is the default; "elevenlabs" costs per character
+    # and needs a network round trip per chunk, and earns its place only when
+    # Chatterbox cannot hold a particular read or the job has to be right first
+    # time. Everything downstream -- read-check, orphans, commas, mastering --
+    # runs identically either way.
+    engine: str = "chatterbox"
+
     # "standard" = ResembleAI/chatterbox, "turbo" = ResembleAI/chatterbox-turbo
     variant: str = "standard"
 
@@ -112,6 +120,28 @@ class Orphans:
 
 
 @dataclass
+class Eleven:
+    """ElevenLabs, when engine is set to it. Ignored otherwise."""
+
+    # ELEVENLABS_API_KEY in the environment wins over this. Stored here it sits
+    # in a plain settings.json in Documents -- fine for your own machine, wrong
+    # for anything shared, and worth knowing rather than discovering.
+    api_key: str = ""
+
+    voice_id: str = ""                       # from the account, never guessed
+    model: str = "eleven_multilingual_v2"
+
+    # The four that materially change the read. Defaults are the documentary /
+    # authority starting point -- steady, closely matched to the source voice,
+    # barely any injected expression. They are a STARTING POINT, not measured
+    # on this channel the way the Chatterbox numbers were.
+    stability: float = 0.55
+    similarity_boost: float = 0.85
+    style: float = 0.10
+    speaker_boost: bool = True
+
+
+@dataclass
 class App:
     """The app itself, rather than the audio."""
 
@@ -140,6 +170,7 @@ class Settings:
     readcheck: ReadCheck = field(default_factory=ReadCheck)
     master: Master = field(default_factory=Master)
     orphans: Orphans = field(default_factory=Orphans)
+    eleven: Eleven = field(default_factory=Eleven)
     app: App = field(default_factory=App)
     active_voice: str = ""
     active_profile: str = "default"
@@ -153,6 +184,7 @@ class Settings:
                 readcheck=ReadCheck(**raw.get("readcheck", {})),
                 master=Master(**raw.get("master", {})),
                 orphans=Orphans(**raw.get("orphans", {})),
+                eleven=Eleven(**raw.get("eleven", {})),
                 app=App(**raw.get("app", {})),
                 active_voice=raw.get("active_voice", ""),
                 active_profile=raw.get("active_profile", "default"),

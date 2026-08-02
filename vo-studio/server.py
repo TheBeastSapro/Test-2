@@ -494,7 +494,7 @@ def lab_revert(payload: dict):
 def _schema(s: config.Settings):
     """Each row carries the failure that set it — a settings screen that hides
     the reason invites someone to undo it."""
-    g, r, m, o = s.generation, s.readcheck, s.master, s.orphans
+    g, r, m, o, e = s.generation, s.readcheck, s.master, s.orphans, s.eleven
     return [
         {"key": "generation", "title": "Model", "items": [
             {"key": "variant", "name": "Chatterbox model", "type": "choice",
@@ -558,6 +558,41 @@ def _schema(s: config.Settings):
              "min": 0, "max": 1, "step": .05, "dp": 2, "unit": " s", "value": m.chapter_gap_s,
              "why": "Silence around a chapter announcement."},
         ]},
+        {"key": "generation", "title": "Engine", "items": [
+            {"key": "engine", "name": "Engine", "type": "choice",
+             "value": g.engine, "options": ["chatterbox", "elevenlabs"],
+             "why": "Chatterbox runs on your GPU for nothing and clones the "
+                    "reference clip. ElevenLabs costs about $0.18 per 1000 "
+                    "characters and reads in one of ITS voices — the reference "
+                    "clip is not used. Everything after generation — read-check, "
+                    "orphan sweep, comma work, mastering — is identical."},
+        ]},
+        {"key": "eleven", "title": "ElevenLabs", "items": [
+            {"key": "voice_id", "name": "Voice ID", "type": "text", "value": e.voice_id,
+             "why": "Take it from the account's voice list rather than typing it "
+                    "— a wrong id is a 400 several seconds into a render. Ask in "
+                    "the chat and it will list them."},
+            {"key": "api_key", "name": "API key", "type": "text", "value": e.api_key,
+             "why": "ELEVENLABS_API_KEY in the environment wins over this. Stored "
+                    "here it sits in plain text in settings.json — fine on your "
+                    "own machine, wrong for anything shared."},
+            {"key": "stability", "name": "Stability", "type": "number",
+             "min": 0, "max": 1, "step": .05, "dp": 2, "value": e.stability,
+             "why": "Higher is steadier, lower is more emotional. Narration sits "
+                    "0.55-0.65; under 0.30 it drifts within one episode."},
+            {"key": "similarity_boost", "name": "Similarity", "type": "number",
+             "min": 0, "max": 1, "step": .05, "dp": 2, "value": e.similarity_boost,
+             "why": "How tightly it holds the source voice. 0.85 for authority "
+                    "reads; below 0.65 the voice wanders."},
+            {"key": "style", "name": "Style", "type": "number",
+             "min": 0, "max": 1, "step": .05, "dp": 2, "value": e.style,
+             "why": "Injected expressiveness. Documentary and deadpan want "
+                    "0.00-0.10; above 0.50 it turns melodramatic."},
+            {"key": "speaker_boost", "name": "Speaker boost", "type": "bool",
+             "value": e.speaker_boost,
+             "why": "Helps the voice stay consistent across a long render. "
+                    "Leave it on."},
+        ]},
         {"key": "app", "title": "App", "items": [
             {"key": "max_upload_gb", "name": "Max upload size", "type": "number",
              "min": .1, "max": 8, "step": .1, "dp": 1, "unit": " GB", "value": s.app.max_upload_gb,
@@ -589,7 +624,12 @@ def put_settings(payload: dict):
         group, key = path.split(".", 1)
         target = getattr(SETTINGS, group)
         current = getattr(target, key)
-        setattr(target, key, type(current)(value) if not isinstance(current, bool) else bool(value))
+        if isinstance(current, bool):
+            setattr(target, key, bool(value))
+        elif isinstance(current, str):
+            setattr(target, key, str(value))
+        else:
+            setattr(target, key, type(current)(value))
     SETTINGS.save()
     return {"message": f"Saved to {config.SETTINGS_FILE}"}
 
@@ -730,6 +770,37 @@ class Studio:
                 "needs_an_ear": bool(result.unresolved or result.notes),
                 "unresolved": list(result.unresolved or [])[:8],
                 "log_tail": lines[-12:]}
+
+    def eleven_voices(self) -> dict:
+        from vostudio import eleven
+        try:
+            return {"voices": eleven.list_voices(SETTINGS)}
+        except Exception as exc:
+            return {"error": str(exc)}
+
+    def set_engine(self, engine: str, voice_id: str = "") -> dict:
+        engine = (engine or "").strip().lower()
+        if engine not in ("chatterbox", "elevenlabs"):
+            return {"error": "engine must be 'chatterbox' or 'elevenlabs'"}
+        if engine == "elevenlabs":
+            from vostudio import eleven
+            if not eleven.api_key(SETTINGS):
+                return {"error": "No ElevenLabs API key. Set ELEVENLABS_API_KEY "
+                                 "in the environment, or paste one into "
+                                 "Settings > ElevenLabs."}
+            if voice_id:
+                SETTINGS.eleven.voice_id = voice_id
+            if not SETTINGS.eleven.voice_id:
+                return {"error": "No voice selected. Call list_elevenlabs_voices "
+                                 "and pass one of its ids."}
+        SETTINGS.generation.engine = engine
+        SETTINGS.save()
+        return {"engine": engine, "voice_id": SETTINGS.eleven.voice_id,
+                "note": ("Local and free — the read-check and mastering are "
+                         "unchanged." if engine == "chatterbox" else
+                         "Costs about $0.18 per 1000 characters. The reference "
+                         "clip is not used: ElevenLabs reads in the voice you "
+                         "selected, not a clone of the clip.")}
 
     def render_log(self) -> dict:
         return {"log": (STATE.get("log") or ["Nothing rendered yet."])[-60:]}

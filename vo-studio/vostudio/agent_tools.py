@@ -84,6 +84,22 @@ def build_server(ctx):
     async def render_script(args):
         return _text(ctx.render(args["script"], args.get("title") or ""))
 
+    @tool("list_elevenlabs_voices",
+          "The ElevenLabs voices on the account, with their ids. Only useful "
+          "when the engine is elevenlabs. Never invent a voice id — take one "
+          "from this list.", {})
+    async def list_elevenlabs_voices(args):
+        return _text(ctx.eleven_voices())
+
+    @tool("set_engine",
+          "Switch which engine renders audio: 'chatterbox' (local, free, on "
+          "Sapro's GPU) or 'elevenlabs' (costs per character, needs a key). "
+          "Optionally set the ElevenLabs voice at the same time. Say what it "
+          "will cost before switching to elevenlabs for a long script.",
+          {"engine": str, "voice_id": str})
+    async def set_engine(args):
+        return _text(ctx.set_engine(args["engine"], args.get("voice_id") or ""))
+
     @tool("read_render_log",
           "The log of the last full render, including anything the read-check "
           "could not resolve.", {})
@@ -93,7 +109,8 @@ def build_server(ctx):
     return create_sdk_mcp_server(
         name="vostudio", version="1.0.0",
         tools=[voice_status, use_voice_reference, render_take, adjust_voice,
-               set_voice_parameter, analyse_script, render_script, read_render_log],
+               set_voice_parameter, analyse_script, render_script,
+               list_elevenlabs_voices, set_engine, read_render_log],
     )
 
 
@@ -108,6 +125,8 @@ ALLOWED = [
     "mcp__vostudio__set_voice_parameter",
     "mcp__vostudio__analyse_script",
     "mcp__vostudio__render_script",
+    "mcp__vostudio__list_elevenlabs_voices",
+    "mcp__vostudio__set_engine",
     "mcp__vostudio__read_render_log",
 ]
 
