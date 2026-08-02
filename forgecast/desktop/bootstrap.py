@@ -106,10 +106,28 @@ def ensure_venv(root: Path) -> Path:
 
 
 def _fingerprint(root: Path) -> str:
-    """What the install depends on. Changing any of it forces a reinstall."""
+    """What the install depends on. Changing any of it forces a reinstall.
+
+    The install's *location* is one of those things, and that is not obvious. Installing
+    the project with `pip install -e .` writes a finder into the virtualenv that records
+    the project's absolute path. Move the folder — a different drive letter, a USB stick
+    that remounts, a rename — and that recorded path is stale.
+
+    Usually it is harmless: the launcher puts the real project directory first on
+    `sys.path`, so the local copy wins. It stops being harmless when the *old* path
+    still exists, which is what happens when someone copies the folder instead of moving
+    it. Anything that imports `forgecast` without going through the launcher then loads
+    the original folder's code while writing to the copy's database — silently, with no
+    error to notice.
+
+    Including the resolved path here means a moved or copied install reinstalls itself
+    on first launch and rewrites the finder. It costs one pip run, once, and only for an
+    install that actually moved.
+    """
     digest = hashlib.sha256()
     digest.update((root / "pyproject.toml").read_bytes())
     digest.update(sys.version.encode())
+    digest.update(str(root.resolve()).encode())
     return digest.hexdigest()
 
 

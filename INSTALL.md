@@ -135,6 +135,53 @@ specific one, `--port 9000`.
 
 ---
 
+## Where you can put it
+
+Anywhere you can write to. There is no install location — the folder *is* the
+application, and everything it creates stays inside it.
+
+- **Any drive letter.** `D:\`, `E:\`, a second SSD, an external drive. Nothing is
+  hard-coded to `C:`.
+- **Paths with spaces.** `D:\My Videos\Forgecast\` is fine.
+- **A USB stick or portable drive.** Works, including when it remounts under a
+  different letter — the app notices it moved and repairs its own environment on the
+  next launch (that launch takes a minute; the ones after are normal).
+- **A network share.** The launcher handles a UNC path (`\\server\share\Forgecast`),
+  but see the warning below before choosing one.
+
+### Moving an existing install
+
+Move or rename the folder freely, then launch it as usual. The first launch after a
+move reinstalls the Python environment — it has to, because the environment records
+where the project lives — and then carries on with your database and renders intact.
+
+If you **copy** the folder rather than moving it, launch the copy once before using
+it, so it can claim its own environment. Both copies then work independently, each
+with its own database.
+
+Do not copy `.env` between installs. Let each one generate its own secrets, then
+re-enter provider keys. That file holds the key your stored API credentials are
+encrypted with.
+
+### One place to avoid: a network drive
+
+Forgecast keeps its database in SQLite, and SQLite's file locking is unreliable over
+SMB and NFS — this is a documented limitation of network filesystems, not of the
+app. A run that writes while the share hiccups can corrupt the database.
+
+Keep `forgecast.db` on a local disk. If you want renders on network storage, point
+just that at the share:
+
+```ini
+FORGECAST_DATABASE_URL=sqlite:///C:/Forgecast/forgecast.db
+FORGECAST_STORAGE_DIR=//server/share/forgecast-renders
+```
+
+Renders are written once and read back whole, so they are safe on a share in a way
+the database is not.
+
+---
+
 ## Where your data lives
 
 ```

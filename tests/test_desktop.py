@@ -237,6 +237,38 @@ def test_the_install_fingerprint_changes_with_the_dependencies(tmp_path: Path):
     assert bootstrap._fingerprint(tmp_path) != before
 
 
+def test_the_install_fingerprint_changes_when_the_folder_moves(tmp_path: Path):
+    """Regression: a moved install must reinstall, or it can run the wrong code.
+
+    `pip install -e .` writes a finder into the virtualenv recording the project's
+    absolute path. Move the folder and that path is stale. It is usually harmless —
+    the launcher puts the real project directory first on `sys.path` — but if the old
+    path still exists, which is exactly what copying the folder produces, anything
+    importing `forgecast` without the launcher loads the *original* folder's code while
+    writing to the copy's database.
+
+    Measured before this was fixed: with a copy left at the old location, a bare
+    `python -c "import forgecast"` inside the moved venv resolved to the old folder.
+    """
+    first = tmp_path / "drive-d" / "Forgecast"
+    second = tmp_path / "drive-e" / "Forgecast"
+    for path in (first, second):
+        path.mkdir(parents=True)
+        (path / "pyproject.toml").write_text("[project]\nname='forgecast'\n")
+
+    assert bootstrap._fingerprint(first) != bootstrap._fingerprint(second)
+
+
+def test_an_unmoved_install_is_not_reinstalled_on_every_launch(tmp_path: Path):
+    """The other half of the same rule: a normal launch must stay fast.
+
+    The fingerprint is what makes the expensive step skippable, so it has to be stable
+    across launches that changed nothing.
+    """
+    (tmp_path / "pyproject.toml").write_text("[project]\nname='forgecast'\n")
+    assert bootstrap._fingerprint(tmp_path) == bootstrap._fingerprint(tmp_path)
+
+
 def test_python_version_is_checked():
     bootstrap.check_python()  # this interpreter runs the suite, so it must pass
 
