@@ -112,13 +112,35 @@ def main() -> int:
     # hide the problem instead of fixing it.
     env.pop("ANTHROPIC_API_KEY", None)
     env["PYTHONIOENCODING"] = "utf-8"
+    # Windows still defaults to cp1252 for open() and Path.read_text(). The UI
+    # files are full of em-dashes and box-drawing rules, so serving the page
+    # would die on a decode error with no console to print it to.
+    env["PYTHONUTF8"] = "1"
 
+    # Fire-and-forget was wrong: with no console attached, a child that dies on
+    # import prints its traceback into the void and the icon just bounces.
+    # Everything it says goes to a log, and if it exits badly that log is put on
+    # screen instead of nothing at all.
+    log = rt / "last-run.log"
     try:
         creation = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-        subprocess.Popen([str(interpreter), str(entry)], cwd=str(root),
-                         env=env, creationflags=creation)
+        log.parent.mkdir(parents=True, exist_ok=True)
+        with open(log, "w", encoding="utf-8", errors="replace") as sink:
+            proc = subprocess.Popen([str(interpreter), str(entry)], cwd=str(root),
+                                    env=env, stdout=sink, stderr=subprocess.STDOUT,
+                                    creationflags=creation)
+            code = proc.wait()
     except Exception as exc:
         return die("VO Studio — could not start", f"{type(exc).__name__}: {exc}")
+
+    if code != 0:
+        try:
+            tail = log.read_text(encoding="utf-8", errors="replace").strip()[-1600:]
+        except Exception:
+            tail = ""
+        return die("VO Studio — the app stopped",
+                   (tail or f"It exited with code {code} and said nothing.")
+                   + f"\n\nFull log:\n{log}")
     return 0
 
 

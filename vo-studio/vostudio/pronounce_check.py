@@ -144,7 +144,7 @@ def flag_outliers(scored, k: float = 2.0, min_phones: int = 12):
 def parse_script(path: Path):
     """One phrase per non-empty line: 'start end text' or plain text with --auto."""
     phrases = []
-    for line in path.read_text().splitlines():
+    for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
             continue

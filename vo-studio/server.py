@@ -43,9 +43,9 @@ def index():
     return (f"<!doctype html><html><head><meta charset=utf-8>"
             f"<title>ExplainTory VO Studio</title>"
             f"<link rel=icon href='/ui/icon.png'>"
-            f"<style>{(UI / 'app.css').read_text()}</style></head><body>"
-            f"{(UI / 'index.html').read_text()}"
-            f"<script>{(UI / 'app.js').read_text()}</script></body></html>")
+            f"<style>{(UI / 'app.css').read_text(encoding='utf-8')}</style></head><body>"
+            f"{(UI / 'index.html').read_text(encoding='utf-8')}"
+            f"<script>{(UI / 'app.js').read_text(encoding='utf-8')}</script></body></html>")
 
 
 @app.get("/ui/icon.png")

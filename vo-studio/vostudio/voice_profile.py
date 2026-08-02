@@ -70,7 +70,7 @@ class VoiceProfile:
         d = voices_dir / self.name
         d.mkdir(parents=True, exist_ok=True)
         path = d / "profile.json"
-        path.write_text(json.dumps(asdict(self), indent=2))
+        path.write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
         return path
 
     @classmethod
@@ -78,9 +78,9 @@ class VoiceProfile:
         path = voices_dir / name / "profile.json"
         if not path.exists():
             return cls(name=name)
-        raw = json.loads(path.read_text())
+        raw = json.loads(path.read_text(encoding="utf-8"))
         raw.pop("history", None)
-        return cls(**raw, history=json.loads(path.read_text()).get("history", []))
+        return cls(**raw, history=json.loads(path.read_text(encoding="utf-8")).get("history", []))
 
     def summary(self) -> str:
         return (f"exaggeration {self.exaggeration:.2f} | cfg_weight {self.cfg_weight:.2f} | "

@@ -123,7 +123,7 @@ class Settings:
     @classmethod
     def load(cls) -> "Settings":
         if SETTINGS_FILE.exists():
-            raw = json.loads(SETTINGS_FILE.read_text())
+            raw = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
             return cls(
                 generation=Generation(**raw.get("generation", {})),
                 readcheck=ReadCheck(**raw.get("readcheck", {})),
@@ -138,7 +138,7 @@ class Settings:
 
     def save(self) -> None:
         APP_DIR.mkdir(parents=True, exist_ok=True)
-        SETTINGS_FILE.write_text(json.dumps(asdict(self), indent=2))
+        SETTINGS_FILE.write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
 
 
 def ensure_dirs() -> None:

@@ -245,7 +245,8 @@ class Setup:
                 self._unzip_flat(zp, self.rt / "python")
                 # The embeddable build disables site-packages; pip needs it on.
                 for pth in (self.rt / "python").glob("python*._pth"):
-                    pth.write_text(pth.read_text().replace("#import site", "import site"))
+                    pth.write_text(pth.read_text(encoding="utf-8").replace(
+                        "#import site", "import site"), encoding="utf-8")
                 gp = self.rt / "get-pip.py"
                 self._fetch(PIP_URL, gp, label, w)
                 subprocess.run([str(self.python_exe()), str(gp), "-q",
