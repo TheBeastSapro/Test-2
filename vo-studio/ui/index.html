@@ -1,24 +1,22 @@
-<div class="shell">
-
-  <div class="masthead">
-    <div class="logo"><div class="logo-mark"></div><h1>VO Studio</h1></div>
-    <p>Your script becomes a finished voiceover, rendered on your own machine.</p>
+<header class="topbar">
+  <div class="logo"><div class="logo-mark"></div><span>VO Studio</span></div>
+  <div class="topbar-right">
+    <span class="hw" id="hw"><span class="dot dot-idle"></span><span id="hw-text">checking…</span></span>
+    <button class="btn btn-sm btn-ghost" data-view="settings">Settings</button>
+    <button class="btn btn-sm btn-ghost" data-view="assistant">Assistant</button>
   </div>
+</header>
+
+<div class="shell">
 
   <!-- the flow. Order carries information: you cannot tune a voice you have
        not loaded, or render a script without a voice. -->
-  <nav class="steps">
+  <nav class="steps" aria-label="Progress">
     <button class="step is-active" data-view="voice"><span class="step-num">1</span>Voice</button>
     <button class="step" data-view="lab"><span class="step-num">2</span>Tune</button>
     <button class="step" data-view="render"><span class="step-num">3</span>Script</button>
     <button class="step" data-view="result"><span class="step-num">4</span>Result</button>
   </nav>
-
-  <div class="aux">
-    <span class="hw" id="hw"><span class="dot dot-idle"></span><span id="hw-text">checking…</span></span>
-    <button class="btn btn-sm btn-ghost" data-view="settings">Settings</button>
-    <button class="btn btn-sm btn-ghost" data-view="assistant">Assistant</button>
-  </div>
 
   <!-- ═══════════════════════════════════════════════ 1 · VOICE -->
   <section class="view is-active" data-view="voice">

@@ -48,15 +48,19 @@ def die(title: str, message: str) -> int:
 def main() -> int:
     root = app_dir()
 
-    # pythonw.exe, not python.exe — the w variant runs without a console window.
-    pyw = root / ".venv" / "Scripts" / "pythonw.exe"
-    py = root / ".venv" / "Scripts" / "python.exe"
+    # Everything lives in .\runtime — nothing is installed on the machine, so
+    # there is no system Python to fall back to and none is wanted.
+    rt = root / "runtime"
+    pyw = rt / "python" / "pythonw.exe"
+    py = rt / "python" / "python.exe"
     interpreter = pyw if pyw.exists() else py
 
     if not interpreter.exists():
-        return die("VO Studio — not installed yet",
-                   "The Python environment is missing.\n\n"
-                   "Run setup.bat once in this folder, then launch again.\n\n"
+        return die("VO Studio — not set up yet",
+                   "The app's own runtime folder is missing.\n\n"
+                   "Run setup.bat once in this folder, then launch again. It "
+                   "downloads everything into .\\runtime and installs nothing "
+                   "on your machine.\n\n"
                    f"Looked in:\n{interpreter}")
 
     entry = root / "desktop.py"
@@ -66,6 +70,16 @@ def main() -> int:
                    "The folder looks incomplete — re-download and unzip it.")
 
     env = dict(os.environ)
+    # The bundled tools go on PATH for this process only. ffmpeg is called by
+    # name all through the pipeline and espeak-ng by phonemizer, so they have to
+    # be findable — but putting them on the SYSTEM path is exactly what this
+    # app is avoiding.
+    bundled = [rt / "ffmpeg" / "bin", rt / "espeak", rt / "node"]
+    env["PATH"] = os.pathsep.join(
+        [str(p) for p in bundled if p.exists()] + [env.get("PATH", "")])
+    # Keep model weights inside the folder too, so deleting it really is a
+    # clean uninstall rather than leaving a gigabyte in the user profile.
+    env.setdefault("HF_HOME", str(rt / "models"))
     # A set ANTHROPIC_API_KEY silently outranks the Claude subscription login and
     # would bill an API account instead. Cleared for the app's process only —
     # removing it machine-wide is the user's call, and doing it silently would

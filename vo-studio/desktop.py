@@ -20,6 +20,7 @@ WHY THIS AND NOT A SINGLE .EXE
     On Windows the renderer is WebView2, which ships with Windows 11 — nothing
     extra to install.
 """
+import os
 import socket
 import sys
 import threading
@@ -27,6 +28,14 @@ import time
 from pathlib import Path
 
 APP_ROOT = Path(__file__).resolve().parent
+
+# Same bundled-tools PATH as launcher.py, for when this is started by run.bat
+# rather than the .exe. ffmpeg and espeak-ng are invoked by name.
+_rt = APP_ROOT / "runtime"
+for _d in (_rt / "ffmpeg" / "bin", _rt / "espeak", _rt / "node"):
+    if _d.exists():
+        os.environ["PATH"] = str(_d) + os.pathsep + os.environ.get("PATH", "")
+os.environ.setdefault("HF_HOME", str(_rt / "models"))
 
 
 def free_port() -> int:

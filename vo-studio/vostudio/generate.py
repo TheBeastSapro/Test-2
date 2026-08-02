@@ -64,10 +64,14 @@ class Generator:
     def load(self):
         if self._model is not None:
             return self._model
-        from chatterbox.tts import ChatterboxTTS
         device = self.resolve_device()
-        self.log(f"Loading Chatterbox on {device} ...")
-        self._model = ChatterboxTTS.from_pretrained(device=device)
+        if getattr(self.cfg, "variant", "standard") == "turbo":
+            from chatterbox.tts_turbo import ChatterboxTurboTTS as Model
+            self.log(f"Loading Chatterbox TURBO on {device} ...")
+        else:
+            from chatterbox.tts import ChatterboxTTS as Model
+            self.log(f"Loading Chatterbox on {device} ...")
+        self._model = Model.from_pretrained(device=device)
         if self.cfg.use_fp16 and device == "cuda":
             try:
                 self._model.t3 = self._model.t3.half()
@@ -105,8 +109,7 @@ class Generator:
                        speed: float | None = None) -> Path:
         model = self.load()
         self._seed()
-        wav = model.generate(
-            text,
+        kwargs = dict(
             audio_prompt_path=str(voice_ref),
             exaggeration=self.cfg.exaggeration if exaggeration is None else exaggeration,
             cfg_weight=self.cfg.cfg_weight if cfg_weight is None else cfg_weight,
@@ -115,6 +118,15 @@ class Generator:
             min_p=self.cfg.min_p,
             top_p=self.cfg.top_p,
         )
+        if getattr(self.cfg, "variant", "standard") == "turbo":
+            # Turbo-only. Passing these to Standard is a TypeError, so they are
+            # added here rather than defaulted into the shared kwargs.
+            kwargs["top_k"] = getattr(self.cfg, "top_k", 1000)
+            # Turbo normalises its own loudness. Left on, it fights the mastering
+            # stage for control of level; the master measures and sets LUFS, so
+            # this is off and the master keeps the decision.
+            kwargs["norm_loudness"] = False
+        wav = model.generate(text, **kwargs)
         audio = wav.squeeze(0).detach().cpu().float().numpy()
         audio = apply_headroom(audio, self.log)
         audio = resample(audio, self.cfg.model_sr, self.cfg.work_sr)

@@ -16,8 +16,25 @@ PROJECTS_DIR = APP_DIR / "projects"
 SETTINGS_FILE = APP_DIR / "settings.json"
 
 
+# Turbo is not a faster copy of the same model -- its neutral point is
+# different. Standard reads neutrally at exaggeration 0.5 / cfg_weight 0.5;
+# Turbo reads neutrally at 0.0 / 0.0 and takes top_k and norm_loudness, which
+# Standard does not accept at all. Feeding one model the other's numbers is not
+# a subtle mistune, it is a different voice. Hence a table, not a shared block.
+MODEL_DEFAULTS = {
+    "standard": {"exaggeration": 0.5, "cfg_weight": 0.5, "temperature": 0.8,
+                 "repetition_penalty": 1.2, "min_p": 0.05, "top_p": 1.0},
+    "turbo":    {"exaggeration": 0.0, "cfg_weight": 0.0, "temperature": 0.8,
+                 "repetition_penalty": 1.2, "min_p": 0.0, "top_p": 0.95,
+                 "top_k": 1000, "norm_loudness": True},
+}
+
+
 @dataclass
 class Generation:
+    # "standard" = ResembleAI/chatterbox, "turbo" = ResembleAI/chatterbox-turbo
+    variant: str = "standard"
+
     # Chatterbox emits 24 kHz. Everything downstream works at 48 kHz because the
     # channel's back catalogue is 48 kHz and the mastering chain assumes it. The
     # upsample does NOT invent detail above 12 kHz -- it only stops the master
@@ -43,6 +60,7 @@ class Generation:
     use_fp16: bool = True
     empty_cache_between_chunks: bool = True
 
+    top_k: int = 1000           # turbo only; Standard rejects it
     seed: int | None = None     # set for reproducible re-rolls
 
 

@@ -235,6 +235,15 @@ def _schema(s: config.Settings):
     the reason invites someone to undo it."""
     g, r, m, o = s.generation, s.readcheck, s.master, s.orphans
     return [
+        {"key": "generation", "title": "Model", "items": [
+            {"key": "variant", "name": "Chatterbox model", "type": "choice",
+             "value": g.variant, "options": ["standard", "turbo"],
+             "why": "Turbo is faster, and it is NOT the same model with the same "
+                    "dials — it reads neutrally at exaggeration 0.0 and cfg_weight "
+                    "0.0 where Standard reads neutrally at 0.5. Switching models "
+                    "means re-tuning the voice in the Tune step, not carrying the "
+                    "numbers across."},
+        ]},
         {"key": "generation", "title": "Voice & generation", "items": [
             {"key": "exaggeration", "name": "Exaggeration", "type": "number",
              "min": .2, "max": .9, "step": .01, "dp": 2, "value": g.exaggeration,
