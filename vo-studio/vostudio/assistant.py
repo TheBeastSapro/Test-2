@@ -149,7 +149,7 @@ def start_login() -> tuple[bool, str]:
 
 def build_options(app_root: Path, permission_mode: str = "default",
                   allow_network: bool = False, budget_usd: float | None = 5.0,
-                  model: str | None = None):
+                  model: str | None = None, studio=None):
     """
     Confine the agent to this app, on disk and on the network.
 
@@ -177,6 +177,17 @@ def build_options(app_root: Path, permission_mode: str = "default",
     # with nothing, which is a worse outcome than not asking.
     extra = {"model": model} if model else {}
 
+    # The studio itself, as tools. Without these Claude can only talk ABOUT the
+    # pipeline; with them it runs it -- loads the reference, renders takes,
+    # moves the dials, reads the script and renders it.
+    if studio is not None:
+        from . import agent_tools
+        extra["mcp_servers"] = {"vostudio": agent_tools.build_server(studio)}
+        # Pre-allowed: every one of them is either read-only or produces audio
+        # that can simply be produced again. Nothing here overwrites a profile
+        # or deletes a render -- those stayed buttons on purpose.
+        extra["allowed_tools"] = agent_tools.ALLOWED
+
     return ClaudeAgentOptions(
         cwd=str(app_root),
         **extra,
@@ -188,15 +199,74 @@ def build_options(app_root: Path, permission_mode: str = "default",
         # A destructive edit here is unrecoverable — the audio is not in git.
         disallowed_tools=["WebFetch", "WebSearch"] if not allow_network else [],
         system_prompt=(
-            "You are working inside ExplainTory VO Studio, Sapro's local voiceover "
-            "app. The pipeline's thresholds in vostudio/config.py were each set by a "
-            "specific past failure and are annotated with it — do not change one "
-            "without a measurement that justifies it. Never edit files under "
-            "projects/ or voices/: those are rendered audio and his voice reference, "
-            "they are not in git, and they cannot be recovered. Prefer showing a diff "
-            "and explaining the tradeoff over making a large change in one step."
+            "You ARE ExplainTory VO Studio — Sapro's local voiceover studio, running "
+            "Chatterbox on his own GPU. You are not an assistant sitting beside the "
+            "app; the app's operations are your tools and you do the work with them.\n\n"
+
+            "How the work goes:\n"
+            "- A voice reference has to be loaded before anything can be rendered. If "
+            "one is missing, ask for a clip: 8-12 seconds of continuous speech, no "
+            "music, no long pauses. When he attaches audio, call "
+            "use_voice_reference with its path.\n"
+            "- To tune a voice: render_take, let him listen, take his note "
+            "('feels bit fast', 'too flat'), call adjust_voice, then render_take "
+            "again on the SAME words. Changing the words and the settings in one "
+            "round means neither of you can tell which change you are hearing.\n"
+            "- When he pastes a script, call analyse_script and show him what it "
+            "becomes — sections, chunks, chapter headers, finished length, render "
+            "time — and let him agree before render_script. That render is tens of "
+            "minutes of GPU; starting one he did not ask for is the worst thing you "
+            "can do here.\n\n"
+
+            "Say what you did and what the numbers were. 'Rendered a take, 11.4s, "
+            "speed 1.00 to 0.96' is useful; 'Done!' is not. Report failures with the "
+            "actual error.\n\n"
+
+            "You can also read and edit the app's own code. The thresholds in "
+            "vostudio/config.py were each set by a specific past failure and are "
+            "annotated with it — do not change one without a measurement that "
+            "justifies it. Never edit anything under projects/ or voices/: that is "
+            "rendered audio and his voice reference, it is not in git, and it cannot "
+            "be recovered."
         ),
     )
+
+
+async def run(prompt: str, app_root: Path, **kwargs):
+    """
+    One turn, as a stream of events.
+
+    Yields {"type": "text"|"tool"|"error", ...}. Streaming rather than
+    returning at the end because a turn can now RENDER something -- tens of
+    minutes of GPU -- and a UI that shows nothing until it finishes is
+    indistinguishable from one that has hung.
+    """
+    from claude_agent_sdk import (query, AssistantMessage, TextBlock,
+                                  ToolUseBlock, CLINotFoundError)
+
+    status = check_auth()
+    if not status.ok:
+        yield {"type": "error", "text": status.detail}
+        return
+
+    try:
+        async for message in query(prompt=prompt,
+                                   options=build_options(app_root, **kwargs)):
+            if not isinstance(message, AssistantMessage):
+                continue
+            for block in message.content:
+                if isinstance(block, TextBlock):
+                    yield {"type": "text", "text": block.text}
+                elif isinstance(block, ToolUseBlock):
+                    # Named so the transcript shows the work, not just the
+                    # answer: "rendering a take" while it happens.
+                    yield {"type": "tool", "name": getattr(block, "name", "tool"),
+                           "input": getattr(block, "input", {}) or {}}
+    except CLINotFoundError:
+        yield {"type": "error", "text":
+               "Claude Code CLI not found. Install it and sign in."}
+    except Exception as exc:                                  # pragma: no cover
+        yield {"type": "error", "text": f"{type(exc).__name__}: {exc}"}
 
 
 async def ask(prompt: str, app_root: Path, on_text=print, **kwargs):

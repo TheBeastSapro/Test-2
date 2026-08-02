@@ -1,13 +1,13 @@
-<!-- ONE SURFACE.
-     Four tabs for a job that only ever runs in one order was friction: you
-     cannot tune a voice you have not loaded or render a script without one, so
-     the steps were never really choices — they were a wizard wearing tabs.
+<!-- ONE SURFACE, AND IT IS CLAUDE.
+     Four tabs for a job that only ever runs in one order was a wizard wearing
+     tabs. What replaced them is not a wizard either: the pipeline is a set of
+     tools the agent holds, so you ask for a voiceover and it loads the
+     reference, renders takes, moves the dials and runs the render itself.
 
-     Everything happens in the conversation now. Drop a clip and it becomes the
-     voice. Paste a script and it tells you what it will become — profile,
-     chapter headers, chunks, how long it will take — before an hour is spent.
-     The panel on the right is not another screen, it is the state of the thing
-     you are talking about. -->
+     The panel on the right is not another screen. It is the state of the thing
+     being discussed, repainted from the server after every turn — and the two
+     buttons that are NOT tools, because saving over a tuned profile is not
+     something to find out about afterwards. -->
 <div class="app">
 
 <aside class="side">
@@ -35,11 +35,9 @@
 
         <div class="attached" id="attached" hidden></div>
 
-        <div class="chips" id="chips" hidden></div>
-
         <div class="composer">
           <textarea id="chat-input" rows="1"
-            placeholder="paste a script, say what is wrong with a take, or ask for a change"></textarea>
+            placeholder="ask for a voiceover, drop a reference clip, paste a script"></textarea>
           <div class="composer-tools">
             <button class="icon-btn" id="btn-attach" title="Attach a clip, a screenshot or a file"><i data-i="clip"></i></button>
             <input type="file" id="attach-file" multiple hidden>
@@ -74,6 +72,10 @@
           </div>
 
           <div class="params" id="params"></div>
+
+          <!-- The last thing it rendered, always to hand rather than scrolled
+               away up the transcript. -->
+          <div id="last-take" class="last-take"></div>
 
           <div class="tune-acts">
             <button class="btn w-full" id="btn-take">Render a take</button>

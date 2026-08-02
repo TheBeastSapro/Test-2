@@ -33,7 +33,7 @@ from vostudio import config, winfix
 winfix.apply()
 
 from vostudio import pipeline
-from vostudio.assistant import ask, check_auth, start_login
+from vostudio.assistant import run as agent_run, check_auth, start_login
 from vostudio.voice_profile import VoiceProfile, apply_feedback
 
 ROOT = Path(__file__).resolve().parent
@@ -406,6 +406,16 @@ SAMPLE = ("The most spectacular story in this video is the one nobody can prove.
           "In 1798, a French army landed in Egypt to cut England off from India.")
 
 
+@app.get("/api/lab/latest")
+def lab_latest(name: str = ""):
+    """The newest take, for the panel — so the last thing rendered is to hand
+    instead of scrolled away up the transcript."""
+    name = name or SETTINGS.active_profile or "explaintory"
+    folder = config.VOICES_DIR / name / "takes"
+    takes = sorted(folder.glob("take-*.wav")) if folder.exists() else []
+    return {"name": name, "file": takes[-1].name if takes else ""}
+
+
 @app.get("/api/lab/audio")
 def lab_audio(name: str = "explaintory", file: str = ""):
     """One take, by name. `file` is validated rather than trusted -- it arrives
@@ -602,6 +612,132 @@ def auth_login(payload: dict = None):
     return {"ok": ok, "message": message}
 
 
+# ------------------------------------------------------------------ studio
+class Studio:
+    """
+    The pipeline, as plain methods, so the agent's tools and the panel's
+    buttons drive exactly the same code. Two paths to the same operation is
+    how the two ends of an app start disagreeing about what is loaded.
+    """
+
+    def voice_status(self) -> dict:
+        p = STATE.get("voice")
+        if not p or not Path(p).exists():
+            return {"loaded": False,
+                    "hint": "No reference loaded. Ask Sapro to attach an audio "
+                            "clip: 8-12 seconds of continuous speech, no music."}
+        return {"loaded": True, "name": Path(p).name,
+                "duration_s": STATE.get("voice_duration"),
+                "peak_dbfs": STATE.get("voice_peak"),
+                "profile": SETTINGS.active_profile or "explaintory"}
+
+    def set_voice(self, path: str) -> dict:
+        src = Path(path)
+        if not src.exists():
+            return {"error": f"No file at {path}"}
+        dest = config.VOICES_DIR / "reference" / src.name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if src.resolve() != dest.resolve():
+            shutil.copyfile(src, dest)
+
+        probe = dest.with_suffix(".probe.wav")
+        import subprocess
+        try:
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(dest),
+                            "-ar", "24000", "-ac", "1", str(probe)], check=True)
+            audio, rate = sf.read(probe)
+        except Exception as exc:
+            return {"error": f"Could not read that as audio: {exc}"}
+
+        dur = len(audio) / rate
+        peak = float(20 * np.log10(np.abs(audio).max() + 1e-12))
+        STATE["voice"] = str(dest)
+        STATE["voice_duration"] = round(dur, 1)
+        STATE["voice_peak"] = round(peak, 1)
+
+        # Said now rather than after a bad render, because every one of these
+        # produces a clone that is wrong in a way that is hard to name later.
+        warn = ""
+        if dur < 5:
+            warn = "Short — the clone has little to work from. 8-12s is better."
+        elif dur > 25:
+            warn = "Long — trim to 8-12s of continuous speech."
+        elif peak > -0.5:
+            warn = "Peaks near full scale. A clipped reference clones the clipping."
+        return {"loaded": True, "name": dest.name, "duration_s": round(dur, 1),
+                "peak_dbfs": round(peak, 1), "warning": warn}
+
+    def take(self, text: str = "") -> dict:
+        name = SETTINGS.active_profile or "explaintory"
+        payload = {"name": name}
+        if text:
+            payload["text"] = text
+        out = lab_sample(payload)
+        if out.get("error"):
+            return out
+        return {"rendered": True, "seconds_on_gpu": out.get("seconds"),
+                "text_read": out.get("text"), "file": out.get("audio"),
+                "note": out.get("note") or "",
+                "settings": {k: out["profile"][k] for k in
+                             ("exaggeration", "cfg_weight", "temperature", "speed")}}
+
+    def tune(self, feedback: str) -> dict:
+        name = SETTINGS.active_profile or "explaintory"
+        out = lab_feedback({"name": name, "feedback": feedback})
+        if not out.get("changes"):
+            return {"changed": [], "note": "Nothing in that matched a known "
+                    "adjustment. Say which way it is wrong — too fast, too flat, "
+                    "false pauses — or set a dial directly."}
+        return {"changed": out["changes"], "settings": out["profile"]}
+
+    def set_param(self, key: str, value: float) -> dict:
+        if key not in PARAM_RANGE:
+            return {"error": f"Unknown dial {key}. One of: {', '.join(PARAM_RANGE)}"}
+        out = lab_params({"name": SETTINGS.active_profile or "explaintory",
+                          "values": {key: value}})
+        return {"set": key, "to": out["profile"][key]}
+
+    def analyse(self, script: str) -> dict:
+        return analyse_script({"script": script})
+
+    def render(self, script: str, title: str = "") -> dict:
+        """
+        The expensive one. Runs to completion and returns the outcome plus the
+        tail of the log, so the agent reports what actually happened rather
+        than that it started something.
+        """
+        if not STATE.get("voice"):
+            return {"error": "No voice reference loaded — nothing to read it in."}
+        safe = "".join(c for c in (title or "Untitled")
+                       if c.isalnum() or c in " -_").strip() or "Untitled"
+        project = config.PROJECTS_DIR / safe
+        project.mkdir(parents=True, exist_ok=True)
+
+        lines: list[str] = []
+        JOB.update(phase="script", started=time.perf_counter(), chars=len(script))
+        STATE["log"] = lines
+        try:
+            result = pipeline.run(script, safe, Path(STATE["voice"]),
+                                  SETTINGS, project, log=lines.append)
+        except Exception as exc:
+            JOB.update(phase="idle", started=0.0)
+            lines.append("FAILED: " + friendly(exc))
+            return {"error": friendly(exc), "log_tail": lines[-12:]}
+        JOB.update(phase="idle", started=0.0)
+        STATE["render"] = result
+
+        return {"path": str(result.final_path), "duration_s": result.duration_s,
+                "needs_an_ear": bool(result.unresolved or result.notes),
+                "unresolved": list(result.unresolved or [])[:8],
+                "log_tail": lines[-12:]}
+
+    def render_log(self) -> dict:
+        return {"log": (STATE.get("log") or ["Nothing rendered yet."])[-60:]}
+
+
+STUDIO = Studio()
+
+
 # Inside the app root on purpose. The assistant is sandboxed to that folder, so
 # a file dropped anywhere else is a path it is not allowed to open — attaching it
 # would look like it worked and then quietly fail at the Read.
@@ -632,10 +768,13 @@ def _describe(path: Path) -> dict:
         except Exception:
             pass
         return {"kind": "audio",
-                # Stated plainly because the failure is otherwise invisible: a
-                # model that cannot hear will happily describe audio anyway.
-                "note": (f"audio{detail} — you CANNOT listen to it. Measure it "
-                         "instead: ffprobe, soundfile, or the checks in vostudio/")}
+                # Two things stated plainly. What it is FOR, because a clip is
+                # usually a reference to clone. And that you cannot hear it —
+                # otherwise a model that cannot hear will describe it anyway.
+                "note": (f"audio{detail} — if this is a voice to clone, pass this "
+                         "path to use_voice_reference. You CANNOT listen to it; "
+                         "measure it with ffprobe, soundfile, or the checks in "
+                         "vostudio/ rather than describing how it sounds")}
     return {"kind": "file", "note": "a file — read it with the Read tool"}
 
 
@@ -718,8 +857,13 @@ def set_assistant_prefs(payload: dict):
 
 @app.post("/api/assistant")
 async def assistant(payload: dict):
-    # Only paths inside ATTACH_DIR. The client sends these back, and a client is
-    # not a place to enforce where the agent may read from.
+    """
+    One turn, streamed as newline-delimited JSON.
+
+    A turn can now render audio, which means it can take tens of minutes. A
+    response that arrives only at the end is indistinguishable from a hang, so
+    text and tool calls go out as they happen.
+    """
     files = []
     for raw in payload.get("files") or []:
         try:
@@ -736,10 +880,16 @@ async def assistant(payload: dict):
         message = (f"Sapro attached these files to this message:\n{listing}\n\n"
                    f"{message}")
 
-    # Confirm calls on = every edit prompts. Off = it edits and reports after.
     mode = "default" if SETTINGS.app.confirm_calls else "acceptEdits"
 
-    out: list[str] = []
-    await ask(message, ROOT, on_text=out.append,
-              permission_mode=mode, model=SETTINGS.app.assistant_model)
-    return {"reply": "".join(out)}
+    async def stream():
+        try:
+            async for event in agent_run(message, ROOT, permission_mode=mode,
+                                         model=SETTINGS.app.assistant_model,
+                                         studio=STUDIO):
+                yield json.dumps(event) + "\n"
+        except Exception as exc:
+            yield json.dumps({"type": "error", "text": friendly(exc)}) + "\n"
+        yield json.dumps({"type": "done"}) + "\n"
+
+    return StreamingResponse(stream(), media_type="application/x-ndjson")

@@ -1,17 +1,15 @@
 /* VO Studio front-end. Talks to the FastAPI backend in server.py.
 
-   ONE SURFACE, AND A ROUTER RATHER THAN A MODEL DECIDING
+   IT IS CLAUDE, AND THE STUDIO IS ITS TOOLS
 
-   Everything happens in the chat, but what a message MEANS is worked out here,
-   not by Claude. Dropping a clip sets the voice; a long paste is a script; a
-   short line is feedback if the profile table recognises it. Those are the
-   three things this app does, and routing them locally means the pipeline
-   works whether or not you are signed in — and that a forty-minute render is
-   never something a model decided to start on your behalf.
+   There is no routing here. Every message goes to Claude, which holds the
+   pipeline as MCP tools running in the app's own process — load a reference,
+   render a take, move a dial, read a script, render it. Deciding what you
+   meant was a keyword table's job for about a day, and a keyword table is a
+   worse listener than the thing already in the box.
 
-   Claude gets everything the router does not recognise, plus anything you ask
-   it for directly. That is the split: deterministic where a mistake costs an
-   hour of GPU, conversational everywhere else. */
+   This file draws the conversation and keeps the right-hand panel showing
+   whatever Claude just changed. It does not decide anything. */
 
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -117,19 +115,6 @@ function startClock(el, label) {
   return { stop: () => { clearInterval(id); return (performance.now() - t0) / 1000; } };
 }
 
-/* Buttons inside a reply. The router proposes, you press — nothing that costs
-   GPU time starts because a message was ambiguous. */
-function actions(el) {
-  $$('[data-act]', el).forEach(b => b.onclick = () => {
-    const act = b.dataset.act;
-    $$('[data-act]', el).forEach(x => x.disabled = true);
-    if (act === 'render') renderScript(b.dataset.script);
-    if (act === 'line') readLine(b.dataset.text);
-    if (act === 'claude') askClaude(b.dataset.text);
-    if (act === 'take') renderTake();
-  });
-}
-
 /* ── voice reference ────────────────────────────────────────────────── */
 let VOICE = { loaded: false };
 
@@ -143,31 +128,12 @@ function paintVoice(v) {
     `${v.name}${v.duration ? ` · ${v.duration}s` : ''}${v.peak != null ? ` · peak ${v.peak} dBFS` : ''}`;
 }
 
-const AUDIO_EXT = /\.(wav|mp3|flac|m4a|aac|ogg|opus)$/i;
-
+// Everything attaches, audio included. Claude decides what a clip is FOR --
+// a reference to clone, or a take to measure — which is the whole point of it
+// holding the tools rather than this file guessing from a file extension.
 async function takeFiles(files) {
-  for (const f of files) {
-    if (AUDIO_EXT.test(f.name)) await useAsVoice(f);
-    else await attach(f);
-  }
-}
-
-async function useAsVoice(file) {
-  say(`<b>${esc(file.name)}</b>`, 'me');
-  const holder = say('<span class="msg-wait">reading the clip…</span>');
-  const fd = new FormData(); fd.append('file', file);
-  try {
-    const r = await fetch('/api/voice', { method: 'POST', body: fd });
-    const j = await r.json();
-    if (!r.ok || j.error) { holder.innerHTML = `<span class="msg-bad">${esc(j.error || r.status)}</span>`; return; }
-    paintVoice({ loaded: true, name: j.name, duration: +j.duration.toFixed(1), peak: +j.peak.toFixed(1) });
-    holder.innerHTML =
-      `That is the voice now — <b>${esc(j.name)}</b>, ${j.duration.toFixed(1)}s, peak ${j.peak.toFixed(1)} dBFS.` +
-      (j.warning ? `<div class="msg-bad" style="margin-top:8px">${esc(j.warning)}</div>` : '') +
-      `<div class="acts"><button class="btn btn-sm btn-primary" data-act="take">Render a take</button></div>`;
-    actions(holder);
-    suggest([]);
-  } catch (e) { holder.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
+  for (const f of files) await attach(f);
+  $('#chat-input').focus();
 }
 
 /* ── attachments for Claude ─────────────────────────────────────────── */
@@ -218,27 +184,17 @@ const card = $('#chat-card');
 }));
 card.addEventListener('drop', e => e.dataTransfer.files.length && takeFiles(e.dataTransfer.files));
 
-/* ── suggestion chips ───────────────────────────────────────────────── */
-const FEEDBACK_CHIPS = ['too flat', 'too expressive', 'feels bit fast', 'too slow',
-                        'false pauses', 'no natural gaps'];
-function suggest(list) {
-  const box = $('#chips');
-  box.hidden = !list.length;
-  box.innerHTML = list.map(t => `<button class="chip">${esc(t)}</button>`).join('');
-  $$('#chips .chip').forEach(c => c.onclick = () => {
-    const i = $('#chat-input');
-    i.value = i.value ? `${i.value} and ${c.textContent}` : c.textContent;
-    i.focus();
-  });
-}
-
-/* ── the router ─────────────────────────────────────────────────────── */
-// A script is not a sentence. Two blank-line-separated blocks, or a lot of
-// words, is the difference — and when it is close, it asks rather than
-// committing forty minutes of GPU to a guess.
-const looksLikeScript = t =>
-  t.split(/\n\s*\n/).filter(b => b.trim()).length >= 2 ||
-  t.split(/\s+/).length >= 60;
+/* ── one turn ───────────────────────────────────────────────────────── */
+const TOOL_SAYS = {
+  voice_status: 'checking the voice',
+  use_voice_reference: 'loading the reference',
+  render_take: 'rendering a take',
+  adjust_voice: 'adjusting the voice',
+  set_voice_parameter: 'setting a dial',
+  analyse_script: 'reading the script',
+  render_script: 'rendering the script',
+  read_render_log: 'reading the log',
+};
 
 async function send() {
   const input = $('#chat-input'), text = input.value.trim();
@@ -253,138 +209,75 @@ async function send() {
   ATTACHED = []; paintAttached();
   say((shown ? `<div class="att-row">${shown}</div>` : '') + asText(text), 'me');
 
-  if (files.length) return askClaude(text, files);
-  if (!text) return;
-
-  if (looksLikeScript(text)) return offerScript(text);
-
-  // Short line: feedback if the profile table understands it, otherwise ask.
-  if (VOICE.loaded) {
-    const holder = say('<span class="msg-wait">…</span>');
-    try {
-      const j = await api('/api/lab/feedback', { name: $('#prof').value, feedback: text });
-      if (j.changes?.length) {
-        holder.innerHTML = `<div class="chg">${j.changes.map(c => `<span>${esc(c)}</span>`).join('')}</div>`;
-        paintParams(j.profile);
-        return renderTake(holder);
-      }
-      holder.innerHTML =
-        `I could not read that as a note about the read.` +
-        `<div class="acts">` +
-        `<button class="btn btn-sm btn-primary" data-act="line" data-text="${esc(text)}">Read it as a line</button>` +
-        `<button class="btn btn-sm" data-act="claude" data-text="${esc(text)}">Ask Claude</button></div>`;
-      actions(holder);
-    } catch (e) { holder.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
-    return;
-  }
-  return askClaude(text);
+  await stream(text, files);
 }
 
-/* ── script ─────────────────────────────────────────────────────────── */
-async function offerScript(script) {
-  const holder = say('<span class="msg-wait">reading the script…</span>');
-  try {
-    const j = await api('/api/script/analyse', { script });
-    if (j.error) { holder.innerHTML = `<span class="msg-bad">${esc(j.error)}</span>`; return; }
-    // Everything you would want to check BEFORE an hour goes into it, and the
-    // counts come from the parser the render itself uses — an estimate that
-    // disagreed with the render would be worse than none, because it would be
-    // believed.
-    holder.innerHTML = `
-      <div class="brief">
-        <div class="brief-row"><span>Voice</span><b>${esc(VOICE.loaded ? VOICE.name : 'none loaded')}</b></div>
-        <div class="brief-row"><span>Profile</span><b>${esc($('#prof').value)}</b></div>
-        <div class="brief-row"><span>Words</span><b>${j.words}</b></div>
-        <div class="brief-row"><span>Sections</span><b>${j.sections}</b></div>
-        <div class="brief-row"><span>Chunks</span><b>${j.chunks}</b></div>
-        <div class="brief-row"><span>Chapter headers</span><b>${j.headers.length}</b></div>
-        ${j.headers.length ? `<div class="brief-heads">${j.headers.map(h => `<span>${esc(h)}</span>`).join('')}</div>` : ''}
-        <div class="brief-row"><span>Finished length</span><b>about ${mmss(j.speech_seconds)}</b></div>
-        <div class="brief-row"><span>Render time</span><b>about ${mmss(j.render_seconds)}</b></div>
-      </div>` +
-      (VOICE.loaded
-        ? `<div class="acts"><button class="btn btn-sm btn-primary" data-act="render">Render it</button></div>`
-        : `<div class="msg-bad" style="margin-top:10px">Drop an audio clip in first — there is no voice to read it in.</div>`);
-    if (VOICE.loaded) {
-      // The script rides on the button rather than a global, so pasting a
-      // second script before pressing the first cannot render the wrong one.
-      $('[data-act="render"]', holder).dataset.script = script;
-      actions(holder);
-    }
-  } catch (e) { holder.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
-}
+async function stream(text, files = []) {
+  const bubble = say('<span class="msg-wait">…</span>');
+  let body = '', started = false;
+  // A tool that renders gets its own progress line, because that is the one
+  // that takes minutes and a still transcript reads as a hang.
+  let live = null;
 
-async function renderScript(script) {
-  const holder = say('');
-  const bar = document.createElement('div');
-  const logBox = document.createElement('pre');
-  logBox.className = 'log'; logBox.style.marginTop = '12px';
-  holder.append(bar, logBox);
-
-  const t0 = performance.now();
-  bar.innerHTML = `<div class="prog inline">
-      <div class="prog-track"><div class="prog-fill sweep"></div></div>
-      <div class="prog-meta"><span class="what">loading the model…</span><span class="tick">0:00</span></div>
-    </div>`;
-  const fill = bar.querySelector('.prog-fill'), what = bar.querySelector('.what'),
-        tick = bar.querySelector('.tick');
-  let seen = 0, total = 0;
-  const clock = setInterval(() => {
-    const el = (performance.now() - t0) / 1000;
-    tick.textContent = mmss(el) + (seen && total > seen
-      ? ` · about ${mmss((el / seen) * (total - seen))} left` : '');
-  }, 500);
+  const paint = () => {
+    bubble.innerHTML = asText(body) || '<span class="msg-wait">…</span>';
+    chat().scrollTop = chat().scrollHeight;
+  };
 
   try {
-    const res = await fetch('/api/render', {
+    const res = await fetch('/api/assistant', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ script, title: firstHeader(script) }),
+      body: JSON.stringify({ message: text, files }),
     });
     const reader = res.body.getReader(), dec = new TextDecoder();
-    let finished = false;
-    while (!finished) {
-      const { value, done } = await reader.read(); finished = done;
-      if (!value) continue;
-      const text = dec.decode(value, { stream: true });
-      logBox.textContent += text;
-      logBox.scrollTop = logBox.scrollHeight;
+    let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (value) buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        let ev; try { ev = JSON.parse(line); } catch { continue; }
 
-      const m = [...text.matchAll(/chunk (\d+)\/(\d+)/g)].pop();
-      if (m) {
-        seen = +m[1]; total = +m[2];
-        fill.classList.remove('sweep');
-        fill.style.width = (seen / total * 100).toFixed(1) + '%';
-        what.textContent = `chunk ${seen} of ${total}`;
-      } else if (/Transcribing the delivered file/.test(text)) {
-        fill.style.width = '100%'; what.textContent = 'checking the delivered file…';
+        if (ev.type === 'text') {
+          if (live) { live.remove(); live = null; }
+          started = true; body += ev.text; paint();
+        } else if (ev.type === 'tool') {
+          const label = TOOL_SAYS[ev.name?.split('__').pop()] || 'working';
+          if (!started) bubble.innerHTML = '';
+          live?.remove();
+          live = document.createElement('div');
+          bubble.append(live);
+          // Only the slow ones get a bar; a status check does not need one.
+          if (/render/.test(ev.name || '')) startClock(live, label + '…');
+          else live.innerHTML = `<span class="msg-wait">${esc(label)}…</span>`;
+          chat().scrollTop = chat().scrollHeight;
+        } else if (ev.type === 'error') {
+          body += (body ? '\n\n' : '') + ev.text; paint();
+        }
       }
-    }
-    clearInterval(clock);
-    const elapsed = (performance.now() - t0) / 1000;
-    fill.classList.remove('sweep'); fill.style.width = '100%';
-    what.textContent = `finished in ${mmss(elapsed)}`;
-
-    const info = await api('/api/render/result');
-    if (info.path) {
-      holder.insertBefore(Object.assign(document.createElement('div'), {
-        innerHTML: `<audio controls src="/api/render/audio?t=${Date.now()}"></audio>` +
-          `<div class="took">${esc(info.path)}</div>` +
-          (info.warn ? `<div class="msg-bad" style="margin-top:8px">Some chunks never passed the ` +
-            `read-check and the best take was kept. Read the end of the log and listen to those.</div>` : ''),
-      }), bar);
-    } else {
-      what.textContent = 'failed';
+      if (done) break;
     }
   } catch (e) {
-    clearInterval(clock);
-    logBox.textContent += `\n${e}`;
+    body += `\n${e}`; paint();
   }
+  if (live) live.remove();
+  if (!body.trim()) bubble.innerHTML = '<span class="msg-wait">(no reply)</span>';
+
+  // Whatever it just did is now the truth about the voice — repaint the panel
+  // from the server rather than guessing from the conversation.
+  refreshPanel();
 }
 
-// The title names the output folder, so a chapter header beats "Untitled".
-const firstHeader = s => (s.split(/\n\s*\n/).map(b => b.trim())
-  .find(b => b && !b.includes('\n') && b.split(/\s+/).length <= 3 && !/[.!?]$/.test(b)))
-  || 'Untitled';
+function refreshPanel() {
+  api('/api/voice/status').then(paintVoice).catch(() => {});
+  loadProfile();
+  api('/api/lab/latest').then(j => {
+    if (j.file) $('#last-take').innerHTML =
+      `<audio controls src="/api/lab/audio?name=${encodeURIComponent(j.name)}&file=${encodeURIComponent(j.file)}"></audio>`;
+  }).catch(() => {});
+}
 
 /* ── takes ──────────────────────────────────────────────────────────── */
 async function renderTake(into, text) {
@@ -407,13 +300,11 @@ async function renderTake(into, text) {
         `<audio controls src="/api/lab/audio?name=${encodeURIComponent($('#prof').value)}` +
         `&file=${encodeURIComponent(j.audio || '')}"></audio>` +
         `<div class="took">${(j.seconds ?? took).toFixed(1)}s on the GPU</div>`;
-      suggest(FEEDBACK_CHIPS);
     }
   } catch (e) { clock.stop(); slot.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
   $('#btn-take').disabled = false;
   chat().scrollTop = chat().scrollHeight;
 }
-const readLine = text => renderTake(null, text);
 $('#btn-take').onclick = () => renderTake();
 
 /* ── voice profile panel ────────────────────────────────────────────── */
