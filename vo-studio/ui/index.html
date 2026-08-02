@@ -77,8 +77,8 @@
           <div class="empty">Press <b>Render a first take</b> to hear where the voice is starting from.</div>
         </div>
         <div class="composer">
-          <input id="lab-fb" type="text" placeholder="feels bit fast and a little flat">
-          <button class="btn btn-primary" id="btn-lab-send">Send</button>
+          <input id="lab-fb" type="text" placeholder="talk to it — what is wrong with the read?">
+          <button class="send-btn" id="btn-lab-send" title="Send"><i data-i="up"></i></button>
         </div>
         <div class="chips" id="lab-chips">
           <button class="chip">too flat</button>
@@ -205,10 +205,10 @@
       <div class="chat" id="chat"><div class="empty">Ask for a change in plain English. Drop in a screenshot or a clip and it looks at that too.</div></div>
       <div class="attached" id="attached" hidden></div>
       <div class="composer">
-        <button class="btn btn-icon" id="btn-attach" title="Attach a file"><i data-i="clip"></i></button>
+        <button class="icon-btn" id="btn-attach" title="Attach an image or a clip"><i data-i="clip"></i></button>
         <input type="file" id="attach-file" multiple hidden>
-        <input id="chat-input" type="text" placeholder="the pauses after commas feel too long">
-        <button class="btn btn-primary" id="btn-send">Send</button>
+        <input id="chat-input" type="text" placeholder="ask, or drop in a screenshot or a clip">
+        <button class="send-btn" id="btn-send" title="Send"><i data-i="up"></i></button>
       </div>
     </div>
   </section>

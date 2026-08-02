@@ -8,14 +8,18 @@
    voice first, then tune it, then the script, then the file. Tabs of equal
    weight assume you already know the order.
 
-   ElevenLabs gave the SURFACE — restraint. Near-monochrome, one neutral
-   accent, a white primary button, generous whitespace, hairline borders, and
-   no gradient doing work that spacing should do. His studio leaned on a
-   violet→cyan gradient; ElevenLabs would spend that on air instead, so the
-   gradient survives in exactly two places (the mark and the active step) and
-   nowhere else.
+   ElevenLabs gave the LAYOUT — one fixed left column holding everything that
+   is not the work itself, generous whitespace, hairline borders, and no
+   decoration doing a job that spacing should do.
 
-   Whitespace is the main tool here. Everything is roomier than it needs to be
+   Rookcast gave the SURFACE and the CHAT. Near-black with a green cast, mint
+   as the only accent, and — the part that matters — a transcript that fills
+   the window with the agent's replies NOT in bubbles. A bubble around a long
+   answer throws away a third of the width and makes reading it feel like
+   reading a text message. Only your own messages are bubbles, because those
+   are what you scan back for.
+
+   Whitespace is still the main tool. Everything is roomier than it needs to be
    by dashboard standards, because that is most of what reads as expensive.
    ═══════════════════════════════════════════════════════════════════════ */
 
@@ -24,20 +28,24 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 :root {
-  --bg:        #0a0a0b;
-  --raise:     #121214;
-  --raise-2:   #17171a;
-  --raise-3:   #1e1e22;
-  --line:      #232327;
-  --line-lit:  #2e2e34;
+  /* Rookcast's palette: near-black with a green cast rather than a blue one,
+     and mint as the only accent. The violet went with it -- two accents is how
+     a workspace starts looking like a demo. */
+  --bg:        #08090a;
+  --raise:     #0e1110;
+  --raise-2:   #141817;
+  --raise-3:   #1b201e;
+  --line:      #1e2422;
+  --line-lit:  #2a322e;
 
-  --text:      #fafafa;
-  --muted:     #a1a1aa;
-  --faint:     #6b6b76;
+  --text:      #f2f5f4;
+  --muted:     #9aa5a1;
+  --faint:     #66716d;
 
-  /* one accent, used sparingly — everything else is neutral */
-  --accent:    #8b5cf6;
-  --grad:      linear-gradient(135deg, #8b5cf6, #6366f1 60%, #22d3ee);
+  --accent:    #34d399;
+  --accent-dim: rgba(52,211,153,.13);
+  --accent-line: rgba(52,211,153,.24);
+  --grad:      linear-gradient(135deg, #34d399, #10b981 55%, #22d3ee);
   --green:     #4ade80;
   --amber:     #fbbf24;
   --red:       #f87171;
@@ -56,7 +64,7 @@ html, body {
   letter-spacing: -.011em;
   -webkit-font-smoothing: antialiased;
 }
-::selection { background: rgba(139,92,246,.3); }
+::selection { background: rgba(52,211,153,.28); }
 
 /* ── the left column ────────────────────────────────────────────────
    Everything that is not the work itself: where you are, the two side doors,
@@ -105,7 +113,7 @@ html, body {
   width: 5px; height: 9px; border-radius: 3px; background: #fff;
   box-shadow: 0 11px 0 -4px #fff, 0 7px 0 -4px #fff;
 }
-.shell { max-width: 860px; margin: 0 auto; padding: 44px 40px 96px; }
+.shell { max-width: 1020px; margin: 0 auto; padding: 40px 38px 88px; }
 
 .page-head { margin-bottom: 26px; }
 .page-head h2 { margin: 0 0 6px; font-size: 22px; font-weight: 600; letter-spacing: -.024em; }
@@ -194,8 +202,10 @@ select { cursor: pointer; }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: .4; cursor: default; transform: none; }
 .btn i { width: 16px; height: 16px; }
-.btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 570; }
-.btn-primary:hover { background: #fff; }
+.btn-primary {
+  background: var(--accent); color: #04140d; border-color: var(--accent); font-weight: 570;
+}
+.btn-primary:hover { filter: brightness(1.08); background: var(--accent); }
 .btn-sm { padding: 9px 15px; font-size: 13.5px; }
 .btn-ghost { background: none; border-color: transparent; color: var(--muted); }
 .btn-ghost:hover { background: var(--raise-2); color: var(--text); }
@@ -243,7 +253,7 @@ select { cursor: pointer; }
 .drop b { font-size: 15.5px; font-weight: 560; }
 .drop span { font-size: 13.5px; color: var(--faint); }
 
-audio { width: 100%; height: 40px; margin-top: 14px; }
+audio { width: 100%; height: 44px; margin-top: 14px; }
 
 /* ── voice lab ──────────────────────────────────────────────────────── */
 .params { display: flex; flex-direction: column; gap: 20px; }
@@ -251,12 +261,12 @@ audio { width: 100%; height: 40px; margin-top: 14px; }
 .param-name { font-size: 14px; font-weight: 500; color: var(--muted); text-transform: capitalize; }
 .param-val { font-family: var(--mono); font-size: 13.5px; font-variant-numeric: tabular-nums; color: var(--text); }
 .param-bar { grid-column: 1 / -1; height: 4px; background: var(--raise-3); border-radius: 999px; overflow: hidden; }
-.param-fill { height: 100%; background: var(--text); border-radius: 999px; transition: width .4s var(--ease); }
+.param-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s var(--ease); }
 
 /* ── tune ───────────────────────────────────────────────────────────── */
 .tune { display: grid; grid-template-columns: minmax(0,1fr) 268px; gap: 18px; align-items: start; }
 @media (max-width: 900px) { .tune { grid-template-columns: 1fr; } }
-.tune .chat-card { height: 540px; margin-bottom: 16px; }
+.tune .chat-card { height: calc(100vh - 300px); min-height: 480px; margin-bottom: 16px; }
 .tune-side .card { padding: 22px 22px 24px; }
 .tune-acts { display: flex; flex-direction: column; gap: 9px; margin-top: 24px; }
 .tune-side .params { margin-top: 20px; }
@@ -265,15 +275,17 @@ audio { width: 100%; height: 40px; margin-top: 14px; }
 /* What moved, stated as the numbers rather than a reassurance. */
 .chg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
 .chg span {
-  font-family: var(--mono); font-size: 12.5px; color: var(--text);
-  background: var(--raise-3); border-radius: 6px; padding: 5px 9px;
+  font-family: var(--mono); font-size: 12.5px; color: var(--accent);
+  background: var(--accent-dim); border: 1px solid var(--accent-line);
+  border-radius: 6px; padding: 5px 9px;
   align-self: flex-start;
 }
 .msg-wait { color: var(--faint); font-size: 13.5px; }
 .msg-bad { color: var(--amber); }
-.msg audio { width: 262px; margin-top: 4px; }
+.msg audio { width: 100%; max-width: 460px; height: 44px; margin-top: 10px; }
 
 #lab-chips { padding: 0 22px 18px; margin: 0; }
+.attached { padding: 14px 22px 0; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .chip {
@@ -326,17 +338,39 @@ audio { width: 100%; height: 40px; margin-top: 14px; }
 .setting:first-child { border-top: 0; padding-top: 4px; }
 .setting-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .setting-name { font-size: 14.5px; font-weight: 520; }
-.setting-val { font-family: var(--mono); font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.setting-why { font-size: 13px; color: var(--faint); margin-top: 10px; line-height: 1.68; max-width: 62ch; }
+.setting-why { font-size: 13px; color: var(--faint); margin-top: 12px; line-height: 1.68; max-width: 62ch; }
 
+/* The value is typeable. Dragging a 4 px slider to 0.040 in 0.005 steps is
+   precision work with a blunt instrument; the box is the way you set an exact
+   number and the slider is for feeling out the range. */
+.setting-val { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.setting-num {
+  width: 94px; padding: 8px 10px; text-align: right;
+  font-family: var(--mono); font-size: 13.5px; font-variant-numeric: tabular-nums;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--line-lit); border-radius: 7px;
+}
+.setting-num:focus { outline: 0; border-color: var(--faint); box-shadow: 0 0 0 3px rgba(255,255,255,.05); }
+.setting-val em { font-style: normal; font-size: 12.5px; color: var(--faint); min-width: 30px; }
+
+/* Bigger everywhere it matters: a taller track to aim at, a thumb you can
+   actually catch, and 20 px of padding so the grab area is the full row rather
+   than the 6 px the track occupies. */
 input[type=range] {
-  -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
-  background: var(--raise-3); border-radius: 999px; margin: 16px 0 2px; cursor: pointer;
+  -webkit-appearance: none; appearance: none; width: 100%;
+  height: 40px; margin: 4px 0 0; background: transparent; cursor: pointer;
 }
 input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
-  background: var(--text); border: 0; cursor: grab;
-  box-shadow: 0 1px 4px rgba(0,0,0,.5);
+  -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); border: 0; cursor: grab;
+  box-shadow: 0 2px 8px rgba(0,0,0,.6);
+  transition: transform .12s var(--ease);
+  margin-top: -8px;            /* centres a 22 px thumb on a 6 px track */
+}
+input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.08); }
+input[type=range]:active::-webkit-slider-thumb { transform: scale(.96); cursor: grabbing; }
+input[type=range]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 999px; background: var(--raise-3);
 }
 
 .switch { position: relative; width: 40px; height: 23px; flex: none; }
@@ -350,20 +384,64 @@ input[type=range]::-webkit-slider-thumb {
   background: var(--faint); top: 3px; left: 3px;
   transition: transform .2s var(--ease), background .2s var(--ease);
 }
-.switch input:checked + span { background: var(--text); }
-.switch input:checked + span::after { transform: translateX(17px); background: var(--bg); }
+.switch input:checked + span { background: var(--accent); }
+.switch input:checked + span::after { transform: translateX(17px); background: #04140d; }
 
-/* ── assistant ──────────────────────────────────────────────────────── */
-.chat-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 520px; }
-.chat { flex: 1; overflow-y: auto; padding: 26px 28px; display: flex; flex-direction: column; gap: 16px; }
-.msg { max-width: 74%; padding: 13px 17px; border-radius: var(--r); font-size: 14.5px; line-height: 1.7; white-space: pre-wrap; }
-.msg.me { align-self: flex-end; background: var(--text); color: var(--bg); }
-.msg.ai { align-self: flex-start; background: var(--raise-2); border: 1px solid var(--line); color: var(--muted); }
-.composer { display: flex; align-items: center; gap: 10px; padding: 18px 22px; border-top: 1px solid var(--line); }
-.composer input { flex: 1; }
-.btn-icon { padding: 12px; flex: none; }
-.btn-icon i { width: 17px; height: 17px; color: var(--muted); }
-.btn-icon:hover i { color: var(--text); }
+/* ── chat ────────────────────────────────────────────────────────────
+   Rookcast's shape. The transcript fills the window rather than sitting in a
+   520 px box, and Claude's replies are not in bubbles at all — a bubble around
+   a long answer wastes a third of the width and makes reading it feel like
+   reading a text message. Only what YOU said is a bubble, because that is the
+   thing you scan back for. */
+.chat-card {
+  padding: 0; overflow: hidden; display: flex; flex-direction: column;
+  height: calc(100vh - 232px); min-height: 460px;
+}
+.chat {
+  flex: 1; overflow-y: auto; padding: 30px 34px;
+  display: flex; flex-direction: column; gap: 22px;
+}
+.msg { font-size: 14.8px; line-height: 1.72; white-space: pre-wrap; max-width: 100%; }
+.msg.me {
+  align-self: flex-end; max-width: 78%;
+  background: var(--accent-dim); border: 1px solid var(--accent-line);
+  color: #d7fbec; padding: 12px 16px; border-radius: var(--r);
+}
+.msg.ai { align-self: stretch; color: var(--text); }
+
+/* One box holding the field and its controls, like Rookcast's. */
+.composer {
+  margin: 0 22px 18px; padding: 6px 6px 6px 8px;
+  border: 1px solid var(--line-lit); border-radius: 14px;
+  background: var(--raise-2);
+  display: flex; align-items: center; gap: 8px;
+  transition: border-color .16s var(--ease);
+}
+.composer:focus-within { border-color: var(--accent-line); }
+.composer input {
+  flex: 1; background: none; border: 0; padding: 12px 8px; font-size: 15px;
+}
+.composer input:focus { outline: 0; box-shadow: none; border: 0; }
+
+.send-btn {
+  width: 38px; height: 38px; flex: none; border-radius: 10px; border: 0;
+  background: var(--accent); color: #04140d; cursor: pointer;
+  display: grid; place-items: center;
+  transition: filter .16s var(--ease), transform .06s var(--ease);
+}
+.send-btn i { width: 18px; height: 18px; }
+.send-btn:hover { filter: brightness(1.08); }
+.send-btn:active { transform: translateY(1px); }
+.send-btn:disabled { opacity: .45; cursor: default; }
+/* Quiet round button that lives inside the composer box. */
+.icon-btn {
+  width: 34px; height: 34px; flex: none; border: 0; border-radius: 9px;
+  background: none; color: var(--muted); cursor: pointer;
+  display: grid; place-items: center;
+  transition: color .16s var(--ease), background .16s var(--ease);
+}
+.icon-btn i { width: 17px; height: 17px; }
+.icon-btn:hover { color: var(--text); background: var(--raise-3); }
 
 /* ── attachments ────────────────────────────────────────────────────
    Staged above the composer rather than inside the message, so you can see
@@ -382,7 +460,7 @@ input[type=range]::-webkit-slider-thumb {
   width: 46px; height: 46px; object-fit: cover; border-radius: 6px;
   border: 1px solid var(--line); flex: none; display: block;
 }
-.att audio { width: 200px; height: 32px; margin: 0; }
+.att audio { width: 230px; height: 36px; margin: 0; }
 .att-plain { display: inline-flex; align-items: center; gap: 8px; }
 .att i { width: 14px; height: 14px; color: var(--muted); flex: none; }
 .att-meta { display: flex; flex-direction: column; min-width: 0; }
@@ -408,7 +486,7 @@ input[type=range]::-webkit-slider-thumb {
   max-width: 100%; max-height: 220px; border-radius: 8px; display: block;
   border: 1px solid rgba(0,0,0,.14);
 }
-.att-sent-audio { width: 250px; height: 34px; margin: 0; }
+.att-sent-audio { width: 100%; max-width: 380px; height: 40px; margin: 0; }
 
 /* Drop anywhere on the panel, not onto a small target. */
 .chat-card.over { border-color: var(--faint); }

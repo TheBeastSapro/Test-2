@@ -112,11 +112,23 @@ class Orphans:
 
 
 @dataclass
+class App:
+    """The app itself, rather than the audio."""
+
+    # A twelve-minute raw render is ~250 MB of WAV and a screen recording of a
+    # defect is easily over a gigabyte, so a small fixed cap would rule out
+    # exactly the files worth asking about. 2 GB, and it is a setting rather
+    # than a constant because the right answer depends on the machine.
+    max_upload_gb: float = 2.0
+
+
+@dataclass
 class Settings:
     generation: Generation = field(default_factory=Generation)
     readcheck: ReadCheck = field(default_factory=ReadCheck)
     master: Master = field(default_factory=Master)
     orphans: Orphans = field(default_factory=Orphans)
+    app: App = field(default_factory=App)
     active_voice: str = ""
     active_profile: str = "default"
 
@@ -129,6 +141,7 @@ class Settings:
                 readcheck=ReadCheck(**raw.get("readcheck", {})),
                 master=Master(**raw.get("master", {})),
                 orphans=Orphans(**raw.get("orphans", {})),
+                app=App(**raw.get("app", {})),
                 active_voice=raw.get("active_voice", ""),
                 active_profile=raw.get("active_profile", "default"),
             )

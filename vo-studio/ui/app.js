@@ -13,7 +13,7 @@ const ICONS = {
   save:'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8',
   send:'M22 2 11 13M22 2l-7 20-4-9-9-4z', chev:'M9 18l6-6-6-6',
   clip:'M21.4 11.05 12.25 20.2a6 6 0 0 1-8.49-8.49l9.2-9.19a4 4 0 0 1 5.65 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48',
-  close:'M18 6 6 18M6 6l12 12',
+  close:'M18 6 6 18M6 6l12 12', up:'M12 19V5M5 12l7-7 7 7',
   image:'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M8.5 9.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
   wave:'M3 12h2l2-7 3 16 3-11 2 5h6',
   file:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6',
@@ -86,6 +86,8 @@ async function upload(file) {
   const fd = new FormData(); fd.append('file', file);
   const r = await fetch('/api/voice', { method: 'POST', body: fd });
   const j = await r.json();
+  // 413 is the size cap. Saying so beats a silent no-op on a big file.
+  if (!r.ok || j.error) return toast(j.error || `Upload failed (${r.status})`);
   $('#voice-audio').src = '/api/voice/audio?t=' + Date.now();
   $('#voice-name').textContent = `${j.name} · ${j.duration.toFixed(1)}s · peak ${j.peak.toFixed(1)} dBFS`;
   $('#voice-set').hidden = false;
@@ -269,9 +271,18 @@ function paintSettings(schema) {
     $$('#settings-nav button').forEach(o => o.classList.toggle('is-active', o === b));
     $$('.group').forEach(g => g.classList.toggle('open', g.dataset.group === b.dataset.group));
   });
-  $$('#settings-groups input[type=range]').forEach(r => r.oninput = () => {
-    r.closest('.setting').querySelector('.setting-val').textContent =
-      (+r.value).toFixed(r.dataset.dp || 2) + (r.dataset.unit || '');
+  // The slider and the box are two views of one value. Dragging to 0.040 with a
+  // 0.005 step is a fight you should not have to have — type it instead.
+  $$('#settings-groups input[type=range]').forEach(r => {
+    const box = r.closest('.setting').querySelector('.setting-num');
+    r.oninput = () => { box.value = (+r.value).toFixed(+r.dataset.dp || 2); };
+    box.oninput = () => { if (box.value !== '') r.value = box.value; };
+    box.onchange = () => {
+      // Clamp on commit, not on every keystroke — clamping mid-type makes "0.04"
+      // impossible to reach because "0.0" gets snapped to the minimum first.
+      const v = Math.min(+r.max, Math.max(+r.min, +box.value || +r.min));
+      r.value = v; box.value = v.toFixed(+r.dataset.dp || 2);
+    };
   });
 }
 function settingRow(group, it) {
@@ -282,13 +293,23 @@ function settingRow(group, it) {
       ? `<select class="select" id="${id}" data-group="${group}" data-key="${it.key}">${it.options.map(o => `<option${o === it.value ? ' selected' : ''}>${o}</option>`).join('')}</select>`
       : '';
   const slider = it.type === 'number'
-    ? `<input type="range" id="${id}" data-group="${group}" data-key="${it.key}" data-dp="${it.dp}" data-unit="${it.unit || ''}" min="${it.min}" max="${it.max}" step="${it.step}" value="${it.value}">`
+    ? `<input type="range" data-dp="${it.dp}" min="${it.min}" max="${it.max}" step="${it.step}" value="${it.value}">`
     : '';
-  const shown = it.type === 'number' ? (+it.value).toFixed(it.dp) + (it.unit || '') : '';
+  // The typed box is the one carrying data-key, so what you typed is what saves
+  // — even if the slider's step cannot land on it exactly.
+  const num = it.type === 'number'
+    ? `<span class="setting-val">
+         <input class="setting-num" type="number" id="${id}"
+                data-group="${group}" data-key="${it.key}"
+                min="${it.min}" max="${it.max}" step="${it.step}"
+                value="${(+it.value).toFixed(it.dp)}">
+         ${it.unit ? `<em>${it.unit.trim()}</em>` : ''}
+       </span>`
+    : '';
   return `<div class="setting">
     <div class="setting-top">
       <span class="setting-name">${it.name}</span>
-      ${it.type === 'number' ? `<span class="setting-val">${shown}</span>` : control}
+      ${it.type === 'number' ? num : control}
     </div>
     ${slider}
     ${it.why ? `<div class="setting-why">${it.why}</div>` : ''}
@@ -365,10 +386,11 @@ async function attach(files) {
     const fd = new FormData(); fd.append('file', f);
     try {
       const r = await fetch('/api/assistant/attach', { method: 'POST', body: fd });
-      if (!r.ok) throw new Error(await r.text());
-      ATTACHED.push(await r.json());
+      const j = await r.json();
+      if (!r.ok || j.error) throw new Error(j.error || `failed (${r.status})`);
+      ATTACHED.push(j);
       paintAttached();
-    } catch (e) { toast(`${f.name} — ${e}`); }
+    } catch (e) { toast(`${f.name} — ${e.message || e}`); }
   }
 }
 

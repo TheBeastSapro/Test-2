@@ -31,13 +31,16 @@ from vostudio.voice_profile import VoiceProfile, apply_feedback
 ROOT = Path(__file__).resolve().parent
 UI = ROOT / "ui"
 
-# 1 GB. A full-length raw render or a long screen recording is the point -- the
-# assistant is most useful on the big file you cannot describe in words.
-MAX_UPLOAD = 1024 * 1024 * 1024
 CHUNK = 1 << 20
 
 
-async def save_upload(file: UploadFile, dest: Path, limit: int = MAX_UPLOAD) -> int:
+def upload_limit() -> int:
+    """Settings -> App -> Max upload, in bytes. Read per request, not captured at
+    import, so raising it takes effect without restarting the app."""
+    return int(SETTINGS.app.max_upload_gb * 1024 ** 3)
+
+
+async def save_upload(file: UploadFile, dest: Path, limit: int | None = None) -> int:
     """
     Stream an upload to disk, refusing anything over the limit.
 
@@ -45,6 +48,7 @@ async def save_upload(file: UploadFile, dest: Path, limit: int = MAX_UPLOAD) -> 
     whole upload in memory first, so a 1 GB file costs 1 GB of RAM on top of the
     model already loaded on the GPU box.
     """
+    limit = limit or upload_limit()
     dest.parent.mkdir(parents=True, exist_ok=True)
     total = 0
     with open(dest, "wb") as out:
@@ -53,7 +57,8 @@ async def save_upload(file: UploadFile, dest: Path, limit: int = MAX_UPLOAD) -> 
             if total > limit:
                 out.close()
                 dest.unlink(missing_ok=True)
-                raise ValueError(f"{file.filename} is over the {limit / 1e9:.0f} GB limit")
+                raise ValueError(f"{file.filename} is over the "
+                                 f"{limit / 1024**3:.1f} GB limit — raise it in Settings")
             out.write(chunk)
     return total
 
@@ -326,6 +331,13 @@ def _schema(s: config.Settings):
             {"key": "chapter_gap_s", "name": "Chapter gap", "type": "number",
              "min": 0, "max": 1, "step": .05, "dp": 2, "unit": " s", "value": m.chapter_gap_s,
              "why": "Silence around a chapter announcement."},
+        ]},
+        {"key": "app", "title": "App", "items": [
+            {"key": "max_upload_gb", "name": "Max upload size", "type": "number",
+             "min": .1, "max": 8, "step": .1, "dp": 1, "unit": " GB", "value": s.app.max_upload_gb,
+             "why": "Applies to the voice reference and to Assistant attachments. "
+                    "Uploads stream to disk in 1 MB chunks, so a big file does not "
+                    "cost its own size in RAM — the ceiling is disk, not memory."},
         ]},
         {"key": "orphans", "title": "Quality gates", "items": [
             {"key": "enabled", "name": "Orphan-fragment sweep", "type": "bool", "value": o.enabled,
