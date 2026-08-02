@@ -30,16 +30,44 @@ Return JSON: {"concepts": [{"prompt", "text_overlay", "rationale"}]}
   text_overlay  2-5 words, upper case, that survive being shrunk to 168px wide.
   rationale     one sentence on why this earns the click honestly."""
 
+MAX_MAP_MARKERS = 4
+
+
+def known_places(value) -> list[str]:
+    """Keep only the place names the gazetteer can actually resolve.
+
+    Dropping the unknown ones, rather than failing the plan, is the right trade: a
+    model asked for places will occasionally name a region, a country, or a port that
+    does not exist, and losing one marker costs far less than losing the scene. The
+    caller checks whether anything survived and falls back to a still if not.
+    """
+    from ..motion.geo import PLACES
+
+    found: list[str] = []
+    for item in value or []:
+        key = " ".join(str(item).lower().split())
+        if key in PLACES and key not in found:
+            found.append(key)
+    return found[:MAX_MAP_MARKERS]
+
+
 BROLL_INSTRUCTIONS = """Plan the visual for every scene in the script.
 
-Return JSON: {"shots": [{"scene_index", "prompt", "kind", "motion"}]}
+Return JSON: {"shots": [{"scene_index", "prompt", "kind", "motion", "places"}]}
 
   scene_index  integer matching the script scene
   prompt       generation prompt: subject, setting, lens, lighting, composition.
                No text, no logos, no real people, no watermarks.
-  kind         "video" only when motion carries meaning, else "image".
-               Budget at most one third of shots as "video".
-  motion       intended camera move, e.g. "slow push in", "static", "pan left"."""
+  kind         "image", "video", or "map".
+               "video" only when motion carries meaning — at most one third of shots.
+               "map" when the scene is about *where*: a route, a distance, a spread
+               between places, a location the viewer needs situated. A map is the
+               right answer far less often than it is tempting; one or two per video.
+  motion       intended camera move, e.g. "slow push in", "static", "pan left".
+  places       required when kind is "map": 1-4 place names in the order the scene
+               mentions them, e.g. ["Rotterdam", "Suez Canal", "Singapore"]. Use
+               well-known cities, ports, straits or canals — not countries or
+               regions, which have no single point to mark."""
 
 
 # ----------------------------------------------------------------------- thumbnail
@@ -330,17 +358,25 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
     for scene in scenes:
         planned = by_index.get(scene["index"], {})
         kind = str(planned.get("kind") or scene.get("visual_kind") or "image")
+
+        places = known_places(planned.get("places"))
+        if kind == "map" and not places:
+            # A map with nothing to mark is an empty map. Fall back rather than
+            # rendering an establishing shot of the whole planet with no point to it.
+            kind = "image"
         if kind == "video" and videos >= video_budget:
             kind = "image"  # protect the budget from an over-eager plan
         if kind == "video":
             videos += 1
+
         shots.append(
             {
                 "scene_index": scene["index"],
                 "prompt": str(planned.get("prompt") or scene.get("visual_prompt") or "").strip()
                 or f"cinematic b-roll: {scene['narration'][:120]}",
-                "kind": "video" if kind == "video" else "image",
+                "kind": kind if kind in {"video", "map"} else "image",
                 "motion": str(planned.get("motion") or "slow push in"),
+                "places": places,
                 "seconds": scene["seconds"],
             }
         )
@@ -356,6 +392,29 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
 
 
 # --------------------------------------------------------------------------- shots
+
+
+def _render_map(ctx, shot: dict, index: int, seconds: float,
+                width: int, height: int) -> Path:
+    """Draw a map scene locally. Blocking, so callers run it off the event loop."""
+    from ..motion.worldmap import MAP_LIBRARY, render_clip, spec_from
+
+    style = str(
+        (ctx.channel.style_profile or {}).get("map_style")
+        or ctx.options.get("map_style")
+        or "documentary_dark"
+    )
+    if style not in MAP_LIBRARY:
+        ctx.log(f"unknown map style {style!r}; using documentary_dark", level="warning")
+        style = "documentary_dark"
+
+    spec = spec_from(
+        [name.title() for name in shot["places"]],
+        seconds=max(2.0, seconds), width=width, height=height, style=style,
+    )
+    out = ctx.path_for(f"shot_{index:03d}_map.mp4")
+    ctx.log(f"scene {index}: map of {', '.join(shot['places'])} ({style})")
+    return render_clip(spec, out)
 
 
 @node_handler("shots")
@@ -424,6 +483,29 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
 
         final_path = plate
         kind = "image"
+
+        if shot["kind"] == "map" and shot.get("places"):
+            # Rendered here rather than bought from a provider: the map is drawn from
+            # data that ships with the package, so a map scene costs nothing and works
+            # with no keys configured at all.
+            try:
+                map_path = await asyncio.to_thread(
+                    _render_map, ctx, shot, index, seconds, width, height
+                )
+                final_path = map_path
+                kind = "map"
+                ctx.emit_artifact(
+                    "video", map_path, "video/mp4", scene_index=index, role="map",
+                    seconds=seconds, places=shot["places"],
+                )
+                produced.append({"scene_index": index, "path": str(final_path),
+                                 "kind": kind, "seconds": seconds})
+                continue
+            except Exception as exc:
+                degraded += 1
+                ctx.log(f"shot {index} map failed, falling back to the still: {exc}",
+                        level="warning")
+
         if shot["kind"] == "video" and video_provider is not None:
             try:
                 clip = await video_provider.generate_clip(

@@ -46,6 +46,12 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["forgecast*"]
 
+[tool.setuptools.package-data]
+# The land mask the world-map renderer draws from. Without this a non-editable
+# install has the code and not the geography, and the failure is a missing file at
+# render time rather than at install time.
+"forgecast.motion" = ["data/*.bin"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

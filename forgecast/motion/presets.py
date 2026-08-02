@@ -294,6 +294,18 @@ LIBRARY: dict[str, MotionPreset] = {
         stagger=0.45, hold=4.0, caption_style="plain", card_scale=0.62,
         card_zoom=1.18, card_tilt=0.0, card_shadow=False,
     ),
+    # The slowest preset in the library, and deliberately the least decorated. A
+    # documentary title is read once, held, and left alone: a long rise with no band
+    # behind it, type at the small end of legible, and a card that barely moves. The
+    # accent is desaturated because a saturated one reads as a sales graphic — the
+    # register this preset exists to avoid.
+    "documentary_unveil": MotionPreset(
+        name="documentary_unveil", intensity=0.18, entry="rise", entry_duration=1.15,
+        easing="ease_in_out", stagger=0.75, hold=5.2, exit_duration=0.85,
+        caption_zone="centre", caption_style="plain", text_height_ratio=0.046,
+        text_colour="#f2f4f8", accent_colour="#d9b26a", band_opacity=0.0,
+        card_scale=0.66, card_zoom=1.07, card_tilt=0.0, card_shadow=False,
+    ),
 }
 
 

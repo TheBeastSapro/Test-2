@@ -327,6 +327,51 @@ def cmd_initdb(args) -> int:
     return 0
 
 
+def cmd_map(args) -> int:
+    """Render a world-map clip on its own, without a run.
+
+    Worth having as a command rather than only as a pipeline stage: a map is the one
+    visual you want to look at and adjust before committing it to an episode, and it
+    costs nothing to render, so iterating on it is free.
+    """
+    from pathlib import Path
+
+    from .motion.geo import PLACES
+    from .motion.worldmap import MAP_LIBRARY, available, render_clip, spec_from
+
+    if args.list_styles:
+        for style in available():
+            print(f"  {style['name']:18} ocean {style['ocean']}  land {style['land']}  "
+                  f"marker {style['marker']}")
+        return 0
+    if args.list_places:
+        for name in sorted(PLACES):
+            lat, lon = PLACES[name]
+            print(f"  {name:22} {lat:7.2f} {lon:8.2f}")
+        return 0
+
+    unknown = [p for p in args.places
+               if " ".join(p.lower().split()) not in PLACES]
+    if unknown:
+        print(f"unknown place(s): {', '.join(unknown)}", file=sys.stderr)
+        print("run `forgecast map --list-places` to see what is known", file=sys.stderr)
+        return 1
+    if args.style not in MAP_LIBRARY:
+        print(f"unknown style {args.style!r}; try --list-styles", file=sys.stderr)
+        return 1
+
+    spec = spec_from(
+        args.places, seconds=args.seconds, width=args.width, height=args.height,
+        fps=args.fps, style=args.style, labels=not args.no_labels,
+    )
+    out = Path(args.out)
+    render_clip(spec, out)
+    print(f"{out}  {args.width}x{args.height}  {args.seconds:.1f}s  style {args.style}")
+    for marker in spec.markers:
+        print(f"  {marker.label or 'marker':22} lands at {marker.at:5.2f}s")
+    return 0
+
+
 # --------------------------------------------------------------------------- parser
 
 
@@ -421,6 +466,21 @@ def build_parser() -> argparse.ArgumentParser:
     serve.set_defaults(func=cmd_serve)
 
     sub.add_parser("worker").set_defaults(func=cmd_worker)
+
+    world = sub.add_parser("map", help="render an animated world map clip")
+    world.add_argument("places", nargs="*",
+                       help="1-4 place names, in the order the scene mentions them")
+    world.add_argument("--out", default="map.mp4")
+    world.add_argument("--style", default="documentary_dark")
+    world.add_argument("--seconds", type=float, default=8.0)
+    world.add_argument("--width", type=int, default=1280)
+    world.add_argument("--height", type=int, default=720)
+    world.add_argument("--fps", type=int, default=30)
+    world.add_argument("--no-labels", action="store_true")
+    world.add_argument("--list-styles", action="store_true")
+    world.add_argument("--list-places", action="store_true")
+    world.set_defaults(func=cmd_map)
+
     return parser
 
 

@@ -12,6 +12,7 @@ stuck at 40px while its track climbed to 520px.
 
 from __future__ import annotations
 
+import itertools
 import json
 import re
 import subprocess
@@ -292,10 +293,25 @@ def test_unknown_preset_names_fail_loudly(tmp_path):
 
 
 def test_builtin_library_spans_the_intensity_range():
-    intensities = sorted(preset.intensity for preset in LIBRARY.values())
-    assert intensities[0] < 0.4 < intensities[-1]
-    assert by_intensity(0.95).name == "kinetic_type"
-    assert by_intensity(0.05).name == "lower_third"
+    """The library must cover calm to frantic, and pick the nearest to what is asked.
+
+    Written against the library's own extremes rather than against two preset names.
+    Naming them made this fail the moment a calmer preset was added — which is the
+    library improving, not a regression, and a test that cannot tell those apart is
+    noise.
+    """
+    presets = sorted(LIBRARY.values(), key=lambda item: item.intensity)
+    calmest, busiest = presets[0], presets[-1]
+
+    assert calmest.intensity < 0.4 < busiest.intensity
+    assert by_intensity(1.0).name == busiest.name
+    assert by_intensity(0.0).name == calmest.name
+
+    # And an intensity between two presets resolves to whichever is nearer.
+    for lower, higher in itertools.pairwise(presets):
+        midpoint = (lower.intensity + higher.intensity) / 2
+        assert by_intensity(midpoint - 0.01).name == lower.name
+        assert by_intensity(midpoint + 0.01).name == higher.name
 
 
 def test_slug_is_filesystem_safe():
