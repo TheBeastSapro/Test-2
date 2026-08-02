@@ -36,7 +36,7 @@ import re
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
-from .compose import Band, ImageCard, Text
+from .compose import Band, ImageCard, Text, fit_text
 from .keyframe import Track, fade_in_out
 
 SCHEMA_VERSION = "motion-preset/1"
@@ -124,11 +124,21 @@ class MotionPreset:
     # -- element construction --------------------------------------------------
 
     def caption(self, text: str, *, start: float, width: int, height: int,
-                duration: float | None = None, accent: bool = False) -> list:
-        """A caption with the preset's entry move, plus its backing if any."""
+                duration: float | None = None, accent: bool = False,
+                y_offset: float = 0.0, max_lines: int = 2) -> list:
+        """A caption with the preset's entry move, plus its backing if any.
+
+        `y_offset` nudges the line off the preset's zone, as a fraction of frame
+        height. Two captions in the same zone otherwise draw on top of each other —
+        which produced an unreadable overlap the first time a hook used two lines.
+        """
         span = duration if duration is not None else self.hold
         size = max(14, int(self.text_height_ratio * height))
-        y = _ZONES.get(self.caption_zone, 0.82)
+        # Fitted before anything else: drawtext has no margin and no wrapping, so an
+        # unfitted caption is drawn straight off the edge of the frame. This is where
+        # a 9:16 frame differs most from 16:9 — the same words need half the width.
+        text, size = fit_text(text, size, width, max_lines=max_lines)
+        y = _ZONES.get(self.caption_zone, 0.82) + y_offset
         # A fade that does not fit its window would still be rising when `enable`
         # switches off, so the line would vanish mid-move instead of leaving.
         rise = min(self.entry_duration, span * 0.45)
@@ -190,6 +200,9 @@ class MotionPreset:
                     width: int, height: int, duration: float = 4.0) -> list:
         """Two stacked lines over a band, the second staggered behind the first."""
         size = max(16, int(self.text_height_ratio * height))
+        headline, size = fit_text(headline, size, width, max_lines=1)
+        subhead, sub_size = fit_text(subhead, max(12, int(size * 0.62)), width,
+                                     max_lines=1)
         y = _ZONES.get(self.caption_zone, 0.82)
         elements: list = [Band(
             start=start, duration=duration,
@@ -199,15 +212,15 @@ class MotionPreset:
         slide = self._entry_track(axis="x", width=width, height=height)
         elements.append(Text(
             start=start, duration=duration, text=headline, size=size,
-            colour=self.accent_colour, x=slide if self.entry != "pop" else 0.3,
+            colour=self.accent_colour, x=slide if self.entry != "pop" else 0.5,
             y=y - 0.02,
             alpha=fade_in_out(duration, rise=self.entry_duration,
                               fall=self.exit_duration),
         ))
         elements.append(Text(
             start=start + self.stagger, duration=max(0.4, duration - self.stagger),
-            text=subhead, size=max(12, int(size * 0.62)),
-            colour=self.text_colour, x=0.3, y=y + 0.06,
+            text=subhead, size=sub_size,
+            colour=self.text_colour, x=0.5, y=y + 0.06,
             alpha=fade_in_out(max(0.4, duration - self.stagger),
                               rise=self.entry_duration, fall=self.exit_duration),
         ))
@@ -233,6 +246,41 @@ class MotionPreset:
                 line, start=start + index * step, width=width, height=height,
                 duration=step,
                 accent=(index == len(lines) - 1 and len(lines) > 1),
+            ))
+        return elements
+
+    def stack(self, lines: list[str], *, start: float, width: int, height: int,
+              duration: float, gap: float | None = None,
+              spacing: float = 0.075) -> list:
+        """Lines that arrive one after another and all stay on screen.
+
+        The difference from `kinetic` is the whole point, and it is a difference in
+        meaning rather than in timing. Kinetic type *replaces*: each line is the
+        thought, and the previous one is gone because you have moved on. A stack
+        *accumulates*: the lines are evidence, and the argument is the fact that there
+        are three of them sitting there together.
+
+        Getting that wrong is subtle and expensive — a preset called `evidence_stack`
+        that replaced each line looked fine in isolation and read as a slideshow of
+        unrelated facts in context.
+        """
+        if not lines:
+            return []
+        step = gap if gap is not None else self.stagger
+        # Centre the block on the zone so a three-line stack does not drift off the
+        # bottom of the frame the way a top-anchored one would.
+        first = -spacing * (len(lines) - 1) / 2
+
+        elements: list = []
+        for index, line in enumerate(lines):
+            appears = start + index * step
+            elements.extend(self.caption(
+                line, start=appears, width=width, height=height,
+                # Every line runs to the same end, which is what makes it a stack.
+                duration=max(0.4, (start + duration) - appears),
+                accent=(index == len(lines) - 1 and len(lines) > 1),
+                y_offset=first + index * spacing,
+                max_lines=1,
             ))
         return elements
 

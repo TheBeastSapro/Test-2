@@ -33,6 +33,7 @@ decode of the same file rather than a `split`, because splitting froze it.
 
 from __future__ import annotations
 
+import logging
 import shlex
 import subprocess
 from dataclasses import dataclass, field
@@ -41,11 +42,18 @@ from pathlib import Path
 
 from .keyframe import Track, _fmt
 
+log = logging.getLogger("forgecast.motion.compose")
+
 # Escaping for text that lands inside a filtergraph. Colons separate filter options
 # and single quotes delimit expressions, so both have to go, and a stray one produces
 # an ffmpeg parse error rather than a wrong picture.
+# A newline is deliberately *not* in this table. Measured on ffmpeg 6.1: a real
+# newline inside the drawtext value renders as a line break, while the two-character
+# sequence `\n` renders as literal text. Mapping newlines to spaces — which this table
+# used to do — made multi-line captions impossible by construction, so a long line ran
+# off both edges of the frame instead of wrapping.
 _TEXT_UNSAFE = str.maketrans({
-    ":": "\\:", "'": "’", "\\": "", "%": "", "\n": " ",
+    ":": "\\:", "'": "’", "\\": "", "%": "",
     "[": "(", "]": ")", ",": "\\,", ";": " ",
 })
 
@@ -65,6 +73,89 @@ def font_file() -> str | None:
 
 def escape_text(value: str) -> str:
     return str(value).translate(_TEXT_UNSAFE)
+
+
+# The largest share of the frame a caption may occupy before it reads as edge-to-edge
+# text rather than a designed line. Vertical frames need the tighter margin because
+# the same fraction is far fewer characters.
+_TEXT_WIDTH_BUDGET = 0.86
+
+
+def measure_text(text: str, size: int) -> int:
+    """Width of one line in pixels, measured with the font that will actually draw it.
+
+    Estimating from a character count is what produced overflowing captions: "99% OF
+    INTERCONTINENTAL" is 23 characters and "iiiiiiiiiiiiiiiiiiiiiii" is 23 characters,
+    and at 80px one is 980px wide and the other is 430. Pillow is already a dependency
+    and can measure the exact face ffmpeg will use, so there is no reason to guess.
+    """
+    from PIL import ImageFont
+
+    path = font_file()
+    try:
+        font = ImageFont.truetype(path, size) if path else ImageFont.load_default()
+        return int(font.getbbox(str(text))[2])
+    except (OSError, ValueError):  # pragma: no cover - broken font file
+        return int(len(str(text)) * size * 0.58)
+
+
+def fit_text(text: str, size: int, width: int, *, max_lines: int = 2,
+             budget: float = _TEXT_WIDTH_BUDGET) -> tuple[str, int]:
+    """Wrap and, if it still will not fit, shrink. Returns (text, size).
+
+    `drawtext` has no concept of a line break or a margin: it draws the string it was
+    given at the size it was given, straight off the edge of the frame if that is what
+    the string demands. Every caption therefore has to be fitted before it gets there.
+
+    Wrapping is tried first because shrinking type is the more expensive fix — a hook
+    at half size is a hook nobody reads. Only when even `max_lines` lines will not hold
+    the text does the size come down, and then only as far as it must.
+    """
+    words = str(text).split()
+    if not words:
+        return "", size
+    requested = size
+
+    limit = width * budget
+
+    def wrap(at_size: int) -> list[str] | None:
+        """Greedy wrap at `at_size`, or None when a single word cannot fit."""
+        lines: list[str] = []
+        current = ""
+        for word in words:
+            if measure_text(word, at_size) > limit:
+                return None
+            candidate = f"{current} {word}".strip()
+            if measure_text(candidate, at_size) <= limit:
+                current = candidate
+            else:
+                lines.append(current)
+                current = word
+                if len(lines) >= max_lines:
+                    return None
+        lines.append(current)
+        return lines if len(lines) <= max_lines else None
+
+    lines = wrap(size)
+    while lines is None and size > 14:
+        # 6% a step: fine enough that type is never shrunk further than needed, coarse
+        # enough that a long caption resolves in a handful of measurements.
+        size = max(14, int(size * 0.94))
+        lines = wrap(size)
+
+    if lines is None:  # pragma: no cover - a single unbreakable word at minimum size
+        return str(text), size
+
+    if size < requested * 0.7:
+        # Silently shrinking to a third of the intended size turns a hook into body
+        # copy and nobody finds out until they watch it. The fix is almost always
+        # shorter copy, so say so rather than quietly delivering unreadable type.
+        log.warning(
+            "caption %r did not fit at %dpx and was reduced to %dpx — %d words is "
+            "too many for this frame; shorten the line",
+            str(text)[:48], requested, size, len(words),
+        )
+    return "\n".join(lines), size
 
 
 def image_size(path: Path) -> tuple[int, int]:
@@ -147,6 +238,11 @@ class Text(Element):
             options.append(
                 f"alpha='max(0,min(1,{self.alpha.expression(offset=self.start)}))'"
             )
+        if "\n" in self.text:
+            # drawtext's default line spacing packs wrapped lines tight enough that
+            # descenders touch the next cap height. A fifth of the size is the usual
+            # typographic leading and reads correctly at any size.
+            options.append(f"line_spacing={max(2, int(self.size * 0.2))}")
         if self.box:
             options += ["box=1", f"boxcolor={self.box_colour}", "boxborderw=18"]
         if self.border:

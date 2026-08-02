@@ -341,3 +341,85 @@ def test_learned_preset_renders_staged_type(tmp_path, profiles):
     present = np.array([(frame.min(axis=2) > 150).sum() for frame in frames]) > 40
     appearances = int((present[1:] & ~present[:-1]).sum()) + int(present[0])
     assert appearances >= 3, f"staging collapsed into {appearances} appearance(s)"
+
+
+# --------------------------------------------------------------- caption fitting
+
+
+def test_a_caption_too_wide_for_the_frame_wraps_rather_than_overflowing():
+    """Regression: drawtext has no margin and no wrapping.
+
+    Found by rendering a vertical sample — the hook ran off both edges of a 1080-wide
+    frame because nothing ever measured it. Type is fitted before it reaches ffmpeg.
+    """
+    from forgecast.motion.compose import fit_text, measure_text
+
+    text, size = fit_text("99% OF INTERCONTINENTAL DATA IS UNDERWATER", 144, 1080)
+    assert "\n" in text, "should have wrapped"
+    for line in text.split("\n"):
+        assert measure_text(line, size) <= 1080 * 0.86
+
+
+def test_fitting_wraps_before_it_shrinks():
+    """Shrinking is the expensive fix — a hook at half size is a hook nobody reads."""
+    from forgecast.motion.compose import fit_text
+
+    fits, size = fit_text("Two words", 100, 1080)
+    assert size == 100 and "\n" not in fits
+
+    # Measured: at 100px these split to 679px and 384px, both inside the 928px
+    # budget, so two lines hold it and nothing needs to shrink.
+    wrapped, size = fit_text("Alpha bravo charlie", 100, 1080)
+    assert wrapped.split("\n") == ["Alpha bravo", "charlie"]
+    assert size == 100, "two lines were enough; the size should not have moved"
+
+    # And when two lines genuinely will not hold it, the size does come down.
+    _, smaller = fit_text("Four slightly longer words here", 100, 1080)
+    assert smaller < 100
+
+
+def test_a_newline_survives_escaping_and_becomes_a_real_line_break():
+    """Regression: the escape table mapped newlines to spaces, which made multi-line
+    captions impossible by construction.
+
+    Measured on ffmpeg 6.1: a real newline in the drawtext value renders as a break,
+    while the two-character sequence `\\n` renders as literal text.
+    """
+    from forgecast.motion.compose import escape_text
+
+    assert "\n" in escape_text("one\ntwo")
+
+
+def test_multi_line_text_asks_for_line_spacing():
+    from forgecast.motion import Text
+
+    compiled = Text(text="one\ntwo", size=60, duration=1.0).compile(1080, 1920)
+    assert "line_spacing=" in compiled
+    assert "line_spacing=" not in Text(text="one", size=60, duration=1.0).compile(1080, 1920)
+
+
+def test_two_captions_in_one_zone_can_be_offset_apart():
+    """Regression: a two-line hook drew both lines at the same y, into a smear."""
+    preset = LIBRARY["hook_slam"]
+    top = preset.caption("First", start=0, width=1080, height=1920, duration=1.0,
+                         y_offset=-0.06)
+    bottom = preset.caption("Second", start=0, width=1080, height=1920, duration=1.0,
+                            y_offset=0.06)
+    assert top[-1].y != bottom[-1].y
+
+
+def test_a_stack_keeps_every_line_on_screen_while_kinetic_replaces_them():
+    """The difference is meaning, not timing: kinetic type is the thought moving on,
+    a stack is evidence accumulating."""
+    preset = LIBRARY["evidence_stack"]
+    lines = ["One.", "Two.", "Three."]
+
+    stacked = preset.stack(lines, start=0.0, width=1080, height=1920, duration=6.0)
+    ends = {round(item.start + item.duration, 2) for item in stacked}
+    assert ends == {6.0}, "every line should run to the same end"
+    assert len({item.y for item in stacked}) == 3, "and sit at different heights"
+
+    replaced = preset.kinetic(lines, start=0.0, width=1080, height=1920, per_line=2.0)
+    text_ends = {round(item.start + item.duration, 2)
+                 for item in replaced if hasattr(item, "text")}
+    assert len(text_ends) == 3, "kinetic lines should leave at different times"
