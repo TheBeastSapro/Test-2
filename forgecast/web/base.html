@@ -30,7 +30,49 @@
     background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
   }
   .pill.mock { border-color: #5c4a1e; color: var(--warn); }
+
+  /* ---------------------------------------------------------------- app shell */
+  /* A persistent left rail rather than links in the top bar. The difference is not
+     cosmetic: an application has places you are always one click from, and a website
+     has pages you navigate between. Everything the operator does lives behind one of
+     four entries, and the current one is always visible. */
+  .shell { display: flex; min-height: 100vh; }
+  .side {
+    width: 232px; flex: none; background: var(--panel);
+    border-right: 1px solid var(--line); display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  .side .top { padding: 15px 16px 11px; border-bottom: 1px solid var(--line); }
+  .side .mark { display: flex; align-items: center; gap: 9px; font-weight: 650;
+                letter-spacing: -.2px; }
+  .side .mark i { width: 22px; height: 22px; border-radius: 6px; flex: none;
+                  background: linear-gradient(145deg, var(--accent), #7b5cff);
+                  display: grid; place-items: center; font-style: normal;
+                  font-size: 12px; color: #fff; }
+  .side nav { padding: 9px 9px 4px; display: flex; flex-direction: column; gap: 1px; }
+  .side nav a {
+    display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 7px;
+    color: var(--text); font-size: 14px; text-decoration: none;
+  }
+  .side nav a:hover { background: var(--panel-2); text-decoration: none; }
+  .side nav a.on { background: var(--accent-dim); color: #fff; }
+  .side nav a .ic { width: 16px; text-align: center; opacity: .85; }
+  .side .lane { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+                color: var(--muted); padding: 14px 18px 5px; font-weight: 600; }
+  .side .chan { display: block; padding: 6px 18px; font-size: 13px;
+                color: var(--muted); text-decoration: none; }
+  .side .chan:hover { color: var(--text); text-decoration: none; }
+  .side .foot { margin-top: auto; padding: 12px 16px; border-top: 1px solid var(--line);
+                font-size: 12px; color: var(--muted); }
+  .col { flex: 1; min-width: 0; }
   main { max-width: 1180px; margin: 0 auto; padding: 26px 24px 80px; }
+  @media (max-width: 860px) {
+    .shell { flex-direction: column; }
+    .side { width: auto; height: auto; position: static; flex-direction: row;
+            align-items: center; overflow-x: auto; }
+    .side .top, .side .lane, .side .chan, .side .foot { display: none; }
+    .side nav { flex-direction: row; padding: 8px; }
+  }
   h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.3px; }
   h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .09em;
        color: var(--muted); margin: 34px 0 12px; font-weight: 600; }
@@ -77,28 +119,62 @@
 {% block head %}{% endblock %}
 </head>
 <body>
+<div class="shell">
+
+{% if user %}
+<aside class="side">
+  <div class="top">
+    <span class="mark"><i>◆</i> Forgecast</span>
+    <div class="muted" style="font-size:11.5px;margin-top:3px">
+      {% if settings and settings.local_mode %}running on this machine{% else %}{{ user.email }}{% endif %}
+    </div>
+  </div>
+
+  <nav>
+    <a href="/" class="{{ 'on' if nav == 'dashboard' }}"><span class="ic">▤</span> Channels &amp; runs</a>
+    <a href="/research" class="{{ 'on' if nav == 'research' }}"><span class="ic">◎</span> Research</a>
+    {% if nav == 'studio' and run %}
+      <a href="/runs/{{ run.id }}/preview" class="on"><span class="ic">▶</span> Studio</a>
+    {% endif %}
+    <a href="/docs" target="_blank"><span class="ic">⌘</span> API</a>
+  </nav>
+
+  {% if recent_runs %}
+    <div class="lane">Recent runs</div>
+    {% for item in recent_runs %}
+      <a class="chan" href="/runs/{{ item.id }}" title="{{ item.topic }}">
+        <span class="status {{ item.status.value }}" style="padding:0 5px;font-size:10px">{{ item.status.value[:4] }}</span>
+        {{ item.topic[:26] }}{% if item.topic|length > 26 %}…{% endif %}
+      </a>
+    {% endfor %}
+  {% endif %}
+
+  <div class="foot">
+    <div>{{ credits }} credits</div>
+    {% if settings and settings.is_mock %}
+      <div style="color:var(--warn);margin-top:3px">mock mode — nothing is charged</div>
+    {% endif %}
+    {% if settings and settings.local_mode %}
+      <button class="ghost" style="padding:4px 10px;margin-top:9px" onclick="forgecastQuit()">Quit</button>
+    {% else %}
+      <form method="post" action="/logout" style="margin-top:9px">
+        <button class="ghost" style="padding:4px 10px">Sign out</button>
+      </form>
+    {% endif %}
+  </div>
+</aside>
+{% endif %}
+
+<div class="col">
+{% if not user %}
 <header>
   <span class="brand">◆ Forgecast</span>
-  {% if user %}<a href="/">Dashboard</a>{% endif %}
   <span class="spacer"></span>
   {% if settings and settings.is_mock %}
     <span class="pill mock" title="No provider is called and nothing is charged.">mock mode</span>
   {% endif %}
-  {% if settings and settings.local_mode %}
-    <span class="pill local" title="Running as a local application on this machine.">on this machine</span>
-  {% endif %}
-  {% if user %}
-    <span class="pill">{{ credits }} credits</span>
-    <span class="pill">{{ user.email }}</span>
-    {% if settings and settings.local_mode %}
-      <button class="ghost" style="padding:4px 10px" onclick="forgecastQuit()">Quit</button>
-    {% else %}
-      <form method="post" action="/logout" style="display:inline">
-        <button class="ghost" style="padding:4px 10px">Sign out</button>
-      </form>
-    {% endif %}
-  {% endif %}
 </header>
+{% endif %}
 <main>
 {% if user and not ffmpeg_ok() %}
   <div class="banner warn">
@@ -111,6 +187,8 @@
 {% endif %}
 {% block body %}{% endblock %}
 </main>
+</div>
+</div>
 {% if settings and settings.local_mode %}
 <script>
   async function forgecastQuit() {

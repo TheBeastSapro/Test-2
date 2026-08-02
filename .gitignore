@@ -16,3 +16,6 @@ storage/
 # Remotion renderer (opt-in backend)
 node_modules/
 remotion/out/
+
+# Packaged releases, built by tools/package.py
+dist/

@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Research · Forgecast{% endblock %}
+
+{% block head %}
+<style>
+  .band { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;
+          border: 1px solid var(--line); white-space: nowrap; }
+  .band.strong { color: #ff8a5c; border-color: #6b3319; background: #2a1710; }
+  .band.clear  { color: var(--ok);   border-color: #1f4b38; background: #10201a; }
+  .band.soft   { color: var(--warn); border-color: #5c4a1e; background: #241f10; }
+  .multiple { font-family: ui-monospace, Menlo, monospace; font-weight: 650; }
+  .base-strip { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
+  .base-card { flex: 1; min-width: 220px; background: var(--panel-2);
+               border: 1px solid var(--line); border-radius: var(--radius);
+               padding: 10px 13px; font-size: 13px; }
+  .base-card b { display: block; font-size: 11px; text-transform: uppercase;
+                 letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  .base-card .n { font-size: 19px; font-weight: 650; }
+  .base-card.unreliable { border-color: #5c4a1e; }
+  .ideas { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .idea { padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .idea:last-child { border-bottom: 0; }
+  .idea .t { font-weight: 600; }
+  .idea .t.long { color: var(--warn); }
+  .idea .w { font-size: 12.5px; color: var(--muted); }
+  tr.out td { vertical-align: top; }
+  .rowactions { display: flex; gap: 6px; }
+  .rowactions button { padding: 4px 9px; font-size: 12px; }
+  .spin { display: inline-block; animation: spin 1.1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  details.help summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  details.help pre { background: var(--panel-2); border: 1px solid var(--line);
+                     border-radius: 7px; padding: 10px; overflow-x: auto;
+                     font-size: 12px; }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<h1>Research</h1>
+<p class="muted" style="margin-top:0">
+  Find what actually outperformed, then work out what is transferable about it.
+  The scoring is arithmetic — the model is only asked the part arithmetic cannot answer.
+</p>
+
+<div class="card">
+  <div class="grid two">
+    <div>
+      <label for="channel">Fetch a channel</label>
+      <input id="channel" placeholder="@handle, channel URL, or UC… id"
+             {% if not has_youtube_key %}disabled{% endif %}>
+      {% if not has_youtube_key %}
+        <p class="muted" style="font-size:12.5px;margin:6px 0 0">
+          No YouTube Data API key configured. Set <code>FORGECAST_YOUTUBE_API_KEY</code>
+          in <code>.env</code> to fetch automatically — or just paste the numbers.
+        </p>
+      {% endif %}
+    </div>
+    <div>
+      <label for="limit">How many recent uploads</label>
+      <input id="limit" type="number" value="50" min="5" max="200">
+      <label style="display:flex;gap:8px;align-items:center;margin-top:12px">
+        <input type="checkbox" id="unreliable" style="width:auto">
+        <span>Score small cohorts anyway (flagged as unreliable)</span>
+      </label>
+    </div>
+  </div>
+
+  <label for="pasted" style="margin-top:14px">…or paste the numbers</label>
+  <textarea id="pasted" style="min-height:130px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px"
+            placeholder="title,views,published,duration&#10;Why cables keep breaking,240000,2026-05-02,612"></textarea>
+
+  <details class="help" style="margin-top:8px">
+    <summary>What can I paste?</summary>
+    <p class="muted" style="font-size:13px">
+      CSV, tab-separated (a spreadsheet paste works), or JSON. Column names are matched
+      loosely — <code>views</code>/<code>viewCount</code>/<code>plays</code> all work,
+      as do <code>1.2M</code> and <code>3 weeks ago</code>. Every row needs a title, a
+      view count and a publish date; a duration lets Shorts be scored separately from
+      long-form.
+    </p>
+    <pre>[{"title": "Why cables keep breaking", "views": "240K",
+  "publishedAt": "2026-05-02", "duration": "PT10M12S"}]</pre>
+  </details>
+
+  <div class="row" style="margin-top:14px">
+    <button id="score">Score</button>
+    <span class="muted" id="status"></span>
+  </div>
+</div>
+
+<div id="results" style="margin-top:26px"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (text) => { const d = document.createElement("div"); d.textContent = text ?? ""; return d.innerHTML; };
+const niche = {{ (channels[0].niche if channels else "")|tojson }};
+const channelId = {{ (channels[0].id if channels else 0)|tojson }};
+
+$("score").addEventListener("click", async () => {
+  const button = $("score");
+  button.disabled = true;
+  $("status").innerHTML = '<span class="spin">◠</span> scoring…';
+  try {
+    const response = await fetch("/api/research/score", {
+      method: "POST",
+      headers: {"content-type": "application/json"},
+      body: JSON.stringify({
+        pasted: $("pasted").value,
+        channel: $("channel").value,
+        limit: Number($("limit").value) || 50,
+        include_unreliable: $("unreliable").checked,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      $("status").textContent = payload.detail || "that did not work";
+      return;
+    }
+    $("status").textContent = "";
+    render(payload);
+  } catch (error) {
+    $("status").textContent = "request failed: " + error;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+function render(payload) {
+  const parts = [];
+
+  // Baselines first. The multiple below means nothing without the number it is a
+  // multiple *of*, and how many videos that number was computed from.
+  parts.push('<h2 style="margin-top:0">Baseline</h2><div class="base-strip">');
+  for (const [name, base] of Object.entries(payload.baselines || {})) {
+    if (!base.sample_size) continue;
+    parts.push(`<div class="base-card ${base.reliable ? "" : "unreliable"}">
+      <b>${name === "short" ? "Shorts" : "Long-form"} median</b>
+      <span class="n">${Math.round(base.median_views_per_day).toLocaleString()}</span>
+      <span class="muted"> views/day</span>
+      <div class="muted" style="font-size:12px;margin-top:3px">
+        ${base.sample_size} video${base.sample_size === 1 ? "" : "s"}${base.note ? " · " + esc(base.note) : ""}
+      </div></div>`);
+  }
+  parts.push("</div>");
+
+  const outliers = payload.outliers || [];
+  if (!outliers.length) {
+    parts.push(`<div class="card"><strong>No outliers.</strong>
+      <p class="muted" style="margin-bottom:0">Scored ${payload.count} video(s). Nothing
+      beat its cohort by 3x or more — which is a real answer, not a failure. Normal
+      variance between videos on one channel runs to 2x without meaning anything.
+      ${payload.note ? esc(payload.note) : ""}</p></div>`);
+  } else {
+    const s = payload.summary || {};
+    parts.push(`<h2>${outliers.length} outlier${outliers.length === 1 ? "" : "s"}
+      <span class="muted" style="text-transform:none;letter-spacing:0">
+      of ${payload.count} scored</span></h2>`);
+    parts.push('<div class="card" style="padding:0;overflow:hidden"><table><thead><tr>' +
+      "<th>Video</th><th>Multiple</th><th>Views/day</th><th>Age</th><th>Engagement</th><th></th>" +
+      "</tr></thead><tbody>");
+    outliers.forEach((item, index) => {
+      parts.push(`<tr class="out" id="row-${index}">
+        <td>
+          <div>${esc(item.title)}</div>
+          <div class="muted" style="font-size:12px">
+            ${item.cohort === "short" ? "Short" : "Long-form"} ·
+            ${item.views.toLocaleString()} views
+            ${item.reliable ? "" : ' · <span style="color:var(--warn)">unreliable</span>'}
+          </div>
+          ${(item.notes || []).map((n) => `<div class="muted" style="font-size:12px">— ${esc(n)}</div>`).join("")}
+        </td>
+        <td><span class="multiple">${item.multiple.toFixed(1)}×</span>
+            <span class="band ${item.band}">${item.band}</span></td>
+        <td>${Math.round(item.views_per_day).toLocaleString()}</td>
+        <td>${item.age_days.toFixed(0)}d</td>
+        <td>${(item.engagement_rate * 100).toFixed(1)}%</td>
+        <td><div class="rowactions">
+          <button class="ghost" onclick='ideas(${index}, ${JSON.stringify(item.title)}, ${item.multiple}, ${JSON.stringify(item.band)})'>Ideas</button>
+        </div></td>
+      </tr>
+      <tr id="ideas-${index}" style="display:none"><td colspan="6"><div class="ideas"></div></td></tr>`);
+    });
+    parts.push("</tbody></table></div>");
+    if (s.unreliable) {
+      parts.push(`<p class="muted" style="font-size:13px">${s.unreliable} of these come
+        from a cohort too small for the median to mean much.</p>`);
+    }
+  }
+
+  if ((payload.skipped || []).length) {
+    parts.push(`<h2>Skipped ${payload.skipped.length} row(s)</h2>
+      <div class="card"><ul class="muted" style="margin:0;font-size:13px">` +
+      payload.skipped.map((r) => `<li>${esc(r)}</li>`).join("") + "</ul></div>");
+  }
+
+  $("results").innerHTML = parts.join("");
+}
+
+async function ideas(index, title, multiple, band) {
+  const row = $(`ideas-${index}`);
+  const box = row.querySelector(".ideas");
+  row.style.display = "table-row";
+  box.innerHTML = '<span class="spin">◠</span> thinking…';
+
+  const response = await fetch("/api/research/ideas", {
+    method: "POST",
+    headers: {"content-type": "application/json"},
+    body: JSON.stringify({title, multiple, band, niche, channel_id: channelId || null}),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    box.innerHTML = `<span class="muted">${esc(payload.detail || "that did not work")}</span>`;
+    return;
+  }
+  if (payload.error) {
+    box.innerHTML = `<span class="muted">${esc(payload.error)}</span>`;
+    return;
+  }
+
+  const parts = [];
+  if (payload.mechanism) {
+    parts.push(`<p style="margin-top:0"><strong>Why it worked.</strong> ${esc(payload.mechanism)}</p>`);
+  }
+  if ((payload.transferable || []).length) {
+    parts.push("<p class='muted' style='font-size:13px;margin:4px 0'><strong>Transfers:</strong> " +
+      payload.transferable.map(esc).join(" · ") + "</p>");
+  }
+  if ((payload.avoid || []).length) {
+    parts.push("<p class='muted' style='font-size:13px;margin:4px 0'><strong>Does not transfer:</strong> " +
+      payload.avoid.map(esc).join(" · ") + "</p>");
+  }
+  for (const idea of payload.ideas || []) {
+    parts.push(`<div class="idea">
+      <div class="t ${idea.too_long ? "long" : ""}">${esc(idea.title)}
+        <span class="muted" style="font-weight:400;font-size:12px">${idea.title.length} chars${idea.too_long ? " — long for mobile" : ""}</span>
+      </div>
+      <div class="w">${esc(idea.angle)}${idea.why ? " — " + esc(idea.why) : ""}</div>
+      <div style="margin-top:5px">
+        <a href="/?topic=${encodeURIComponent(idea.title)}"><button class="ghost" style="padding:3px 9px;font-size:12px">Start a run</button></a>
+      </div>
+    </div>`);
+  }
+  parts.push(`<p class="muted" style="font-size:12px;margin-bottom:0">
+    ${esc(payload.provider || "")}${payload.credits ? " · " + payload.credits + " credits" : ""}</p>`);
+  box.innerHTML = parts.join("");
+}
+</script>
+{% endblock %}

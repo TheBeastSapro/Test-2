@@ -61,6 +61,9 @@ class Settings(BaseSettings):
 
     youtube_client_id: str = ""
     youtube_client_secret: str = ""
+    # A Data API key, distinct from the OAuth pair above: the pair authorises uploads
+    # to the operator's own channel, this reads public statistics for research.
+    youtube_api_key: str = ""
 
     # Research search providers. Tavily is preferred when both are present because it
     # returns extracted page content, saving a fetch per result.

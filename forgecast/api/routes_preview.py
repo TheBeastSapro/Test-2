@@ -16,9 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
-from .. import credits as billing
 from ..auth import current_user, optional_user
-from ..config import get_settings
 from ..db import get_session
 from ..models import Node, Run, User
 from ..render import preview as preview_builder
@@ -138,7 +136,7 @@ def preview_page(
     # Imported here rather than at module scope: `routes_web` imports `routes_api`,
     # and importing it at the top of this module closes a cycle through the router
     # registration in `main`.
-    from .routes_web import TEMPLATES, _layout
+    from .routes_web import TEMPLATES, _layout, shell
 
     user = optional_user(request, session)
     if user is None:
@@ -154,10 +152,8 @@ def preview_page(
         request,
         "preview.html",
         {
-            "user": user,
+            **shell(session, user, "studio"),
             "run": run,
             "plan_nodes": plan_nodes,
-            "credits": billing.balance(session, user.id),
-            "settings": get_settings(),
         },
     )

@@ -116,6 +116,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
 
+    # Python fully buffers stdout when it is not a terminal, so a launch whose output
+    # is redirected to a file — which is what anyone does when reporting a problem —
+    # shows nothing at all until the process exits. Line buffering costs nothing and
+    # makes the log useful while it is still running.
+    with contextlib.suppress(AttributeError, ValueError):
+        sys.stdout.reconfigure(line_buffering=True)
+
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(levelname)-7s %(name)s: %(message)s",

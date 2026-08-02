@@ -76,6 +76,17 @@ class VideoStat:
 
     @property
     def cohort(self) -> str:
+        """Which distribution this video belongs to.
+
+        An unknown duration counts as long-form, not as a Short. The naive
+        `duration <= 60` reads a missing value as zero and therefore as a Short — which
+        matters because most pasted tables have no duration column at all, so *every*
+        video would land in the Shorts cohort and the UI would report a "Shorts median"
+        computed entirely from long-form videos. One honest cohort beats two mislabelled
+        ones.
+        """
+        if self.duration_seconds <= 0:
+            return "long"
         return "short" if self.duration_seconds <= SHORT_MAX_SECONDS else "long"
 
     def age_days(self, now: datetime | None = None) -> float:

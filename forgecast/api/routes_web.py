@@ -39,6 +39,25 @@ def _redirect(url: str) -> RedirectResponse:
     return RedirectResponse(url, status_code=303)
 
 
+def shell(session: Session, user: User, nav: str) -> dict:
+    """The context every page shares: which nav entry is current, and the run list.
+
+    Built in one place rather than per route. The sidebar is on every page, so a route
+    that forgot to supply it would render an app with no navigation — a failure that is
+    obvious in the browser and invisible in a test that only checks status codes.
+    """
+    runs = session.execute(
+        select(Run).where(Run.user_id == user.id).order_by(Run.id.desc()).limit(8)
+    ).scalars().all()
+    return {
+        "nav": nav,
+        "recent_runs": runs,
+        "credits": billing.balance(session, user.id),
+        "settings": get_settings(),
+        "user": user,
+    }
+
+
 def _set_session(response: RedirectResponse, token: str) -> RedirectResponse:
     response.set_cookie(
         COOKIE, token, httponly=True, samesite="lax",
@@ -121,12 +140,13 @@ def dashboard(
         request,
         "dashboard.html",
         {
-            "user": user,
-            "credits": billing.balance(session, user.id),
+            **shell(session, user, "dashboard"),
             "channels": channels,
             "runs": runs,
             "pipelines": PIPELINE_META,
-            "settings": get_settings(),
+            # A topic handed over from the research desk, so "start a run from this
+            # idea" lands on a pre-filled form rather than an empty one.
+            "topic": request.query_params.get("topic", ""),
         },
     )
 
@@ -220,15 +240,13 @@ def run_page(
         request,
         "run.html",
         {
-            "user": user,
+            **shell(session, user, "run"),
             "run": run,
             "layers": layers,
             "events": events,
             "artifacts": artifacts,
             "gate": gate,
-            "credits": billing.balance(session, user.id),
             "usd": billing.credits_to_usd,
-            "settings": get_settings(),
         },
     )
 
