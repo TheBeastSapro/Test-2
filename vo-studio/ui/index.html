@@ -61,48 +61,51 @@
   </section>
 
   <!-- ═══════════════════════════════════════════════ 2 · TUNE -->
+  <!-- A conversation, not a control panel. You describe what is wrong the way
+       you would to a person, it moves the settings and hands back a new take.
+       The parameters are still visible on the right, because knowing WHICH
+       number moved is what stops this being a slot machine. -->
   <section class="view" data-view="lab">
-    <div class="card">
+    <div class="page-head">
       <h2>Tune the read</h2>
-      <p class="sub">Render ten seconds, say what is wrong in plain English, and the settings move. Repeat until it sounds right.</p>
+      <p class="sub">Say what is wrong in plain English. It changes the settings, renders a new sample, and you listen. Repeat until it sounds right, then save it.</p>
+    </div>
 
-      <div class="grid grid-2">
-        <div>
+    <div class="tune">
+      <div class="card chat-card" id="lab-card">
+        <div class="chat" id="lab-chat">
+          <div class="empty">Press <b>Render a first take</b> to hear where the voice is starting from.</div>
+        </div>
+        <div class="composer">
+          <input id="lab-fb" type="text" placeholder="feels bit fast and a little flat">
+          <button class="btn btn-primary" id="btn-lab-send">Send</button>
+        </div>
+        <div class="chips" id="lab-chips">
+          <button class="chip">too flat</button>
+          <button class="chip">too expressive</button>
+          <button class="chip">feels bit fast</button>
+          <button class="chip">too slow</button>
+          <button class="chip">false pauses</button>
+          <button class="chip">no natural gaps</button>
+        </div>
+      </div>
+
+      <aside class="tune-side">
+        <div class="card">
+          <h3>This voice</h3>
           <div class="field">
             <label for="prof">Profile name</label>
             <input id="prof" type="text" value="explaintory">
           </div>
           <div class="params" id="params"></div>
-        </div>
-
-        <div>
-          <div id="lab-player" class="empty">Render a sample to hear it</div>
-          <div class="field" style="margin-top:16px">
-            <label for="lab-fb">What is wrong with it?</label>
-            <input id="lab-fb" type="text" placeholder="feels bit fast and a little flat">
-            <div class="chips">
-              <button class="chip">too flat</button>
-              <button class="chip">too expressive</button>
-              <button class="chip">feels bit fast</button>
-              <button class="chip">too slow</button>
-              <button class="chip">false pauses</button>
-              <button class="chip">no natural gaps</button>
-            </div>
-            <p class="hint">Press Enter and it re-renders with the change applied.</p>
+          <div class="tune-acts">
+            <button class="btn w-full" id="btn-sample">Render a first take</button>
+            <button class="btn w-full" id="btn-revert">Undo last change</button>
+            <!-- Saving is the one thing it never does on its own. -->
+            <button class="btn btn-primary w-full" id="btn-lock">Save this voice</button>
           </div>
         </div>
-      </div>
-
-      <div style="display:flex;gap:10px;margin-top:24px">
-        <button class="btn btn-primary" id="btn-sample">Render sample</button>
-        <button class="btn" id="btn-revert">Undo last change</button>
-        <button class="btn" id="btn-lock">Save this voice</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Changes so far</h3>
-      <div id="lab-log" class="rounds empty">Nothing changed yet.</div>
+      </aside>
     </div>
 
     <div class="flow-nav">

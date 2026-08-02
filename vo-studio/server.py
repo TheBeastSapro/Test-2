@@ -429,6 +429,19 @@ async def assistant_attach(file: UploadFile = File(...)):
     return {"name": dest.name, "path": str(dest), "size": size, **info}
 
 
+@app.get("/api/assistant/file")
+def assistant_file(path: str):
+    """Serve an attachment back so the chat can show it rather than name it."""
+    try:
+        p = Path(path).resolve()
+        p.relative_to(ATTACH_DIR.resolve())    # same rule as everywhere else
+        if p.is_file():
+            return FileResponse(p)
+    except (ValueError, OSError):
+        pass
+    return JSONResponse({}, 404)
+
+
 @app.post("/api/assistant/detach")
 def assistant_detach(payload: dict):
     """Removing a chip deletes the file — attachments are context, not a library."""

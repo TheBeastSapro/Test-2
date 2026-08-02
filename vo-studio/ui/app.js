@@ -161,48 +161,94 @@ async function loadProfile() {
 }
 $('#prof').addEventListener('change', loadProfile);
 
-$('#btn-sample').onclick = async () => {
-  const b = $('#btn-sample'); b.disabled = true;
-  $('#lab-player').innerHTML = '<div class="empty">rendering…</div>';
+/* The tuning loop as a conversation: you say what is wrong, it says what it
+   moved, and it hands back a take you can play in the same thread. The whole
+   history stays on screen, which is what makes it possible to hear that round 4
+   was better than round 6 and go back. */
+const labChat = () => $('#lab-chat');
+
+function labClear() {
+  const c = labChat();
+  if (c.firstElementChild?.classList.contains('empty')) c.innerHTML = '';
+}
+function labSay(html, cls = 'ai') {
+  labClear();
+  const el = document.createElement('div');
+  el.className = `msg ${cls}`;
+  el.innerHTML = html;
+  labChat().append(el);
+  labChat().scrollTop = labChat().scrollHeight;
+  return el;
+}
+
+async function labRender(bubble) {
+  // One turn = one take. Rendering into the bubble that announced the change
+  // keeps "what moved" and "what it sounds like" together.
+  const target = bubble || labSay('<span class="msg-wait">rendering a take…</span>');
+  target.dataset.busy = '1';
+  $('#btn-sample').disabled = true;
   try {
     const j = await api('/api/lab/sample', { name: $('#prof').value });
-    if (j.error) { $('#lab-player').innerHTML = `<div class="empty">${j.error}</div>`; }
-    else {
-      $('#lab-player').innerHTML = `<audio controls src="/api/lab/audio?t=${Date.now()}"></audio>`;
+    if (j.error) {
+      target.innerHTML = `<span class="msg-bad">${j.error}</span>`;
+    } else {
       paintParams(j.profile);
+      target.querySelector('.msg-wait')?.remove();
+      target.insertAdjacentHTML('beforeend',
+        `<audio controls src="/api/lab/audio?t=${Date.now()}"></audio>`);
+      done.add('lab');
     }
-  } catch (e) { $('#lab-player').innerHTML = `<div class="empty">${e}</div>`; }
-  b.disabled = false;
+  } catch (e) {
+    target.innerHTML = `<span class="msg-bad">${e}</span>`;
+  }
+  delete target.dataset.busy;
+  $('#btn-sample').disabled = false;
+  labChat().scrollTop = labChat().scrollHeight;
+}
+
+$('#btn-sample').onclick = () => {
+  $('#btn-sample').textContent = 'Render another take';
+  labRender(labSay('<span class="msg-wait">rendering a take…</span>'));
 };
 
-$$('.chip').forEach(c => c.onclick = () => {
+$$('#lab-chips .chip').forEach(c => c.onclick = () => {
   const i = $('#lab-fb');
   i.value = i.value ? `${i.value} and ${c.textContent}` : c.textContent;
   i.focus();
 });
 
-$('#lab-fb').addEventListener('keydown', async e => {
-  if (e.key !== 'Enter' || !e.target.value.trim()) return;
-  const fb = e.target.value; e.target.value = '';
-  const j = await api('/api/lab/feedback', { name: $('#prof').value, feedback: fb });
-  const log = $('#lab-log');
-  if (log.classList.contains('empty')) { log.classList.remove('empty'); log.textContent = ''; }
-  done.add('lab');
-  log.insertAdjacentHTML('beforeend',
-    `<div><span class="r-fb">› ${fb}</span>\n` +
-    j.changes.map(c => `   <span class="r-ch">${c}</span>`).join('\n') + '\n</div>');
-  log.scrollTop = log.scrollHeight;
-  paintParams(j.profile);
-  $('#btn-sample').click();
-});
+async function labSend() {
+  const input = $('#lab-fb'), fb = input.value.trim();
+  if (!fb) return;
+  input.value = '';
+  labSay(fb, 'me');
+  const bubble = labSay('<span class="msg-wait">…</span>');
+  try {
+    const j = await api('/api/lab/feedback', { name: $('#prof').value, feedback: fb });
+    const changes = (j.changes || []);
+    bubble.innerHTML = changes.length
+      ? `<div class="chg">${changes.map(c => `<span>${c}</span>`).join('')}</div>` +
+        `<span class="msg-wait">rendering a new take…</span>`
+      : `<span class="msg-bad">I could not tell what to change from that. Try naming the ` +
+        `problem — too fast, too flat, false pauses.</span>`;
+    if (!changes.length) return;
+    paintParams(j.profile);
+    $('#btn-sample').textContent = 'Render another take';
+    await labRender(bubble);
+  } catch (e) { bubble.innerHTML = `<span class="msg-bad">${e}</span>`; }
+}
+$('#btn-lab-send').onclick = labSend;
+$('#lab-fb').addEventListener('keydown', e => e.key === 'Enter' && labSend());
 
 $('#btn-lock').onclick = async () => {
   const j = await api('/api/lab/lock', { name: $('#prof').value });
+  labSay(`<b>Saved.</b> ${j.message}`);
   toast(j.message);
 };
 $('#btn-revert').onclick = async () => {
   const j = await api('/api/lab/revert', { name: $('#prof').value });
-  paintParams(j.profile); toast(j.message);
+  paintParams(j.profile);
+  labSay(`<b>Reverted.</b> ${j.message} Render another take to hear it.`);
 };
 
 /* ── settings ───────────────────────────────────────────────────────── */
@@ -283,14 +329,27 @@ $('#btn-recheck').onclick = () => refreshAuth().then(() => toast('Checked'));
 let ATTACHED = [];
 const ICON_FOR = { image: 'image', audio: 'wave', file: 'file' };
 
+const fileURL = a => '/api/assistant/file?path=' + encodeURIComponent(a.path);
+
+/* An image is worth showing, not naming — you attached it because of what is
+   in it. Audio gets a player for the same reason: so you can confirm it is the
+   right take before asking about it. */
+function attBody(a) {
+  if (a.kind === 'image') return `<img src="${fileURL(a)}" alt="${a.name}">`;
+  if (a.kind === 'audio') return `<audio controls preload="metadata" src="${fileURL(a)}"></audio>`;
+  return `<span class="att-plain"><i data-i="file"></i><b>${a.name}</b></span>`;
+}
+
 function paintAttached() {
   const box = $('#attached');
   box.hidden = !ATTACHED.length;
   box.innerHTML = ATTACHED.map((a, i) => `
-    <span class="att" title="${a.path}">
-      <i data-i="${ICON_FOR[a.kind] || 'file'}"></i>
-      <b>${a.name}</b>
-      <span class="att-kind">${a.kind === 'audio' ? 'measured, not heard' : a.kind}</span>
+    <span class="att att-${a.kind}" title="${a.path}">
+      ${attBody(a)}
+      <span class="att-meta">
+        <b>${a.name}</b>
+        <span class="att-kind">${a.kind === 'audio' ? 'measured, not heard' : a.kind}</span>
+      </span>
       <button data-drop="${i}" aria-label="Remove"><i data-i="close"></i></button>
     </span>`).join('');
   drawIcons(box);
@@ -332,10 +391,14 @@ async function send() {
   const chat = $('#chat');
   if (chat.firstElementChild?.classList.contains('empty')) chat.innerHTML = '';
   const files = ATTACHED.map(a => a.path);
-  const shown = ATTACHED.map(a => `<span class="att-sent">${a.name}</span>`).join('');
+  const shown = ATTACHED.map(a =>
+    a.kind === 'image' ? `<img class="att-sent-img" src="${fileURL(a)}" alt="${a.name}">`
+    : a.kind === 'audio' ? `<audio class="att-sent-audio" controls preload="metadata" src="${fileURL(a)}"></audio>`
+    : `<span class="att-sent">${a.name}</span>`).join('');
   ATTACHED = []; paintAttached();
   chat.insertAdjacentHTML('beforeend',
     `<div class="msg me">${shown ? `<div class="att-row">${shown}</div>` : ''}${text}</div>`);
+  drawIcons(chat);
   const bubble = document.createElement('div');
   bubble.className = 'msg ai'; bubble.textContent = '…';
   chat.append(bubble); chat.scrollTop = chat.scrollHeight;

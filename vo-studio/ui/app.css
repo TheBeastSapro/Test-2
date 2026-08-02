@@ -253,6 +253,28 @@ audio { width: 100%; height: 40px; margin-top: 14px; }
 .param-bar { grid-column: 1 / -1; height: 4px; background: var(--raise-3); border-radius: 999px; overflow: hidden; }
 .param-fill { height: 100%; background: var(--text); border-radius: 999px; transition: width .4s var(--ease); }
 
+/* ── tune ───────────────────────────────────────────────────────────── */
+.tune { display: grid; grid-template-columns: minmax(0,1fr) 268px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .tune { grid-template-columns: 1fr; } }
+.tune .chat-card { height: 540px; margin-bottom: 16px; }
+.tune-side .card { padding: 22px 22px 24px; }
+.tune-acts { display: flex; flex-direction: column; gap: 9px; margin-top: 24px; }
+.tune-side .params { margin-top: 20px; }
+.tune-side .field { margin-bottom: 0; }
+
+/* What moved, stated as the numbers rather than a reassurance. */
+.chg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.chg span {
+  font-family: var(--mono); font-size: 12.5px; color: var(--text);
+  background: var(--raise-3); border-radius: 6px; padding: 5px 9px;
+  align-self: flex-start;
+}
+.msg-wait { color: var(--faint); font-size: 13.5px; }
+.msg-bad { color: var(--amber); }
+.msg audio { width: 262px; margin-top: 4px; }
+
+#lab-chips { padding: 0 22px 18px; margin: 0; }
+
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .chip {
   background: var(--raise-2); border: 1px solid var(--line); color: var(--muted);
@@ -352,24 +374,41 @@ input[type=range]::-webkit-slider-thumb {
   padding: 14px 22px 0; border-top: 1px solid var(--line);
 }
 .att {
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 10px;
   background: var(--raise-2); border: 1px solid var(--line-lit);
-  border-radius: 999px; padding: 6px 8px 6px 12px; font-size: 13px; max-width: 100%;
+  border-radius: var(--r-sm); padding: 8px 10px; font-size: 13px; max-width: 100%;
 }
+.att img {
+  width: 46px; height: 46px; object-fit: cover; border-radius: 6px;
+  border: 1px solid var(--line); flex: none; display: block;
+}
+.att audio { width: 200px; height: 32px; margin: 0; }
+.att-plain { display: inline-flex; align-items: center; gap: 8px; }
 .att i { width: 14px; height: 14px; color: var(--muted); flex: none; }
-.att b { font-weight: 520; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.att-kind { color: var(--faint); font-size: 12px; }
+.att-meta { display: flex; flex-direction: column; min-width: 0; }
+.att b {
+  font-weight: 520; max-width: 168px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.att-kind { color: var(--faint); font-size: 11.5px; }
+.att-audio .att-meta b { max-width: 120px; }
 .att button {
-  background: none; border: 0; padding: 2px; cursor: pointer; color: var(--faint);
-  display: grid; place-items: center; border-radius: 50%;
+  background: none; border: 0; padding: 3px; cursor: pointer; color: var(--faint);
+  display: grid; place-items: center; border-radius: 50%; align-self: flex-start;
 }
 .att button:hover { color: var(--text); background: var(--raise-3); }
 
-.att-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.att-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .att-sent {
   background: rgba(0,0,0,.14); border-radius: 6px;
   padding: 3px 8px; font-size: 12px; font-weight: 520;
 }
+/* Inside the white outgoing bubble, so it needs its own contrast. */
+.att-sent-img {
+  max-width: 100%; max-height: 220px; border-radius: 8px; display: block;
+  border: 1px solid rgba(0,0,0,.14);
+}
+.att-sent-audio { width: 250px; height: 34px; margin: 0; }
 
 /* Drop anywhere on the panel, not onto a small target. */
 .chat-card.over { border-color: var(--faint); }
