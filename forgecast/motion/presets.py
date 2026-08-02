@@ -306,6 +306,38 @@ LIBRARY: dict[str, MotionPreset] = {
         text_colour="#f2f4f8", accent_colour="#d9b26a", band_opacity=0.0,
         card_scale=0.66, card_zoom=1.07, card_tilt=0.0, card_shadow=False,
     ),
+    # Archive register. Type fades rather than moves, because a hard entry over a
+    # photograph reads as a modern graphic laid on top of it; a fade reads as part of
+    # the same document. The long exit is what lets a still breathe before the cut.
+    "archive_reveal": MotionPreset(
+        name="archive_reveal", intensity=0.26, entry="rise", entry_duration=0.9,
+        easing="ease_in_out", stagger=0.6, hold=4.6, exit_duration=0.9,
+        caption_zone="bottom_third", caption_style="plain", text_height_ratio=0.044,
+        text_colour="#efe6d6", accent_colour="#c98f3c", band_opacity=0.0,
+        card_scale=0.7, card_zoom=1.05, card_tilt=0.0, card_shadow=True,
+    ),
+    # The investigative "here is the proof" beat: lines arrive one after another and
+    # each one *stays*, so the stack accumulates on screen. A long hold against a
+    # short stagger is what produces that; the usual arrangement, where each line
+    # leaves before the next arrives, gives you a slideshow of single facts instead.
+    "evidence_stack": MotionPreset(
+        name="evidence_stack", intensity=0.42, entry="slide", entry_duration=0.28,
+        easing="ease_out", stagger=0.55, hold=4.4, exit_duration=0.22,
+        caption_zone="bottom_third", caption_style="box", text_height_ratio=0.05,
+        text_colour="#ffffff", accent_colour="#5ac8fa", band_opacity=0.72,
+        card_scale=0.52, card_zoom=1.09, card_tilt=0.0, card_shadow=True,
+    ),
+    # The Shorts opener. No entry travel and almost no entry duration on purpose: a
+    # vertical viewer decides inside a second, and a word that is still animating in
+    # has not been read yet. Everything else in the library eases in; this one is
+    # already there on the frame it appears.
+    "hook_slam": MotionPreset(
+        name="hook_slam", intensity=0.96, entry="pop", entry_duration=0.08,
+        easing="ease_out", stagger=0.1, hold=0.75, exit_duration=0.08,
+        caption_zone="centre", caption_style="outline", text_height_ratio=0.105,
+        text_colour="#ffffff", accent_colour="#ffe14d", band_opacity=0.0,
+        card_scale=0.86, card_zoom=1.28, card_tilt=0.02, card_shadow=False,
+    ),
 }
 
 

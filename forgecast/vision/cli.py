@@ -235,6 +235,123 @@ def cmd_restyle(args) -> int:
     return 0
 
 
+def _profile_from(reference: str, *, workdir: str = "", max_seconds: int = 0) -> dict:
+    """A measured profile for a reference, or the one already on disk beside it.
+
+    Accepting a previously-saved profile JSON matters more than it looks: measuring a
+    ten-minute reference costs minutes, and learning a style from five of them would
+    otherwise mean half an hour of re-measuring things already measured.
+    """
+    source = Path(reference)
+    if source.suffix.lower() == ".json" and source.exists():
+        return json.loads(source.read_text(encoding="utf-8"))
+
+    folder = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="fcvision-"))
+    if source.exists() and not max_seconds:
+        return analyse_file(source).as_dict(include_shots=False)
+    profile, acquired = analyse_reference(reference, folder, max_seconds=max_seconds)
+    if acquired.title:
+        print(f"# {acquired.title}", file=sys.stderr)
+    return profile.as_dict(include_shots=False)
+
+
+def cmd_learn_style(args) -> int:
+    """Measure one or more references and save the result as a named editing style.
+
+    Several references rather than one, because a style is what survives across a
+    creator's work — a single video is an anecdote. The refine pass runs by default
+    and prints every departure it makes, so the difference between what the reference
+    does and what we chose to do differently is on screen rather than buried.
+    """
+    from ..style import learn, refine
+
+    profiles: list[dict] = []
+    for reference in args.references:
+        try:
+            profiles.append(_profile_from(
+                reference, workdir=args.workdir or "", max_seconds=args.max_seconds))
+            print(f"measured {reference}", file=sys.stderr)
+        except (AcquireError, ProbeError, OSError, json.JSONDecodeError) as exc:
+            print(f"error measuring {reference}: {exc}", file=sys.stderr)
+            if args.strict:
+                return 1
+
+    if not profiles:
+        print("nothing could be measured", file=sys.stderr)
+        return 1
+
+    style = learn(profiles, name=args.name, reference=args.references[0])
+    print(f"\nlearned '{style.name}' from {len(profiles)} reference(s)")
+    print(f"  {style.summary()}")
+    unsure = [key for key, value in style.spread.items() if value > 0.5]
+    if unsure:
+        print(f"  the references disagree about: {', '.join(unsure)} — "
+              "treat those numbers as weak")
+
+    if args.raw:
+        path = style.save(args.directory)
+        print(f"\nsaved as measured -> {path}")
+        return 0
+
+    improved, changes = refine(style, name=args.name)
+    path = improved.save(args.directory)
+    print(f"\n{len(changes)} departure(s) from the reference:")
+    for item in changes:
+        print(f"  - {item}")
+    if not changes:
+        print("  none — the reference is already inside every guard rail")
+    print(f"\n  {improved.summary()}")
+    print(f"saved -> {path}")
+    return 0
+
+
+def cmd_style(args) -> int:
+    """List, show, blend or delete saved editing styles."""
+    from ..style import EditingStyle, available, blend, delete, get
+
+    if args.action == "list":
+        rows = available(args.directory)
+        if not rows:
+            print("no saved styles yet — try `forgecast-vision learn-style`")
+            return 0
+        for row in rows:
+            print(f"  {row['key']:<24} {row['summary']}")
+            print(f"  {'':24} {row['origin']}"
+                  + (f", {row['sample_size']} reference(s)" if row["sample_size"] else "")
+                  + (f", {row['learned_at']}" if row["learned_at"] else ""))
+        return 0
+
+    if args.action == "show":
+        try:
+            style = get(args.name, args.directory)
+        except KeyError as exc:
+            print(exc, file=sys.stderr)
+            return 1
+        print(json.dumps(style.as_dict(), indent=2))
+        return 0
+
+    if args.action == "delete":
+        print("deleted" if delete(args.name, args.directory) else "no such style")
+        return 0
+
+    if args.action == "blend":
+        try:
+            first = get(args.name, args.directory)
+            second = get(args.with_style, args.directory)
+        except KeyError as exc:
+            print(exc, file=sys.stderr)
+            return 1
+        mixed: EditingStyle = blend(first, second, args.weight, name=args.into)
+        path = mixed.save(args.directory)
+        print(f"blended {first.key} x {second.key} at {args.weight:.2f}")
+        print(f"  {mixed.summary()}")
+        print(f"saved -> {path}")
+        return 0
+
+    print(f"unknown action {args.action!r}", file=sys.stderr)
+    return 1
+
+
 def cmd_learn_motion(args) -> int:
     """Measure a reference's motion-graphics style and save it as a named preset.
 
@@ -348,6 +465,36 @@ def build_parser() -> argparse.ArgumentParser:
     learn.add_argument("--list", action="store_true",
                        help="also list every preset now available")
     learn.set_defaults(func=cmd_learn_motion)
+
+    learn_style = sub.add_parser(
+        "learn-style",
+        help="measure references and keep the whole edit as a named style",
+    )
+    learn_style.add_argument("references", nargs="+",
+                             help="paths, media URLs, or previously saved profile JSON")
+    learn_style.add_argument("--name", required=True)
+    learn_style.add_argument("--directory", default="./storage/styles")
+    learn_style.add_argument("--max-seconds", type=int, default=0,
+                             help="measure only the first N seconds of each reference")
+    learn_style.add_argument("--workdir", default=None)
+    learn_style.add_argument("--raw", action="store_true",
+                             help="save exactly what was measured, skipping the "
+                                  "refinement pass that fixes the reference's defects")
+    learn_style.add_argument("--strict", action="store_true",
+                             help="stop if any reference fails to measure")
+    learn_style.set_defaults(func=cmd_learn_style)
+
+    style_cmd = sub.add_parser("style", help="list, show, blend or delete saved styles")
+    style_cmd.add_argument("action", choices=["list", "show", "blend", "delete"])
+    style_cmd.add_argument("name", nargs="?", default="")
+    style_cmd.add_argument("--with", dest="with_style", default="",
+                           help="the other style, for blend")
+    style_cmd.add_argument("--weight", type=float, default=0.5,
+                           help="how much of --with to take, 0..1")
+    style_cmd.add_argument("--into", default="", help="name for the blended result")
+    style_cmd.add_argument("--directory", default="./storage/styles")
+    style_cmd.set_defaults(func=cmd_style)
+
     return parser
 
 

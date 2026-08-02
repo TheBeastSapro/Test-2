@@ -57,6 +57,12 @@
   .side nav a:hover { background: var(--panel-2); text-decoration: none; }
   .side nav a.on { background: var(--accent-dim); color: #fff; }
   .side nav a .ic { width: 16px; text-align: center; opacity: .85; }
+  .side nav a .tally { margin-left: auto; font-size: 11px; color: var(--muted);
+                       background: var(--panel-2); border: 1px solid var(--line);
+                       border-radius: 999px; padding: 0 6px; }
+  .side nav a.on .tally { color: #fff; border-color: transparent;
+                          background: rgba(255,255,255,.14); }
+  .side nav .rule { height: 1px; background: var(--line); margin: 7px 9px; }
   .side .lane { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
                 color: var(--muted); padding: 14px 18px 5px; font-weight: 600; }
   .side .chan { display: block; padding: 6px 18px; font-size: 13px;
@@ -131,8 +137,18 @@
   </div>
 
   <nav>
-    <a href="/" class="{{ 'on' if nav == 'dashboard' }}"><span class="ic">▤</span> Channels &amp; runs</a>
+    {# The two formats are the top-level split: picking one decides the pipeline, the
+       aspect ratio and the length, so everything below is about one kind of video. #}
+    {% for item in formats %}
+      {% set tally = (format_counts or {}).get(item.slug, {}) %}
+      <a href="/f/{{ item.slug }}" class="{{ 'on' if nav == 'format:' + item.slug }}">
+        <span class="ic">{{ item.icon }}</span> {{ item.label }}
+        {% if tally.get('runs') %}<span class="tally">{{ tally['runs'] }}</span>{% endif %}
+      </a>
+    {% endfor %}
+    <div class="rule"></div>
     <a href="/research" class="{{ 'on' if nav == 'research' }}"><span class="ic">◎</span> Research</a>
+    <a href="/styles" class="{{ 'on' if nav == 'styles' }}"><span class="ic">✦</span> Styles</a>
     {% if nav == 'studio' and run %}
       <a href="/runs/{{ run.id }}/preview" class="on"><span class="ic">▶</span> Studio</a>
     {% endif %}

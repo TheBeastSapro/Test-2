@@ -17,6 +17,7 @@ from .media import router as media_router
 from .routes_api import router as api_router
 from .routes_preview import router as preview_router
 from .routes_research import router as research_router
+from .routes_styles import router as styles_router
 from .routes_web import router as web_router
 
 log = logging.getLogger("forgecast.api")
@@ -49,6 +50,7 @@ def create_app() -> FastAPI:
     # run detail route's path converter.
     app.include_router(preview_router)
     app.include_router(research_router)
+    app.include_router(styles_router)
     # Artifacts are served through signed, expiring, per-user URLs rather than a
     # static mount of the storage directory. See `api.media` — a plain mount hands
     # every run's video to anyone who can guess a path.

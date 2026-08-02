@@ -18,6 +18,7 @@ from .. import credits as billing
 from ..auth import authenticate, create_access_token, current_user, hash_password, optional_user
 from ..config import get_settings
 from ..db import get_session
+from ..graph import formats
 from ..graph.engine import create_run
 from ..graph.pipelines import PIPELINE_META
 from ..models import Channel, Node, Run, RunEvent, User
@@ -39,19 +40,34 @@ def _redirect(url: str) -> RedirectResponse:
     return RedirectResponse(url, status_code=303)
 
 
-def shell(session: Session, user: User, nav: str) -> dict:
-    """The context every page shares: which nav entry is current, and the run list.
+def shell(
+    session: Session, user: User, nav: str, *,
+    channels: list | None = None, runs: list | None = None,
+) -> dict:
+    """The context every page shares: the format tabs, the nav state, the run list.
 
     Built in one place rather than per route. The sidebar is on every page, so a route
     that forgot to supply it would render an app with no navigation — a failure that is
     obvious in the browser and invisible in a test that only checks status codes.
+
+    A caller that has already loaded the channels and runs passes them in; the counts
+    on the tabs are the same query the workspace just ran, and running it twice on
+    every page load is waste for no gain.
     """
-    runs = session.execute(
-        select(Run).where(Run.user_id == user.id).order_by(Run.id.desc()).limit(8)
-    ).scalars().all()
+    if runs is None:
+        runs = list(session.execute(
+            select(Run).where(Run.user_id == user.id).order_by(Run.id.desc()).limit(60)
+        ).scalars().all())
+    if channels is None:
+        channels = list(session.execute(
+            select(Channel).where(Channel.user_id == user.id)
+        ).scalars().all())
+
     return {
         "nav": nav,
-        "recent_runs": runs,
+        "recent_runs": runs[:8],
+        "formats": list(formats.FORMATS.values()),
+        "format_counts": formats.counts(channels, runs),
         "credits": billing.balance(session, user.id),
         "settings": get_settings(),
         "user": user,
@@ -126,23 +142,53 @@ def dashboard(
     user: User | None = Depends(optional_user),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
+    """The bare root sends you to whichever format you were last working in.
+
+    Guessing from the most recent run rather than defaulting to long-form: someone who
+    only makes Shorts should not land on an empty long-form workspace every time they
+    open the app.
+    """
     if user is None:
         return _redirect("/login")  # type: ignore[return-value]
 
+    latest = session.execute(
+        select(Run.pipeline).where(Run.user_id == user.id).order_by(Run.id.desc()).limit(1)
+    ).scalar_one_or_none()
+    slug = formats.format_of_pipeline(latest) if latest else formats.DEFAULT_FORMAT
+    return _redirect(f"/f/{slug}")  # type: ignore[return-value]
+
+
+@router.get("/f/{slug}", response_class=HTMLResponse)
+def workspace(
+    slug: str,
+    request: Request,
+    user: User | None = Depends(optional_user),
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    """One format's workspace: its channels, its runs, its pipeline pre-chosen."""
+    if user is None:
+        return _redirect("/login")  # type: ignore[return-value]
+
+    chosen = formats.get(slug)
     channels = session.execute(
         select(Channel).where(Channel.user_id == user.id).order_by(Channel.id)
     ).scalars().all()
     runs = session.execute(
-        select(Run).where(Run.user_id == user.id).order_by(Run.id.desc()).limit(20)
+        select(Run).where(Run.user_id == user.id).order_by(Run.id.desc()).limit(60)
     ).scalars().all()
 
     return TEMPLATES.TemplateResponse(
         request,
         "dashboard.html",
         {
-            **shell(session, user, "dashboard"),
-            "channels": channels,
-            "runs": runs,
+            **shell(session, user, f"format:{chosen.slug}", channels=channels, runs=runs),
+            "format": chosen,
+            "channels": formats.channels_in(channels, chosen.slug),
+            "other_channels": [
+                item for item in channels
+                if formats.format_of_channel(item) != chosen.slug
+            ],
+            "runs": formats.runs_in(runs, chosen.slug)[:20],
             "pipelines": PIPELINE_META,
             # A topic handed over from the research desk, so "start a run from this
             # idea" lands on a pre-filled form rather than an empty one.
@@ -175,7 +221,10 @@ def create_channel_form(
     )
     session.add(channel)
     session.commit()
-    return _redirect("/")
+    # Back to the workspace the new channel belongs to, which is not necessarily the
+    # one it was created from — a vertical channel made on the long-form tab is a
+    # Shorts channel, and landing on the tab that will not list it reads as a failure.
+    return _redirect(f"/f/{formats.format_of_channel(channel)}")
 
 
 @router.post("/runs")
@@ -197,7 +246,10 @@ def create_run_form(
             session, channel=channel, topic=topic, pipeline=pipeline, options=options
         )
     except billing.InsufficientCredits as exc:
-        return _redirect(f"/?error=Not+enough+credits:+need+{exc.needed},+have+{exc.available}")
+        slug = formats.format_of_pipeline(pipeline)
+        return _redirect(
+            f"/f/{slug}?error=Not+enough+credits:+need+{exc.needed},+have+{exc.available}"
+        )
     session.commit()
     runner.schedule(run.id)
     return _redirect(f"/runs/{run.id}")

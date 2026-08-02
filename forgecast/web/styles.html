@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}Styles · Forgecast{% endblock %}
+
+{% block head %}
+<style>
+  .styles { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 940px) { .styles { grid-template-columns: 1fr; } }
+  .shelf { background: var(--panel); border: 1px solid var(--line);
+           border-radius: var(--radius); overflow: hidden; }
+  .shelf a { display: block; padding: 10px 13px; border-bottom: 1px solid var(--line);
+             color: var(--text); text-decoration: none; }
+  .shelf a:last-child { border-bottom: 0; }
+  .shelf a:hover { background: var(--panel-2); text-decoration: none; }
+  .shelf a.on { background: var(--accent-dim); }
+  .shelf .nm { font-weight: 600; font-size: 14px; }
+  .shelf .sm { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+  .origin { font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+            padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line);
+            color: var(--muted); }
+  .origin.learned { color: var(--accent); border-color: var(--accent-dim); }
+  .origin.refined { color: var(--ok); border-color: #1f4b38; }
+  .origin.blend   { color: var(--gate); border-color: #40306b; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+           gap: 10px; }
+  .fact { background: var(--panel-2); border: 1px solid var(--line);
+          border-radius: 8px; padding: 9px 11px; }
+  .fact b { display: block; font-size: 10.5px; text-transform: uppercase;
+            letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  .fact .v { font-size: 17px; font-weight: 620; }
+  .fact .n { font-size: 11.5px; color: var(--muted); }
+  .fact.weak { border-color: #5c4a1e; }
+  .dep { padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
+  .dep:last-child { border-bottom: 0; }
+  .dep .f { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .dep .was { color: var(--muted); text-decoration: line-through; }
+  .dep .now { color: var(--ok); font-weight: 600; }
+  .dep .why { color: var(--muted); font-size: 12.5px; }
+  .swatches { display: flex; gap: 5px; margin-top: 6px; }
+  .swatches i { width: 26px; height: 20px; border-radius: 4px;
+                border: 1px solid var(--line); }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<h1>Styles</h1>
+<p class="muted" style="margin-top:0">
+  An editing style is a whole edit kept as data — cut rhythm, transitions, grade,
+  caption discipline, motion. Learn one from a creator's videos, then apply it,
+  mix it with another, or improve on it.
+</p>
+
+{% if not styles %}
+  <div class="card">
+    <strong>Nothing learned yet.</strong>
+    <p class="muted">Point it at a few videos by the same creator — several rather than
+    one, because a single video is an anecdote and a style is what survives across
+    their work.</p>
+    <pre style="background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:11px;overflow-x:auto;font-size:12.5px">forgecast-vision learn-style ep1.mp4 ep2.mp4 ep3.mp4 --name "Their Look"</pre>
+    <p class="muted" style="margin-bottom:0;font-size:13px">
+      It measures each one, takes the median of every field, and then runs an upgrade
+      pass — printing each departure it makes from the reference and why. Add
+      <code>--raw</code> to keep exactly what was measured instead.
+    </p>
+  </div>
+{% else %}
+
+<div class="styles">
+  <div class="shelf">
+    {% for row in styles %}
+      <a href="/styles?selected={{ row.key }}"
+         class="{{ 'on' if chosen and chosen.key == row.key }}">
+        <div class="nm">{{ row.name }}</div>
+        <div class="sm">{{ row.summary }}</div>
+        <div style="margin-top:5px"><span class="origin {{ row.origin }}">{{ row.origin }}</span>
+          {% if row.sample_size %}<span class="sm">{{ row.sample_size }} ref</span>{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+
+  {% if chosen %}
+  <div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h2 style="margin:0 0 2px;text-transform:none;letter-spacing:0;font-size:19px;color:var(--text)">
+            {{ chosen.name }}</h2>
+          <div class="muted" style="font-size:13px">{{ chosen.summary() }}</div>
+        </div>
+        <form method="post" action="/styles/{{ chosen.key }}/delete"
+              onsubmit="return confirm('Delete {{ chosen.name }}?')">
+          <button class="danger" style="padding:4px 10px">Delete</button>
+        </form>
+      </div>
+
+      <div class="facts" style="margin-top:16px">
+        {% set weak = chosen.spread or {} %}
+        <div class="fact {{ 'weak' if weak.get('target_shot_seconds', 0) > 0.5 }}">
+          <b>Shot length</b>
+          <span class="v">{{ '%.1f'|format(chosen.target_shot_seconds) }}s</span>
+          <span class="n">{{ '%.1f'|format(chosen.shot_seconds_min) }}–{{ '%.1f'|format(chosen.shot_seconds_max) }}s</span>
+        </div>
+        <div class="fact {{ 'weak' if weak.get('jitter', 0) > 0.5 }}">
+          <b>Variation</b>
+          <span class="v">{{ '%.2f'|format(chosen.jitter) }}</span>
+          <span class="n">{{ 'metronomic' if chosen.jitter < 0.15 else ('varied' if chosen.jitter < 0.5 else 'highly varied') }}</span>
+        </div>
+        <div class="fact"><b>Pacing</b><span class="v">{{ chosen.pacing }}</span>
+          <span class="n">{{ chosen.transition }}{% if chosen.dissolve_share %} · {{ '%.0f'|format(chosen.dissolve_share * 100) }}% dissolve{% endif %}</span></div>
+        <div class="fact {{ 'weak' if weak.get('motion_intensity', 0) > 0.5 }}">
+          <b>Motion</b><span class="v">{{ '%.2f'|format(chosen.motion_intensity) }}</span>
+          <span class="n">{{ chosen.motion_preset or 'chosen by intensity' }}</span></div>
+        <div class="fact {{ 'weak' if weak.get('contrast', 0) > 0.5 }}">
+          <b>Grade</b>
+          <span class="v">{{ '%.2f'|format(chosen.contrast) }}×</span>
+          <span class="n">sat {{ '%.2f'|format(chosen.saturation) }}, bright {{ '%+.2f'|format(chosen.brightness) }}</span></div>
+        <div class="fact"><b>Captions</b>
+          <span class="v">{{ chosen.caption_position.replace('_', ' ') if chosen.captions else 'off' }}</span>
+          <span class="n">{{ chosen.caption_max_chars }} chars × {{ chosen.caption_max_lines }}, {{ '%.1f'|format(chosen.caption_max_seconds) }}s max</span></div>
+        <div class="fact"><b>Movement</b>
+          <span class="v">{{ 'Ken Burns' if chosen.ken_burns else 'static' }}</span>
+          <span class="n">{{ '%.3f'|format(chosen.zoom_rate) }}/s{% if chosen.snap_cuts_to_beat %} · beat-synced{% endif %}</span></div>
+        <div class="fact"><b>Audio</b>
+          <span class="v">{{ chosen.loudness_target }}</span>
+          <span class="n">{{ 'music bed, ducked ' + '%.0f'|format(chosen.duck_depth_db) + ' dB' if chosen.music_bed else 'voice only' }}</span></div>
+      </div>
+
+      {% if chosen.palette %}
+        <div class="swatches">
+          {% for entry in chosen.palette[:8] %}
+            <i style="background:{{ entry.hex or entry.get('hex', '#333') }}"
+               title="{{ entry.hex or '' }}"></i>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if weak %}
+        {% set unsure = weak.items() | selectattr('1', 'gt', 0.5) | map(attribute='0') | list %}
+        {% if unsure %}
+          <p class="muted" style="font-size:12.5px;margin-bottom:0">
+            The references disagreed about {{ unsure | join(', ') }} — the amber panels.
+            This creator has no consistent rule there, so the median is weak evidence.
+          </p>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    {# What the upgrade pass changed, and why. Shown prominently because the whole
+       point of separating learn from refine is that this stays visible. #}
+    <h2>Departures from the reference</h2>
+    <div class="card">
+      {% if refinements %}
+        <p class="muted" style="margin-top:0;font-size:13px">
+          Measured from the reference, then changed — each one because the reference
+          crossed from a choice into a defect.
+        </p>
+        {% for item in refinements %}
+          <div class="dep">
+            <span class="f">{{ item.field }}</span>
+            <span class="was">{{ item.was }}</span> →
+            <span class="now">{{ item.now }}</span>
+            <div class="why">{{ item.why }}</div>
+          </div>
+        {% endfor %}
+      {% elif chosen.provenance.get('origin') == 'learned' %}
+        <p class="muted" style="margin:0">
+          Saved as measured. Run the upgrade pass to fix anything the reference does
+          badly — it will be saved as a separate style, leaving this one untouched.
+        </p>
+        <form method="post" action="/styles/{{ chosen.key }}/refine" style="margin-top:11px">
+          <button>Run the upgrade pass</button>
+        </form>
+      {% else %}
+        <p class="muted" style="margin:0">
+          None — {{ 'a blend inherits its parents' if chosen.provenance.get('origin') == 'blend'
+                     else 'the reference was already inside every guard rail' }}.
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="grid two" style="margin-top:22px">
+      <div class="card">
+        <h2 style="margin-top:0">Apply to a channel</h2>
+        {% if channels %}
+          <form method="post" action="/styles/{{ chosen.key }}/apply">
+            <label for="channel_id">Channel</label>
+            <select id="channel_id" name="channel_id">
+              {% for channel in channels %}
+                <option value="{{ channel.id }}">
+                  {{ channel.name }} · {{ channel_format[channel.id] }}
+                </option>
+              {% endfor %}
+            </select>
+            <p class="muted" style="font-size:12.5px">
+              Replaces the channel's render spec, motion preset and map style. Its tone
+              and everything the agent has learned from your approvals stay put.
+            </p>
+            <button type="submit">Apply</button>
+          </form>
+        {% else %}
+          <p class="muted" style="margin:0">Create a channel first.</p>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0">Mix with another</h2>
+        {% if styles | length > 1 %}
+          <form method="post" action="/styles/{{ chosen.key }}/blend">
+            <label for="other">Blend with</label>
+            <select id="other" name="other">
+              {% for row in styles if row.key != chosen.key %}
+                <option value="{{ row.key }}">{{ row.name }}</option>
+              {% endfor %}
+            </select>
+            <label for="weight">How much of it — 0 keeps this one, 1 takes theirs</label>
+            <input id="weight" name="weight" type="range" min="0" max="1" step="0.05"
+                   value="0.5" oninput="document.getElementById('wv').textContent = this.value">
+            <div class="muted" style="font-size:12.5px">weight <span id="wv">0.5</span></div>
+            <label for="name">Call it</label>
+            <input id="name" name="name" placeholder="{{ chosen.name }} x …">
+            <p class="muted" style="font-size:12.5px">
+              Numbers interpolate. Transitions, caption position and the palette do not
+              — there is no style halfway between a cut and a dissolve, so those switch
+              at the halfway point.
+            </p>
+            <button type="submit">Blend</button>
+          </form>
+        {% else %}
+          <p class="muted" style="margin:0">Learn a second style to mix with.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

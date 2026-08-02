@@ -350,13 +350,38 @@ def test_plans_expose_price_per_credit(client: TestClient):
 
 
 def test_web_pages_render(client: TestClient):
+    """The root lands on a format workspace, and both tabs render.
+
+    Asserted against the format's own label rather than a fixed word on the page:
+    tying this to "Channels" is what broke it when the dashboard became per-format,
+    even though the page was rendering perfectly.
+    """
     token = register(client, "web@example.com")
     assert client.get("/login").status_code == 200
 
     client.cookies.set("forgecast_session", token)
-    dashboard = client.get("/")
-    assert dashboard.status_code == 200
-    assert "Channels" in dashboard.text
+    landing = client.get("/", follow_redirects=False)
+    assert landing.status_code == 303
+    assert landing.headers["location"].startswith("/f/")
+
+    for slug, label in (("longform", "Long-form"), ("shorts", "Shorts")):
+        page = client.get(f"/f/{slug}")
+        assert page.status_code == 200
+        assert label in page.text
+
+    # With a channel to run against, the tab's own pipeline is carried by the form —
+    # the whole point of splitting the workspaces is that it is no longer a dropdown.
+    client.post(
+        "/channels",
+        data={"name": "Vertical", "aspect_ratio": "9:16",
+              "target_duration_seconds": "45"},
+        follow_redirects=False,
+    )
+    shorts = client.get("/f/shorts")
+    assert 'name="pipeline" value="faceless_shorts"' in shorts.text
+    assert "Vertical" in shorts.text
+    # And it does not leak into the other tab.
+    assert "Vertical" not in client.get("/f/longform").text
 
 
 def test_dashboard_redirects_when_signed_out(client: TestClient):

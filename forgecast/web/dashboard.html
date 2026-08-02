@@ -1,12 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Dashboard · Forgecast{% endblock %}
+{% block title %}{{ format.label }} · Forgecast{% endblock %}
 {% block body %}
 
-<h1>Channels</h1>
+<h1>{{ format.icon }} {{ format.label }}</h1>
 <p class="muted" style="margin-top:0">
-  A channel holds the persona — voice, format, and everything the agent has learned
-  from your past approvals.
+  {{ format.blurb }} Everything on this tab is {{ format.aspect_ratio }} —
+  the pipeline, the length and the aspect are already chosen, so a new run only needs
+  a topic.
 </p>
+
+{% if other_channels %}
+  <p class="muted" style="font-size:13px;margin-top:-4px">
+    {{ other_channels|length }} channel(s) live on the other tab.
+  </p>
+{% endif %}
 
 <div class="grid two">
   <div class="card">
@@ -21,16 +28,19 @@
       <div class="grid two" style="gap:10px">
         <div>
           <label for="aspect_ratio">Aspect</label>
+          {# Pre-set from the tab. Changing it moves the channel to the other tab,
+             which the create handler follows so you land where the channel went. #}
           <select id="aspect_ratio" name="aspect_ratio">
-            <option value="16:9">16:9 — long form</option>
-            <option value="9:16">9:16 — shorts</option>
+            <option value="16:9" {{ "selected" if format.aspect_ratio == "16:9" }}>16:9 — long form</option>
+            <option value="9:16" {{ "selected" if format.aspect_ratio == "9:16" }}>9:16 — shorts</option>
             <option value="1:1">1:1</option>
           </select>
         </div>
         <div>
           <label for="target_duration_seconds">Target length (s)</label>
           <input id="target_duration_seconds" name="target_duration_seconds"
-                 type="number" value="480" min="15" max="3600">
+                 type="number" value="{{ format.default_seconds }}"
+                 min="{{ format.length_min }}" max="{{ format.length_max }}">
         </div>
       </div>
       <label for="voice_id">Voice ID <span class="muted">(ElevenLabs, optional)</span></label>
@@ -56,31 +66,26 @@
         <label for="topic">Topic</label>
         <textarea id="topic" name="topic" required
                   placeholder="Why deep-sea cables keep breaking">{{ topic or "" }}</textarea>
-        <div class="grid two" style="gap:10px">
-          <div>
-            <label for="pipeline">Pipeline</label>
-            <select id="pipeline" name="pipeline">
-              {% for pipeline in pipelines %}
-                <option value="{{ pipeline.name }}">{{ pipeline.title }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div>
-            <label for="target_seconds">Length override (s)</label>
-            <input id="target_seconds" name="target_seconds" type="number"
-                   value="0" min="0" max="3600">
-          </div>
-        </div>
+        {# The tab already decided the pipeline; carrying it as a hidden field keeps
+           the form to the one field that actually varies. #}
+        <input type="hidden" name="pipeline" value="{{ format.pipeline }}">
+        <label for="target_seconds">Length override (s)
+          <span class="muted">— 0 keeps the channel's own target</span></label>
+        <input id="target_seconds" name="target_seconds" type="number"
+               value="0" min="0" max="{{ format.length_max }}">
         <div style="margin-top:16px"><button type="submit">Queue run</button></div>
       </form>
     {% else %}
-      <p class="muted">Create a channel first — a run needs a persona to inherit.</p>
+      <p class="muted">
+        No {{ format.label|lower }} channel yet — a run needs a persona to inherit.
+        Create one on the left{% if other_channels %}, or switch to the other tab{% endif %}.
+      </p>
     {% endif %}
   </div>
 </div>
 
 {% if channels %}
-<h2>Your channels</h2>
+<h2>{{ format.label }} channels</h2>
 <div class="card" style="padding:0">
   <table>
     <thead><tr><th>Channel</th><th>Niche</th><th>Format</th><th>YouTube</th></tr></thead>
@@ -106,19 +111,18 @@
 </div>
 {% endif %}
 
-<h2>Recent runs</h2>
+<h2>{{ format.label }} runs</h2>
 {% if runs %}
 <div class="card" style="padding:0">
   <table>
     <thead>
-      <tr><th>#</th><th>Topic</th><th>Pipeline</th><th>Status</th><th>Credits</th></tr>
+      <tr><th>#</th><th>Topic</th><th>Status</th><th>Credits</th></tr>
     </thead>
     <tbody>
       {% for run in runs %}
       <tr>
         <td class="mono"><a href="/runs/{{ run.id }}">{{ run.id }}</a></td>
         <td><a href="/runs/{{ run.id }}">{{ run.topic }}</a></td>
-        <td class="muted mono">{{ run.pipeline }}</td>
         <td><span class="status {{ run.status.value }}">{{ run.status.value }}</span></td>
         <td class="mono muted">{{ run.credits_spent }} / {{ run.credits_reserved }} held</td>
       </tr>
@@ -127,7 +131,7 @@
   </table>
 </div>
 {% else %}
-<div class="card"><p class="muted" style="margin:0">No runs yet.</p></div>
+<div class="card"><p class="muted" style="margin:0">No {{ format.label|lower }} runs yet.</p></div>
 {% endif %}
 
 {% endblock %}

@@ -76,8 +76,12 @@ def test_the_handoff_signs_the_window_in(client, desktop, owner):
     assert response.headers["location"] == "/"
     assert "forgecast_session" in response.cookies
 
-    # And the cookie is a real session, not a decoration.
-    assert client.get("/", follow_redirects=False).status_code == 200
+    # And the cookie is a real session, not a decoration. Following the redirect
+    # because the root now sends you on to a format workspace; a signed-*out* request
+    # would be redirected to /login instead, which the assertion below distinguishes.
+    landed = client.get("/", follow_redirects=True)
+    assert landed.status_code == 200
+    assert "/login" not in str(landed.url)
 
 
 def test_a_normal_deployment_has_no_handoff_route(client, owner):
