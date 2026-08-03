@@ -40,6 +40,25 @@
       {% if settings and settings.is_mock %}<span class="pill mock">mock</span>{% endif %}
     </div>
 
+    {# Missing tools, installable without leaving the conversation. Hidden until the
+       state check says something is actually missing, so a complete install shows
+       nothing at all rather than a dismissed banner. It drives the same
+       `/api/setup/install` the setup page uses — one installer, two places to start it,
+       because a second one would be a second thing to keep correct. #}
+    <div id="toolbar-missing" class="card" hidden
+         style="margin:0 0 12px;border-color:var(--line-2);display:flex;
+                align-items:center;gap:12px;flex-wrap:wrap">
+      <span class="dot dot-warn"></span>
+      <span id="missing-text" style="flex:1;min-width:220px;font-size:13.5px"></span>
+      <span id="missing-bar" hidden
+            style="flex:1 1 160px;height:6px;border-radius:999px;background:var(--raise-3)">
+        <span id="missing-fill"
+              style="display:block;height:100%;width:0;border-radius:999px;
+                     background:var(--accent);transition:width .2s"></span>
+      </span>
+      <button id="missing-install" class="btn-sm primary">Install</button>
+    </div>
+
     <div class="chat" id="chat">
       <div class="empty" id="chat-empty">Starting up…</div>
     </div>

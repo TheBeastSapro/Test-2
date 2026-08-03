@@ -232,7 +232,14 @@ def inventory(root: Path) -> list[Tool]:
     machine where the first message will fail with a batch-script refusal. One
     question, one answer, in one place.
     """
-    from ..agent import auth
+    # Imported here, and tolerantly. `inventory()` runs from the launcher on the system
+    # interpreter before the virtualenv exists, so anything this reaches must survive a
+    # bare Python. If a future import in the agent package breaks that again, the answer
+    # is a filesystem probe and a working launcher rather than a traceback on first run.
+    try:
+        from ..agent import auth
+    except ImportError:                                             # pragma: no cover
+        auth = None
 
     tools: list[Tool] = []
 
@@ -249,7 +256,14 @@ def inventory(root: Path) -> list[Tool]:
         manual=manual,
     ))
 
-    cli = auth.find_cli()
+    # `find_cli` is the right answer and a disk probe is the honest fallback: the SDK
+    # resolves its own bundled binary before PATH and refuses npm's `claude.cmd` shim, so
+    # only `auth` can tell "installed" from "installed unusably". Without it the probe can
+    # still say whether *something* is there, which is enough to decide whether to
+    # download — and the real check runs later, inside the virtualenv, where it works.
+    cli = auth.find_cli() if auth is not None else (
+        str(cli_exe(root)) if cli_exe(root).exists() else (shutil.which("claude") or "")
+    )
     cli_manual = ""
     if not cli and os.name == "nt":
         # npm's shim is refused, so the only fix on Windows is the native installer —

@@ -274,24 +274,45 @@ def check_claude() -> tuple[bool, str]:
     )
 
 
-def _progress_printer(label: str):
-    """A one-line progress meter for a download, for the console the launcher owns.
+BAR_WIDTH = 24
 
-    Rewritten in place with `\\r` rather than a line per chunk. A hundred lines of
-    "downloading 3%" is not progress reporting, it is a wall of text that hides the
-    warning printed after it.
+# Windows consoles before Terminal render box-drawing characters as mojibake, and a bar
+# that shows as question marks is worse than no bar. ASCII there, blocks everywhere else.
+_FILL, _EMPTY = ("#", "-") if os.name == "nt" else ("\u2588", "\u2500")
+
+
+def _progress_printer(label: str, *, step: str = "", window=None):
+    """Progress for one download: into the window when there is one, the console when not.
+
+    Bytes rather than steps, and a bar rather than a bare percentage. A step counter sits
+    at 60% through a 40 MB download and says nothing useful; a percentage alone does not
+    show that anything is still moving between updates on a slow line. So a bar, the
+    percentage, and the megabytes — which is the number someone uses to decide whether to
+    wait or go and do something else.
+
+    The console line is redrawn with `\r` and padded, because a shorter line drawn over a
+    longer one leaves the tail of the old one behind and reads as corruption.
     """
     state = {"shown": -1}
+    prefix = f"{step} " if step else ""
 
     def report(done: int, total: int) -> None:
+        if window is not None:
+            window.progress(done, total)
+            return
         if not total:
             return
-        percent = min(100, int(done * 100 / total))
-        # Every 5% is enough to look alive without redrawing on every 8 KB chunk.
-        if percent >= state["shown"] + 5 or percent == 100:
-            state["shown"] = percent
-            end = "\n" if percent == 100 else ""
-            print(f"\r  {label}: {percent}%   ", end=end, flush=True)
+        fraction = min(1.0, max(0.0, done / total))
+        percent = int(fraction * 100)
+        # Every 2% keeps it visibly moving without redrawing on every 8 KB chunk.
+        if percent < state["shown"] + 2 and percent != 100:
+            return
+        state["shown"] = percent
+        filled = int(fraction * BAR_WIDTH)
+        bar = _FILL * filled + _EMPTY * (BAR_WIDTH - filled)
+        size = f"{done / 1_048_576:5.1f} / {total / 1_048_576:.1f} MB"
+        line = f"  {prefix}{label:<22} [{bar}] {percent:3d}%  {size}"
+        print(f"\r{line:<78}", end="\n" if percent == 100 else "", flush=True)
 
     return report
 
@@ -317,18 +338,30 @@ def install_toolchain(root: Path) -> list[str]:
     if not missing:
         return []
 
+    # A window when one can be drawn, the console when it cannot. `setup_window` is
+    # tkinter — standard library — because this runs before the virtualenv exists and a
+    # toolkit that needs installing cannot draw the window that installs things.
+    from . import setup_window
+
+    window = setup_window.open([tool.label for tool in missing]) or setup_window.silent()
+    gui = not isinstance(window, setup_window._Silent)
+
     # Named before anything is downloaded, because the honest thing to show someone
-    # waiting is what they are waiting for.
-    say("installing what is missing: " + ", ".join(tool.label for tool in missing))
+    # waiting is what they are waiting for — and the total, so the bar that follows is
+    # one of a known number rather than an unbounded sequence.
+    say(f"{len(missing)} to install: " + ", ".join(tool.label for tool in missing))
 
     unresolved: list[str] = []
-    for tool in missing:
+    for index, tool in enumerate(missing, start=1):
+        step = f"[{index}/{len(missing)}]"
+        window.begin(tool.label)
         if tool.manual:
             # ffmpeg on macOS and Linux, where a package manager owns it and dropping a
             # private build in its place is not this installer's business.
             unresolved.append(f"{tool.label} — install it with: {tool.manual}")
             continue
-        report = _progress_printer(tool.label)
+        report = _progress_printer(tool.label, step=step,
+                                   window=window if gui else None)
         try:
             if tool.key == "ffmpeg":
                 ok, detail = toolchain.install_ffmpeg(root, report)
@@ -339,7 +372,8 @@ def install_toolchain(root: Path) -> list[str]:
                 # Node first: the CLI is installed with the bundled npm, and on a
                 # platform whose wheel carries no CLI there may be no npm yet.
                 if not toolchain.npm_exe(root).exists() and not shutil.which("npm"):
-                    toolchain.install_node(root, _progress_printer("Node.js"))
+                    toolchain.install_node(root, _progress_printer(
+                        "Node.js", step=step, window=window if gui else None))
                 ok, detail = toolchain.install_claude_cli(root, report)
             else:                                                  # pragma: no cover
                 continue
@@ -348,9 +382,16 @@ def install_toolchain(root: Path) -> list[str]:
             # filesystem, and there is no failure among them worth refusing to open the
             # app over. The reason is printed rather than swallowed.
             ok, detail = False, f"{type(exc).__name__}: {exc}"
+        window.finish(tool.label, ok=bool(ok))
         if not ok:
             unresolved.append(f"{tool.label} — {detail or 'could not be installed'}")
 
+    # Left open on failure with the x showing, because a window that vanishes at the
+    # moment something went wrong takes the only explanation with it.
+    window.done("Everything is installed." if not unresolved else
+                "Finished, with some things left to do.")
+    if not unresolved:
+        window.close()
     return unresolved
 
 

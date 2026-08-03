@@ -909,4 +909,98 @@ $('#confirm-edits').onchange = event => {
   else { chat().innerHTML = ''; greet(); }
 })();
 
+// ------------------------------------------------------- missing tools, in the chat
+//
+// The launcher installs what is missing before the app opens, but that is not the only
+// moment something can be missing: a first run with no network, a deleted runtime
+// folder, a machine that gained ffmpeg on PATH and lost it again. Sending the operator
+// to a separate page to fix it means leaving the conversation they are in the middle
+// of, so the same install runs from here.
+//
+// It posts to `/api/setup/install` — the endpoint the setup page already uses — rather
+// than a second implementation. That endpoint joins a running job instead of starting a
+// second download of the same archive, so pressing this twice, or reloading mid-install,
+// is safe.
+
+async function checkTools() {
+  let state;
+  try {
+    state = await api('/api/setup/state');
+  } catch {
+    return;                     // Not a desktop install, or the route is not mounted.
+  }
+  const missing = (state.tools || []).filter(t => !t.present);
+  const banner = $('#toolbar-missing');
+  if (!banner) return;
+  if (!missing.length) { banner.hidden = true; return; }
+
+  // A tool carrying a `manual` line cannot be fetched for you — ffmpeg on macOS and
+  // Linux belongs to a package manager. An Install button for those would be a button
+  // that cannot work, so they are named with their command instead.
+  const fetchable = missing.filter(t => !t.manual);
+  const byHand = missing.filter(t => t.manual);
+
+  let text = `Missing: ${esc(missing.map(t => t.label).join(', '))}.`;
+  for (const tool of byHand) {
+    text += ` <span class="muted">${esc(tool.label)} needs <code>${esc(tool.manual)}</code></span>`;
+  }
+  $('#missing-text').innerHTML = text;
+  $('#missing-install').hidden = !fetchable.length;
+  banner.hidden = false;
+}
+
+async function installTools() {
+  const button = $('#missing-install');
+  button.disabled = true;
+  button.textContent = 'Installing…';
+  $('#missing-bar').hidden = false;
+
+  try {
+    const response = await fetch('/api/setup/install', { method: 'POST' });
+    if (!response.ok) throw new Error(await response.text());
+
+    // NDJSON, the shape the setup page already reads: log lines, progress, then done.
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        let event;
+        try { event = JSON.parse(line); } catch { continue; }
+        if (event.type === 'log') {
+          $('#missing-text').textContent = String(event.text).slice(0, 120);
+        } else if (event.type === 'progress' && event.weight_total) {
+          const pct = Math.min(100, (event.weight_done / event.weight_total) * 100);
+          $('#missing-fill').style.width = pct.toFixed(1) + '%';
+        } else if (event.type === 'done') {
+          $('#missing-fill').style.width = '100%';
+        }
+      }
+    }
+  } catch (error) {
+    $('#missing-text').textContent = 'Could not install: ' + String(error.message || error);
+    button.disabled = false;
+    button.textContent = 'Try again';
+    return;
+  }
+
+  // Re-read the state rather than assuming success. The install reports per tool, and
+  // one failing while another worked is a normal outcome worth showing accurately.
+  $('#missing-bar').hidden = true;
+  button.disabled = false;
+  button.textContent = 'Install';
+  await checkTools();
+}
+
+if ($('#missing-install')) {
+  $('#missing-install').onclick = () => installTools();
+  checkTools();
+}
+
 })();
