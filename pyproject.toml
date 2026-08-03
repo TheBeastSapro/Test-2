@@ -5,7 +5,14 @@ description = "An agent platform that builds and runs faceless YouTube channels:
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.110",
-    "uvicorn[standard]>=0.27",
+    # Plain, not `uvicorn[standard]`. The extra pulls `httptools` (a C extension) and
+    # `watchfiles` (a Rust one), and neither is used: the app never runs with `--reload`,
+    # and it streams with server-sent events rather than WebSockets. What they *did* do was
+    # make the first launch depend on there being a wheel for the operator's exact Python
+    # on their exact platform — and when there is not, pip tries to compile, which fails on
+    # a normal Windows machine with no build tools. Two optional performance packages are
+    # not worth an install that cannot finish.
+    "uvicorn>=0.27",
     "sqlalchemy>=2.0",
     "alembic>=1.13",
     "pydantic>=2.6",

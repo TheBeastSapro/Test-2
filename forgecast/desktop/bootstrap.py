@@ -138,19 +138,128 @@ def install_dependencies(root: Path, python: Path, *, force: bool = False) -> bo
     if not force and stamp.exists() and stamp.read_text(encoding="utf-8").strip() == wanted:
         return False
 
-    say("installing dependencies (one time, a minute or two)")
-    result = subprocess.run(
-        [str(python), "-m", "pip", "install", "--disable-pip-version-check",
-         "--quiet", "-e", "."],
-        cwd=str(root),
-    )
-    if result.returncode != 0:
+    unreachable = _pypi_unreachable()
+    if unreachable:
+        # Asked before pip runs, not after. The first launch is the only one that needs
+        # the network, and without this check the operator watches a progress line for a
+        # minute or two and is then told the install failed — for a reason that was
+        # knowable in three seconds. Reported as a BootstrapError with the remedy rather
+        # than a warning, because there is no way to continue: the build backend
+        # (setuptools) is not in a fresh virtualenv on Python 3.12 and later, so even a
+        # fully cached install has to fetch it.
         raise BootstrapError(
-            "dependency installation failed. Scroll up for pip's reason — the usual "
-            "causes are no network access or a missing compiler toolchain."
-        )
+            f"pypi.org is not reachable ({unreachable}).\n"
+            "  The first launch is the only one that needs the internet — it downloads "
+            "this app's Python packages, and after that it never asks again.\n"
+            "  If you are on a corporate network or a VPN, set HTTPS_PROXY to your proxy "
+            "and start Forgecast again.")
+
+    say("installing dependencies (one time, a minute or two)")
+    log_path = root / "runtime" / "pip.log"
+
+    # Captured rather than inherited, and this is a correction. The previous version let
+    # pip write straight to the console and the error message said "scroll up for pip's
+    # reason" — which was wrong in two different ways. Under the windowless launcher there
+    # is no console to scroll. And even with one, child consoles are suppressed on Windows
+    # so that nothing black appears out of nowhere, which is exactly the mechanism that
+    # inherited output depends on. A failure reported as "the reason is somewhere above"
+    # with nothing above it is worse than no message at all: it says the information
+    # exists and sends the operator to look for it.
+    #
+    # `--quiet` is gone for the same reason. It saved console noise that no longer goes to
+    # a console, at the cost of the log being empty in the one case the log matters.
+    result = subprocess.run(
+        [str(python), "-m", "pip", "install", "--disable-pip-version-check", "-e", "."],
+        cwd=str(root), capture_output=True, text=True, errors="replace",
+    )
+    output = ((result.stdout or "") + (result.stderr or "")).strip()
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(output or "(pip produced no output)", encoding="utf-8")
+    except OSError:
+        log_path = None                                              # read-only install
+
+    if result.returncode != 0:
+        raise BootstrapError(_pip_failure(output, log_path))
     stamp.write_text(wanted, encoding="utf-8")
     return True
+
+
+# Long enough to fail on a genuinely dead network, short enough that nobody notices it on
+# a working one. This is a TCP connect, not a request, so it does not wait for a response
+# body and it sends nothing.
+REACHABILITY_TIMEOUT = 4.0
+
+
+def _pypi_unreachable() -> str:
+    """Why pypi.org cannot be reached, or "" when it can.
+
+    A plain socket connect rather than an HTTP request, because `httpx` is one of the
+    packages this function exists to install — nothing here may import outside the
+    standard library. And a *connect* rather than a DNS lookup alone, since a machine
+    behind a captive portal resolves everything and connects to nothing.
+
+    Skipped entirely when a proxy is configured: the proxy is what would be connected to,
+    its host is not knowable from here in every form the variable takes, and a false
+    "no network" on a machine that has one would be worse than the slow failure this
+    replaces.
+    """
+    import os as _os
+
+    if any(_os.environ.get(name) for name in
+           ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY",
+            "PIP_INDEX_URL", "PIP_PROXY")):
+        return ""
+
+    import socket
+
+    try:
+        with socket.create_connection(("pypi.org", 443), timeout=REACHABILITY_TIMEOUT):
+            return ""
+    except OSError as exc:
+        # The message, not the class: `[Errno 11001] getaddrinfo failed` tells the
+        # operator it is DNS, where "OSError" tells them nothing.
+        return str(exc) or type(exc).__name__
+
+
+# How much of pip's output to put in front of the operator. Enough to carry the actual
+# error, which pip prints last and which is usually a handful of lines under a
+# `note:`/`error:` heading — not so much that the message it is attached to scrolls away.
+PIP_TAIL_LINES = 24
+
+
+def _pip_failure(output: str, log_path: Path | None) -> str:
+    """pip's failure, as something to act on rather than a pointer to somewhere else."""
+    lines = [line for line in output.splitlines() if line.strip()]
+    tail = lines[-PIP_TAIL_LINES:]
+
+    parts = ["dependency installation failed. This is pip's own output:", ""]
+    parts += [f"    {line}" for line in tail] or ["    (pip printed nothing at all)"]
+    parts += [""]
+    if log_path is not None:
+        parts.append(f"The whole log is in {log_path}.")
+
+    # The three that account for nearly every real occurrence, each with the specific
+    # remedy rather than a general suggestion to check things.
+    lowered = output.lower()
+    if any(marker in lowered for marker in
+           ("could not find a version", "no matching distribution",
+            "failed to establish a new connection", "temporary failure in name resolution",
+            "connection refused", "read timed out", "proxyerror")):
+        parts.append("That reads like no network access. pip needs to reach pypi.org "
+                     "once, on the first launch only. If you are behind a proxy, set "
+                     "HTTPS_PROXY before starting.")
+    elif any(marker in lowered for marker in
+             ("microsoft visual c++", "vswhere", "cl.exe", "error: command",
+              "building wheel for", "gcc", "unable to find vcvarsall")):
+        parts.append("That reads like a package trying to compile. Installing the "
+                     "Microsoft C++ Build Tools fixes it, or a newer Python often has a "
+                     "prebuilt wheel and needs no compiler at all.")
+    elif "permission denied" in lowered or "access is denied" in lowered:
+        parts.append("That reads like a permissions problem. Move the Forgecast folder "
+                     "somewhere you own — your Desktop or Documents — rather than "
+                     "Program Files, and try again.")
+    return "\n".join(parts)
 
 
 def _fernet_key() -> str:

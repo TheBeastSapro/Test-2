@@ -35,6 +35,21 @@ finish in the browser. It is your normal Claude subscription; there is no API ke
 
 To stop it: close the window, or press **Quit** in the app.
 
+### If the first launch says it could not install
+
+The first launch is the only one that needs the internet — it downloads this app's Python
+packages once. If it fails, the error now shows **pip's own last lines**, and the whole log
+is written to `runtime/pip.log` inside the app folder. Send that file and the cause is
+usually obvious from it.
+
+The three that account for almost all of them:
+
+| What the log says | What to do |
+|---|---|
+| `No matching distribution found`, `getaddrinfo failed`, `Connection refused` | No route to pypi.org. On a work network or a VPN, set `HTTPS_PROXY` and start again. |
+| `Microsoft Visual C++ 14.0 or greater is required` | A package is trying to compile. Install the Microsoft C++ Build Tools, or use a slightly older Python — a released version has prebuilt packages and needs no compiler. |
+| `Access is denied` | Move the Forgecast folder to your Desktop or Documents rather than Program Files. |
+
 ---
 
 ## What the first launch does
