@@ -30,6 +30,7 @@ readable rather than opaque.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from dataclasses import dataclass, field
@@ -174,10 +175,8 @@ class Store:
         }}
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        try:
+        with contextlib.suppress(OSError):             # Windows and odd filesystems
             self.path.chmod(0o600)
-        except OSError:                                # pragma: no cover - Windows
-            pass
 
     def set(self, key: str, url: str, token: str = "", enabled: bool = True) -> Connection:
         url = (url or "").strip()

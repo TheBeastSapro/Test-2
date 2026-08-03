@@ -14,7 +14,11 @@ keys stay on your disk; nothing is uploaded anywhere you did not configure.
 | **Linux** | `./Forgecast.command`, or `python3 launcher.py` |
 
 The first launch takes a minute or two while it builds its environment. Every launch
-after that takes a couple of seconds. A window opens, already signed in.
+after that takes a couple of seconds. A window opens, already signed in, on the chat.
+
+To use the chat you also need the Claude Code CLI signed in with your subscription —
+`npm install -g @anthropic-ai/claude-code`, then `claude` and `/login`. The app tells
+you if it is missing. Everything except the chat works without it.
 
 To stop it: close the window, or press **Quit** in the app.
 
@@ -57,7 +61,28 @@ later.
 - **macOS** — `brew install ffmpeg`
 - **Linux** — `sudo apt install ffmpeg`
 
-### Node.js — optional
+### The Claude Code CLI — required for the chat
+
+The chat is the way into this app, and it runs on **your Claude subscription** — the
+same `/login` you already use. There is no API key and you should not create one.
+
+It needs Node.js, which is a second runtime alongside Python:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+claude          # then type /login and finish in the browser
+```
+
+Everything else — channels, runs, research, the preview studio — works without it. The
+app says plainly whether Claude is connected rather than looking identical either way;
+the status is in the sidebar on every page and in full under **Settings → Claude**.
+
+> **One trap, and it costs money quietly.** If `ANTHROPIC_API_KEY` is set anywhere in
+> your environment it takes priority over your subscription, and requests bill an API
+> account instead of the plan you already pay for. An empty value still counts as set.
+> The launcher checks for this before anything starts.
+
+### Node.js for Remotion — optional
 
 Only for the Remotion render backend. The default ffmpeg backend needs nothing extra.
 
@@ -67,31 +92,51 @@ Only for the Remotion render backend. The default ffmpeg backend needs nothing e
 
 Everything is in the window that opens.
 
-- **Channels & runs** — make a channel, start a run, approve at each gate
-- **Research** — paste or fetch video statistics, see what genuinely outperformed, turn
-  an outlier into a topic
-- **Studio** — watch a run *before* it renders: scrubber, per-scene timeline, live plan
+**The Studio is the chat**, and it is where the work starts. You say what you want and
+the agent does it, because it holds the app's operations as tools:
+
+- paste a YouTube channel and it reads what that channel actually publishes — median
+  upload length, recent titles, which uploads beat their own cohort — then sets up a
+  channel from the measurements
+- ask what is waiting on you, and it tells you which runs are paused and on what
+- ask for a preview and it builds the timeline before anything renders
+
+The rest of the rail is where you go to *look* at what happened:
+
+- **Long-form / Shorts** — the two workspaces, each with its own channels and runs
+- **Research** — score a channel or a pasted table into ranked outliers
+- **Styles** — editing styles learned from real videos, applied or blended
+- **Settings** — Claude, connectors, provider keys, and what will actually be used
 
 Runs pause at decision gates. Approving a brief costs nothing; approving a finished
 render costs whatever the shots already burned — so the expensive stages sit behind
-gates on the cheap stages that determine them.
+gates on the cheap stages that determine them. **The agent never approves a gate on its
+own judgement.** It shows you what the gate is holding, says what it thinks, and stops.
+
+### Connectors
+
+A connector hands the agent another service's tools, so it can do the work itself
+instead of asking you to paste numbers into a box. **Settings → Connectors** ships with
+NexLev, Google Drive and Epidemic Sound; each needs a server URL and token from that
+service, and there is a Test button that makes a real request rather than checking the
+shape of the string.
+
+This is not the same thing as a provider key. A provider key lets the *pipeline* call a
+vendor; a connector lets the *agent* call one.
 
 ### It starts in mock mode
 
 No provider is called and nothing is charged. Runs complete end to end with placeholder
 script, voice and visuals, so you can see the whole pipeline before spending anything.
 
-To use real providers, edit `.env`:
+Switch to live and add keys in **Settings** — they are encrypted at rest with the key in
+`.env` and take effect immediately, no restart. If you would rather edit the file:
 
 ```ini
 FORGECAST_PROVIDER_MODE=live
-FORGECAST_ANTHROPIC_API_KEY=sk-ant-...
 FORGECAST_ELEVENLABS_API_KEY=...
-FORGECAST_YOUTUBE_API_KEY=...        # research desk: fetch a channel's statistics
+FORGECAST_YOUTUBE_API_KEY=...        # lets research read a channel from a link
 ```
-
-Restart the app after editing. Keys can also be entered in the app, where they are
-encrypted at rest with the key in `.env`.
 
 ---
 

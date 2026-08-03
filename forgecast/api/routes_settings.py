@@ -29,6 +29,7 @@ updated too so the change lands now rather than at the next restart.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 from pathlib import Path
@@ -106,10 +107,8 @@ def write_env(root: Path, values: dict[str, str]) -> None:
             out.append(f"{name}={value}")
 
     path.write_text("\n".join(out) + "\n", encoding="utf-8")
-    try:
+    with contextlib.suppress(OSError):  # Windows and odd filesystems
         path.chmod(0o600)
-    except OSError:  # pragma: no cover - Windows and odd filesystems
-        pass
 
 
 def capability_report(session: Session, user: User) -> list[dict]:

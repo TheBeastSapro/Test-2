@@ -489,3 +489,127 @@ button.danger:hover { background: #1a1011; border-color: #6b2f2f; }
 ::-webkit-scrollbar-thumb { background: #222826; border-radius: 999px;
                             border: 3px solid var(--bg); }
 ::-webkit-scrollbar-thumb:hover { background: #313937; }
+
+/* ═══════════════════════════════════════════════════ tool cards & studio ══
+   Added after the recordings of Rookcast, which get one thing right that a row
+   of chips does not: a tool call is a CARD, and the card holds what the tool
+   returned. The numbers are the part worth scrolling back to, and a claim you
+   cannot check against its source is a claim you have to take on trust. */
+
+.crumbs {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 34px; border-bottom: 1px solid var(--line);
+  font-size: 12.5px; color: var(--muted); flex: none;
+}
+.crumb { color: var(--text-2); }
+.crumb::before { content: "/ "; color: var(--faint); }
+@media (max-width: 700px) { .crumbs { padding: 11px 16px; } }
+
+/* One tool call, with its result folded underneath. */
+.tool {
+  max-width: 780px; margin: 0 auto 12px;
+  background: var(--raise); border: 1px solid var(--line);
+  border-left: 2px solid var(--line-2);
+  border-radius: 10px; overflow: hidden;
+  transition: border-color .15s ease;
+}
+.tool.running { border-left-color: var(--accent); }
+.tool.failed  { border-left-color: var(--err); }
+.tool.done    { border-left-color: #2a4a42; }
+
+.tool-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 13px; cursor: pointer; user-select: none;
+}
+.tool-head:hover { background: var(--raise-2); }
+.tool-what { font-size: 13px; color: var(--text); font-weight: 500; }
+.tool-arg {
+  font-family: var(--mono); font-size: 11.5px; color: var(--faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46%;
+}
+.tool-chev { color: var(--faint); font-size: 11px; transition: transform .15s ease; }
+.tool.open .tool-chev { transform: rotate(90deg); }
+
+.tool-body {
+  border-top: 1px solid var(--line); padding: 11px 13px;
+  background: var(--raise-2); max-height: 340px; overflow: auto;
+}
+.tool-body pre {
+  margin: 0; font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
+  white-space: pre-wrap; word-break: break-word; color: var(--text-2);
+  background: none; border: 0; padding: 0;
+}
+.tool.failed .tool-body pre { color: #fca5a5; }
+
+/* "Thinking with Claude…" — three dots that actually move, because a still
+   transcript during a slow turn is indistinguishable from a hang. */
+.thinking {
+  max-width: 780px; margin: 0 auto 16px;
+  display: flex; align-items: center; gap: 9px;
+  font-size: 13px; color: var(--muted);
+}
+.thinking i { display: flex; gap: 3px; font-style: normal; }
+.thinking i b {
+  width: 4px; height: 4px; border-radius: 50%; background: var(--accent);
+  animation: pulse 1.3s ease-in-out infinite;
+}
+.thinking i b:nth-child(2) { animation-delay: .18s; }
+.thinking i b:nth-child(3) { animation-delay: .36s; }
+@keyframes pulse { 0%, 60%, 100% { opacity: .25; } 30% { opacity: 1; } }
+
+/* ── the empty state ── */
+.opener { max-width: 660px; margin: 0 auto; padding-top: 9vh; text-align: center; }
+.opener .glyph {
+  width: 56px; height: 56px; margin: 0 auto 22px; border-radius: 16px;
+  display: grid; place-items: center; font-size: 22px; color: var(--accent);
+  background: radial-gradient(circle at 50% 40%, rgba(94,234,212,.16), transparent 70%);
+  border: 1px solid var(--line);
+}
+.opener h2 {
+  font-size: 28px; font-weight: 640; letter-spacing: -.02em; color: var(--text);
+  text-transform: none; margin: 0 0 10px;
+}
+.opener p { color: var(--muted); font-size: 14.5px; margin: 0 auto 26px; max-width: 46ch; }
+.opener .or {
+  font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--faint); margin: 30px 0 12px;
+}
+.idea {
+  display: flex; align-items: center; gap: 13px; width: 100%; text-align: left;
+  background: var(--raise); border: 1px solid var(--line); border-radius: 12px;
+  padding: 13px 15px; margin-bottom: 9px; color: var(--text);
+}
+.idea:hover { background: var(--raise-2); border-color: var(--line-2); }
+.idea .ico {
+  width: 32px; height: 32px; flex: none; border-radius: 9px; display: grid;
+  place-items: center; background: var(--accent-dim); color: var(--accent);
+  font-size: 14px;
+}
+.idea .txt { min-width: 0; }
+.idea .txt b { display: block; font-size: 13.5px; font-weight: 580; }
+.idea .txt span {
+  display: block; font-size: 12px; color: var(--faint); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.idea .go { margin-left: auto; color: var(--faint); }
+
+/* ── the Studio panel ── */
+.pane-head { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; }
+.pane-head h3 { margin: 0; }
+.pane-act { color: var(--faint); text-decoration: none; font-size: 13px; }
+.pane-act:hover { color: var(--accent); text-decoration: none; }
+.livedot { font-size: 10.5px; color: var(--faint); display: inline-flex;
+           align-items: center; gap: 5px; }
+.livedot::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--faint);
+}
+.livedot.live { color: var(--accent); }
+.livedot.live::before { background: var(--accent); box-shadow: 0 0 0 3px rgba(94,234,212,.15); }
+.livedot.waking { color: var(--warn); }
+.livedot.waking::before { background: var(--warn); }
+
+.studio-pane { padding: 13px 14px; }
+.studio-frame {
+  width: 100%; height: 300px; border: 1px solid var(--line); border-radius: 9px;
+  background: #000; display: block;
+}

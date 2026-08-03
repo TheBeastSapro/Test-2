@@ -347,8 +347,18 @@ async def chat(
                 if kind == "text":
                     text_parts.append(event.get("text", ""))
                 elif kind == "tool":
-                    tool_calls.append({"name": str(event.get("name", "")).split("__")[-1],
+                    tool_calls.append({"id": event.get("id", ""),
+                                       "name": str(event.get("name", "")).split("__")[-1],
                                        "input": event.get("input") or {}})
+                elif kind == "tool_result":
+                    # Matched back onto its call so a reopened thread shows the
+                    # measurement under the tool that produced it, not a loose list
+                    # of results at the bottom.
+                    for call in reversed(tool_calls):
+                        if call.get("id") == event.get("id"):
+                            call["result"] = event.get("text", "")
+                            call["is_error"] = bool(event.get("is_error"))
+                            break
                 elif kind in ("result", "session") and event.get("session_id"):
                     latest_session = event["session_id"]
                 elif kind == "error":

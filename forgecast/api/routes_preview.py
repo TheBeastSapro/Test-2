@@ -131,6 +131,7 @@ def preview_data(
 def preview_page(
     run_id: int,
     request: Request,
+    embed: int = 0,
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     # Imported here rather than at module scope: `routes_web` imports `routes_api`,
@@ -155,5 +156,8 @@ def preview_page(
             **shell(session, user, "studio"),
             "run": run,
             "plan_nodes": plan_nodes,
+            # Chrome off: this page is also the Studio panel inside the chat, and a
+            # sidebar nested inside a sidebar is how an embed announces itself as one.
+            "embed": bool(embed),
         },
     )

@@ -298,3 +298,122 @@ def test_settings_page_answers_the_three_questions(client, session, user):
     assert "NexLev" in body            # the one that was asked for by name
     assert "Provider keys" in body     # where do the keys go?
     assert "Claude" in body            # is Claude connected?
+
+
+# ------------------------------------------------------------------------- voice
+
+
+def test_voice_catalogue_says_where_the_names_came_from(user):
+    """Measured or assumed, never silently either.
+
+    The offline list is the stock ElevenLabs set and is known to go stale against a
+    real account. Ranking against it and presenting the result as a casting decision
+    is how you end up choosing a voice that does not exist on your account.
+    """
+    listed = Studio(user_id=user.id).voice_catalogue()
+    assert listed["count"] > 0
+    assert listed["source"]
+    if listed["source"] == "offline fallback list":
+        assert "may not exist on your account" in listed["caveat"]
+
+
+def test_cast_voice_returns_reasons_not_just_a_score(user):
+    cast = Studio(user_id=user.id).cast_voice(pitch="low", pace="measured")
+    assert cast["candidates"]
+    top = cast["candidates"][0]
+    # A bare number is something to trust blindly. The reasons are what let you
+    # disagree with the ranking, which is the whole point of a shortlist.
+    assert top["reasons"] or top["caveats"]
+    assert cast["summary"]
+    # What was described and what was left unmeasured are both recorded.
+    assert cast["target"]["pitch_band"] == "low"
+    assert "energy" in cast["target"]["gaps"]
+
+
+def test_the_agent_may_not_approve_a_gate_on_its_own(user):
+    """decide_gate is deliberately outside the pre-allowed list.
+
+    Approving is the moment a run is allowed to spend on the stage behind it. Every
+    other tool here is read-only or re-runnable; this one is neither, so it must stop
+    and ask even when the agent is confident.
+    """
+    from forgecast.agent import tools
+
+    assert "mcp__forgecast__decide_gate" not in tools.ALLOWED
+    assert "decide_gate" in tools.ALL_TOOLS
+    # And nothing that spends without a gate slipped into the allowed set either.
+    assert "mcp__forgecast__start_run" in tools.ALLOWED   # holds credits, then pauses
+
+
+# ------------------------------------------------------------------ tool cards
+
+
+def test_a_long_tool_result_is_cut_and_says_so(user):
+    """Truncation has to be visible.
+
+    A result silently cut at the boundary reads as the whole thing, and the agent
+    will reason about the part it can see as if nothing were missing.
+    """
+    from forgecast.agent.assistant import MAX_RESULT_CHARS, _result_text
+
+    class Block:
+        content = "x" * (MAX_RESULT_CHARS + 500)
+
+    text = _result_text(Block())
+    assert len(text) < MAX_RESULT_CHARS + 200
+    assert "more characters" in text
+
+
+def test_tool_results_survive_every_content_shape(user):
+    """String, list-of-parts, and a part with no text at all."""
+    from forgecast.agent.assistant import _result_text
+
+    class Block:
+        def __init__(self, content):
+            self.content = content
+
+    assert _result_text(Block("plain")) == "plain"
+    assert _result_text(Block([{"type": "text", "text": "one"},
+                               {"type": "text", "text": "two"}])) == "one\ntwo"
+    # An image part has no text; naming its type beats rendering "None".
+    assert _result_text(Block([{"type": "image"}])) == "[image]"
+
+
+def test_the_studio_panel_reports_why_it_is_asleep(user):
+    """A dormant player must say what it is waiting for.
+
+    An empty frame is a worse answer to "what is this panel" than one sentence,
+    and it is indistinguishable from a bug.
+    """
+    studio = Studio(user_id=user.id)
+    asleep = studio.current_preview()
+    assert asleep["state"] == "asleep"
+    assert "no runs yet" in asleep["reason"]
+
+    studio.create_channel("Cargo Lines", niche="shipping")
+    studio.start_run("Cargo Lines", "Why the Suez blockage moved prices")
+    waking = studio.current_preview()
+    # A queued run has no script, so there is genuinely nothing to draw — and it
+    # says which run and why rather than showing an empty player.
+    assert waking["state"] == "waking"
+    assert waking["run"]
+    assert "script" in waking["reason"]
+
+
+def test_the_preview_page_can_render_without_the_chrome(client, user):
+    """`embed=1` is what lets the Studio panel show the real preview page.
+
+    A second implementation of the player is two things that have to stay identical
+    and will not, so the panel embeds this page — and an embed with a sidebar nested
+    inside a sidebar announces itself as one.
+    """
+    studio = Studio(user_id=user.id)
+    studio.create_channel("Cargo Lines")
+    run = studio.start_run("Cargo Lines", "Anything")["run"]
+
+    full = client.get(f"/runs/{run}/preview")
+    embedded = client.get(f"/runs/{run}/preview?embed=1")
+    assert full.status_code == embedded.status_code == 200
+    assert 'class="side"' in full.text
+    assert 'class="side"' not in embedded.text
+    assert "New chat" not in embedded.text

@@ -5,9 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}Forgecast{% endblock %}</title>
 <link rel="stylesheet" href="/static/app.css">
+{# Inline rather than a file: it is four shapes, it costs no request, and it works
+   on a machine with no network — which is every machine this runs on. #}
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235eead4'/%3E%3Cpath d='M16 7l7 9-7 9-7-9z' fill='%2304211d'/%3E%3C/svg%3E">
 {% block head %}{% endblock %}
 </head>
-<body>
+<body class="{{ 'embedded' if embed }}">
+{# `embed` strips the chrome and leaves the page's own content, so the Studio panel
+   in the chat can show the real preview page rather than a second implementation of
+   the player that would have to be kept identical and would not be. #}
+{% if not embed %}
 <div class="shell">
 
 {% if user %}
@@ -91,9 +98,10 @@
   {% endif %}
 </header>
 {% endif %}
+{% endif %}
 
-<main class="{% block main_class %}{% endblock %}">
-{% if user and not ffmpeg_ok() %}
+<main class="{% if embed %}embed{% else %}{% block main_class %}{% endblock %}{% endif %}">
+{% if user and not ffmpeg_ok() and not embed %}
   <div class="banner warn">
     <strong>ffmpeg was not found.</strong> Research, scripts, voice and the preview all
     work; the render stage will fail. Install it and restart —
@@ -104,12 +112,14 @@
 {% endif %}
 {% block body %}{% endblock %}
 </main>
+{% if not embed %}
 </div>
 </div>
+{% endif %}
 
 <div class="toast" id="toast"></div>
 
-{% if user %}
+{% if user and not embed %}
 <script>
   // The Claude chip. One request per page load, and it degrades to "unknown"
   // rather than to a broken-looking sidebar if the endpoint is unreachable.
@@ -128,7 +138,7 @@
   });
 </script>
 {% endif %}
-{% if settings and settings.local_mode %}
+{% if settings and settings.local_mode and not embed %}
 <script>
   async function forgecastQuit() {
     if (!confirm("Stop Forgecast? Any run in progress will resume when you reopen it.")) return;

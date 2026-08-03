@@ -1,10 +1,21 @@
 # Forgecast
 
-An agent platform that builds and runs faceless video channels: one topic in, a
-finished video out, with a human approval gate at every decision that matters.
+An agent that builds and runs faceless video channels. You talk to it; it does the
+work, because the app's operations are its tools.
 
-Brief → script → thumbnail → narration → B-roll → render → compliance → publish.
-Every stage is a node in a persisted graph you can watch, pause, revise, and resume.
+Paste a YouTube channel and it reads what that channel actually publishes — median
+upload length, recent titles, which uploads beat their own cohort — and sets a channel
+up from the measurements. Ask what is waiting on you and it says which runs are paused
+and on what. Ask for a preview and it builds the timeline before a frame is rendered.
+
+Underneath, every video is still a persisted graph you can watch, pause, revise and
+resume: brief → script → thumbnail → narration → B-roll → render → compliance →
+publish, with a human approval gate at every decision that matters. **The agent never
+approves a gate itself** — approving is what lets the next stage spend, so it presents
+what the gate is holding, says what it thinks, and stops.
+
+The chat runs on your own Claude subscription through the Claude Code CLI. There is no
+API key in this app.
 
 This is a clean-room build of the AI-YouTube-automation product category, designed
 from public product behaviour. See [ARCHITECTURE.md](ARCHITECTURE.md) for the
@@ -36,9 +47,27 @@ graph, gates, renderer, billing, UI — without an API key or a cent of spend.
 .venv/bin/python -m forgecast.cli worker     # optional: durable background runs
 ```
 
-Create an account, add a channel, queue a run. The run page shows the live node graph,
+It opens on the chat. Paste a channel link and let the agent set one up, or use the
+Long-form / Shorts workspaces to do it by hand. The run page shows the live node graph,
 streams the log over SSE, and stops at each gate for you to approve or send back with
 notes. API docs at `/docs`.
+
+For the chat you also need the Claude Code CLI, signed in with your subscription:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+claude          # type /login, finish in the browser
+```
+
+Everything else works without it, and **Settings → Claude** says exactly what is
+missing when it is. Watch out for a stray `ANTHROPIC_API_KEY` in your environment: it
+overrides the subscription and silently bills an API account instead. An empty value
+still counts as set. The launcher checks before anything starts.
+
+**Connectors** (Settings → Connectors) hand the agent another service's tools —
+NexLev's niche finder and outlier search, Drive, Epidemic Sound. Each takes a server
+URL and token from that service and can be reached with a real request before you
+trust it.
 
 ## Hosting it privately
 

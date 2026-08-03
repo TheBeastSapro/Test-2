@@ -19,9 +19,10 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -188,8 +189,54 @@ class Studio:
             "credits": balance,
             "channels": {"total": len(channels), "by_format": counts},
             "runs_waiting_on_you": waiting,
+            "studio": self.current_preview(),
             "storage": str(settings.storage_dir.resolve()),
         }
+
+    def current_preview(self) -> dict:
+        """The run the Studio panel should be showing, if any.
+
+        Whatever is live takes precedence over whatever is newest: a run being worked
+        on is what you want on screen, and a finished one from last week is not. A
+        run with no script yet has nothing to draw, so it reports itself asleep rather
+        than showing an empty player and letting you wonder what broke.
+        """
+        from ..models import NodeStatus as NS
+
+        with self._session() as session:
+            user = self._user(session)
+            if user is None:
+                return {"state": "asleep", "reason": "no account"}
+
+            live = [RunStatus.running, RunStatus.awaiting_approval]
+            run = session.execute(
+                select(Run).where(Run.user_id == user.id, Run.status.in_(live))
+                .order_by(Run.id.desc()).limit(1)).scalars().first()
+            if run is None:
+                run = session.execute(
+                    select(Run).where(Run.user_id == user.id)
+                    .order_by(Run.id.desc()).limit(1)).scalars().first()
+            if run is None:
+                return {"state": "asleep",
+                        "reason": "no runs yet — start one and the edit appears here "
+                                  "before it renders"}
+
+            has_script = session.execute(
+                select(Node).where(Node.run_id == run.id, Node.type == "script",
+                                   Node.status == NS.completed)
+            ).scalars().first() is not None
+
+            return {
+                "state": "live" if has_script else "waking",
+                "run": run.id,
+                "topic": run.topic,
+                "channel": run.channel.name,
+                "status": run.status.value,
+                "url": f"/runs/{run.id}/preview?embed=1",
+                "reason": "" if has_script else
+                          f"run {run.id} has not written its script yet — there is "
+                          f"nothing to draw until it does",
+            }
 
     # ------------------------------------------------------------------ channels
 
@@ -595,7 +642,7 @@ class Studio:
         pasting them back — so nobody used it. A channel URL, a @handle or a video
         link is what you actually have in your clipboard.
         """
-        from ..research import outliers, sources
+        from ..research import sources
 
         link = parse_link(reference)
         # The wrong link is a more specific problem than a missing key, so it is
@@ -655,6 +702,62 @@ class Studio:
             "outliers": [item.as_dict() for item in found[:limit]],
             "next": "Pick one and I will write angles from it — the multiple is the "
                     "evidence, so say what transfers and what was specific to them.",
+        }
+
+    # --------------------------------------------------------------------- voice
+
+    def cast_voice(self, *, channel: Any = None, pitch: str = "", pace: str = "",
+                   energy: str = "", accent: str = "", limit: int = 3) -> dict:
+        """Shortlist voices against a described target, ranked with the reasons.
+
+        The reasons and caveats come back with the ranking rather than being left
+        behind it. "Adam, 0.82" is a number to trust blindly; "Adam — low pitch
+        matches, measured 96 Hz from its own preview; caveat: no accent evidence" is
+        something you can disagree with, which is the point of a shortlist.
+        """
+        from ..voice.casting import VoiceTarget, casting_summary, shortlist
+
+        target = VoiceTarget(
+            pitch_band=pitch or None, pace=pace or None,
+            energy=energy or None, accent=accent or None,
+            evidence=[f"described by you: {part}" for part in
+                      (pitch, pace, energy, accent) if part],
+            gaps=[name for name, part in
+                  (("pitch", pitch), ("pace", pace), ("energy", energy),
+                   ("accent", accent)) if not part],
+        )
+        found = shortlist(target, limit=max(1, min(int(limit), 8)))
+        if not found:
+            return {"error": "No voices to rank. Run `forgecast-voice sync` to read "
+                             "your ElevenLabs account, or describe the voice you want."}
+
+        out = {
+            "target": target.as_dict(),
+            "candidates": [candidate.as_dict() for candidate in found],
+            "summary": casting_summary(target, found),
+        }
+        if channel is not None:
+            out["apply_with"] = ("update_channel with voice_id set to the one you "
+                                 "pick — I will not choose the voice for you")
+        return out
+
+    def voice_catalogue(self) -> dict:
+        """What voices are known, and whether they were measured or assumed."""
+        from ..voice.catalogue import STOCK_VOICES
+        from ..voice.discover import load_catalogue
+
+        measured = load_catalogue()
+        if measured:
+            return {"source": "measured from your ElevenLabs account",
+                    "count": len(measured),
+                    "voices": [voice.as_dict() for voice in measured[:40]]}
+        return {
+            "source": "offline fallback list",
+            "count": len(STOCK_VOICES),
+            "voices": [voice.as_dict() for voice in STOCK_VOICES],
+            "caveat": "These names are the stock set and may not exist on your "
+                      "account. Run `forgecast-voice sync` to read the real one and "
+                      "measure each preview clip.",
         }
 
     # -------------------------------------------------------------------- assets

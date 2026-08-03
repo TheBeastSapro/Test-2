@@ -41,7 +41,7 @@ SERVER_NAME = "forgecast"
 _READ_ONLY = (
     "studio_status", "list_channels", "study_youtube_channel", "list_runs",
     "run_status", "preview_run", "list_styles", "score_videos", "research_channel",
-    "run_files",
+    "run_files", "cast_voice", "voice_catalogue",
 )
 _WRITES = ("create_channel", "update_channel", "start_run", "apply_style",
            "blend_styles", "cancel_run")
@@ -204,6 +204,26 @@ def build_server(studio):
     async def score_videos(args):
         return _text(studio.score_videos(args.get("text") or ""))
 
+    # ---------------------------------------------------------------------- voice
+
+    @tool("cast_voice",
+          "Shortlist narration voices against a described target — pitch (low/mid/"
+          "high), pace (slow/measured/brisk), energy, accent. Returns each candidate "
+          "with the reasons it scored and the caveats. Read-only: picking one is the "
+          "user's call, applied with update_channel.",
+          {"pitch": str, "pace": str, "energy": str, "accent": str, "limit": int})
+    async def cast_voice(args):
+        return _text(studio.cast_voice(
+            pitch=args.get("pitch") or "", pace=args.get("pace") or "",
+            energy=args.get("energy") or "", accent=args.get("accent") or "",
+            limit=int(args.get("limit") or 3)))
+
+    @tool("voice_catalogue",
+          "Which voices are known, and whether each was measured from the account's "
+          "own preview clips or assumed from the offline fallback list.", {})
+    async def voice_catalogue(args):
+        return _text(studio.voice_catalogue())
+
     # --------------------------------------------------------------------- styles
 
     @tool("list_styles",
@@ -235,5 +255,5 @@ def build_server(studio):
         tools=[studio_status, list_channels, study_youtube_channel, create_channel,
                update_channel, list_runs, start_run, run_status, decide_gate,
                cancel_run, preview_run, run_files, research_channel, score_videos,
-               list_styles, apply_style, blend_styles],
+               cast_voice, voice_catalogue, list_styles, apply_style, blend_styles],
     )

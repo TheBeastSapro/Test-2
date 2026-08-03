@@ -183,6 +183,39 @@ def build_options(*, studio: Studio, permission_mode: str = "default",
     )
 
 
+# A tool result long enough to be a file is not something to paste into a chat
+# bubble. The card shows the head of it and says how much was cut, which is honest
+# in a way that silently truncating is not.
+MAX_RESULT_CHARS = 4000
+
+
+def _result_text(block) -> str:
+    """A tool result as text, whatever shape the block arrived in.
+
+    Content is a string for simple returns and a list of content parts for
+    everything else, and image parts have no text at all. Flattening here keeps that
+    knowledge in one place instead of in the browser.
+    """
+    content = getattr(block, "content", "")
+    if isinstance(content, str):
+        text = content
+    elif isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict):
+                parts.append(item.get("text") or f"[{item.get('type', 'content')}]")
+            else:
+                parts.append(str(item))
+        text = "\n".join(parts)
+    else:
+        text = str(content or "")
+
+    if len(text) > MAX_RESULT_CHARS:
+        cut = len(text) - MAX_RESULT_CHARS
+        return text[:MAX_RESULT_CHARS] + f"\n\n… {cut:,} more characters"
+    return text
+
+
 async def run(prompt: str, *, studio: Studio, resume: str | None = None,
               **kwargs) -> AsyncIterator[dict]:
     """One turn, as a stream of events.
@@ -194,8 +227,17 @@ async def run(prompt: str, *, studio: Studio, resume: str | None = None,
     The `result` event carries the session id. The caller stores it and passes it back
     as `resume` next turn — that is what makes this a conversation.
     """
-    from claude_agent_sdk import (AssistantMessage, CLINotFoundError, ResultMessage,
-                                  TextBlock, ThinkingBlock, ToolUseBlock, query)
+    from claude_agent_sdk import (
+        AssistantMessage,
+        CLINotFoundError,
+        ResultMessage,
+        TextBlock,
+        ThinkingBlock,
+        ToolResultBlock,
+        ToolUseBlock,
+        UserMessage,
+        query,
+    )
 
     status = auth.check()
     if not status.ok:
@@ -217,8 +259,21 @@ async def run(prompt: str, *, studio: Studio, resume: str | None = None,
                         # Named so the transcript shows the work rather than only the
                         # answer: "reading that channel" while it happens.
                         yield {"type": "tool",
+                               "id": getattr(block, "id", ""),
                                "name": getattr(block, "name", "tool"),
                                "input": getattr(block, "input", {}) or {}}
+            elif isinstance(message, UserMessage):
+                # What each tool actually returned. Sent so the transcript can show
+                # the measurement rather than only the sentence the agent wrote about
+                # it — the numbers are the part worth scrolling back to, and a claim
+                # you cannot check against its source is a claim you have to take on
+                # trust.
+                for block in getattr(message, "content", None) or []:
+                    if isinstance(block, ToolResultBlock):
+                        yield {"type": "tool_result",
+                               "id": getattr(block, "tool_use_id", ""),
+                               "is_error": bool(getattr(block, "is_error", False)),
+                               "text": _result_text(block)}
             elif isinstance(message, ResultMessage):
                 session_id = message.session_id or session_id
                 yield {"type": "result", "session_id": session_id,

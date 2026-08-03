@@ -13,13 +13,12 @@
    operations as tools and does it. The pages are still there, and they are now
    where you go to LOOK at what happened rather than where you go to make it happen.
 
-   The panel on the right is not another screen. It is the state of the thing being
-   discussed, repainted from the server after every turn. #}
+   Three columns: the chats you are keeping, the conversation, and the state of the
+   thing being discussed — the Studio player and what is waiting on you. The right
+   column is dormant until there is something to draw, because a player showing
+   nothing is worse than a panel that says why. #}
 
 {% block body %}
-{# An opening question handed over from the workspace. Passed through a data
-   attribute rather than interpolated into the script, so a channel name containing
-   a quote is data rather than syntax. #}
 <div class="studio" data-opening="{{ opening or '' }}">
 
   <!-- ══════════════════════════════════════════════════════ the threads -->
@@ -34,6 +33,13 @@
 
   <!-- ═══════════════════════════════════════════════════════════ the chat -->
   <section class="chatcol" id="chatcol">
+    <div class="crumbs">
+      <span class="crumb" id="crumb-where">Studio</span>
+      <span class="grow"></span>
+      <span class="crumb mono" id="crumb-credits">{{ credits }} credits</span>
+      {% if settings and settings.is_mock %}<span class="pill mock">mock</span>{% endif %}
+    </div>
+
     <div class="chat" id="chat">
       <div class="empty" id="chat-empty">Starting up…</div>
     </div>
@@ -42,7 +48,7 @@
       <div class="attached" id="attached" hidden></div>
       <div class="composer">
         <textarea id="chat-input" rows="1"
-          placeholder="paste a YouTube channel to model, ask what is waiting on you, or say what to make next"></textarea>
+          placeholder="talk to the agent — paste a channel, ask what is waiting on you, or kick off a video"></textarea>
         <div class="composer-tools">
           <button class="icon-btn" id="btn-attach" title="Attach a file, clip or screenshot">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -53,7 +59,7 @@
           <span class="agent-tag">Claude agent</span>
           <select id="model-pick" class="mini-select" title="Which model answers"></select>
           <label class="mini-toggle" title="On: it asks before editing a file. Tool calls are unaffected.">
-            <input type="checkbox" id="confirm-edits" checked><span></span>Ask before edits
+            <input type="checkbox" id="confirm-edits" checked><span></span>Confirm calls
           </label>
           <span class="grow"></span>
           <button class="send-btn" id="btn-send" title="Send">
@@ -67,14 +73,31 @@
 
   <!-- ═════════════════════════════════════════════════════ what is true -->
   <aside class="statepane" id="statepane">
-    <div class="pane" id="pane-status">
-      <h3>This install</h3>
-      <div class="sub">Checking…</div>
+
+    {# The Studio. Dormant by default and woken when a run has something to draw —
+       an empty player is a worse answer to "what does this do" than a sentence. #}
+    <div class="pane studio-pane" id="pane-studio">
+      <div class="pane-head">
+        <h3>Forgecast Studio</h3>
+        <span class="grow"></span>
+        <span class="livedot" id="studio-state">asleep</span>
+        <a class="pane-act" id="studio-open" href="#" target="_blank" title="Open full size" hidden>⤢</a>
+      </div>
+      <div id="studio-body">
+        <p class="sub">Checking…</p>
+      </div>
     </div>
+
     <div class="pane" id="pane-waiting" hidden>
       <h3>Waiting on you</h3>
       <div id="waiting-body"></div>
     </div>
+
+    <div class="pane" id="pane-status">
+      <h3>This install</h3>
+      <div class="sub">Checking…</div>
+    </div>
+
     <div class="pane" id="pane-claude">
       <h3>Claude</h3>
       <p class="sub" id="claude-detail">Checking your sign-in…</p>
