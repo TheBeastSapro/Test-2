@@ -63,5 +63,47 @@ def patch_symlinks() -> None:
     os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 
 
+# Windows only. Nothing else allocates a console for a child process.
+CREATE_NO_WINDOW = 0x08000000
+
+
+def patch_consoles() -> None:
+    """
+    Stop child processes opening their own console window.
+
+    VOStudio.exe is a windowless build, and on Windows a child process started
+    from a parent with no console gets a BRAND NEW one -- a black box that
+    appears over the app, unasked, for as long as the child runs. Three things
+    do it here: the Claude Code CLI the agent SDK spawns (that is the window
+    titled "claude"), every ffmpeg call, and ffprobe.
+
+    The SDK reaches the CLI through anyio.open_process, which offers no way to
+    pass creation flags, so the flag is added at the one place they all
+    converge: Popen itself.
+
+    An explicit creationflags is never overridden. start_login() opens a
+    console ON PURPOSE -- /login is interactive and hiding it would mean
+    nothing happening -- and this must not take that away.
+    """
+    if os.name != "nt":
+        return
+    import subprocess
+    if getattr(subprocess.Popen.__init__, "_vostudio_patched", False):
+        return
+
+    original = subprocess.Popen.__init__
+
+    def __init__(self, *args, **kwargs):
+        # creationflags is the 14th positional parameter and nobody passes 13
+        # positionals; if someone does, leave their call completely alone.
+        if len(args) < 14 and not kwargs.get("creationflags"):
+            kwargs["creationflags"] = CREATE_NO_WINDOW
+        original(self, *args, **kwargs)
+
+    __init__._vostudio_patched = True
+    subprocess.Popen.__init__ = __init__
+
+
 def apply() -> None:
     patch_symlinks()
+    patch_consoles()
