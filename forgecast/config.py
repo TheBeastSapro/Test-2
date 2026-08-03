@@ -74,7 +74,13 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     anthropic_api_key: str = ""
     elevenlabs_api_key: str = ""
+    # MiniMax narration. Separate from the agent's MiniMax sign-in on purpose: the
+    # subscription covers the chat CLI, text-to-speech is billed against this key.
+    minimax_api_key: str = ""
     fal_key: str = ""
+    # `key:secret`, joined. Higgsfield's header is `Authorization: Key {id}:{secret}`, so
+    # the pair is stored as one value rather than as two fields nobody would keep in sync.
+    higgsfield_api_key: str = ""
     runway_api_key: str = ""
     heygen_api_key: str = ""
 
@@ -105,7 +111,9 @@ class Settings(BaseSettings):
             "openai": self.openai_api_key,
             "anthropic": self.anthropic_api_key,
             "elevenlabs": self.elevenlabs_api_key,
+            "minimax": self.minimax_api_key,
             "fal": self.fal_key,
+            "higgsfield": self.higgsfield_api_key,
             "runway": self.runway_api_key,
             "heygen": self.heygen_api_key,
             "tavily": self.tavily_api_key,

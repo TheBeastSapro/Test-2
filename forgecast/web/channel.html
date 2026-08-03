@@ -98,6 +98,10 @@
   {% if channel.niche %}<b>{{ channel.niche }}</b> ·{% endif %}
   {{ channel.aspect_ratio }} · {{ channel.target_duration_seconds }}s target
   {%- if channel.voice_id %} · voice <b>{{ channel.voice_id }}</b>{% endif %}
+  {#- Shown only when it has been chosen. A channel on the default routing does not need
+      a line telling it so, but a channel that is spending a MiniMax balance instead of a
+      subscription allowance should say that where the other defaults are read. #}
+  {%- if channel.voice_vendor %} · via <b>{{ channel.voice_vendor }}</b>{% endif %}
   · created {{ channel.created_at|when }}
 </p>
 

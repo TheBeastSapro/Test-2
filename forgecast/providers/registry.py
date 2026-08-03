@@ -30,6 +30,7 @@ from .base import (
     VoiceProvider,
 )
 from .epidemic import EpidemicVoiceProvider, MockEpidemicVoice
+from .higgsfield import HiggsfieldProvider
 from .llm import AnthropicProvider, OpenAIProvider
 from .llm_cli import ClaudeCliProvider
 from .media import (
@@ -37,6 +38,7 @@ from .media import (
     FalImageProvider,
     FalVideoProvider,
     HeyGenAvatarProvider,
+    MiniMaxVoiceProvider,
     RunwayVideoProvider,
 )
 from .mock import MockAvatar, MockImage, MockLLM, MockVideo, MockVoice
@@ -57,7 +59,10 @@ CATALOGUE: dict[str, tuple[Capability, type, str]] = {
     # look for an `epidemic` provider key that nothing ever writes.
     "epidemic-sound": (Capability.voice, EpidemicVoiceProvider, ""),
     "elevenlabs": (Capability.voice, ElevenLabsProvider, "elevenlabs"),
+    "minimax-voice": (Capability.voice, MiniMaxVoiceProvider, "minimax"),
     "fal": (Capability.image, FalImageProvider, "fal"),
+    # Its own key name, so it can never be satisfied by another vendor's credential.
+    "higgsfield": (Capability.image, HiggsfieldProvider, "higgsfield"),
     "fal-video": (Capability.video, FalVideoProvider, "fal"),
     "runway": (Capability.video, RunwayVideoProvider, "runway"),
     "heygen": (Capability.avatar, HeyGenAvatarProvider, "heygen"),
@@ -73,7 +78,19 @@ DEFAULT_ROUTING: dict[Capability, list[str]] = {
     # Epidemic Sound sits behind it for the same reason the keyless providers do: it is
     # there so an install with no ElevenLabs key still narrates instead of failing at
     # the voice node, not because it is the preferred vendor.
+    #
+    # `minimax-voice` is deliberately absent. It is a fully supported vendor and it wins
+    # whenever a channel names it, but it must never be *fallen back* to: ElevenLabs
+    # narration comes out of a subscription allowance already paid for, while MiniMax
+    # narration draws down an API balance. Putting it in this list would mean a lapsed
+    # ElevenLabs key silently moves someone's spend from a plan to a wallet, and the first
+    # they hear of it is the balance.
     Capability.voice: ["elevenlabs", "epidemic-sound"],
+    # `higgsfield` is deliberately absent, for the same reason as `minimax-voice`: it
+    # bills per generation against its own credit balance, so it is chosen per channel and
+    # never fallen back to. What it is *for* is identity that holds across shots and across
+    # episodes, which is a decision about a channel's look rather than a way to make a
+    # picture when fal is unavailable.
     Capability.image: ["fal", "openverse"],
     Capability.video: ["fal-video", "runway"],
     Capability.avatar: ["heygen"],

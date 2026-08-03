@@ -10,6 +10,12 @@
 *.sh       text eol=lf
 launcher.py text eol=lf
 
+# And the other direction. These two are only ever read by Windows, and cmd.exe and
+# Windows Script Host both want CRLF — a `.bat` with LF endings mis-parses multi-line
+# blocks, and pinning it here means the zip is correct whichever platform built it.
+*.bat      text eol=crlf
+*.vbs      text eol=crlf
+
 # Binary, so Git never tries to be helpful with them.
 *.png binary
 *.jpg binary

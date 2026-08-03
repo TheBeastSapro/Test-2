@@ -238,6 +238,176 @@ class ElevenLabsProvider(VoiceProvider):
         )
 
 
+class MiniMaxVoiceProvider(VoiceProvider):
+    """MiniMax T2A v2, as the second narration vendor.
+
+    ## Why it exists next to ElevenLabs rather than instead of it
+
+    Both are wanted, and which one a run uses is the operator's choice per channel. The
+    reason to say that out loud is that the two are paid for differently and neither one
+    can be made to look like the other:
+
+    * **ElevenLabs** issues an API key against the subscription, so narration comes out of
+      the plan's character allowance that is already paid for.
+    * **MiniMax** bills text-to-speech against the API balance. The MiniMax *subscription*
+      covers the agent and the chat CLI, not T2A — there is no token, no CLI subcommand and
+      no OAuth scope that routes speech through the plan. That was checked before this
+      class was written, and the honest answer went into the docstring instead of a
+      hopeful implementation.
+
+    So enabling MiniMax voice spends MiniMax credit and enabling ElevenLabs spends the
+    ElevenLabs allowance, which is exactly the behaviour asked for. What this class must
+    not do is quietly stand in for a missing ElevenLabs key, because that would move
+    someone's spend from a plan they have to a balance they are drawing down; it is
+    therefore absent from `DEFAULT_ROUTING` and reachable only by being chosen.
+
+    ## The trap in this API
+
+    A failure arrives as **HTTP 200** with `base_resp.status_code` non-zero. Trusting the
+    status line means writing an empty file, calling it a voiceover, and finding out at the
+    render when a 13-minute video has silence where the narration goes. `_check` cannot see
+    that, so the body is inspected here as well.
+    """
+
+    name = "minimax-voice"
+    # The global endpoint. `api-uw` is the lower-latency US alias of the same service and
+    # `api.minimaxi.chat` is the mainland-China deployment — a key issued for one region is
+    # rejected by the other, so this is settable rather than baked in.
+    base_url = "https://api.minimax.io/v1"
+
+    # $100 per million characters for the HD models, $60 for turbo. HD is the default
+    # because narration is the use case: turbo exists for sub-250 ms conversational
+    # latency, which a pre-rendered voiceover has no use for and pays for in quality.
+    usd_per_1k_chars = 0.10
+    TURBO_USD_PER_1K_CHARS = 0.06
+
+    # A single request's ceiling, from the API reference. A 10,000-character script is
+    # about 11 minutes of speech, so long videos need splitting — checked here so the
+    # failure is a sentence rather than a rejected request halfway through a run.
+    MAX_CHARACTERS = 10_000
+
+    def __init__(self, api_key: str = "", model: str = "speech-2.6-hd",
+                 base_url: str = "") -> None:
+        super().__init__(api_key)
+        self.model = model
+        if base_url:
+            self.base_url = base_url.rstrip("/")
+
+    def _rate(self) -> float:
+        return (self.TURBO_USD_PER_1K_CHARS if "turbo" in self.model
+                else self.usd_per_1k_chars)
+
+    async def list_voices(self) -> list[dict]:
+        """MiniMax's system voices, in the shape the casting code already reads.
+
+        The catalogue is static per model rather than per account — there is no
+        `GET /voices` for the built-in set — so it is returned from here instead of
+        fetched. Cloned voices live on the account and are used by passing their id
+        straight through as `voice_id`, which is why this list is not a whitelist.
+        """
+        return [
+            {"voice_id": voice_id, "name": label, "category": "premade",
+             "labels": {"gender": gender, "language": "en"}, "preview_url": ""}
+            for voice_id, label, gender in (
+                ("English_Graceful_Lady", "Graceful Lady", "female"),
+                ("English_ConfidentWoman", "Confident Woman", "female"),
+                ("English_Trustworth_Man", "Trustworthy Man", "male"),
+                ("English_CalmWoman", "Calm Woman", "female"),
+                ("English_Deep-VoicedGentleman", "Deep-Voiced Gentleman", "male"),
+                ("English_ReservedYoungMan", "Reserved Young Man", "male"),
+                ("English_PatientMan", "Patient Man", "male"),
+                ("English_Wiselady", "Wise Lady", "female"),
+            )
+        ]
+
+    async def synthesize(
+        self, text: str, *, voice_id: str, out_path: Path, speed: float = 1.0
+    ) -> MediaResult:
+        key = self._require_key()
+        if not voice_id:
+            raise ProviderError("no voice_id set on the channel", provider=self.name)
+        if len(text) > self.MAX_CHARACTERS:
+            raise ProviderError(
+                f"{len(text)} characters is over this API's {self.MAX_CHARACTERS} limit "
+                f"for one request — split the script by section and concatenate",
+                provider=self.name)
+
+        out_path = out_path.with_suffix(".mp3")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+
+        body = {
+            "model": self.model,
+            "text": text,
+            "stream": False,
+            "language_boost": "auto",
+            # Hex rather than a URL: a returned URL expires and would need a second
+            # request that can fail on its own, for a file this already has in hand.
+            "output_format": "hex",
+            "voice_setting": {"voice_id": voice_id,
+                              # 0.5–2.0. Clamped rather than passed through, because
+                              # out-of-range is a rejected request and the caller's speed
+                              # comes from a style profile that knows nothing about it.
+                              "speed": min(2.0, max(0.5, speed)),
+                              "vol": 1.0, "pitch": 0},
+            # 44.1 kHz/128 kbps mono. The voiceover is mastered downstream and mixed
+            # against beds, so this is the last place to be stingy about the source.
+            "audio_setting": {"sample_rate": 44100, "bitrate": 128000,
+                              "format": "mp3", "channel": 1},
+        }
+        try:
+            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                response = await client.post(
+                    f"{self.base_url}/t2a_v2",
+                    headers={"Authorization": f"Bearer {key}",
+                             "Content-Type": "application/json"},
+                    json=body,
+                )
+        except httpx.TimeoutException as exc:
+            raise ProviderTimeout(str(exc), provider=self.name) from exc
+        _check(response, self.name)
+
+        payload = response.json()
+        status = (payload.get("base_resp") or {})
+        if int(status.get("status_code") or 0) != 0:
+            # The 200-with-an-error case. Raised rather than logged: a caller that gets a
+            # MediaResult back has been told there is a voiceover on disk.
+            raise ProviderError(
+                f"{status.get('status_msg') or 'rejected'} "
+                f"(code {status.get('status_code')})", provider=self.name)
+
+        audio_hex = ((payload.get("data") or {}).get("audio") or "")
+        if not audio_hex:
+            raise ProviderError("the response carried no audio", provider=self.name)
+        try:
+            audio = bytes.fromhex(audio_hex)
+        except ValueError as exc:
+            raise ProviderError(f"the audio was not valid hex: {exc}",
+                                provider=self.name) from exc
+        out_path.write_bytes(audio)
+
+        extra = payload.get("extra_info") or {}
+        # `audio_length` is milliseconds and is the vendor's own measurement, so it is
+        # preferred over probing the file — but it is not trusted blindly, because a
+        # missing field would otherwise become a zero-length voiceover that the render
+        # silently drops.
+        duration = float(extra.get("audio_length") or 0) / 1000.0
+        if duration <= 0:
+            from ..render import ffmpeg as ff
+            duration = await asyncio.to_thread(ff.ffprobe_duration, out_path)
+
+        characters = int(extra.get("usage_characters") or len(text))
+        usd = characters / 1000 * self._rate()
+        return MediaResult(
+            path=out_path,
+            mime="audio/mpeg",
+            credits=_credits(usd),
+            provider=self.name,
+            duration_seconds=duration,
+            meta={"characters": characters, "voice_id": voice_id, "model": self.model,
+                  "billing": "minimax api balance"},
+        )
+
+
 # ------------------------------------------------------------------------- image
 
 

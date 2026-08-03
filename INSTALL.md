@@ -9,9 +9,15 @@ keys stay on your disk; nothing is uploaded anywhere you did not configure.
 
 | Your machine | Do this |
 |---|---|
-| **Windows** | Double-click **`Forgecast.bat`** |
+| **Windows** | Double-click **`Forgecast.vbs`** |
 | **macOS** | Double-click **`Forgecast.command`** |
 | **Linux** | `./Forgecast.command`, or `python3 launcher.py` |
+
+On Windows there is also `Forgecast.bat`, which does the same thing in a console window.
+Use the `.vbs`: it starts with no window at all, and if something goes wrong it re-opens
+the console version so you can read the error. A `.bat` cannot start without a console —
+Windows creates one before the first line runs — which is why there are two files rather
+than one.
 
 **That is the only thing you install by hand.** Python has to be there first — it is
 what draws the window — and everything else the app fetches itself.

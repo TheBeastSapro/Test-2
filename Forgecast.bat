@@ -1,5 +1,10 @@
 @echo off
-REM Forgecast — double-click to start.
+REM Forgecast — the console version.
+REM
+REM Double-click Forgecast.vbs instead for normal use: it starts the same launcher with
+REM no window at all. This file exists because a .bat cannot start without a console —
+REM Windows creates one for cmd.exe before the first line runs — so it is the right
+REM entry point when you WANT to watch the output, and the wrong one otherwise.
 REM
 REM Finds a Python, hands over to launcher.py, and keeps the console open if
 REM something goes wrong. Everything else happens in the launcher.

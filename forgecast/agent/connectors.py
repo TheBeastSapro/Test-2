@@ -145,9 +145,14 @@ CATALOGUE: tuple[ConnectorSpec, ...] = (
              "the clip on Higgsfield instead of routing it to fal.ai. A 401 on Test "
              "here does not mean a bad token — it means the browser sign-in above has "
              "not been completed, because this endpoint issues no key to paste. "
-             "Higgsfield also has a separate REST API with real API keys "
-             "(cloud.higgsfield.ai); that is a different mechanism and nothing in the "
-             "render pipeline uses it yet.",
+             "There is a second, separate way in: the REST API at "
+             "platform.higgsfield.ai, whose credential is a `key:secret` pair pasted "
+             "under Settings → Provider keys. That one the render pipeline does use — "
+             "set a channel's image vendor to `higgsfield` and its plates are generated "
+             "there, which is how a recurring character keeps the same face across "
+             "shots and across episodes. The MCP is for asking; the key is for "
+             "rendering. Both bill Higgsfield credits per generation, so neither is "
+             "used unless it has been chosen.",
     ),
     ConnectorSpec(
         key="google_drive",

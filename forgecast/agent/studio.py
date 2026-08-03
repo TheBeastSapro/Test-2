@@ -274,6 +274,9 @@ class Studio:
                     "target_seconds": channel.target_duration_seconds,
                     "language": channel.language,
                     "voice": channel.voice_id or "(default)",
+                    # Named because the two vendors bill differently, so "which voice"
+                    # and "whose credits" are two separate answers.
+                    "voice_vendor": channel.voice_vendor or "(default routing)",
                     "runs": total,
                     "youtube_connected": bool(channel.youtube_credentials),
                 })
@@ -384,9 +387,23 @@ class Studio:
         }
 
     def update_channel(self, channel: Any, **changes) -> dict:
-        allowed = {"name", "niche", "language", "voice_id", "avatar_id",
+        allowed = {"name", "niche", "language", "voice_id", "voice_vendor", "avatar_id",
                    "aspect_ratio", "target_duration_seconds", "style_profile",
                    "youtube_channel_id"}
+        # Checked against the catalogue rather than stored as typed, because a typo here
+        # is not a wrong voice — it is a channel whose narration vendor does not exist,
+        # which surfaces as an unexplained failure at the voice node several minutes and
+        # several paid image calls into a run.
+        vendor = str(changes.get("voice_vendor") or "").strip()
+        if vendor:
+            from ..providers.registry import CATALOGUE, Capability
+            entry = CATALOGUE.get(vendor)
+            if entry is None or entry[0] is not Capability.voice:
+                usable = sorted(name for name, (cap, _, _) in CATALOGUE.items()
+                                if cap is Capability.voice)
+                return {"error": f"{vendor!r} is not a narration vendor. "
+                                 f"Pick one of {usable}, or pass an empty string to let "
+                                 f"the default routing decide."}
         with self._session() as session:
             user = self._user(session)
             if user is None:

@@ -126,9 +126,13 @@ def build_server(studio):
 
     @tool("update_channel",
           "Change a channel. Identify it by id or by name. Only the fields you pass "
-          "are touched.",
+          "are touched. voice_vendor picks who narrates: 'elevenlabs' spends the "
+          "character allowance included in that subscription, 'minimax-voice' is billed "
+          "per character against the MiniMax API balance, and empty lets the default "
+          "routing decide. Say which one is being spent before changing it.",
           {"channel": str, "name": str, "niche": str, "language": str,
-           "voice_id": str, "aspect_ratio": str, "target_duration_seconds": int})
+           "voice_id": str, "voice_vendor": str, "aspect_ratio": str,
+           "target_duration_seconds": int})
     async def update_channel(args):
         changes = {k: v for k, v in args.items() if k != "channel"}
         return _text(studio.update_channel(args.get("channel"), **changes))

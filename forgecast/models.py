@@ -141,6 +141,15 @@ class Channel(Base):
 
     # Persona / render defaults the agent applies to every run on this channel.
     voice_id: Mapped[str] = mapped_column(String(128), default="")
+    # Which vendor narrates this channel. Empty means the default routing decides, which
+    # is ElevenLabs when its key is present.
+    #
+    # This is a column rather than an entry in `style_profile` because it is not a learned
+    # style fact, it is a billing decision: ElevenLabs draws on a subscription character
+    # allowance that is already paid for, and MiniMax draws down an API balance per
+    # character. Which one a channel uses has to be set deliberately and stay set, so it
+    # belongs somewhere a migration knows about rather than in a free-form blob.
+    voice_vendor: Mapped[str] = mapped_column(String(64), default="")
     avatar_id: Mapped[str] = mapped_column(String(128), default="")
     aspect_ratio: Mapped[str] = mapped_column(String(16), default="16:9")
     target_duration_seconds: Mapped[int] = mapped_column(Integer, default=480)

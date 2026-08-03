@@ -58,10 +58,26 @@ PROVIDER_FIELDS = [
      "hint": "sk-ant-…", "where": "console.anthropic.com"},
     {"key": "openai", "label": "OpenAI", "unlocks": "an alternative to Claude for the same stages",
      "hint": "sk-…", "where": "platform.openai.com"},
-    {"key": "elevenlabs", "label": "ElevenLabs", "unlocks": "narration",
+    {"key": "elevenlabs", "label": "ElevenLabs", "unlocks": "narration, on the "
+     "character allowance your subscription already includes",
      "hint": "", "where": "elevenlabs.io"},
+    # Named as the alternative rather than the fallback, and the billing difference is on
+    # the label instead of in a doc: this key is drawn down per character, where the
+    # ElevenLabs one spends a plan that is already paid for.
+    {"key": "minimax", "label": "MiniMax", "unlocks": "narration as an alternative to "
+     "ElevenLabs — billed per character against your MiniMax API balance, not your "
+     "subscription; set a channel's voice vendor to minimax-voice to use it",
+     "hint": "", "where": "platform.minimax.io — API Keys"},
     {"key": "fal", "label": "fal.ai", "unlocks": "generated stills and B-roll clips",
      "hint": "", "where": "fal.ai/dashboard/keys"},
+    # Off unless a key is present, and what it buys is stated as the reason to turn it on:
+    # a recurring character whose face is the same in shot 30 as in shot 1, and the same
+    # next episode. It bills per generation, so it is never used unless a channel asks.
+    {"key": "higgsfield", "label": "Higgsfield", "unlocks": "a recurring character whose "
+     "face stays the same across shots and across episodes (Soul), plus Kling/Veo/"
+     "Seedance behind one key — billed per generation against your Higgsfield credits, "
+     "so it is only used on channels you set to it",
+     "hint": "key:secret — both halves", "where": "platform.higgsfield.ai"},
     {"key": "heygen", "label": "HeyGen", "unlocks": "talking-head avatar passes",
      "hint": "", "where": "heygen.com"},
     {"key": "runway", "label": "Runway", "unlocks": "an alternative video generator",

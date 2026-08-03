@@ -114,7 +114,7 @@ would mean nothing happens and the button looks broken.
 ## The tool set
 
 `tools.build_server()` (`tools.py:76`) wraps `Studio` methods as an in-process MCP server
-named `forgecast` (`tools.py:41`), created with `create_sdk_mcp_server` at `tools.py:282`.
+named `forgecast` (`tools.py:41`), created with `create_sdk_mcp_server` at `tools.py:295`.
 The studio object is passed in rather than constructed there so the tools and the pages
 share one — a second copy drifts inside a single conversation.
 
@@ -140,7 +140,7 @@ serves. The gap between them is exactly one name.
 ### Why `decide_gate` is deliberately not pre-allowed
 
 `decide_gate` is registered and callable (`tools.py:161`, dispatching to
-`Studio.decide_gate` at `studio.py:513`) but absent from `ALLOWED`, so calling it stops
+`Studio.decide_gate` at `studio.py:530`) but absent from `ALLOWED`, so calling it stops
 and asks the operator.
 
 The reason is not that approving a gate is risky in the abstract. It is that **approving
@@ -315,7 +315,7 @@ There are two kinds and the distinction is load-bearing (`connectors.py:75`):
 `active()` used to return every connected entry, so an API-only service was configured as
 an MCP endpoint speaking a protocol it has never spoken. That fails as a 401 — identical
 to a rejected token — so the operator re-pastes a credential that was never wrong. It now
-filters on `kind == "mcp"`, and `api_credentials()` (`connectors.py:335`) is how the
+filters on `kind == "mcp"`, and `api_credentials()` (`connectors.py:340`) is how the
 provider adapter for a service asks for its own. Pinned by
 `tests/test_agent.py:780`.
 
@@ -331,8 +331,8 @@ that sentence as a `note` (`routes_agent.py:595`).
 
 How they reach the agent: `build_options` merges `connectors.active_servers()` into the
 same `mcp_servers` dict as the app's own server (`assistant.py:164-165`). `active()`
-(`connectors.py:320`) returns only entries that are both enabled and have a URL, and
-`as_mcp()` (`connectors.py:215`) shapes each one — `{"type": "http"|"sse", "url": …,
+(`connectors.py:325`) returns only entries that are both enabled and have a URL, and
+`as_mcp()` (`connectors.py:220`) shapes each one — `{"type": "http"|"sse", "url": …,
 "headers": {"Authorization": "Bearer …"}}`. A bearer header, never a query parameter;
 `tests/test_agent.py:251` pins that.
 
@@ -343,20 +343,20 @@ Things that will bite you:
   workspace. Guessing one produces an app that silently fails to connect and blames the
   network, so every `ConnectorSpec` carries a `where` field saying which page of which
   service to copy it from. `tests/test_agent.py:240` asserts `where` is non-empty.
-* **Storage is a file, not a table** (`connectors.py:179-186`,
+* **Storage is a file, not a table** (`connectors.py:180-187`,
   `storage/connectors.json`). The agent's MCP servers have to be resolved before a
   request exists, from a worker thread, at CLI start-up. Reaching for a request-scoped
   database session there is how a config load ends up holding a connection it should not
   have.
 * **Tokens are encrypted with the `.env` envelope key.** `Store.save()` calls
-  `crypto.encrypt` (`connectors.py:292`); `load()` catches a decrypt failure, logs it and
+  `crypto.encrypt` (`connectors.py:52`); `load()` catches a decrypt failure, logs it and
   attaches a note telling the operator to paste it again rather than crashing the page
-  (`connectors.py:276-280`). This is why `.env` must not be copied between installs. URLs
+  (`connectors.py:280-284`). This is why `.env` must not be copied between installs. URLs
   are stored in the clear so a misconfiguration is readable.
 * **A blank token on save means "leave it alone"** (`connectors.py:304-306`). The page
   shows a mask, so an unedited field submits empty; treating that as "clear it" would
   wipe a working token on any unrelated edit.
-* **`active_servers()` never raises** (`connectors.py:378`). A broken connectors file
+* **`active_servers()` never raises** (`connectors.py:383`). A broken connectors file
   degrades to an agent with fewer tools, not a chat that will not start.
 * **`listing()` includes configured keys that are not in the catalogue**
   (`connectors.py:366-368`), or they would be invisible and unremovable.
@@ -373,7 +373,7 @@ actually be handed, header values redacted, so a mistake is visible.
 
 ## Research reads a channel with no key
 
-`research_channel` (`studio.py:651`) and `study_youtube_channel` (`studio.py:320`) both
+`research_channel` (`studio.py:668`) and `study_youtube_channel` (`studio.py:323`) both
 start from a link, because a link is what is in the operator's clipboard. Neither needs a
 YouTube Data API key.
 
@@ -397,7 +397,7 @@ choice of source is made in one place instead of separately in each caller:
   configured and can therefore act on (`research/sources.py:377-386`).
 
 `read_channel` returns the parsed videos *and* a note naming the source, and every caller
-passes that note on as `via` — `studio.py:372` and `studio.py:677` for the two tools,
+passes that note on as `via` — `studio.py:375` and `studio.py:677` for the two tools,
 `routes_research.py:176` for the desk. The caveat belongs in what the operator reads, not
 in a log line, which is also why the tool description states it (`tools.py:195`) rather
 than leaving the model to assume a number is measured.
@@ -456,7 +456,7 @@ key *and* no binary.
 ## Adding a new tool: a worked example
 
 Four edits, in this order. The example is `channel_memory` — a genuine gap: gate
-decisions accumulate in `ChannelMemory` (`models.py:162`) and are injected into stage
+decisions accumulate in `ChannelMemory` (`models.py:171`) and are injected into stage
 prompts by `memory.recall()` (`forgecast/memory.py:47`), but the agent has no way to see
 what a channel has learned, so it cannot tell you why a script came out the way it did.
 
@@ -529,7 +529,7 @@ existing wrapper does the same.
 
 ### 3. Register it in the server
 
-`create_sdk_mcp_server`'s `tools=[…]` list at `tools.py:282` is explicit — a tool the
+`create_sdk_mcp_server`'s `tools=[…]` list at `tools.py:295` is explicit — a tool the
 decorator created but the list omits is silently absent, which presents as a model that
 "forgot" a tool it was told about. Add `channel_memory` to that list.
 

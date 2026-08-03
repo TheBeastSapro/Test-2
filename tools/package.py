@@ -47,6 +47,9 @@ NAME = "Forgecast"
 # Everything a person needs to run the app, and nothing else.
 INCLUDE_FILES = [
     "launcher.py",
+    # The windowless Windows entry point, and the console one behind it. Both ship: the
+    # .vbs is what to double-click, the .bat is what to run when you want to watch.
+    "Forgecast.vbs",
     "Forgecast.bat",
     "Forgecast.command",
     "pyproject.toml",
@@ -198,12 +201,22 @@ def files_to_ship() -> list[tuple[Path, str]]:
 # by default, so a zip built there ships exactly that unless it is normalised here.
 LF_ONLY = (".command", ".sh")
 
+# The other direction. `cmd.exe` mis-parses a multi-line block in a `.bat` with LF
+# endings, and Windows Script Host is reading a Windows script — so these are normalised
+# up rather than left to whatever the build machine happened to have. A zip built on
+# Linux would otherwise ship both Windows entry points with the wrong endings, and the
+# person who built it never sees the failure.
+CRLF_ONLY = (".bat", ".vbs")
+
 
 def read_for_shipping(path: Path, member: str) -> bytes:
     """The bytes to put in the archive, with line endings that will survive the trip."""
     data = path.read_bytes()
     if member.endswith(LF_ONLY):
         return data.replace(b"\r\n", b"\n")
+    if member.endswith(CRLF_ONLY):
+        # Normalised down first, so a file that is already CRLF does not become CR CR LF.
+        return data.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
     return data
 
 
@@ -267,6 +280,7 @@ def verify(archive: Path) -> None:
     """Open the archive and confirm the things a first run depends on are in it."""
     required = [
         f"{NAME}/launcher.py",
+        f"{NAME}/Forgecast.vbs",
         f"{NAME}/Forgecast.bat",
         f"{NAME}/Forgecast.command",
         f"{NAME}/pyproject.toml",
@@ -313,6 +327,13 @@ def verify(archive: Path) -> None:
         if b"\r\n" in launcher.split(b"\n", 1)[0] + b"\n":
             raise SystemExit("Forgecast.command has CRLF line endings; its shebang "
                              "would fail with `env: bash\\r: No such file or directory`")
+        # And the Windows pair the other way. A `.vbs` with LF endings is read by Windows
+        # Script Host as one very long line, and the error it reports names a line number
+        # that does not exist in the file.
+        for name in (f"{NAME}/Forgecast.bat", f"{NAME}/Forgecast.vbs"):
+            body = zf.read(name)
+            if b"\n" in body and b"\r\n" not in body:
+                raise SystemExit(f"{name} has LF line endings; Windows needs CRLF")
     print(f"  verified: {len(members)} members, no secrets, all entry points present")
 
 
@@ -325,7 +346,8 @@ def main() -> int:
     archive = build(ROOT / args.out if not Path(args.out).is_absolute() else Path(args.out))
     verify(archive)
     print("\n  Send this file. The person who gets it unzips it and double-clicks")
-    print(f"  {NAME}.bat (Windows) or {NAME}.command (macOS/Linux).")
+    print(f"  {NAME}.vbs (Windows) or {NAME}.command (macOS/Linux).")
+    print(f"  {NAME}.bat is the same thing with a console, for when something is wrong.")
     return 0
 
 

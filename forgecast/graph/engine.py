@@ -64,6 +64,9 @@ class ChannelSnapshot:
     style_profile: dict
     youtube_channel_id: str = ""
     youtube_refresh_token: str = ""
+    # Which vendor narrates. Defaulted so every existing construction of this snapshot —
+    # tests, fixtures, the CLI — keeps working and means "let the routing decide".
+    voice_vendor: str = ""
 
 
 @dataclass
@@ -511,6 +514,7 @@ class GraphEngine:
                 style_profile=dict(channel.style_profile or {}),
                 youtube_channel_id=channel.youtube_channel_id,
                 youtube_refresh_token=refresh_token,
+                voice_vendor=channel.voice_vendor or "",
             )
 
             upstream_outputs: dict[str, dict] = {}
@@ -538,6 +542,11 @@ class GraphEngine:
                 )
 
             overrides = dict((run.options or {}).get("provider_overrides") or {})
+            # The channel's own choice of narration vendor, unless this run already
+            # names one. Run options win because they are the more specific decision —
+            # a one-off "render this in the other voice" must not be silently ignored.
+            if snapshot.voice_vendor and not overrides.get("voice"):
+                overrides["voice"] = snapshot.voice_vendor
             context = NodeContext(
                 run_id=run_id,
                 topic=run.topic,
