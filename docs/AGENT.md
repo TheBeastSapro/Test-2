@@ -16,7 +16,7 @@ There is a second `forgecast/auth.py`, and it is unrelated — passwords, JWTs a
 | `forgecast/agent/auth.py` | Is Claude reachable, and if not, which of three separate things is wrong |
 | `forgecast/agent/studio.py` | Every operation the app has, as plain methods on one class |
 | `forgecast/agent/tools.py` | Those operations wrapped as an in-process MCP server |
-| `forgecast/agent/connectors.py` | Outside services, as *remote* MCP servers |
+| `forgecast/agent/connectors.py` | Outside services: remote MCP servers, and services that only have a REST API |
 | `forgecast/agent/prefs.py` | Model, edit-confirmation and web access, in a JSON file |
 | `forgecast/agent/assistant.py` | One turn, as a stream of events |
 | `forgecast/api/routes_agent.py` | The HTTP end: threads, attachments, the NDJSON turn |
@@ -300,12 +300,24 @@ does not become `-1` with no extension.
 
 ---
 
-## Connectors are remote MCP servers
+## Connectors: two kinds, and why conflating them was a bug
 
-A connector is not another API key field. It is a **remote MCP server** that hands the
-agent a set of tools (`connectors.py:1-14`). Connect NexLev and the agent gains NexLev's
-niche finder, outlier search and channel analytics as things it can *call*, in the same
-conversation.
+A connector is an outside service the agent can *call*, in the same conversation, rather
+than asking the operator to copy numbers between two apps (`connectors.py:3-5`). Connect
+NexLev and the agent gains its niche finder, outlier search and channel analytics.
+
+There are two kinds and the distinction is load-bearing (`connectors.py:75`):
+
+* **`mcp`** — a remote MCP server, which hands the agent a set of tools. A URL, usually a
+  token. The module originally assumed everything was this.
+* **`api`** — a service with a REST API and no MCP server at all. A credential, no URL.
+
+`active()` used to return every connected entry, so an API-only service was configured as
+an MCP endpoint speaking a protocol it has never spoken. That fails as a 401 — identical
+to a rejected token — so the operator re-pastes a credential that was never wrong. It now
+filters on `kind == "mcp"`, and `api_credentials()` (`connectors.py:257`) is how the
+provider adapter for a service asks for its own. Pinned by
+`tests/test_agent.py:780`.
 
 Keep this distinct from a provider key, because they fail differently:
 
@@ -319,35 +331,35 @@ that sentence as a `note` (`routes_agent.py:543`).
 
 How they reach the agent: `build_options` merges `connectors.active_servers()` into the
 same `mcp_servers` dict as the app's own server (`assistant.py:164-165`). `active()`
-(`connectors.py:200`) returns only entries that are both enabled and have a URL, and
-`as_mcp()` (`connectors.py:106`) shapes each one — `{"type": "http"|"sse", "url": …,
+(`connectors.py:246`) returns only entries that are both enabled and have a URL, and
+`as_mcp()` (`connectors.py:146`) shapes each one — `{"type": "http"|"sse", "url": …,
 "headers": {"Authorization": "Bearer …"}}`. A bearer header, never a query parameter;
 `tests/test_agent.py:251` pins that.
 
 Things that will bite you:
 
-* **The catalogue asks for a URL rather than shipping one** (`connectors.py:16-21`,
-  `CATALOGUE` at `connectors.py:63`). Several of these endpoints are issued per
+* **The catalogue asks for a URL rather than shipping one** (`connectors.py:28-33`,
+  `CATALOGUE` at `connectors.py:86`). Several of these endpoints are issued per
   workspace. Guessing one produces an app that silently fails to connect and blames the
   network, so every `ConnectorSpec` carries a `where` field saying which page of which
   service to copy it from. `tests/test_agent.py:240` asserts `where` is non-empty.
-* **Storage is a file, not a table** (`connectors.py:127-135`,
+* **Storage is a file, not a table** (`connectors.py:133-140`,
   `storage/connectors.json`). The agent's MCP servers have to be resolved before a
   request exists, from a worker thread, at CLI start-up. Reaching for a request-scoped
   database session there is how a config load ends up holding a connection it should not
   have.
 * **Tokens are encrypted with the `.env` envelope key.** `Store.save()` calls
-  `crypto.encrypt` (`connectors.py:172`); `load()` catches a decrypt failure, logs it and
+  `crypto.encrypt` (`connectors.py:218`); `load()` catches a decrypt failure, logs it and
   attaches a note telling the operator to paste it again rather than crashing the page
-  (`connectors.py:156-162`). This is why `.env` must not be copied between installs. URLs
+  (`connectors.py:206-210`). This is why `.env` must not be copied between installs. URLs
   are stored in the clear so a misconfiguration is readable.
-* **A blank token on save means "leave it alone"** (`connectors.py:186-188`). The page
+* **A blank token on save means "leave it alone"** (`connectors.py:230-232`). The page
   shows a mask, so an unedited field submits empty; treating that as "clear it" would
   wipe a working token on any unrelated edit.
-* **`active_servers()` never raises** (`connectors.py:227`). A broken connectors file
+* **`active_servers()` never raises** (`connectors.py:291`). A broken connectors file
   degrades to an agent with fewer tools, not a chat that will not start.
 * **`listing()` includes configured keys that are not in the catalogue**
-  (`connectors.py:216-219`), or they would be invisible and unremovable.
+  (`connectors.py:279-281`), or they would be invisible and unremovable.
 
 `POST /api/connectors/{key}/test` (`routes_agent.py:569`) sends a real MCP `initialize`
 to the configured endpoint. Deliberately a request and not a URL-shape check: the failure

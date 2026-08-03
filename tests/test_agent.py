@@ -772,3 +772,66 @@ def test_every_line_reference_in_the_agent_docs_points_at_what_it_names():
     assert attached > 40, (f"only {attached} of {seen} citations were checked against a "
                            "name; the name-matching half of this test has stopped firing")
     assert not problems, "stale references in docs/AGENT.md:\n  " + "\n  ".join(problems)
+
+
+# ------------------------------------------- connectors that are not MCP servers
+
+
+def test_an_api_connector_is_never_handed_to_the_sdk_as_an_mcp_server(tmp_path):
+    """The mis-wiring this split exists to prevent.
+
+    `active()` used to return every connected entry, so a service with a REST API and no
+    MCP server was configured as an MCP endpoint. That fails with a 401 — which is
+    indistinguishable from a rejected token, so the operator re-pastes a credential that
+    was never the problem. Reported as "epidemic uses api so add api support as well
+    instead of only mcp".
+    """
+    store = connectors.Store(path=tmp_path / "connectors.json")
+    store.connections["nexlev"] = connectors.Connection(
+        key="nexlev", url="https://example.test/mcp", token="tok")
+    store.connections["epidemic_sound"] = connectors.Connection(
+        key="epidemic_sound", url="", token="a-real-api-credential")
+
+    assert list(store.active()) == ["nexlev"]
+
+
+def test_an_api_connector_is_reachable_by_the_adapter_that_speaks_to_it(tmp_path):
+    store = connectors.Store(path=tmp_path / "connectors.json")
+    store.connections["epidemic_sound"] = connectors.Connection(
+        key="epidemic_sound", url="", token="a-real-api-credential")
+
+    found = store.api_credentials("epidemic_sound")
+    assert found is not None
+    assert found.token == "a-real-api-credential"
+
+    # And an MCP connector is not an API credential, however it is asked for.
+    store.connections["nexlev"] = connectors.Connection(
+        key="nexlev", url="https://example.test/mcp", token="tok")
+    assert store.api_credentials("nexlev") is None
+
+
+def test_a_disabled_api_connector_is_not_offered_to_the_adapter(tmp_path):
+    store = connectors.Store(path=tmp_path / "connectors.json")
+    store.connections["epidemic_sound"] = connectors.Connection(
+        key="epidemic_sound", url="", token="k", enabled=False)
+    assert store.api_credentials("epidemic_sound") is None
+
+
+def test_an_api_connector_with_a_credential_reads_as_connected(tmp_path):
+    """It has no URL, and a URL test reported every one of them as not connected."""
+    store = connectors.Store(path=tmp_path / "connectors.json")
+    store.connections["epidemic_sound"] = connectors.Connection(
+        key="epidemic_sound", url="", token="k")
+
+    row = store.connections["epidemic_sound"].as_dict()
+    assert row["kind"] == "api"
+    assert row["connected"] is True
+    # The credential itself never comes back, only a mask of it.
+    assert row["token"] != "k"
+
+
+def test_the_nexlev_url_is_prefilled_so_nobody_has_to_find_it():
+    """Being asked for a URL you have never been shown is being asked for nothing."""
+    spec = connectors.BY_KEY["nexlev"]
+    assert spec.default_url.startswith("https://")
+    assert spec.kind == "mcp"

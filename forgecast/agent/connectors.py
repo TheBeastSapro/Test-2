@@ -2,10 +2,22 @@
 
 ## What a connector is here
 
-Not another API key field. A connector is a **remote MCP server** — a service that
-hands the agent a set of tools. Connect NexLev and the agent gains NexLev's niche
-finder, outlier search and channel analytics as things it can *call*, in the same
-conversation, without you copying numbers between two apps.
+An outside service the agent can *call*, in the same conversation, instead of asking you
+to copy numbers between two apps. Connect NexLev and the agent gains its niche finder,
+outlier search and channel analytics as things it can reach itself.
+
+There are two kinds, and conflating them was a bug rather than a simplification:
+
+* **`mcp`** — a remote MCP server, which hands the agent a set of tools. A URL and
+  usually a token. This is what the module originally assumed everything was.
+* **`api`** — a service with a REST API and no MCP server. A credential and no URL.
+
+`Store.active()` used to hand every connected entry to the SDK as an MCP server, so an
+API-only service was configured as an endpoint speaking a protocol it has never spoken.
+That fails as a 401, which is exactly what a rejected token looks like — so the operator
+re-pastes a credential that was never the problem. `active()` now returns only the `mcp`
+ones, and `api_credentials()` is how the provider adapter for a given service asks for
+its own.
 
 That is a different mechanism from the provider keys on the Settings page. A provider
 key lets *the pipeline* call a vendor (ElevenLabs renders the narration). A connector
@@ -51,7 +63,18 @@ class ConnectorSpec:
     # What the agent gains. Written as capabilities, not marketing.
     gives: str
     where: str
+    # "mcp" for a service that hands the agent tools over MCP; "api" for one that has a
+    # REST API and no MCP server at all.
+    #
+    # This distinction is not cosmetic and it was missing. `Store.active()` handed every
+    # connected entry to the SDK as an MCP server, so an API-only service was wired up as
+    # an endpoint that speaks a protocol it has never spoken — a permanent 401 that looks
+    # exactly like a bad token, so the operator retries their credentials forever. An
+    # `api` connector is never passed to the SDK; it is read by the provider adapter that
+    # knows the service, and the agent reaches it through that adapter's tools.
+    kind: str = "mcp"
     # "http" or "sse". Remote MCP servers are one or the other; the service says which.
+    # Ignored for `api` connectors.
     transport: str = "http"
     # A default endpoint only where the service publishes a single stable one.
     default_url: str = ""
@@ -90,7 +113,16 @@ CATALOGUE: tuple[ConnectorSpec, ...] = (
         key="epidemic_sound",
         label="Epidemic Sound",
         gives="searching music and sound effects, and pulling a bed into a render",
-        where="Epidemic Sound → integrations.",
+        # Epidemic Sound is a REST API, not an MCP server. Listed as `mcp` it was being
+        # handed to the SDK as an endpoint speaking a protocol it does not speak, which
+        # fails as a 401 — the same symptom as a bad key, so the operator would keep
+        # re-pasting a key that was never the problem.
+        kind="api",
+        where="Epidemic Sound → your partner or developer settings. This one is an API, "
+              "so it takes a credential rather than a server URL.",
+        docs="Stored and encrypted the same way as an MCP token. The music tools that "
+             "use it are not built yet — the credential is accepted and kept, and "
+             "nothing calls it until they are.",
     ),
 )
 
@@ -126,9 +158,15 @@ class Connection:
         """Safe to send to the page: the token is masked, never returned."""
         spec = self.spec
         return {"key": self.key, "label": spec.label, "gives": spec.gives,
+                # The page needs this: an `api` connector has no server URL to ask for,
+                # and showing it one is how the wrong thing gets pasted into it.
+                "kind": spec.kind,
                 "where": spec.where, "docs": spec.docs, "url": self.url,
                 "token": mask(self.token) if self.token else "",
-                "connected": bool(self.url), "enabled": self.enabled,
+                # An `api` connector has no URL, so a URL test reported every one of
+                # them as not connected however good the credential was.
+                "connected": bool(self.token) if spec.kind == "api" else bool(self.url),
+                "enabled": self.enabled,
                 "note": self.note}
 
 
@@ -206,9 +244,26 @@ class Store:
         return False
 
     def active(self) -> dict[str, dict]:
-        """MCP server configs for everything connected and switched on."""
+        """MCP server configs for everything connected, switched on, and *actually MCP*.
+
+        The `kind == "mcp"` filter is the fix for a real mis-wiring: without it an
+        API-only service was handed to the SDK as an MCP endpoint, which fails with a 401
+        that is indistinguishable from a rejected token — so the operator re-pastes
+        working credentials indefinitely.
+        """
         return {key: conn.as_mcp() for key, conn in self.connections.items()
-                if conn.enabled and conn.url}
+                if conn.enabled and conn.url and conn.spec.kind == "mcp"}
+
+    def api_credentials(self, key: str) -> Connection | None:
+        """A configured `api` connector, for the provider adapter that speaks to it.
+
+        Separate from `active()` because these never go near the SDK. The adapter asks
+        for its own service by name and gets the credential or nothing.
+        """
+        conn = self.connections.get(key)
+        if conn is None or not conn.enabled or conn.spec.kind != "api":
+            return None
+        return conn if (conn.token or conn.url) else None
 
     def listing(self) -> list[dict]:
         """Every connector in the catalogue, connected or not, in catalogue order."""
@@ -217,6 +272,7 @@ class Store:
             conn = self.connections.get(spec.key)
             rows.append(conn.as_dict() if conn else {
                 "key": spec.key, "label": spec.label, "gives": spec.gives,
+                "kind": spec.kind,
                 "where": spec.where, "docs": spec.docs, "url": "", "token": "",
                 "connected": False, "enabled": False, "note": "",
             })
