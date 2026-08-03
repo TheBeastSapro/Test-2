@@ -614,3 +614,56 @@ def test_the_cli_the_sdk_will_actually_run_is_the_one_we_report(monkeypatch):
     assert "install.ps1" in joined
     # And it must NOT tell you to run the thing that produced the shim.
     assert "npm install -g" not in joined
+
+
+def test_every_line_reference_in_the_agent_docs_still_resolves():
+    """Documentation that cites line numbers rots the moment code moves.
+
+    `docs/AGENT.md` is built out of `file:line` citations because the non-obvious
+    decisions already carry comments naming the failure they prevent, and pointing at
+    those beats restating them. The cost is that an insertion twenty lines up makes the
+    document quietly wrong — and a maintainer who opens two stale references stops
+    trusting the rest of it.
+
+    Only the file and the line's existence are checked. Asserting on the *content* of a
+    line would make every reformat a test failure, which is how a guard like this gets
+    deleted.
+    """
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    doc = root / "docs" / "AGENT.md"
+    if not doc.exists():                       # the docs are optional in a slim checkout
+        pytest.skip("docs/AGENT.md is not present")
+
+    text = doc.read_text(encoding="utf-8")
+    # A bare filename in this document means the agent module of that name — the header
+    # says so, because there are two auth.py files and only one of them is the agent's.
+    search_roots = [root / "forgecast" / "agent", root / "forgecast" / "api",
+                    root / "forgecast", root / "tests", root]
+
+    problems: list[str] = []
+    seen = 0
+    for name, line in re.findall(r"`?([A-Za-z_][\w./]*\.(?:py|md)):(\d+)", text):
+        seen += 1
+        # Tried as written against each root first, so a partial path like
+        # `desktop/bootstrap.py` resolves, then by basename for the bare form.
+        target = None
+        for base in search_roots:
+            for candidate in (base / name, base / Path(name).name):
+                if candidate.is_file():
+                    target = candidate
+                    break
+            if target is not None:
+                break
+        if target is None:
+            problems.append(f"{name}:{line} — no such file")
+            continue
+        total = len(target.read_text(encoding="utf-8").splitlines())
+        if int(line) > total:
+            problems.append(f"{name}:{line} — past the end of {target.name} "
+                            f"({total} lines)")
+
+    assert seen > 20, f"only {seen} citations found; the parser is probably wrong"
+    assert not problems, "stale references in docs/AGENT.md:\n  " + "\n  ".join(problems)

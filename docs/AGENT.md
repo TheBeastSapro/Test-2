@@ -4,6 +4,11 @@ Everything below is read out of the code. Line references are `file:line` and ar
 opening — most of the non-obvious decisions already carry a comment saying which failure
 they prevent, and this document points at those rather than restating them.
 
+A bare filename means the one in the table below. That matters for exactly one of them:
+`auth.py` here is always `forgecast/agent/auth.py`, which answers "can we reach Claude".
+There is a second `forgecast/auth.py`, and it is unrelated — passwords, JWTs and the
+`current_user` dependency.
+
 ## Map
 
 | File | What it is |
@@ -75,11 +80,11 @@ Two consequences that catch people out, both encoded in the code:
   the Windows fix printed at `auth.py:204` is `setx … "" && set ANTHROPIC_API_KEY=`
   (two commands: one for the stored value, one for this shell).
 * **The desktop launcher removes it from its own process.** `toolchain.activate()` pops
-  it (`desktop/toolchain.py:418`) before anything spawns a child, and `desktop/app.py:151`
-  prints that it did. The operator's shell keeps the variable; only the app ignores it.
-  So a `check()` that reports shadowing under the desktop launcher means the variable was
-  set *after* start-up, or the server was started some other way — `forgecast serve`,
-  uvicorn directly, Docker — where nothing scrubbed it.
+  it (`desktop/toolchain.py:418`) before anything spawns a child, and
+  `desktop/app.py:151-153` prints that it did. The operator's shell keeps the variable;
+  only the app ignores it. So a `check()` that reports shadowing under the desktop
+  launcher means the variable was set *after* start-up, or the server was started some
+  other way — `forgecast serve`, uvicorn directly, Docker — where nothing scrubbed it.
 
 `FORGECAST_ANTHROPIC_API_KEY` in `.env.example:18` is a different thing entirely: a
 provider key for the pipeline's LLM calls, namespaced by the settings prefix. It does not
@@ -462,25 +467,31 @@ CLI (`tests/test_agent.py:1-7`), and asserts on the numbers rather than on `ok`:
 
 ```python
 def test_channel_memory_is_scoped_to_its_owner(user, session):
+    from forgecast.auth import hash_password
     from forgecast.memory import remember
-    from forgecast.models import MemoryKind
+    from forgecast.models import MemoryKind, User
 
     studio = Studio(user_id=user.id)
     made = studio.create_channel("Ocean Freight", niche="logistics")
     remember(session, made["id"], MemoryKind.revision, "Never open on a question.")
     session.commit()
 
+    # Addressable by name, because that is what the agent has in the conversation.
     recalled = studio.channel_memory("ocean freight")
     assert recalled["count"] == 1
     assert "Never open on a question" in recalled["memories"][0]["content"]
 
-    # Another account's channel is not addressable by name or by id.
-    assert "error" in Studio(user_id=user.id + 1).channel_memory(made["id"])
+    # And not addressable at all by another account, even with the real id in hand.
+    other = User(email="someone@else.test", hashed_password=hash_password("x" * 12))
+    session.add(other)
+    session.commit()
+    assert "error" in Studio(user_id=other.id).channel_memory(made["id"])
 ```
 
-The second assertion is the one that matters and the one easiest to leave out. Every
-`Studio` method filters on `user_id`; a new one that forgets is a cross-account read that
-no test will catch unless the test looks for it.
+That last assertion is the one that matters and the one easiest to leave out — and it has
+to use a second *real* account, not an id that does not exist, or it passes on "no such
+user" and proves nothing about scoping. Every `Studio` method filters on `user_id`; a new
+one that forgets is a cross-account read no test will catch unless the test looks for it.
 
 ---
 

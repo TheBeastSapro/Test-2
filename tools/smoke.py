@@ -8,13 +8,24 @@
 Exits 0 when every check passed and 1 when any of them did not, printing what failed and
 what it saw. Nothing here needs a Claude subscription or a provider key.
 
-It creates no account unless registration is open, which it is not on a shipped instance
-— so against a real install it signs in as an account that already exists and leaves
-nothing behind. To check the code rather than someone's install, point it at a scratch
-database first:
+Which database it touches, and what it creates, depends on how it is called — and the
+split is deliberate:
+
+* **With no `--url`** it starts its own server, so it owns that instance and creates the
+  account it signs in as. Registration is closed on a shipped install, correctly, so
+  without this every check stopped at the sign-in with nothing actually checked. The
+  account is made through the app's own `bootstrap` command, which is idempotent.
+* **With `--url`** it never creates anything. It is then pointed at a server someone else
+  is running, and signs in as an account that already exists — pass `--email` and
+  `--password` for one.
+
+Either way the thread and the attachment it makes are deleted again, because a check that
+leaves debris in somebody's sidebar every run is a check they will stop running.
+
+To keep even the first case away from a real database, point it at a scratch one:
 
     FORGECAST_DATABASE_URL=sqlite:///./smoke.db FORGECAST_STORAGE_DIR=./smoke-storage \\
-    FORGECAST_ALLOW_SIGNUP=true python tools/smoke.py
+    python tools/smoke.py
 
 ## Why this is not a test
 
@@ -328,6 +339,14 @@ def report(results: list[Result]) -> int:
         print(f"  {'pass' if result.ok else 'FAIL'}  {result.name}")
         print(f"        {result.detail}")
 
+    # Nothing checked is not success. An empty result set means the run fell over before
+    # any check ran — a filter that matched no names, an exception during collection —
+    # and "0 checks passed. This install works." going green in CI is the one outcome
+    # that makes having a smoke script pointless.
+    if not results:
+        print("\n  no checks ran, so nothing was verified.")
+        return 1
+
     failed = [result for result in results if not result.ok]
     if not failed:
         print(f"\n  {len(results)} checks passed. This install works.")
@@ -386,8 +405,33 @@ def free_port() -> int:
         return int(sock.getsockname()[1])
 
 
+SMOKE_EMAIL = "smoke@forgecast.example"
+SMOKE_PASSWORD = "smoke-check-not-a-real-password"
+
+
+def ensure_account(email: str, password: str) -> None:
+    """Make the account the checks sign in as, if it is not already there.
+
+    Runs in a subprocess through the app's own `bootstrap` command rather than by
+    importing the models here. Two reasons, and the second is the real one: it is the
+    same path a deployment uses, so a broken bootstrap is a failure this script reports
+    instead of a failure it works around; and importing `forgecast.db` in this process
+    would build a second engine against the same SQLite file while the server is
+    starting.
+    """
+    result = subprocess.run(
+        [sys.executable, "-m", "forgecast.cli", "bootstrap",
+         "--email", email, "--password", password],
+        cwd=str(ROOT), capture_output=True, text=True, timeout=120,
+    )
+    if result.returncode != 0:
+        tail = (result.stderr or result.stdout or "").strip()[-800:]
+        raise Wrong(f"could not create the account to check with:\n{tail}")
+
+
 @contextlib.contextmanager
-def serve(port: int) -> Iterator[str]:
+def serve(port: int, email: str = SMOKE_EMAIL,
+          password: str = SMOKE_PASSWORD) -> Iterator[str]:
     """Run the real app in a subprocess for the duration, and stop it afterwards.
 
     A subprocess rather than a thread, and uvicorn rather than `create_app()` in-process,
@@ -396,6 +440,13 @@ def serve(port: int) -> Iterator[str]:
     runner's event loop. Importing the app and poking it with a `TestClient` would skip
     the part most likely to be broken in a shipped install.
     """
+    # An account first, because a shipped instance has registration closed — correctly —
+    # and without one every check below stops at the sign-in with nothing checked. The
+    # launcher does this on its own first run; a bare uvicorn does not, and this script
+    # starts a bare uvicorn. It is idempotent, so an install that already has the
+    # account is untouched.
+    ensure_account(email, password)
+
     command = [sys.executable, "-m", "uvicorn", "forgecast.api.main:app",
                "--host", "127.0.0.1", "--port", str(port), "--log-level", "warning"]
     print(f"  starting a server on port {port}")
@@ -433,9 +484,12 @@ def main() -> int:
         description="Check that a built Forgecast install actually works.")
     parser.add_argument("--url", default="",
                         help="check a server that is already running (default: start one)")
-    parser.add_argument("--email", default="smoke@forgecast.local",
+    # `.example` rather than the more obvious `.local`: signup validates the address, and
+    # `.local`, `.test` and `.invalid` are special-use names it rejects outright — so that
+    # default would fail on the address rather than on anything about the install.
+    parser.add_argument("--email", default=SMOKE_EMAIL,
                         help="account to sign in as")
-    parser.add_argument("--password", default="smoke-check-password",
+    parser.add_argument("--password", default=SMOKE_PASSWORD,
                         help="its password")
     parser.add_argument("--json", action="store_true",
                         help="print the results as JSON as well, for a CI job to read")
@@ -445,17 +499,20 @@ def main() -> int:
     started = time.monotonic()
     try:
         with contextlib.ExitStack() as stack:
-            base = args.url.rstrip("/") or stack.enter_context(serve(free_port()))
+            base = args.url.rstrip("/") or stack.enter_context(
+                serve(free_port(), args.email, args.password))
             print(f"  against {base}\n")
             client = stack.enter_context(
                 httpx.Client(base_url=base, timeout=REQUEST_TIMEOUT,
                              follow_redirects=False))
             sign_in(client, args.email, args.password)
             results = run_checks(client)
-    except Wrong as wrong:
+    except (Wrong, httpx.HTTPError) as problem:
         # Everything above is setup, not a check. Failing here means no check ran at all,
         # which is a different answer from "a check failed" and has to read like one.
-        print(f"  FAIL  could not start checking\n        {wrong}")
+        # `HTTPError` is caught beside `Wrong` because the commonest version of this is a
+        # `--url` pointing at nothing, and a connection traceback buries that.
+        print(f"  FAIL  could not start checking\n        {problem}")
         return 1
 
     code = report(results)
