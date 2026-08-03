@@ -7,7 +7,7 @@ gone by the time anyone asks what the style was.
 
 from __future__ import annotations
 
-from forgecast.style.sound import DEFAULT_DUCK_DB, brief_from, recommend
+from forgecast.style.sound import DEFAULT_DUCK_DB, brief_from, design, recommend
 
 
 def measured(**over) -> dict:
@@ -105,3 +105,99 @@ def test_with_no_reference_the_niche_convention_says_it_is_a_convention():
 
     # Ambient has no narration to duck under at all.
     assert recommend("ambient sleep").duck_under_db == 0.0
+
+
+# ------------------------------------------------- the layered plan, placed on time
+#
+# The amateur version of sound design is one loop at one level from start to finish.
+# What makes it professional is placement, so these assert *where* things land — a cue
+# between cuts is audible as a mistake in a way a cue on a cut never is.
+
+
+SCENES = [12.0, 48.0, 55.0, 61.0, 40.0, 34.0]
+
+
+def test_ambience_runs_the_whole_length_and_is_never_stopped_early():
+    """The floor exists so no cut lands in digital silence.
+
+    A cue that ended it before the video does would reintroduce exactly the join it is
+    there to hide, so there is a start and no stop.
+    """
+    plan = design(brief_from(measured(), LOCKED), SCENES)
+
+    ambience = plan.at_layer("ambience")
+    assert [cue.action for cue in ambience] == ["start"]
+    assert ambience[0].at_seconds == 0.0
+    assert ambience[0].seconds == sum(SCENES)
+
+
+def test_music_enters_after_the_hook_rather_than_under_it():
+    """A bed under the opening line competes with the one sentence that has to land."""
+    plan = design(brief_from(measured(), LOCKED), SCENES, hook_scenes=1)
+
+    (entry,) = [c for c in plan.at_layer("music") if c.action == "start"][:1]
+    assert entry.at_seconds == SCENES[0]
+
+
+def test_the_music_drops_out_for_the_reveal_and_comes_back():
+    """Silence is louder than any sting, and it is the tool nobody amateur reaches for."""
+    plan = design(brief_from(measured(), LOCKED), SCENES, reveal_scene=3)
+
+    landing = sum(SCENES[:3])
+    stop = next(c for c in plan.cues if c.layer == "music" and c.action == "stop")
+    assert stop.at_seconds == landing
+    assert stop.seconds > 0
+
+    # And it returns, rather than leaving the rest of the video bare.
+    returns = [c for c in plan.at_layer("music")
+               if c.action == "start" and c.at_seconds > landing]
+    assert returns and returns[0].at_seconds == landing + stop.seconds
+
+
+def test_a_riser_precedes_the_drop_so_it_reads_as_deliberate():
+    plan = design(brief_from(measured(), LOCKED), SCENES, reveal_scene=3)
+
+    landing = sum(SCENES[:3])
+    riser = next(c for c in plan.cues if c.action == "riser")
+    assert riser.at_seconds < landing
+    assert riser.at_seconds + riser.seconds <= landing + 0.001
+
+
+def test_every_cue_lands_on_a_cut_or_leads_into_one():
+    """A cue in the middle of a shot is audible as a mistake."""
+    plan = design(brief_from(measured(), LOCKED), SCENES, reveal_scene=3)
+
+    starts = {0.0}
+    running = 0.0
+    for length in SCENES:
+        running += length
+        starts.add(round(running, 3))
+
+    for cue in plan.cues:
+        on_a_cut = round(cue.at_seconds, 3) in starts
+        leads_into_one = round(cue.at_seconds + cue.seconds, 3) in starts
+        assert on_a_cut or leads_into_one, f"{cue.action} at {cue.at_seconds}s floats"
+
+
+def test_accents_are_rationed_by_runtime():
+    """Every extra hit devalues the last one, so the count is capped per minute."""
+    from forgecast.style.sound import MAX_ACCENTS_PER_MINUTE
+
+    plan = design(brief_from(measured(), LOCKED), SCENES, reveal_scene=3)
+    minutes = sum(SCENES) / 60.0
+    whooshes = [c for c in plan.cues if c.action == "whoosh"]
+
+    assert len(whooshes) <= int(minutes * MAX_ACCENTS_PER_MINUTE) + 1
+
+
+def test_a_wall_to_wall_mix_gets_no_accents_and_says_why():
+    plan = design(brief_from(measured(silence_ratio=0.02)), SCENES, reveal_scene=3)
+
+    assert not [c for c in plan.cues if c.action == "whoosh"]
+    assert any("no gap" in note or "wall to wall" in note for note in plan.notes)
+
+
+def test_no_scenes_is_an_empty_plan_rather_than_a_crash():
+    plan = design(brief_from(measured()), [])
+    assert plan.cues == []
+    assert plan.notes
