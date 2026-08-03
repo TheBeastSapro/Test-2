@@ -339,11 +339,18 @@ def inventory(root: Path) -> list[Tool]:
     cli = auth.find_cli() if auth is not None else (
         str(cli_exe(root)) if cli_exe(root).exists() else (shutil.which("claude") or "")
     )
+    # No longer marked manual on Windows. It was, with a PowerShell one-liner printed for
+    # the operator to run — on the reasoning that a machine-wide installer is not this
+    # app's business. That reasoning lost to the evidence: setup finished saying "some
+    # things left to do", the chat had no CLI, and the app had asked its user to go and
+    # finish installing it. That is exactly the homework this module's docstring says it
+    # exists to remove, and it was reported as a broken install rather than as a choice.
+    #
+    # `install_claude_cli` now runs that official installer itself on Windows and falls
+    # back to the printed command only if it fails. What it cannot preserve is "deleting
+    # the folder is the uninstall" — the native installer writes to the user profile — so
+    # that is said in the setup UI rather than glossed over.
     cli_manual = ""
-    if not cli and os.name == "nt":
-        # npm's shim is refused, so the only fix on Windows is the native installer —
-        # and it is a PowerShell one-liner this app has no business running for you.
-        cli_manual = "irm https://claude.ai/install.ps1 | iex   (in PowerShell)"
     tools.append(Tool(
         key="claude", label="Claude Code CLI (the chat)", weight=WEIGHT_CLI,
         present=bool(cli), where=cli or "", manual=cli_manual,
@@ -473,6 +480,8 @@ def install_claude_cli(root: Path, on_progress=None, *, on_note=None,
     if not npm.exists():
         system_npm = shutil.which("npm")
         if not system_npm:
+            if os.name == "nt":
+                return _install_claude_windows(on_note=on_note, on_tick=on_tick)
             return False, ("Node is installed but npm was not found beside it, so the "
                            "Claude CLI cannot be installed.")
         npm = Path(system_npm)
@@ -504,11 +513,84 @@ def install_claude_cli(root: Path, on_progress=None, *, on_note=None,
         on_progress(WEIGHT_CLI * 1_000_000, WEIGHT_CLI * 1_000_000)
 
     if not cli_exe(root).exists():
-        # npm reported success and the shim is not where this platform puts it.
-        # Say so rather than reporting the CLI as installed and failing later.
+        # npm reported success and the shim is not where this platform puts it. On Windows
+        # this is the known case — the npm shim is refused there — so instead of reporting
+        # a dead end, the official installer is tried, which is what a person would do
+        # next anyway.
+        if os.name == "nt":
+            ok, detail = _install_claude_windows(on_note=on_note, on_tick=on_tick)
+            if ok:
+                return ok, detail
+            return False, (f"npm succeeded but no CLI appeared at {cli_exe(root)}, and "
+                           f"the official installer also failed:\n{detail}")
         return False, (f"npm succeeded but no CLI appeared at {cli_exe(root)}. "
                        f"Look in {node_bin(root)}.")
     return True, str(cli_exe(root))
+
+
+# Anthropic's own Windows installer. Named as a constant so there is one place to change
+# it, and quoted exactly as they publish it.
+CLAUDE_WIN_INSTALLER = "https://claude.ai/install.ps1"
+
+
+def _install_claude_windows(*, on_note=None, on_tick=None) -> tuple[bool, str]:
+    """Run the official Windows installer, rather than printing it for someone to run.
+
+    ## Why this is here at all
+
+    The npm-installed shim does not work on Windows, so for a while this step ended by
+    telling the operator to paste `irm https://claude.ai/install.ps1 | iex` into
+    PowerShell. Setup then reported "some things left to do", the chat had no CLI, and
+    the app had asked its own user to finish installing it. An installer that hands out
+    homework is the thing this module was written to stop.
+
+    ## What it costs, and why it is said out loud
+
+    This one writes into the user profile, not into `runtime/`, so after it runs
+    "delete the folder" is no longer the whole uninstall. That is a real change to a
+    promise the app makes, so it is reported in the returned detail and shown — not
+    hidden because it is inconvenient.
+
+    ## Why ExecutionPolicy Bypass and not a downgrade of it
+
+    Scoped to this one process, which is the narrowest form that can work: the default
+    policy on a normal Windows install refuses to run a downloaded script at all, and
+    changing the machine's policy to fix that would outlive this call and every other
+    script it then permits. `-Scope Process` cannot.
+    """
+    powershell = shutil.which("powershell") or shutil.which("pwsh")
+    if not powershell:
+        return False, ("PowerShell was not found, so the official installer cannot be "
+                       f"run. Install it by hand:  irm {CLAUDE_WIN_INSTALLER} | iex")
+
+    if on_note:
+        on_note("running Anthropic's installer for the Claude Code CLI")
+
+    code, output = run_watched(
+        [powershell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
+         f"irm {CLAUDE_WIN_INSTALLER} | iex"],
+        on_line=on_note, tick=on_tick, timeout=600)
+
+    found = shutil.which("claude")
+    if not found:
+        # The installer puts it on PATH for *new* shells, so this process may not see it
+        # yet. Checked where it actually lands before concluding it failed.
+        for candidate in (Path.home() / ".local" / "bin" / "claude.exe",
+                          Path.home() / ".local" / "bin" / "claude",
+                          Path.home() / "AppData" / "Local" / "Programs" / "claude"
+                          / "claude.exe"):
+            if candidate.exists():
+                found = str(candidate)
+                break
+
+    if not found:
+        tail = "\n".join(output.strip().splitlines()[-6:])
+        return False, (f"the official installer exited with {code} and no `claude` "
+                       f"appeared.\n{tail}")
+
+    return True, (f"{found}  (installed by Anthropic's own installer, so this one lives "
+                  f"in your user profile rather than in runtime/ — deleting the Forgecast "
+                  f"folder will not remove it)")
 
 
 def install_ffmpeg(root: Path, on_progress=None) -> tuple[bool, str]:

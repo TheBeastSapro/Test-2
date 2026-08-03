@@ -36,10 +36,12 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import assistant, auth, codex_agent, codex_auth, prefs
+from . import (assistant, auth, codex_agent, codex_auth, minimax_agent,
+               minimax_auth, prefs)
 
 CLAUDE = "claude"
 CHATGPT = "chatgpt"
+MINIMAX = "minimax"
 
 
 @dataclass(frozen=True)
@@ -94,6 +96,25 @@ ENGINES: list[Engine] = [
             "Claude needs nothing new.",
         ],
     ),
+    Engine(
+        key=MINIMAX,
+        label="MiniMax",
+        signin="Signs in with your MiniMax subscription through their own CLI — a browser "
+               "flow, no API key. Narration is separate and still bills the MiniMax API "
+               "balance; this covers the chat.",
+        models=minimax_agent.MODELS,
+        default_model=minimax_agent.DEFAULT_MODEL,
+        limits=[
+            "Runs each turn non-interactively, so it cannot stop to ask before editing "
+            "a file — “Confirm calls” has no effect on this backend.",
+            "It is never given decide_gate: approving a gate releases real spend and "
+            "this backend has no way to pause and ask you first.",
+            "Their CLI has no resumable session, so the thread is re-sent each turn. A "
+            "very long conversation costs more here than on Claude.",
+            "Needs the MiniMax CLI installed once (npm install -g mmx-cli). Claude needs "
+            "nothing new.",
+        ],
+    ),
 ]
 
 BY_KEY = {engine.key: engine for engine in ENGINES}
@@ -125,13 +146,22 @@ def auth_check(key: str | None = None) -> dict:
     chat has one auth panel rather than one per vendor.
     """
     engine = resolve(key)
-    report = (codex_auth.check() if engine.key == CHATGPT else auth.check()).as_dict()
+    if engine.key == CHATGPT:
+        report = codex_auth.check().as_dict()
+    elif engine.key == MINIMAX:
+        report = minimax_auth.check().as_dict()
+    else:
+        report = auth.check().as_dict()
     return {**report, "engine": engine.key, "engine_label": engine.label}
 
 
 def start_login(key: str | None = None) -> tuple[bool, str]:
     engine = resolve(key)
-    return (codex_auth.start_login() if engine.key == CHATGPT else auth.start_login())
+    if engine.key == CHATGPT:
+        return codex_auth.start_login()
+    if engine.key == MINIMAX:
+        return minimax_auth.start_login()
+    return auth.start_login()
 
 
 def run(prompt: str, *, studio, settings: prefs.Prefs | None = None,
@@ -148,6 +178,9 @@ def run(prompt: str, *, studio, settings: prefs.Prefs | None = None,
     # Passing it to both would reach `ClaudeAgentOptions` as an unknown keyword.
     user_id = kwargs.pop("user_id", None)
 
+    if chosen.key == MINIMAX:
+        return minimax_agent.run(prompt, studio=studio, model=model, user_id=user_id,
+                                 allowed=allowed, history=history)
     if chosen.key == CHATGPT:
         return codex_agent.run(prompt, studio=studio, model=model, user_id=user_id,
                                **kwargs)

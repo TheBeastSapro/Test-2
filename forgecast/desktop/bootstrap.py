@@ -467,7 +467,14 @@ def install_toolchain(root: Path) -> list[str]:
         if tool.manual:
             # ffmpeg on macOS and Linux, where a package manager owns it and dropping a
             # private build in its place is not this installer's business.
+            #
+            # `finish` before `continue`, which it did not do. The row stayed on "▸" —
+            # the in-progress marker — for the rest of the run, so a step that was never
+            # going to be attempted looked like a step still being attempted. That was
+            # reported: a window headed "Finished, with some things left to do" above a
+            # row that was apparently still working.
             unresolved.append(f"{tool.label} — install it with: {tool.manual}")
+            window.finish(tool.label, ok=False)
             continue
         report = _progress_printer(tool.label, step=step,
                                    window=window if gui else None)
@@ -501,7 +508,57 @@ def install_toolchain(root: Path) -> list[str]:
                 "Finished, with some things left to do.")
     if not unresolved:
         window.close()
+    elif gui:
+        # And *kept alive* while it is open. Leaving it up was right; leaving it up
+        # without redrawing it was not. Nothing pumped Tk after this point — the launcher
+        # went on to start the server — so Windows marked the window "(Not Responding)"
+        # and the Close button it had just enabled did nothing. A window left open to
+        # explain a failure has to be a window that can be read and dismissed.
+        _wait_for_close(window)
     return unresolved
+
+
+# How long to keep the failure window alive. Bounded rather than indefinite: this blocks
+# the launcher, and an operator who walked away must not come back to an app that never
+# started. Ten minutes is far longer than reading two lines takes.
+FAILURE_WINDOW_SECONDS = 600.0
+
+
+def _wait_for_close(window) -> None:
+    """Pump the window until it is closed, or the budget runs out.
+
+    Both exits matter. Closing it is the operator saying "read it, carry on", and the app
+    then starts normally. The timeout is for the case where nobody is watching — the app
+    still comes up, minus whatever could not be installed, which is the behaviour every
+    other failure here already has.
+    """
+    import time
+
+    deadline = time.monotonic() + FAILURE_WINDOW_SECONDS
+    while time.monotonic() < deadline:
+        try:
+            window.tick()
+        except Exception:                                            # pragma: no cover
+            return                                                   # already gone
+        if not _window_alive(window):
+            return
+        time.sleep(0.05)
+
+
+def _window_alive(window) -> bool:
+    """Whether the Tk window still exists.
+
+    `winfo_exists` rather than catching an exception from `tick`: a destroyed root raises
+    on some Tk builds and returns quietly on others, and a loop that depends on which
+    one is a loop that spins for ten minutes on the wrong platform.
+    """
+    root = getattr(window, "_root", None)
+    if root is None:
+        return False
+    try:
+        return bool(root.winfo_exists())
+    except Exception:
+        return False
 
 
 def prepare(root: Path, *, force_install: bool = False) -> Path:

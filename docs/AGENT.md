@@ -80,7 +80,7 @@ Two consequences that catch people out, both encoded in the code:
   the Windows fix printed at `auth.py:204` is `setx … "" && set ANTHROPIC_API_KEY=`
   (two commands: one for the stored value, one for this shell).
 * **The desktop launcher removes it from its own process.** `toolchain.activate()` pops
-  it (`desktop/toolchain.py:549`) before anything spawns a child, and
+  it (`desktop/toolchain.py:631`) before anything spawns a child, and
   `desktop/app.py:155-157` prints that it did. The operator's shell keeps the variable;
   only the app ignores it. So a `check()` that reports shadowing under the desktop
   launcher means the variable was set *after* start-up, or the server was started some

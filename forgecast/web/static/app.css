@@ -286,13 +286,17 @@ button.danger:hover { background: #1a1011; border-color: #6b2f2f; }
 .thread:hover { background: var(--raise-2); }
 .thread.on { background: var(--accent-dim); }
 .thread:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-/* Hidden until the row is hovered or the control itself is focused, so a column of ×
-   marks does not compete with the titles — but always reachable by keyboard, because
-   `opacity: 0` still takes tab focus and `:focus-visible` brings it into view. */
+/* Faint until the row is hovered, not invisible. It was `opacity: 0`, on the reasoning
+   that a column of × marks competes with the titles — which is true, and was still the
+   wrong trade: "I still cannot see the delete option" was reported by someone who had
+   the button under their cursor the whole time. A control nobody can find is a control
+   that does not exist, and hover is not a discovery mechanism.
+   0.45 is enough to read as a control and quiet enough not to shout. Keyboard focus
+   still brings it to full strength, as does hovering the row. */
 .thread-x {
   position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; padding: 0;
   border: 0; border-radius: 5px; background: transparent; color: var(--muted);
-  font-size: 15px; line-height: 1; cursor: pointer; opacity: 0;
+  font-size: 15px; line-height: 1; cursor: pointer; opacity: .45;
   transition: opacity .12s;
 }
 .thread:hover .thread-x, .thread-x:focus-visible { opacity: 1; }

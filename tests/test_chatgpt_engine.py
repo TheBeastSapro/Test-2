@@ -137,7 +137,13 @@ def test_no_engine_offers_the_other_ones_models():
 def test_prefs_endpoint_offers_both_agents_and_only_the_current_models(client):
     body = client.get("/api/agent/prefs").json()
     assert body["engine"] == "claude"
-    assert [e["key"] for e in body["engines"]] == ["claude", "chatgpt"]
+    # Claude first and ChatGPT second, with any later backends after them. Pinned as a
+    # prefix rather than the whole list: the order of the first two is the product
+    # decision — Claude is the default and ChatGPT the named alternative — while adding a
+    # third (MiniMax) is not a change to that decision and should not fail this.
+    keys = [e["key"] for e in body["engines"]]
+    assert keys[:2] == ["claude", "chatgpt"]
+    assert len(keys) == len(set(keys))
     assert {m["id"] for m in body["models"]} == {
         m["id"] for m in engines.BY_KEY["claude"].models}
 
