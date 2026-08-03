@@ -417,3 +417,161 @@ def test_the_preview_page_can_render_without_the_chrome(client, user):
     assert 'class="side"' in full.text
     assert 'class="side"' not in embedded.text
     assert "New chat" not in embedded.text
+
+
+# ------------------------------------------- the VO Studio bugs, checked against this
+
+
+def test_the_turn_is_saved_even_when_the_client_disconnects(client, session, user):
+    """The bug that made the other app's chat have no memory, reached another way.
+
+    The save used to sit after the stream loop inside the response generator. Closing
+    the window mid-turn makes Starlette close that generator, which raises
+    GeneratorExit at the paused yield — and GeneratorExit is BaseException, so
+    `except Exception` never sees it and the statements after the loop never run. The
+    reply was lost AND the thread kept no session id, so the next message started a
+    brand-new conversation and the agent had forgotten everything.
+    """
+    import anyio
+
+    from forgecast.agent import assistant
+    from forgecast.api import routes_agent
+
+    thread = client.post("/api/agent/threads", json={}).json()
+
+    async def fake_run(prompt, *, studio, resume=None, **kwargs):
+        yield {"type": "session", "session_id": "sess-from-a-turn-that-was-cut-off"}
+        yield {"type": "text", "text": "half an answer"}
+        # Nothing after this is reached: the consumer abandons the stream here.
+        await anyio.sleep(30)
+        yield {"type": "text", "text": "the rest"}
+
+    original = assistant.run
+    assistant.run = fake_run
+    try:
+        with client.stream("POST", f"/api/agent/threads/{thread['id']}/chat",
+                           json={"message": "hello"}) as response:
+            # Read one chunk, then walk away — the browser equivalent of closing the
+            # window or clicking a link while the agent is still working.
+            next(response.iter_lines())
+    finally:
+        assistant.run = original
+
+    stored = client.get(f"/api/agent/threads/{thread['id']}").json()
+    # The session id must survive, or the next turn has no conversation to resume.
+    assert stored["resumable"] is True
+    # And the in-flight guard must be released, or the thread never talks again.
+    assert thread["id"] not in routes_agent._IN_FLIGHT
+
+
+def test_a_dead_session_id_does_not_brick_the_thread(client, user):
+    """A resume= the CLI no longer has must be retried, not surfaced forever.
+
+    It happens for ordinary reasons — the CLI's session store was cleared, the app
+    moved machines. Without the retry every later message resumes the same dead id,
+    fails identically, and the only escape is abandoning the conversation.
+    """
+    from forgecast.agent import assistant
+
+    thread = client.post("/api/agent/threads", json={}).json()
+    attempts: list[str | None] = []
+
+    async def fake_run(prompt, *, studio, resume=None, **kwargs):
+        attempts.append(resume)
+        if resume:
+            yield {"type": "error", "text": "No conversation found with session ID: x",
+                   "resume_failed": True}
+            return
+        yield {"type": "session", "session_id": "brand-new"}
+        yield {"type": "text", "text": "started over"}
+
+    original = assistant.run
+    assistant.run = fake_run
+    try:
+        client.post(f"/api/agent/threads/{thread['id']}/chat", json={"message": "one"})
+        first = client.get(f"/api/agent/threads/{thread['id']}").json()
+        assert first["resumable"] is True          # a session was recorded
+
+        # Now that session is gone. The next turn must recover by itself.
+        body = client.post(f"/api/agent/threads/{thread['id']}/chat",
+                           json={"message": "two"}).text
+    finally:
+        assistant.run = original
+
+    assert attempts == [None, "brand-new", None]   # tried, failed, retried clean
+    assert "started over" in body
+    assert "expired on this machine" in body       # and said so
+
+
+def test_the_same_thread_refuses_two_turns_at_once(client, user):
+    """Two windows on one conversation would both resume the same session id."""
+    from forgecast.api import routes_agent
+
+    thread = client.post("/api/agent/threads", json={}).json()
+    routes_agent._IN_FLIGHT.add(thread["id"])
+    try:
+        clash = client.post(f"/api/agent/threads/{thread['id']}/chat",
+                            json={"message": "second window"})
+        assert clash.status_code == 409
+        assert "still working" in clash.json()["detail"]
+    finally:
+        routes_agent._IN_FLIGHT.discard(thread["id"])
+
+
+def test_a_pasted_screenshot_becomes_an_image_the_agent_can_see(client):
+    """The clipboard gives you bytes and a MIME type and no filename.
+
+    Uploaded as-is that is a nameless, extension-less file, and `describe()` tells the
+    agent it has "a file" rather than an image it can open — so pasting a screenshot
+    looked like it worked and then did nothing.
+    """
+    from forgecast.api.routes_agent import safe_name
+
+    assert safe_name(None, "image/png") == "pasted.png"
+    assert safe_name("", "image/png") == "pasted.png"
+    assert safe_name("blob", "audio/wav") == "blob.wav"
+    # Not just images — a copied audio file or document has to work too.
+    assert safe_name(None, "audio/mpeg").endswith(".mp3")
+    assert safe_name("report", "application/pdf") == "report.pdf"
+    # A real name always wins over anything derived.
+    assert safe_name("holiday photo.JPG", "image/png") == "holiday photo.JPG"
+    # Traversal is stripped, and a dot-leading name keeps a usable stem.
+    assert safe_name("../../etc/passwd", None) == "passwd"
+    assert not safe_name(".env", None).startswith(".")
+
+    # Over HTTP with the name browsers actually send for a clipboard blob. An
+    # extension-less "blob" is what arrives when the page does not name the part, and
+    # it has to come out the other side as an image rather than an opaque file.
+    posted = client.post("/api/agent/attach",
+                         files={"file": ("blob", b"\x89PNG\r\n\x1a\n", "image/png")})
+    assert posted.status_code == 200
+    body = posted.json()
+    assert body["name"].endswith(".png")
+    assert body["kind"] == "image"          # what makes the agent actually open it
+
+    # And an audio paste, because "not only clipboard I should be able to paste
+    # audio, files etc" is the actual requirement.
+    audio = client.post("/api/agent/attach",
+                        files={"file": ("blob", b"RIFF0000WAVE", "audio/wav")}).json()
+    assert audio["name"].endswith(".wav")
+    assert audio["kind"] == "audio"
+
+
+def test_the_assistant_stream_does_not_yield_from_a_finally(user):
+    """Yielding while unwinding raises "async generator ignored GeneratorExit".
+
+    Which aborts teardown of the CLI subprocess. Asserted on the source because the
+    failure only shows up when a generator is closed early — exactly the case that is
+    hardest to notice and most likely in a desktop app.
+    """
+    import ast
+    import inspect
+
+    from forgecast.agent import assistant
+
+    tree = ast.parse(inspect.getsource(assistant.run).lstrip())
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Try) and node.finalbody:
+            for inner in ast.walk(ast.Module(body=node.finalbody, type_ignores=[])):
+                assert not isinstance(inner, ast.Yield), \
+                    "run() must not yield from a finally block"

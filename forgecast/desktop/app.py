@@ -141,6 +141,17 @@ def main(argv: list[str] | None = None) -> int:
     prep.ensure_env_file(ROOT)
     env = _load_env_file(ROOT)
 
+    # Before anything spawns a child process, so the app's own ffmpeg and Claude CLI
+    # are the ones it finds. This also removes a set ANTHROPIC_API_KEY from this
+    # process, which would otherwise outrank the subscription login and silently
+    # bill an API account.
+    from . import toolchain
+
+    activated = toolchain.activate(ROOT)
+    if activated["api_key_removed"] == "yes":
+        print("  ignoring ANTHROPIC_API_KEY for this session — the chat uses your "
+              "Claude subscription")
+
     port = free_port(args.port)
     if port != args.port:
         print(f"  port {args.port} is in use; using {port}")
@@ -160,7 +171,14 @@ def main(argv: list[str] | None = None) -> int:
     supervisor.start_worker()
 
     token = os.environ["FORGECAST_LOCAL_HANDOFF_TOKEN"]
-    entry = f"{supervisor.url}/local/session?t={token}"
+    # A first run lands on setup rather than on an app with a broken chat and a
+    # banner about rendering. Once the tools are there — or once you have skipped —
+    # it goes straight to the studio and never mentions it again.
+    from ..api import routes_setup
+
+    landing = "/setup" if (routes_setup.needs_setup()
+                           and not routes_setup.was_skipped()) else "/"
+    entry = f"{supervisor.url}/local/session?t={token}&next={landing}"
 
     mode = "none" if args.no_window else args.window
     _banner(supervisor.url, health, env, mode)

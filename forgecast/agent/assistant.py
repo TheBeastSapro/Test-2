@@ -249,7 +249,14 @@ async def run(prompt: str, *, studio: Studio, resume: str | None = None,
     try:
         async for message in query(prompt=prompt, options=options):
             if isinstance(message, AssistantMessage):
-                session_id = getattr(message, "session_id", "") or session_id
+                fresh = getattr(message, "session_id", "") or ""
+                if fresh and fresh != session_id:
+                    session_id = fresh
+                    # Emitted the moment it is known rather than at the end of the
+                    # turn. The caller writes it down here, so a turn that never
+                    # finishes still leaves the thread resumable — which is the
+                    # difference between a chat with a memory and one without.
+                    yield {"type": "session", "session_id": session_id}
                 for block in message.content:
                     if isinstance(block, TextBlock):
                         yield {"type": "text", "text": block.text}
@@ -283,9 +290,36 @@ async def run(prompt: str, *, studio: Studio, resume: str | None = None,
     except CLINotFoundError:
         yield {"type": "error",
                "text": f"Claude Code CLI not found. Install it: {auth.INSTALL_HINT}"}
-    except Exception as exc:                                      # pragma: no cover
+    except Exception as exc:
         log.exception("agent turn failed")
-        yield {"type": "error", "text": f"{type(exc).__name__}: {exc}"}
-    finally:
-        if session_id and session_id != resume:
-            yield {"type": "session", "session_id": session_id}
+        yield {"type": "error", "text": f"{type(exc).__name__}: {exc}",
+               "resume_failed": _looks_like_a_dead_session(exc, resume)}
+    # Deliberately no `finally` that yields. Closing an async generator raises
+    # GeneratorExit at the paused `yield`, and yielding again from the `finally`
+    # while unwinding raises "async generator ignored GeneratorExit" — which aborts
+    # teardown of the CLI subprocess. The session id is emitted above, as soon as it
+    # is known, which is both earlier and safe.
+
+
+# Substrings the CLI uses when the session it was asked to resume is gone. Matched on
+# text because the SDK raises a generic ProcessError for it — there is no typed error
+# to catch, and guessing wrong here means either a bricked thread or a silent retry
+# that hides a real failure.
+_DEAD_SESSION_SIGNS = (
+    "no conversation found", "session not found", "no such session",
+    "could not resume", "invalid session", "--resume",
+)
+
+
+def _looks_like_a_dead_session(exc: BaseException, resume: str | None) -> bool:
+    """Did this turn fail *because* the session it tried to resume no longer exists?
+
+    It happens for ordinary reasons: the CLI's session store was cleared, the app was
+    copied to another machine, or storage was reset. Without this the thread is
+    bricked — every future message resumes the same dead id and fails the same way,
+    and the only escape is starting a new chat and losing the history.
+    """
+    if not resume:
+        return False
+    text = f"{type(exc).__name__}: {exc}".lower()
+    return any(sign in text for sign in _DEAD_SESSION_SIGNS)

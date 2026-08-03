@@ -108,6 +108,7 @@ def _refuse(request: Request, reason: str) -> None:
 def local_session(
     request: Request,
     t: str = "",
+    next: str = "/",
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     """Exchange the launcher's token for a session cookie, then land on the dashboard.
@@ -141,7 +142,11 @@ def local_session(
             "/login?error=Could+not+identify+the+local+owner+account", 303
         )
 
-    response = RedirectResponse("/", 303)
+    # `next` is a path this app owns, never a URL. Redirecting to whatever arrives in
+    # a query parameter is an open redirect, and this endpoint hands out a session
+    # cookie — the one place it would actually be worth exploiting.
+    landing = next if next.startswith("/") and not next.startswith("//") else "/"
+    response = RedirectResponse(landing, 303)
     response.set_cookie(
         COOKIE,
         create_access_token(user),

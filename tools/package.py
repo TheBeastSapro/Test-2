@@ -154,6 +154,10 @@ def verify(archive: Path) -> None:
         f"{NAME}/forgecast/web/static/app.css",
         f"{NAME}/forgecast/web/static/chat.js",
         f"{NAME}/forgecast/agent/assistant.py",
+        # The first-run installer. Without these the app starts and tells you to go
+        # and install Node yourself, which is the thing they exist to avoid.
+        f"{NAME}/forgecast/desktop/toolchain.py",
+        f"{NAME}/forgecast/web/setup.html",
         f"{NAME}/migrations/env.py",
     ]
     with zipfile.ZipFile(archive) as zf:

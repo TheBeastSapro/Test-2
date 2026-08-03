@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import mimetypes
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -35,6 +36,19 @@ router = APIRouter(prefix="/api/agent", tags=["agent"], include_in_schema=False)
 # a run rather than in a chat turn. Refused with a reason rather than truncated.
 MAX_MESSAGE_CHARS = 60_000
 MAX_ATTACH_BYTES = 512 * 1024 * 1024
+
+# One turn per conversation at a time, across every window.
+#
+# The browser's own guard is per page, so two desktop windows — or a tab left open
+# from earlier — sail straight past it. Both turns then resume the same CLI session
+# id, and the last one to finish writes its session over the other's: the losing
+# conversation is silently orphaned, and the next message on it resumes a session
+# whose history is missing half the turns.
+#
+# A plain in-process set rather than a row lock, because the thing being serialised is
+# a CLI subprocess owned by this process. Cleared in a `finally`, so a crashed turn
+# does not leave a thread permanently refusing to talk.
+_IN_FLIGHT: set[int] = set()
 
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
 AUDIO_EXT = {".wav", ".mp3", ".flac", ".m4a", ".aac", ".ogg", ".opus"}
@@ -217,14 +231,45 @@ def describe(path: Path) -> dict:
     return {"kind": "file", "note": "a file — read it with the Read tool"}
 
 
+def safe_name(raw_name: str | None, content_type: str | None) -> str:
+    """A filename that is safe to write and still says what the file is.
+
+    The extension is what everything downstream reads. `describe()` decides from it
+    whether the agent is told "an image you can see" or "a file"; ffprobe and Pillow
+    both use it. So a clipboard paste — which arrives with an empty filename and only
+    a MIME type — has to have one derived, or a pasted screenshot is handed to the
+    agent as an opaque blob it cannot open.
+    """
+    raw = Path(raw_name or "").name
+    kept = "".join(c for c in raw if c.isalnum() or c in " .-_()").strip(" .")
+    stem, suffix = Path(kept).stem, Path(kept).suffix
+
+    if not suffix and content_type:
+        # `mimetypes` maps image/png to .png without a table to maintain. Its
+        # audio/video coverage is thin, hence the handful of explicit entries.
+        extra = {"audio/mpeg": ".mp3", "audio/wav": ".wav", "audio/x-wav": ".wav",
+                 "audio/mp4": ".m4a", "audio/flac": ".flac", "audio/webm": ".weba",
+                 "video/quicktime": ".mov", "video/x-matroska": ".mkv"}
+        base = content_type.split(";")[0].strip().lower()
+        suffix = extra.get(base) or mimetypes.guess_extension(base) or ""
+
+    if not stem:
+        stem = "pasted"
+    return f"{stem}{suffix}"
+
+
 @router.post("/attach")
 async def attach(file: UploadFile = File(...), _user: User = Depends(current_user)):
-    raw = Path(file.filename or "file").name
-    safe = "".join(c for c in raw if c.isalnum() or c in " .-_()").strip() or "file"
+    raw = file.filename or "pasted"
+    safe = safe_name(raw, file.content_type)
     dest = attach_dir() / safe
+    # Split once, from the *sanitised* name. Splitting a name that begins with a dot
+    # puts the whole thing in `suffix` and leaves `stem` empty, so a de-duplicated
+    # ".env" became "-1" with no extension at all.
+    stem, suffix = Path(safe).stem, Path(safe).suffix
     index = 1
     while dest.exists():                     # never clobber an earlier attachment
-        dest = attach_dir() / f"{Path(safe).stem}-{index}{Path(safe).suffix}"
+        dest = attach_dir() / f"{stem}-{index}{suffix}"
         index += 1
 
     total = 0
@@ -316,6 +361,13 @@ async def chat(
             detail="that is longer than a chat turn should carry — start a run with "
                    "it as the topic, or attach it as a file")
 
+    if thread.id in _IN_FLIGHT:
+        raise HTTPException(
+            status_code=409,
+            detail="this conversation is still working on your last message. Wait for "
+                   "it to finish, or start a new chat to ask something else now.")
+    _IN_FLIGHT.add(thread.id)
+
     attachments = [{"name": p.name, "path": str(p), **describe(p)} for p in files]
     session.add(ChatMessage(conversation_id=thread.id, role="user", text=message,
                             attachments=attachments))
@@ -333,58 +385,143 @@ async def chat(
     thread_pk = thread.id
     studio = _studio(user)
 
+    def _save(text_parts: list[str], tool_calls: list[dict], session_id: str) -> None:
+        """Write the turn down. Called from a `finally`, so it must not raise.
+
+        Its own database session, because the request's session was closed when the
+        response started streaming and writing through a closed session is how a whole
+        conversation silently fails to save.
+        """
+        try:
+            with SessionLocal() as store:
+                row = store.get(Conversation, thread_pk)
+                if row is None:
+                    return
+                if text_parts or tool_calls:
+                    store.add(ChatMessage(
+                        conversation_id=row.id, role="assistant",
+                        text="".join(text_parts), tool_calls=tool_calls))
+                if session_id:
+                    row.session_id = session_id
+                row.model = settings.model
+                store.commit()
+        except Exception:                                         # pragma: no cover
+            log.exception("could not save the assistant turn")
+
+    def _forget_session(pk: int) -> None:
+        """Drop a session id the CLI has forgotten, so it is never resumed again."""
+        try:
+            with SessionLocal() as store:
+                row = store.get(Conversation, pk)
+                if row is not None:
+                    row.session_id = ""
+                    store.commit()
+        except Exception:                                         # pragma: no cover
+            log.exception("could not clear a dead session id")
+
+    def _remember_session(session_id: str) -> None:
+        """Store the session id the moment it is known, not at the end of the turn.
+
+        This is the difference between a chat with a memory and one without. The id
+        arrives early and the turn can run for minutes afterwards; if it is only
+        written at the end, then any turn that does not reach the end — a closed
+        window, a reload, a killed process — leaves the thread with no session to
+        resume, and the *next* message starts a brand-new conversation. The agent then
+        says things like "I don't have the script in front of me" one turn after you
+        pasted it, and nothing looks broken.
+        """
+        try:
+            with SessionLocal() as store:
+                row = store.get(Conversation, thread_pk)
+                if row is not None and row.session_id != session_id:
+                    row.session_id = session_id
+                    store.commit()
+        except Exception:                                         # pragma: no cover
+            log.exception("could not record the session id")
+
     async def stream():
         text_parts: list[str] = []
         tool_calls: list[dict] = []
         latest_session = resume or ""
+        # Set once the turn has been written down, so the `finally` cannot save twice
+        # when the generator is closed after a normal finish.
+        saved = False
+        attempt = resume
+        retried = False
         try:
-            async for event in assistant.run(
-                prompt, studio=studio, resume=resume, model=settings.model,
-                permission_mode="default" if settings.confirm_edits else "acceptEdits",
-                allow_web=settings.allow_web, budget_usd=settings.budget_usd,
-            ):
-                kind = event.get("type")
-                if kind == "text":
-                    text_parts.append(event.get("text", ""))
-                elif kind == "tool":
-                    tool_calls.append({"id": event.get("id", ""),
-                                       "name": str(event.get("name", "")).split("__")[-1],
-                                       "input": event.get("input") or {}})
-                elif kind == "tool_result":
-                    # Matched back onto its call so a reopened thread shows the
-                    # measurement under the tool that produced it, not a loose list
-                    # of results at the bottom.
-                    for call in reversed(tool_calls):
-                        if call.get("id") == event.get("id"):
-                            call["result"] = event.get("text", "")
-                            call["is_error"] = bool(event.get("is_error"))
-                            break
-                elif kind in ("result", "session") and event.get("session_id"):
-                    latest_session = event["session_id"]
-                elif kind == "error":
-                    text_parts.append(event.get("text", ""))
-                yield json.dumps(event, default=str) + "\n"
+            while True:
+                restart = False
+                async for event in assistant.run(
+                    prompt, studio=studio, resume=attempt, model=settings.model,
+                    permission_mode="default" if settings.confirm_edits else "acceptEdits",
+                    allow_web=settings.allow_web, budget_usd=settings.budget_usd,
+                ):
+                    kind = event.get("type")
+
+                    # A session the CLI no longer has. Retried once from scratch instead
+                    # of surfacing the error, because otherwise the thread is bricked:
+                    # every later message resumes the same dead id, fails identically,
+                    # and the only way out is abandoning the conversation.
+                    if kind == "error" and event.get("resume_failed") and not retried:
+                        retried = True
+                        attempt = None
+                        restart = True
+                        _forget_session(thread_pk)
+                        latest_session = ""
+                        text_parts.clear()
+                        tool_calls.clear()
+                        yield json.dumps({
+                            "type": "notice",
+                            "text": "That conversation's session had expired on this "
+                                    "machine, so I started a fresh one. Earlier messages "
+                                    "are still above but I cannot see them.",
+                        }) + "\n"
+                        break
+                    if kind == "text":
+                        text_parts.append(event.get("text", ""))
+                    elif kind == "tool":
+                        tool_calls.append({"id": event.get("id", ""),
+                                           "name": str(event.get("name", "")).split("__")[-1],
+                                           "input": event.get("input") or {}})
+                    elif kind == "tool_result":
+                        # Matched back onto its call so a reopened thread shows the
+                        # measurement under the tool that produced it, not a loose list
+                        # of results at the bottom.
+                        for call in reversed(tool_calls):
+                            if call.get("id") == event.get("id"):
+                                call["result"] = event.get("text", "")
+                                call["is_error"] = bool(event.get("is_error"))
+                                break
+                    elif kind in ("result", "session") and event.get("session_id"):
+                        if event["session_id"] != latest_session:
+                            latest_session = event["session_id"]
+                            _remember_session(latest_session)
+                    elif kind == "error":
+                        text_parts.append(event.get("text", ""))
+                    yield json.dumps(event, default=str) + "\n"
+
+                if not restart:
+                    break
         except Exception as exc:                                  # pragma: no cover
             log.exception("chat turn failed")
             yield json.dumps({"type": "error",
                               "text": f"{type(exc).__name__}: {exc}"}) + "\n"
-
-        # Persisted after the turn, in its own session: the request's session was
-        # closed when the response started streaming, and writing through a closed
-        # session is how a whole conversation silently fails to save.
-        try:
-            with SessionLocal() as store:
-                row = store.get(Conversation, thread_pk)
-                if row is not None:
-                    store.add(ChatMessage(
-                        conversation_id=row.id, role="assistant",
-                        text="".join(text_parts), tool_calls=tool_calls))
-                    if latest_session:
-                        row.session_id = latest_session
-                    row.model = settings.model
-                    store.commit()
-        except Exception:                                         # pragma: no cover
-            log.exception("could not save the assistant turn")
+        finally:
+            # `finally`, not a plain statement after the loop.
+            #
+            # Closing the window or reloading the page mid-turn makes Starlette close
+            # this generator, which raises GeneratorExit at the `yield` above —
+            # and GeneratorExit and CancelledError are BaseException, so
+            # `except Exception` does not see them. Written after the loop instead,
+            # this save is simply skipped: the assistant's reply is lost AND the
+            # thread keeps no session id, so the next message starts a brand-new
+            # conversation with no memory of this one. A turn here can run for
+            # minutes, which makes a mid-turn reload the normal case rather than the
+            # unlucky one.
+            if not saved:
+                saved = True
+                _save(text_parts, tool_calls, latest_session)
+            _IN_FLIGHT.discard(thread_pk)
 
         yield json.dumps({"type": "done"}) + "\n"
 

@@ -222,7 +222,11 @@ def ensure_env_file(root: Path) -> dict[str, str]:
 
 def check_ffmpeg() -> tuple[bool, str]:
     """Report whether ffmpeg is usable, and how to get it if not."""
+    from . import toolchain
+
     if shutil.which("ffmpeg") and shutil.which("ffprobe"):
+        return True, ""
+    if toolchain.ffmpeg_exe(Path(__file__).resolve().parents[2]).exists():
         return True, ""
 
     instructions = {
@@ -255,12 +259,18 @@ def check_claude() -> tuple[bool, str]:
             + ("  setx ANTHROPIC_API_KEY \"\" && set ANTHROPIC_API_KEY="
                if os.name == "nt" else "  unset ANTHROPIC_API_KEY")
         )
-    if shutil.which("claude") or shutil.which("claude.cmd"):
+    from . import toolchain
+
+    root = Path(__file__).resolve().parents[2]
+    if (shutil.which("claude") or shutil.which("claude.cmd")
+            or toolchain.cli_exe(root).exists()):
         return True, ""
+    # No longer an instruction to go and install two runtimes by hand: the setup page
+    # in the app does it. This line exists for someone reading the console.
     return False, (
-        "The Claude Code CLI was not found, so the chat cannot run. Everything else "
-        "works.\n  npm install -g @anthropic-ai/claude-code\n"
-        "  then sign in with your Claude subscription — no API key."
+        "The Claude Code CLI is not installed yet, so the chat cannot run. Everything "
+        "else works.\n  The app will offer to install it — or do it yourself with\n"
+        "  npm install -g @anthropic-ai/claude-code"
     )
 
 

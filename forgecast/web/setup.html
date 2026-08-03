@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Setting up · Forgecast{% endblock %}
+
+{% block head %}
+<style>
+  .setup { max-width: 640px; margin: 6vh auto 0; }
+  .setup .glyph {
+    width: 56px; height: 56px; margin: 0 auto 22px; border-radius: 16px;
+    display: grid; place-items: center; font-size: 22px; color: var(--accent);
+    background: radial-gradient(circle at 50% 40%, rgba(94,234,212,.16), transparent 70%);
+    border: 1px solid var(--line);
+  }
+  .setup h1 { text-align: center; font-size: 27px; }
+  .setup .lede { text-align: center; color: var(--muted); margin: 0 auto 30px; max-width: 46ch; }
+
+  .tool {
+    display: flex; align-items: center; gap: 13px;
+    padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--raise); margin-bottom: 9px;
+  }
+  .tool .name { font-size: 13.5px; font-weight: 550; }
+  .tool .note { font-size: 12px; color: var(--faint); margin-top: 2px; }
+  .tool .verdict { margin-left: auto; font-size: 11.5px; }
+  .tool.ok .verdict { color: var(--ok); }
+  .tool.todo .verdict { color: var(--warn); }
+  .tool.manual .verdict { color: var(--muted); }
+
+  .bar { height: 5px; border-radius: 999px; background: var(--raise-3); overflow: hidden;
+         margin: 20px 0 8px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent);
+           transition: width .3s ease; }
+  .bar.sweep i { width: 34% !important; animation: sweep 1.5s ease-in-out infinite; }
+  @keyframes sweep { 0% { margin-left: -34%; } 100% { margin-left: 100%; } }
+  .barline { display: flex; font-size: 12px; color: var(--muted); }
+
+  .log {
+    margin-top: 18px; background: var(--raise); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px 14px; max-height: 190px; overflow-y: auto;
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.6; color: var(--text-2);
+  }
+  .log div { white-space: pre-wrap; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="setup">
+  <div class="glyph">◆</div>
+  <h1 id="head">{% if ready %}Everything is ready{% else %}A couple of things to install{% endif %}</h1>
+  <p class="lede" id="lede">
+    {% if ready %}
+      Nothing to download. Open the studio and start.
+    {% else %}
+      They go into <code>runtime</code> inside this folder, not onto your machine —
+      deleting the folder is the uninstall. This takes a minute or two once.
+    {% endif %}
+  </p>
+
+  <div id="tools">
+    {% for tool in tools %}
+      <div class="tool {{ 'ok' if tool.present else ('manual' if tool.manual else 'todo') }}"
+           data-key="{{ tool.key }}">
+        <span class="dot {{ 'dot-ok' if tool.present else ('dot-idle' if tool.manual else 'dot-warn') }}"></span>
+        <span>
+          <span class="name">{{ tool.label }}</span>
+          <span class="note">
+            {% if tool.present %}{{ tool.where }}
+            {% elif tool.manual %}Install it yourself: <code>{{ tool.manual }}</code>
+            {% else %}will be downloaded into runtime{% endif %}
+          </span>
+        </span>
+        <span class="verdict">
+          {% if tool.present %}found{% elif tool.manual %}needs you{% else %}missing{% endif %}
+        </span>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div id="progress" hidden>
+    <div class="bar" id="bar"><i></i></div>
+    <div class="barline"><span id="step">Starting…</span><span class="grow"></span>
+      <span id="pct" class="mono"></span></div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="row" style="margin-top:24px;justify-content:center" id="actions">
+    {% if not ready %}
+      <button class="primary" id="btn-install">Install them</button>
+      <button id="btn-skip">Skip for now</button>
+    {% else %}
+      <a class="btn btn-primary" href="/">Open the studio</a>
+    {% endif %}
+  </div>
+  <p class="muted" style="text-align:center;font-size:12px;margin-top:14px" id="foot">
+    {% if not ready %}
+      Skipping is fine — everything except rendering and the chat works without them,
+      and you can come back here any time.
+    {% endif %}
+  </p>
+</div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const mb = n => (n / 1048576).toFixed(1) + ' MB';
+
+  $('#btn-skip')?.addEventListener('click', async () => {
+    await fetch('/api/setup/skip', {method: 'POST'});
+    location.href = '/';
+  });
+
+  $('#btn-install')?.addEventListener('click', async () => {
+    $('#btn-install').disabled = true;
+    $('#btn-skip').disabled = true;
+    $('#progress').hidden = false;
+    $('#foot').textContent = 'Leave this open. It is downloading into runtime.';
+
+    const logBox = $('#log'), bar = $('#bar'), fill = bar.querySelector('i');
+
+    const response = await fetch('/api/setup/install', {method: 'POST'});
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    for (;;) {
+      const {value, done} = await reader.read();
+      if (value) buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        let event;
+        try { event = JSON.parse(line); } catch { continue; }
+
+        if (event.type === 'log') {
+          const row = document.createElement('div');
+          row.textContent = event.text;
+          logBox.append(row);
+          logBox.scrollTop = logBox.scrollHeight;
+        } else if (event.type === 'progress') {
+          $('#step').textContent = event.step || 'Working…';
+          // Two levels of progress, and the honest one wins. Within a download the
+          // byte count is real; between downloads only the weights are, so the bar
+          // sweeps rather than pretending to know.
+          if (event.total > 0) {
+            bar.classList.remove('sweep');
+            const within = event.bytes / event.total;
+            const overall = (event.weight_done + within * (event.weight_total - event.weight_done)) /
+                            Math.max(1, event.weight_total);
+            fill.style.width = Math.min(98, overall * 100).toFixed(1) + '%';
+            $('#pct').textContent = `${mb(event.bytes)} of ${mb(event.total)}`;
+          } else {
+            bar.classList.add('sweep');
+            $('#pct').textContent = '';
+          }
+        } else if (event.type === 'done') {
+          bar.classList.remove('sweep');
+          fill.style.width = '100%';
+          $('#pct').textContent = '';
+          $('#step').textContent = event.ok ? 'Done.' : 'Finished with problems.';
+          $('#head').textContent = event.ok ? 'Ready' : 'Not quite';
+          $('#lede').textContent = event.ok
+            ? 'Everything is in place. The chat needs one more thing: sign in to Claude with your subscription.'
+            : 'Some of it did not install. The log says what happened — you can retry, or skip and do it by hand.';
+          for (const tool of event.tools || []) {
+            const row = document.querySelector(`.tool[data-key="${tool.key}"]`);
+            if (!row) continue;
+            row.className = 'tool ' + (tool.present ? 'ok' : (tool.manual ? 'manual' : 'todo'));
+            row.querySelector('.dot').className =
+              'dot ' + (tool.present ? 'dot-ok' : (tool.manual ? 'dot-idle' : 'dot-warn'));
+            row.querySelector('.verdict').textContent =
+              tool.present ? 'found' : (tool.manual ? 'needs you' : 'missing');
+            if (tool.present) row.querySelector('.note').textContent = tool.where;
+          }
+          $('#actions').innerHTML = event.ok
+            ? '<a class="btn btn-primary" href="/settings#claude">Sign in to Claude</a>' +
+              '<a class="btn" href="/">Open the studio</a>'
+            : '<button class="primary" onclick="location.reload()">Try again</button>' +
+              '<a class="btn" href="/">Carry on anyway</a>';
+          $('#foot').textContent = '';
+        }
+      }
+      if (done) break;
+    }
+  });
+</script>
+{% endblock %}
