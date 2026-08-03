@@ -37,9 +37,17 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Installing the CLI needs Node, which is a second runtime and worth naming rather
-# than hiding behind "installation failed".
+# The npm route, for a platform whose wheel carries no bundled binary. Named rather
+# than hidden behind "installation failed", because it needs Node — a second runtime.
 INSTALL_HINT = "npm install -g @anthropic-ai/claude-code"
+
+# Windows needs a different answer, and giving it the line above would be actively
+# wrong: npm produces a `claude.cmd` shim that the SDK refuses to spawn, so following
+# that instruction leaves you exactly where you started with no idea why.
+WINDOWS_NATIVE_HINT = (
+    "In PowerShell:  irm https://claude.ai/install.ps1 | iex\n"
+    "(npm's claude.cmd shim will not work — the SDK refuses to run batch scripts.)"
+)
 
 
 @dataclass
@@ -66,21 +74,77 @@ class AuthStatus:
         }
 
 
-def find_cli() -> str | None:
-    """The CLI on PATH, or a copy inside the app folder.
+def _bundled_cli() -> str | None:
+    """The CLI that ships inside the `claude-agent-sdk` wheel, if this one has it.
 
-    `claude.cmd` as well as `claude`: on Windows the shim npm installs is a .cmd and
-    `shutil.which("claude")` does not find it unless PATHEXT happens to cooperate.
+    Worth checking first, and worth knowing about: the platform wheels bundle a native
+    Claude Code binary, and the SDK resolves it before it looks at PATH. So on most
+    machines `pip install claude-agent-sdk` has already provided the CLI and there is
+    nothing to install — which is the difference between a first run that can chat and
+    one that tells you to go and set up Node.
+
+    Resolved by importing the SDK and asking where its own package lives rather than
+    by hard-coding a path, so a wheel that moves the directory does not silently make
+    this return None.
     """
-    for name in ("claude", "claude.cmd"):
+    try:
+        import claude_agent_sdk
+    except ImportError:
+        return None
+
+    name = "claude.exe" if os.name == "nt" else "claude"
+    candidate = Path(claude_agent_sdk.__file__).resolve().parent / "_bundled" / name
+    return str(candidate) if candidate.is_file() else None
+
+
+def _spawnable(path: str) -> bool:
+    """Would the SDK actually run this, or refuse it?
+
+    On Windows it refuses a `.cmd` or `.bat`, and npm's global install of the CLI is
+    exactly that — a `claude.cmd` shim. Reporting it as connected produces the worst
+    kind of failure: setup goes green, the status chip says connected, and the first
+    message dies with a batch-script refusal. So a shim is treated as *not found*,
+    which routes someone to the fix instead of to a contradiction.
+    """
+    if os.name != "nt":
+        return True
+    return not path.replace("\\", "/").rsplit("/", 1)[-1].lower().endswith((".cmd", ".bat"))
+
+
+def find_cli() -> str | None:
+    """A CLI this app can actually spawn, or None.
+
+    Order matters: the wheel's bundled binary, then PATH. On Windows an npm shim on
+    PATH is skipped rather than returned, for the reason in `_spawnable`.
+    """
+    bundled = _bundled_cli()
+    if bundled:
+        return bundled
+
+    for name in ("claude.exe", "claude") if os.name == "nt" else ("claude",):
         found = shutil.which(name)
-        if found:
+        if found and _spawnable(found):
             return found
+
     local = Path(__file__).resolve().parents[2] / "runtime" / "node"
-    for name in ("claude.cmd", "claude"):
-        if (local / name).exists():
-            return str(local / name)
+    for name in ("claude.exe", "claude") if os.name == "nt" else ("bin/claude", "claude"):
+        candidate = local / name
+        if candidate.is_file() and _spawnable(str(candidate)):
+            return str(candidate)
     return None
+
+
+def shim_only() -> bool:
+    """True when the only CLI on this machine is one Windows refuses to spawn.
+
+    Its own question because it needs its own answer. "Not installed" sends you to an
+    installer; "installed, but as a shim this SDK will not run" sends you to a
+    different installer, and conflating them means following instructions that cannot
+    work.
+    """
+    if os.name != "nt" or find_cli():
+        return False
+    return bool(shutil.which("claude") or shutil.which("claude.cmd"))
 
 
 def _credentials() -> dict:
@@ -144,14 +208,29 @@ def check() -> AuthStatus:
         )
 
     if not cli:
+        if shim_only():
+            return AuthStatus(
+                ok=False,
+                headline="The installed CLI is one Windows cannot run directly",
+                detail=(
+                    "There is a Claude CLI on this machine, but it is the `claude.cmd` "
+                    "shim that npm installs, and the agent SDK refuses to spawn a batch "
+                    "script. Installing the native build fixes it — it is a different "
+                    "installer, not the same one again."
+                ),
+                fixes=[WINDOWS_NATIVE_HINT,
+                       "Then press Check again — no restart needed."],
+            )
         return AuthStatus(
             ok=False,
             headline="The Claude Code CLI is not installed",
             detail=(
                 "The agent drives the Claude Code CLI, so it cannot start without it. "
-                "It needs Node.js, which is a separate runtime from Python."
+                "Most installs already have it: the claude-agent-sdk wheel bundles a "
+                "native build, so reinstalling dependencies is usually enough."
             ),
-            fixes=[INSTALL_HINT, "Then press Check again — no restart needed."],
+            fixes=([WINDOWS_NATIVE_HINT] if os.name == "nt" else [INSTALL_HINT])
+                  + ["Then press Check again — no restart needed."],
         )
 
     raw = _credentials()

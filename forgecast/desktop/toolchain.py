@@ -159,36 +159,57 @@ class Tool:
 def inventory(root: Path) -> list[Tool]:
     """What is here, before a single byte is downloaded.
 
-    A tool already on PATH counts. Downloading a second ffmpeg next to the one
-    someone deliberately installed is not being helpful.
+    A tool already on PATH counts. Downloading a second ffmpeg next to the one someone
+    deliberately installed is not being helpful.
+
+    The CLI is asked about through `agent.auth.find_cli`, never by looking for the name
+    directly, and that is not tidiness. The SDK resolves its own bundled binary before
+    it looks at PATH, and on Windows it refuses the `claude.cmd` shim npm installs — so
+    a probe that just checks "is there something called claude" reports connected on a
+    machine where the first message will fail with a batch-script refusal. One
+    question, one answer, in one place.
     """
+    from ..agent import auth
+
     tools: list[Tool] = []
 
     on_path = shutil.which("ffmpeg") and shutil.which("ffprobe")
-    bundled = ffmpeg_exe(root).exists()
+    bundled_ffmpeg = ffmpeg_exe(root).exists()
     manual = ""
-    if not (on_path or bundled) and os.name != "nt":
+    if not (on_path or bundled_ffmpeg) and os.name != "nt":
         manual = ("brew install ffmpeg" if sys.platform == "darwin"
                   else "sudo apt install ffmpeg")
     tools.append(Tool(
         key="ffmpeg", label="ffmpeg (rendering)", weight=WEIGHT_FFMPEG,
-        present=bool(on_path or bundled),
-        where=str(ffmpeg_exe(root)) if bundled else (shutil.which("ffmpeg") or ""),
+        present=bool(on_path or bundled_ffmpeg),
+        where=(str(ffmpeg_exe(root)) if bundled_ffmpeg else (shutil.which("ffmpeg") or "")),
         manual=manual,
     ))
 
-    have_node = node_exe(root).exists() or bool(shutil.which("node"))
-    tools.append(Tool(
-        key="node", label="Node.js", weight=WEIGHT_NODE, present=have_node,
-        where=str(node_exe(root)) if node_exe(root).exists() else (shutil.which("node") or ""),
-    ))
-
-    cli = cli_exe(root).exists() or shutil.which("claude") or shutil.which("claude.cmd")
+    cli = auth.find_cli()
+    cli_manual = ""
+    if not cli and os.name == "nt":
+        # npm's shim is refused, so the only fix on Windows is the native installer —
+        # and it is a PowerShell one-liner this app has no business running for you.
+        cli_manual = "irm https://claude.ai/install.ps1 | iex   (in PowerShell)"
     tools.append(Tool(
         key="claude", label="Claude Code CLI (the chat)", weight=WEIGHT_CLI,
-        present=bool(cli),
-        where=str(cli_exe(root)) if cli_exe(root).exists() else (cli or ""),
+        present=bool(cli), where=cli or "", manual=cli_manual,
     ))
+
+    # Node is listed only when it is actually needed: as the way to get a CLI on a
+    # platform whose wheel carries no bundled binary. With the CLI already present it
+    # is a 30 MB download for nothing, and a setup page that offers it anyway invites
+    # the reasonable question of why an app that makes videos needs a JavaScript
+    # runtime.
+    if not cli and os.name != "nt":
+        have_node = node_exe(root).exists() or bool(shutil.which("node"))
+        tools.append(Tool(
+            key="node", label="Node.js (to install the CLI)", weight=WEIGHT_NODE,
+            present=have_node,
+            where=(str(node_exe(root)) if node_exe(root).exists()
+                   else (shutil.which("node") or "")),
+        ))
     return tools
 
 

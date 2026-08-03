@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Files · Forgecast{% endblock %}
+
+{% block head %}
+<style>
+  /* Two columns that scroll independently. A single scrolling page would move the
+     tree out of view while you read a file, which is the one thing a browser like
+     this must not do. */
+  .fb { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px;
+        align-items: start; margin-top: 22px; }
+  .fb-tree, .fb-view { background: var(--raise); border: 1px solid var(--line);
+                       border-radius: var(--radius); }
+  .fb-tree { position: sticky; top: 22px; max-height: calc(100vh - 120px);
+             display: flex; flex-direction: column; }
+  .fb-head { padding: 13px 15px; border-bottom: 1px solid var(--line); }
+  .fb-head .where { font-family: var(--mono); font-size: 11px; color: var(--faint);
+                    margin-top: 5px; word-break: break-all; }
+  .fb-scroll { overflow: auto; padding: 8px 6px 12px; flex: 1; min-height: 0; }
+
+  .kids { margin-left: 13px; border-left: 1px solid var(--line); padding-left: 5px; }
+  .node { display: flex; align-items: center; gap: 7px; width: 100%;
+          padding: 5px 8px; border: 0; background: none; border-radius: var(--radius-sm);
+          font-size: 13px; color: var(--text-2); text-align: left; cursor: pointer; }
+  .node:hover { background: var(--raise-2); border-color: transparent; color: var(--text); }
+  .node.on { background: var(--accent-dim); color: var(--accent); }
+  .node .tw { width: 11px; flex: none; color: var(--faint); font-size: 9px; }
+  .node .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .node .sz { font-size: 10.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .node.dir .nm { font-weight: 550; color: var(--text); }
+  .node.on .nm { color: var(--accent); }
+
+  .fb-view { min-height: 340px; }
+  .fb-title { padding: 15px 18px; border-bottom: 1px solid var(--line);
+              display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .fb-title b { font-size: 14.5px; font-weight: 600; }
+  .fb-facts { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .fb-body { padding: 18px; }
+  .fb-empty { color: var(--muted); font-size: 14px; padding: 60px 18px; text-align: center; }
+  .fb-note { font-size: 12.5px; color: var(--warn); margin: 0 0 12px; }
+  .fb-body pre { margin: 0; background: var(--raise-2); border: 1px solid var(--line);
+                 border-radius: var(--radius-sm); padding: 14px; overflow: auto;
+                 max-height: 66vh; font-family: var(--mono); font-size: 12.5px;
+                 line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .fb-body img, .fb-body video { max-width: 100%; border-radius: var(--radius-sm);
+                                 border: 1px solid var(--line); display: block; }
+  .fb-body audio { width: 100%; }
+
+  @media (max-width: 900px) {
+    .fb { grid-template-columns: 1fr; }
+    .fb-tree { position: static; max-height: 420px; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<h1>Files</h1>
+<p class="muted" style="margin-top:0;max-width:70ch">
+  Everything a run wrote, read-only: scripts, stills, voice takes and renders, beside
+  the motion presets and learned styles. Sizes and times are here because the question
+  a stalled run raises is not what the graph says — it is whether the stage put
+  anything on disk.
+</p>
+
+<div class="fb">
+  <div class="fb-tree">
+    <div class="fb-head">
+      <b style="font-size:13px">Storage</b>
+      <div class="where">{{ storage_dir }}</div>
+    </div>
+    <div class="fb-scroll" id="tree"></div>
+  </div>
+
+  <div class="fb-view">
+    <div class="fb-title" id="title" hidden>
+      <b id="fname"></b>
+      <span class="fb-facts" id="ffacts"></span>
+    </div>
+    <div class="fb-body" id="body">
+      <div class="fb-empty">Select a file on the left to view it.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // The first level came down with the page; every level below it is one request,
+  // made when a folder is opened. The storage directory holds gigabytes of renders,
+  // and a recursive listing on page load would stat the lot before drawing anything.
+  const ROOT = {{ root | tojson }};
+  const SELECTED = {{ selected | tojson }};
+
+  const tree = document.getElementById('tree');
+  const body = document.getElementById('body');
+  const title = document.getElementById('title');
+
+  function esc(text) {
+    const box = document.createElement('div');
+    box.textContent = text == null ? '' : String(text);
+    return box.innerHTML;
+  }
+
+  function row(entry) {
+    const line = document.createElement('button');
+    line.className = 'node' + (entry.is_dir ? ' dir' : '');
+    line.dataset.path = entry.path;
+    line.innerHTML =
+      `<span class="tw">${entry.is_dir ? '▸' : ''}</span>` +
+      `<span class="nm">${esc(entry.name)}</span>` +
+      `<span class="sz">${esc(entry.is_dir ? '' : entry.size_label)}</span>`;
+    line.title = `${entry.path || entry.name} · ${entry.modified_label}`;
+
+    const wrap = document.createElement('div');
+    wrap.appendChild(line);
+
+    if (entry.is_dir) {
+      const kids = document.createElement('div');
+      kids.className = 'kids';
+      kids.hidden = true;
+      wrap.appendChild(kids);
+      line.onclick = () => toggle(line, kids, entry.path);
+    } else {
+      line.onclick = () => openFile(entry.path, line);
+    }
+    return wrap;
+  }
+
+  function draw(listing, into) {
+    into.textContent = '';
+    for (const entry of listing.entries) into.appendChild(row(entry));
+    if (!listing.entries.length) {
+      const none = document.createElement('div');
+      none.className = 'muted';
+      none.style.cssText = 'font-size:12px;padding:5px 9px';
+      none.textContent = 'empty';
+      into.appendChild(none);
+    }
+    if (listing.truncated) {
+      const cut = document.createElement('div');
+      cut.className = 'muted';
+      cut.style.cssText = 'font-size:11.5px;padding:5px 9px;color:var(--warn)';
+      cut.textContent = `${listing.skipped} more not shown`;
+      into.appendChild(cut);
+    }
+  }
+
+  async function toggle(line, kids, path) {
+    const twist = line.querySelector('.tw');
+    if (!kids.hidden) {
+      kids.hidden = true;
+      twist.textContent = '▸';
+      return;
+    }
+    kids.hidden = false;
+    twist.textContent = '▾';
+    if (kids.dataset.loaded) return;
+
+    kids.innerHTML = '<div class="muted" style="font-size:12px;padding:5px 9px">reading…</div>';
+    try {
+      const r = await fetch('/api/files/list?path=' + encodeURIComponent(path));
+      if (!r.ok) throw new Error('that folder is no longer there');
+      draw(await r.json(), kids);
+      kids.dataset.loaded = '1';
+    } catch (e) {
+      kids.innerHTML = `<div class="muted" style="font-size:12px;padding:5px 9px;color:var(--err)">${esc(e.message)}</div>`;
+    }
+  }
+
+  async function openFile(path, line) {
+    document.querySelectorAll('.node.on').forEach(o => o.classList.remove('on'));
+    if (line) line.classList.add('on');
+    body.innerHTML = '<div class="fb-empty">Reading…</div>';
+
+    let file;
+    try {
+      const r = await fetch('/api/files/content?path=' + encodeURIComponent(path));
+      if (!r.ok) throw new Error('That file is not there any more.');
+      file = await r.json();
+    } catch (e) {
+      title.hidden = true;
+      body.innerHTML = `<div class="fb-empty" style="color:var(--err)">${esc(e.message)}</div>`;
+      return;
+    }
+
+    title.hidden = false;
+    document.getElementById('fname').textContent = file.name;
+    document.getElementById('ffacts').textContent =
+      `${file.size_label} · modified ${file.modified_label} · ${file.path}`;
+
+    const note = file.note ? `<p class="fb-note">${esc(file.note)}</p>` : '';
+    if (file.kind === 'text') {
+      body.innerHTML = note + `<pre>${esc(file.text)}</pre>`;
+    } else if (file.kind === 'image') {
+      body.innerHTML = note + `<img src="${esc(file.media_url)}" alt="${esc(file.name)}">`;
+    } else if (file.kind === 'video') {
+      // preload="metadata": a run folder full of takes must not start pulling
+      // gigabytes the moment one of them is clicked.
+      body.innerHTML = note +
+        `<video controls preload="metadata" src="${esc(file.media_url)}"></video>`;
+    } else if (file.kind === 'audio') {
+      body.innerHTML = note +
+        `<audio controls preload="metadata" src="${esc(file.media_url)}"></audio>`;
+    } else {
+      body.innerHTML = `<div class="fb-empty">${esc(file.note)}</div>`;
+    }
+  }
+
+  draw(ROOT, tree);
+  if (SELECTED) openFile(SELECTED, null);
+</script>
+{% endblock %}

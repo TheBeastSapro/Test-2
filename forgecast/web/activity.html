@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}MCP Activity · Forgecast{% endblock %}
+
+{% block head %}
+<style>
+  /* Scoped with a `log-` prefix rather than added to app.css. Two agents editing one
+     stylesheet is a merge conflict in the one file every page depends on. */
+
+  .log-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+               margin-top: 22px; }
+  @media (max-width: 900px) { .log-stats { grid-template-columns: 1fr; } }
+  .log-stat { background: var(--raise); border: 1px solid var(--line);
+              border-radius: var(--radius); padding: 16px 18px; }
+  .log-stat b { display: block; font-size: 26px; font-weight: 620; letter-spacing: -.02em;
+                font-variant-numeric: tabular-nums; }
+  .log-stat span { font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+                   color: var(--faint); font-weight: 620; }
+  .log-stat.bad b { color: var(--err); }
+
+  /* The share bar is the reason the breakdown is worth reading at a glance: a count
+     alone does not say whether 40 reads is the log or a corner of it. */
+  .log-share { display: flex; align-items: center; gap: 9px; min-width: 120px; }
+  .log-share i { display: block; height: 5px; border-radius: 999px;
+                 background: var(--accent); opacity: .75; min-width: 2px; }
+  .log-share em { font-style: normal; color: var(--faint); font-size: 12px;
+                  font-variant-numeric: tabular-nums; }
+
+  .log-filters { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .log-filters label { margin: 0 0 5px; }
+  .log-filters select { min-width: 220px; }
+  .log-check { display: flex; align-items: center; gap: 7px; font-size: 13px;
+               color: var(--text-2); padding-bottom: 9px; }
+  .log-check input { width: auto; }
+
+  .log-call { border-bottom: 1px solid var(--line); }
+  .log-call:last-child { border-bottom: 0; }
+  .log-call summary { display: flex; align-items: baseline; gap: 12px;
+                      padding: 11px 4px; cursor: pointer; list-style: none; }
+  .log-call summary::-webkit-details-marker { display: none; }
+  .log-call summary:hover { background: var(--raise-2); }
+  .log-call .chev { color: var(--faint); font-size: 10px; width: 10px; flex: none;
+                    transition: transform .15s ease; }
+  .log-call[open] .chev { transform: rotate(90deg); }
+  .log-call .tool { font-family: var(--mono); font-size: 12.5px; font-weight: 550;
+                    color: var(--text); flex: none; }
+  .log-call.bad .tool { color: var(--err); }
+  .log-call .args { font-family: var(--mono); font-size: 12px; color: var(--faint);
+                    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+                    white-space: nowrap; }
+  .log-call .where { font-size: 12px; color: var(--muted); flex: none;
+                     max-width: 22ch; overflow: hidden; text-overflow: ellipsis;
+                     white-space: nowrap; }
+  .log-call .when { font-size: 11.5px; color: var(--faint); flex: none;
+                    font-variant-numeric: tabular-nums; }
+  .log-body { padding: 2px 4px 16px 26px; }
+  .log-body h4 { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase;
+                 color: var(--faint); font-weight: 620; margin: 12px 0 6px; }
+  .log-body pre { margin: 0; background: var(--raise-2); border: 1px solid var(--line);
+                  border-radius: var(--radius-sm); padding: 12px 13px;
+                  font-family: var(--mono); font-size: 12px; line-height: 1.55;
+                  white-space: pre-wrap; word-break: break-word;
+                  max-height: 340px; overflow: auto; color: var(--text-2); }
+  .log-call.bad .log-body pre.result { color: #fca5a5; border-color: #4a2222; }
+  .log-cut { font-size: 11.5px; color: var(--faint); margin: 6px 0 0; }
+
+  .log-pager { display: flex; align-items: center; gap: 14px; margin-top: 18px;
+               font-size: 13px; color: var(--muted); }
+  .log-none { color: var(--muted); font-size: 13.5px; margin: 0; }
+</style>
+{% endblock %}
+
+{% block body %}
+<h1>MCP Activity</h1>
+<p class="muted" style="margin-top:0;max-width:70ch">
+  Every tool call the agent has made for you, across every conversation. The chat shows
+  these one thread at a time, which answers what it just did — this answers what it
+  spends its calls on.
+</p>
+
+<div class="log-stats">
+  <div class="log-stat">
+    <b>{{ total }}</b>
+    <span>{{ 'call' if total == 1 else 'calls' }}</span>
+  </div>
+  <div class="log-stat">
+    <b>{{ breakdown | length }}</b>
+    <span>{{ 'tool used' if breakdown | length == 1 else 'tools used' }}</span>
+  </div>
+  <div class="log-stat {{ 'bad' if failures }}">
+    <b>{{ failures }}</b>
+    <span>{{ 'failure' if failures == 1 else 'failures' }}</span>
+  </div>
+</div>
+
+{% if total %}
+  <h2>What the calls went on</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>Tool</th><th>Calls</th><th>Share</th><th>Failed</th></tr>
+      </thead>
+      <tbody>
+        {% for row in breakdown %}
+          <tr>
+            <td><a href="/activity?tool={{ row.name | urlencode }}" class="mono">{{ row.name }}</a></td>
+            <td style="font-variant-numeric:tabular-nums">{{ row.calls }}</td>
+            <td>
+              <span class="log-share">
+                <i style="width:{{ [row.share, 2] | max }}%"></i>
+                <em>{{ row.share }}%</em>
+              </span>
+            </td>
+            <td>
+              {% if row.failed %}
+                <span class="status failed">{{ row.failed }}</span>
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
+<h2>Tool log</h2>
+<div class="card">
+  {# A GET form, so every view of this page is a URL you can bookmark or send to
+     someone. A filter held in JavaScript state is a filter nobody can quote. #}
+  <form method="get" action="/activity" class="log-filters">
+    <div>
+      <label for="tool">Tool</label>
+      <select id="tool" name="tool">
+        <option value="">Every tool</option>
+        {% for name in tools %}
+          <option value="{{ name }}" {{ 'selected' if name == tool }}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <label class="log-check" for="failed">
+      <input type="checkbox" id="failed" name="failed" value="1"
+             {{ 'checked' if failures_only }}>
+      Failures only
+    </label>
+    <div style="padding-bottom:1px"><button class="primary">Filter</button></div>
+    {% if tool or failures_only %}
+      <div style="padding-bottom:9px"><a href="{{ clear_url }}">Clear</a></div>
+    {% endif %}
+  </form>
+
+  <div style="margin-top:16px">
+    {% if not total %}
+      <p class="log-none">
+        No MCP activity yet. The moment the agent reads a channel, scores a cohort or
+        starts a run, the call lands here.
+      </p>
+    {% elif not calls %}
+      <p class="log-none">
+        No calls match that filter.
+        {% if failures_only %}Nothing has failed{% if tool %} in <code>{{ tool }}</code>{% endif %},
+        which is the answer you wanted.{% endif %}
+        <a href="{{ clear_url }}">Show everything</a>.
+      </p>
+    {% else %}
+      {% for call in calls %}
+        <details class="log-call {{ 'bad' if call.failed }}">
+          <summary>
+            <span class="chev">▶</span>
+            <span class="tool">{{ call.name }}</span>
+            {% if call.failed %}<span class="status failed">failed</span>{% endif %}
+            <span class="args">{{ call.args_preview }}{{ '…' if call.args_cut }}</span>
+            <span class="where" title="conversation {{ call.conversation_id }}">{{ call.conversation }}</span>
+            <span class="when">{{ call.at }}</span>
+          </summary>
+          <div class="log-body">
+            <h4>Arguments</h4>
+            <pre>{{ call.arguments }}</pre>
+            <h4>Result</h4>
+            {% if call.has_result %}
+              <pre class="result">{{ call.result }}</pre>
+              {% if call.result_cut %}
+                {# Said out loud, because a result cut at the boundary reads as the
+                   whole thing and gets reasoned about as if nothing were missing. #}
+                <p class="log-cut">… {{ "{:,}".format(call.result_cut) }} more characters — the
+                  full result is in the conversation.</p>
+              {% endif %}
+            {% else %}
+              <p class="log-cut">
+                Nothing was recorded back. Either the call was still running when the
+                turn ended, or the tool returned no output.
+              </p>
+            {% endif %}
+          </div>
+        </details>
+      {% endfor %}
+
+      <div class="log-pager">
+        <span>Showing {{ first_index }}–{{ last_index }} of {{ matching }}{% if matching != total %} matching{% endif %}
+          {{ 'call' if matching == 1 else 'calls' }}</span>
+        <span class="grow"></span>
+        {% if prev_url %}<a href="{{ prev_url }}">← Newer</a>{% endif %}
+        <span>Page {{ page }} of {{ pages }}</span>
+        {% if next_url %}<a href="{{ next_url }}">Older →</a>{% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

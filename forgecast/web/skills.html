@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Skills · Forgecast{% endblock %}
+
+{% block head %}
+<style>
+  /* Two columns, list then editor. The editor is the wide one because a skill is
+     prose: a document being written in a 320px column gets written short. */
+  .skills { display: grid; grid-template-columns: 268px minmax(0, 1fr); gap: 18px;
+            align-items: start; margin-top: 24px; }
+  @media (max-width: 940px) { .skills { grid-template-columns: 1fr; } }
+
+  .shelf { background: var(--raise); border: 1px solid var(--line);
+           border-radius: var(--radius); overflow: hidden; }
+  .shelf a { display: block; padding: 11px 13px; border-bottom: 1px solid var(--line);
+             color: var(--text); text-decoration: none; }
+  .shelf a:last-child { border-bottom: 0; }
+  .shelf a:hover { background: var(--raise-2); text-decoration: none; }
+  .shelf a.on { background: var(--accent-dim); }
+  .shelf .nm { font-weight: 600; font-size: 13.5px; }
+  .shelf .use { font-size: 11.5px; color: var(--muted); line-height: 1.4; margin-top: 3px; }
+  .shelf .id { font-size: 10.5px; color: var(--faint); margin-top: 4px;
+               font-family: var(--mono); }
+
+  /* The header the agent prints when it loads one, shown here so the name and the
+     slug are seen in the shape they will actually appear in the transcript. */
+  .loaded { font-family: var(--mono); font-size: 12px; color: var(--accent);
+            background: var(--accent-dim); border: 1px solid var(--line);
+            border-radius: var(--radius); padding: 8px 12px; margin-bottom: 16px;
+            overflow-x: auto; white-space: nowrap; }
+
+  .doc { min-height: 460px; font-family: var(--mono); font-size: 12.5px;
+         line-height: 1.62; }
+  .editor-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+                 margin-top: 16px; }
+  .editor-foot .note { font-size: 12px; color: var(--faint); }
+  .fmt { font-size: 12px; color: var(--muted); line-height: 1.55; margin: 14px 0 0;
+         max-width: 74ch; }
+  .fmt code { color: var(--text); }
+</style>
+{% endblock %}
+
+{% block body %}
+<h1>Skills</h1>
+<p class="muted" style="margin-top:0;max-width:74ch">
+  A skill is a named instruction document the agent loads when it applies — how to write
+  a hook, how to structure a reveal, what a caption card may do. Styles are
+  <em>measured</em> off a creator's videos and should not be hand-edited. These are the
+  other half: craft, written as prose, argued with, and edited here.
+</p>
+
+{% if saved %}<div class="banner good" style="margin-top:16px">Saved · {{ saved }}</div>{% endif %}
+{% if error %}<div class="banner" style="margin-top:16px">{{ error }}</div>{% endif %}
+
+<div class="skills">
+
+  <div>
+    <div class="shelf">
+      {% for item in skills %}
+        <a href="/skills-library?selected={{ item.slug }}"
+           class="{{ 'on' if chosen and chosen.slug == item.slug }}">
+          <div class="nm">{{ item.name }}</div>
+          <div class="use">{{ item.summary }}</div>
+          <div class="id">{{ item.slug }} · {{ item.words }} words</div>
+        </a>
+      {% else %}
+        <div style="padding:13px;font-size:12.5px;color:var(--muted)">
+          Nothing here yet.
+        </div>
+      {% endfor %}
+    </div>
+    <a class="btn w-full" style="margin-top:12px" href="/skills-library?new=1">
+      Add a skill</a>
+  </div>
+
+  <div class="card">
+    {% if chosen and not creating %}
+      <div class="loaded">SKILL / {{ chosen.name }} / {{ chosen.slug }}</div>
+    {% endif %}
+
+    <form method="post" action="/skills-library/save">
+      {# The slug the editor started from. It is what lets a rename re-file the
+         document instead of leaving a second copy of it in the library. #}
+      <input type="hidden" name="slug" value="{{ chosen.slug if chosen and not creating else '' }}">
+
+      <label for="name">Name</label>
+      <input id="name" name="name" required maxlength="120"
+             placeholder="How to write a hook"
+             value="{{ chosen.name if chosen and not creating else '' }}">
+
+      <label for="when_to_use">When to use it</label>
+      <input id="when_to_use" name="when_to_use" maxlength="300"
+             placeholder="Writing or rewriting the first fifteen seconds of a script"
+             value="{{ chosen.when_to_use if chosen and not creating else '' }}">
+      <div style="font-size:12px;color:var(--faint);margin-top:6px">
+        This one line decides whether the agent reads the rest. Written vaguely
+        (&ldquo;for scripts&rdquo;) it either loads every time or never.
+      </div>
+
+      <label for="body">The instructions</label>
+      <textarea id="body" name="body" class="doc" spellcheck="false"
+                placeholder="Markdown. Concrete numbers beat adjectives — the agent can act on &ldquo;fourteen words or fewer&rdquo; and cannot act on &ldquo;keep it punchy&rdquo;."
+      >{{ chosen.body if chosen and not creating else '' }}</textarea>
+
+      <div class="editor-foot">
+        <button class="primary">{{ 'Save skill' if chosen and not creating else 'Create skill' }}</button>
+        {% if chosen and not creating %}
+          <span class="note">Last edited {{ chosen.updated_at }}</span>
+        {% endif %}
+      </div>
+    </form>
+
+    {% if chosen and not creating %}
+      <form method="post" action="/skills-library/{{ chosen.slug }}/delete"
+            style="margin-top:14px"
+            onsubmit="return confirm('Delete {{ chosen.name }}? The agent stops loading it.')">
+        <button class="danger btn-sm">Delete this skill</button>
+      </form>
+    {% endif %}
+
+    <p class="fmt">
+      Each skill is one markdown file in <code>{{ folder }}</code>, with
+      <code>name:</code> and <code>when_to_use:</code> above a <code>---</code> fence.
+      They are plain files on purpose: the agent can open one itself, and you can keep
+      them in a repo beside the scripts they govern.
+    </p>
+  </div>
+
+</div>
+{% endblock %}

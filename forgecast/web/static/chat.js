@@ -126,15 +126,32 @@ const scrollDown = () => { const c = chat(); c.scrollTop = c.scrollHeight; };
 
 function bubble(html, who = 'ai', host = null) {
   const box = chat();
-  const first = box.firstElementChild;
-  if (first && (first.classList.contains('empty') ||
-                first.classList.contains('opener'))) box.innerHTML = '';
+  const target = host || box;
+  // Clear the placeholder only when writing into the live transcript. Clearing it
+  // unconditionally is the other half of the cross-thread leak: a turn still running
+  // in another thread would wipe the greeter of the conversation you just opened, and
+  // then append its own content somewhere you cannot see — so the new chat looked
+  // like it had started and then lost its own opening screen.
+  if (target === box) {
+    const first = box.firstElementChild;
+    if (first && (first.classList.contains('empty') ||
+                  first.classList.contains('opener'))) box.innerHTML = '';
+  }
   const el = document.createElement('div');
   el.className = `msg ${who}`;
   el.innerHTML = html;
-  // `host` is the running turn's own container. Appending to the live transcript
-  // instead is what let a turn started in one thread paint into another.
-  (host && host.isConnected ? host : box).append(el);
+  // `host` is the running turn's own container, and it is used even after it has
+  // been detached — which is the whole point.
+  //
+  // Switching threads calls `chat().innerHTML = ''`, so the container of a turn that
+  // is still streaming comes out of the document. An `isConnected` check here looks
+  // like defensive programming and is precisely the bug: it falls back to the live
+  // transcript, so the running turn's tool cards and prose land in whichever
+  // conversation was just opened, and `box.innerHTML = ''` above wipes that
+  // conversation's greeter on the way in. Writing into the detached node is correct —
+  // nobody sees it, the server persists the reply, and reopening the thread shows the
+  // finished answer.
+  target.append(el);
   scrollDown();
   return el;
 }
@@ -179,7 +196,9 @@ function toolCard(call, { into } = {}) {
     card.classList.toggle('open');
     body.hidden = !card.classList.contains('open');
   };
-  (into && into.isConnected ? into : chat()).append(card);
+  // Same rule as bubble(): a detached turn container is still the right target. See
+  // the comment there for why falling back to the live transcript is the bug.
+  (into || chat()).append(card);
   scrollDown();
   return card;
 }

@@ -19,3 +19,12 @@ remotion/out/
 
 # Packaged releases, built by tools/package.py
 dist/
+
+# Chat attachments. They live inside the app root because the agent is sandboxed to
+# it, which means they land in the repo when developing — they are context for one
+# conversation, not source.
+attachments/
+
+# The bundled toolchain: Node, the Claude CLI, and ffmpeg on Windows. Downloaded, not
+# authored, and deleting it is the uninstall.
+runtime/

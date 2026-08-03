@@ -86,6 +86,21 @@ def files_to_ship() -> list[tuple[Path, str]]:
     return picked
 
 
+# Files whose line endings are load-bearing. A shell script whose shebang ends in
+# CRLF fails with `env: bash\r: No such file or directory` — /usr/bin/env looks for a
+# program whose name has a carriage return in it. Git for Windows converts on checkout
+# by default, so a zip built there ships exactly that unless it is normalised here.
+LF_ONLY = (".command", ".sh")
+
+
+def read_for_shipping(path: Path, member: str) -> bytes:
+    """The bytes to put in the archive, with line endings that will survive the trip."""
+    data = path.read_bytes()
+    if member.endswith(LF_ONLY):
+        return data.replace(b"\r\n", b"\n")
+    return data
+
+
 def check(members: list[str]) -> None:
     """Refuse to write an archive containing anything on the forbidden list.
 
@@ -122,13 +137,18 @@ def build(out_dir: Path) -> Path:
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for path, member in picked:
             info = zipfile.ZipInfo(member)
-            # Fixed timestamp so the same source produces the same archive, and the
-            # executable bit survives on the two launchers that need it.
+            # Fixed timestamp so the same source produces the same archive.
             info.date_time = (2026, 1, 1, 0, 0, 0)
             info.compress_type = zipfile.ZIP_DEFLATED
+            # Unix, always. `create_system` defaults to 0 (FAT) when the zip is built
+            # on Windows, and every unpacker then IGNORES external_attr — so a zip
+            # built on Windows arrives on macOS with Forgecast.command at mode 0644
+            # and Finder refuses to open it. Stating the system is what makes the
+            # permission bits mean anything.
+            info.create_system = 3
             executable = member.endswith((".command", ".sh")) or member.endswith("launcher.py")
             info.external_attr = (0o755 if executable else 0o644) << 16
-            zf.writestr(info, path.read_bytes())
+            zf.writestr(info, read_for_shipping(path, member))
 
     size_mb = archive.stat().st_size / 1_048_576
     print(f"  {archive}  ({len(picked)} files, {size_mb:.1f} MB)")
@@ -170,6 +190,21 @@ def verify(archive: Path) -> None:
     if missing:
         raise SystemExit("archive is incomplete:\n  " + "\n  ".join(missing))
     check(sorted(members))
+
+    # Assert the two things that only break on someone else's machine, where there is
+    # nobody to notice and no way to guess the cause from the symptom.
+    with zipfile.ZipFile(archive) as zf:
+        for name in (f"{NAME}/Forgecast.command", f"{NAME}/launcher.py"):
+            info = zf.getinfo(name)
+            mode = (info.external_attr >> 16) & 0o777
+            if info.create_system != 3 or not mode & 0o100:
+                raise SystemExit(
+                    f"{name} would arrive without its executable bit "
+                    f"(create_system={info.create_system}, mode={mode:o})")
+        launcher = zf.read(f"{NAME}/Forgecast.command")
+        if b"\r\n" in launcher.split(b"\n", 1)[0] + b"\n":
+            raise SystemExit("Forgecast.command has CRLF line endings; its shebang "
+                             "would fail with `env: bash\\r: No such file or directory`")
     print(f"  verified: {len(members)} members, no secrets, all entry points present")
 
 

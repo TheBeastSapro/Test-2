@@ -20,8 +20,10 @@ from .routes_agent import connector_router
 from .routes_agent import router as agent_router
 from .routes_api import router as api_router
 from .routes_preview import router as preview_router
+from .routes_files import router as files_router
 from .routes_research import router as research_router
 from .routes_settings import router as settings_router
+from .routes_skills import router as skills_router
 from .routes_setup import router as setup_router
 from .routes_styles import router as styles_router
 from .routes_web import router as web_router
@@ -65,6 +67,10 @@ def create_app() -> FastAPI:
     # Setup is a page in the app rather than a console or a second UI toolkit:
     # the window is already open, and the stylesheet already exists.
     app.include_router(setup_router)
+    # Somewhere to look at what the runs actually wrote, and the
+    # instruction documents the agent loads when they apply.
+    app.include_router(files_router)
+    app.include_router(skills_router)
     # Artifacts are served through signed, expiring, per-user URLs rather than a
     # static mount of the storage directory. See `api.media` — a plain mount hands
     # every run's video to anyone who can guess a path.

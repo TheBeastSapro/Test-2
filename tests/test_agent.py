@@ -575,3 +575,42 @@ def test_the_assistant_stream_does_not_yield_from_a_finally(user):
             for inner in ast.walk(ast.Module(body=node.finalbody, type_ignores=[])):
                 assert not isinstance(inner, ast.Yield), \
                     "run() must not yield from a finally block"
+
+
+def test_the_cli_the_sdk_will_actually_run_is_the_one_we_report(monkeypatch):
+    """"Is there something called claude" is the wrong question on Windows.
+
+    npm's global install produces a `claude.cmd` shim, and the agent SDK refuses to
+    spawn a batch script. Reporting that as connected produces the worst failure there
+    is: setup goes green, the status chip says connected, and the first message dies
+    with a batch-script refusal. So a shim counts as not found, and the fix offered is
+    the native installer rather than the npm line that produced the shim.
+    """
+    from forgecast.agent import auth
+
+    # The bundled binary in the wheel wins, because the SDK checks it before PATH —
+    # which is why most installs need nothing at all.
+    bundled = auth._bundled_cli()
+    if bundled:
+        assert auth.find_cli() == bundled
+
+    # `auth.os` is replaced rather than `os.name` patched: setting the real os.name to
+    # "nt" on Linux makes pathlib instantiate WindowsPath and takes the rest of the
+    # session down with it.
+    import os as real_os
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(auth, "_bundled_cli", lambda: None)
+    monkeypatch.setattr(auth, "os", SimpleNamespace(name="nt", environ=real_os.environ))
+    monkeypatch.setattr(auth.shutil, "which",
+                        lambda name: r"C:\npm\claude.cmd" if name == "claude" else None)
+    assert auth.find_cli() is None                 # a shim is not a usable CLI
+    assert auth.shim_only() is True
+
+    report = auth.check()
+    assert report.ok is False
+    assert "cannot run directly" in report.headline
+    joined = "\n".join(report.fixes)
+    assert "install.ps1" in joined
+    # And it must NOT tell you to run the thing that produced the shim.
+    assert "npm install -g" not in joined

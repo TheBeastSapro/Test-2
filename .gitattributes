@@ -1,0 +1,18 @@
+# Line endings that are load-bearing.
+#
+# A shell script whose shebang ends in CRLF fails with
+#   env: bash\r: No such file or directory
+# because /usr/bin/env looks for a program whose name contains a carriage return.
+# Git for Windows converts line endings on checkout by default, so without this a
+# clone on Windows produces a launcher that cannot run on macOS or Linux — and the
+# person who built the zip never sees it.
+*.command  text eol=lf
+*.sh       text eol=lf
+launcher.py text eol=lf
+
+# Binary, so Git never tries to be helpful with them.
+*.png binary
+*.jpg binary
+*.mp4 binary
+*.bin binary
+*.zip binary

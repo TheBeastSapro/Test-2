@@ -101,12 +101,40 @@ def test_a_partial_download_is_not_left_looking_finished(tmp_path, monkeypatch):
 
 def test_inventory_counts_a_tool_already_on_path(tmp_path):
     """Downloading a second ffmpeg next to the one someone chose is not helpful."""
-    tools = {tool.key: tool for tool in toolchain.inventory(tmp_path)}
-    assert set(tools) == {"ffmpeg", "node", "claude"}
     import shutil as _shutil
+
+    tools = {tool.key: tool for tool in toolchain.inventory(tmp_path)}
+    assert {"ffmpeg", "claude"} <= set(tools)
     if _shutil.which("ffmpeg") and _shutil.which("ffprobe"):
         assert tools["ffmpeg"].present
         assert tools["ffmpeg"].where
+
+
+def test_node_is_only_offered_when_it_would_actually_help(tmp_path, monkeypatch):
+    """Node is a means to an end, and the end is usually already met.
+
+    The claude-agent-sdk wheel bundles a native CLI and the SDK resolves it before
+    PATH, so on most machines there is nothing to install. Listing a 30 MB JavaScript
+    runtime anyway invites the reasonable question of why an app that makes videos
+    needs one — and on Windows it is worse than pointless, because npm produces a
+    `claude.cmd` shim the SDK refuses to spawn.
+    """
+    from forgecast.agent import auth
+
+    monkeypatch.setattr(auth, "find_cli", lambda: "/somewhere/claude")
+    keys = [t.key for t in toolchain.inventory(tmp_path)]
+    assert "node" not in keys
+
+    monkeypatch.setattr(auth, "find_cli", lambda: None)
+    tools = {t.key: t for t in toolchain.inventory(tmp_path)}
+    assert not tools["claude"].present
+    if os.name == "nt":
+        # The only fix is the native installer, so it is reported as needing you
+        # rather than offered as a download that would produce a refused shim.
+        assert "install.ps1" in tools["claude"].manual
+        assert "node" not in tools
+    else:
+        assert "node" in tools
 
 
 def test_ffmpeg_is_a_package_manager_job_off_windows(tmp_path):

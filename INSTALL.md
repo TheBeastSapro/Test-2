@@ -13,12 +13,19 @@ keys stay on your disk; nothing is uploaded anywhere you did not configure.
 | **macOS** | Double-click **`Forgecast.command`** |
 | **Linux** | `./Forgecast.command`, or `python3 launcher.py` |
 
-The first launch takes a minute or two while it builds its environment. Every launch
-after that takes a couple of seconds. A window opens, already signed in, on the chat.
+**That is the only thing you install by hand.** Python has to be there first — it is
+what draws the window — and everything else the app fetches itself.
 
-To use the chat you also need the Claude Code CLI signed in with your subscription —
-`npm install -g @anthropic-ai/claude-code`, then `claude` and `/login`. The app tells
-you if it is missing. Everything except the chat works without it.
+The first launch builds its Python environment (a minute or two), then opens a window
+on a setup page listing what is missing and offering to install it: Node.js, the Claude
+Code CLI that runs the chat, and ffmpeg on Windows. It all lands in `runtime` inside the
+app folder, never on your machine, and shows real progress rather than a scrolling log.
+
+Every launch after that takes a couple of seconds and goes straight to the studio.
+
+One step is left for you, because it cannot be automated: signing in to Claude. Press
+**Sign in to Claude** when setup finishes — a terminal opens, you type `/login`, and you
+finish in the browser. It is your normal Claude subscription; there is no API key.
 
 To stop it: close the window, or press **Quit** in the app.
 
@@ -36,7 +43,12 @@ your machine.
    encryption key for stored API credentials, and a random password for your local
    account. This file is never uploaded and must not be copied to another install.
 4. **Creates `forgecast.db`** (SQLite) and `storage/` for renders.
-5. **Looks for ffmpeg** and warns if it is missing.
+5. **Opens the setup page** and, if you press Install, downloads Node, the Claude Code
+   CLI and (on Windows) ffmpeg into `runtime/`. Skipping is allowed — everything except
+   rendering and the chat works without them, and you can come back to `/setup` later.
+6. **Removes `ANTHROPIC_API_KEY` from its own environment** if you have one set, because
+   it outranks your Claude subscription and would silently bill an API account. Your
+   shell keeps it; only the app ignores it.
 
 ---
 
@@ -51,22 +63,29 @@ your machine.
 - **Linux** — `sudo apt install python3 python3-venv` (the `venv` package is separate
   on Debian and Ubuntu, and the launcher cannot create its environment without it)
 
-### ffmpeg — required for rendering, optional for everything else
+### ffmpeg — for rendering
 
-Research, scripting, voice and the preview studio all work without it. The render stage
-does not. The app shows a banner rather than refusing to start, so you can install it
-later.
+Research, scripting, voice, the chat and the preview studio all work without it. The
+render stage does not.
 
-- **Windows** — `winget install Gyan.FFmpeg`, then reopen the launcher
+- **Windows** — the setup page downloads it into `runtime/ffmpeg`. Nothing to do.
 - **macOS** — `brew install ffmpeg`
 - **Linux** — `sudo apt install ffmpeg`
 
-### The Claude Code CLI — required for the chat
+On macOS and Linux this one is left to you deliberately, rather than unpacked into the
+app folder. `brew` and `apt` are how software arrives on those platforms and they put
+ffmpeg somewhere the whole machine can use; second-guessing them produces two ffmpegs of
+different versions and a bug that only appears in renders.
+
+### The Claude Code CLI — installed for you
 
 The chat is the way into this app, and it runs on **your Claude subscription** — the
 same `/login` you already use. There is no API key and you should not create one.
 
-It needs Node.js, which is a second runtime alongside Python:
+It needs Node.js, which is a second runtime alongside Python. **You do not have to
+install either.** The setup page downloads Node into `runtime/node` and uses that Node's
+own npm to put the CLI beside it, so the app has its own copy that nothing else on the
+machine can change under it. If you would rather do it yourself:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
@@ -270,12 +289,17 @@ the database is not.
 ## Where your data lives
 
 ```
-forgecast.db          runs, channels, credit ledger, encrypted provider keys
+forgecast.db          runs, channels, chats, credit ledger, encrypted provider keys
 storage/runs/<id>/    scripts, voice takes, stills, renders for each run
 storage/motion_presets/  motion presets learned from reference videos
+storage/connectors.json  connector URLs and their encrypted tokens
 .env                  machine-specific secrets — never commit or copy this
 .venv/                the Python environment; safe to delete and let it rebuild
+runtime/              Node, the Claude CLI, and ffmpeg on Windows; safe to delete
 ```
+
+`runtime/` and `.venv/` are both disposable: delete either and the next launch rebuilds
+it. Nothing in them is yours.
 
 To move an install to another machine, copy `forgecast.db` and `storage/` — **not**
 `.env`. Let the new machine generate its own secrets, then re-enter provider keys.
