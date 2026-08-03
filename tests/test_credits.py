@@ -35,10 +35,14 @@ def test_starting_a_run_beyond_balance_is_refused(session: Session, user: User,
                                                   channel: Channel):
     """A user must never be able to start work they cannot pay for."""
     balance = billing.balance(session, user.id)
-    # A one-hour video needs ~600 generated shots — far past a 10,000 credit balance.
+    # A two-hour video reserves ~520 plates and two hours of narration, comfortably past
+    # a 10,000 credit balance. It used to say one hour, on a shots estimate of one clip
+    # per 6 seconds of runtime — an estimate the node then undershot by ten times. Plates
+    # are now budgeted at one per 14 seconds of scene and several shots are cut from each,
+    # so an hour is affordable and the refusal has to be tested with something that is not.
     with pytest.raises(billing.InsufficientCredits) as excinfo:
         create_run(session, channel=channel, topic="too expensive",
-                   pipeline="faceless_longform", options={"target_seconds": 3600})
+                   pipeline="faceless_longform", options={"target_seconds": 7200})
     assert excinfo.value.needed > balance
 
 

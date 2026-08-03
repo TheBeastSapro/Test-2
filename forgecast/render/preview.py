@@ -138,11 +138,14 @@ def build(
         timeline.missing.append("script")
         return timeline
 
-    shot_by_index = {
-        int(item["scene_index"]): item
-        for item in ((shots or {}).get("shots") or [])
-        if item.get("scene_index") is not None
-    }
+    # First plate only. A scene now buys several plates and cuts between them, and the
+    # preview shows one background per scene — taking the last entry would show the
+    # tightest punch-in of the scene as though it were the establishing frame.
+    shot_by_index: dict[int, dict] = {}
+    for item in ((shots or {}).get("shots") or []):
+        if item.get("scene_index") is None:
+            continue
+        shot_by_index.setdefault(int(item["scene_index"]), item)
     segment_by_index = {
         int(item["scene_index"]): item
         for item in ((voice or {}).get("segments") or [])

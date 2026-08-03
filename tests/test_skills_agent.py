@@ -77,13 +77,14 @@ def test_a_skill_the_operator_wrote_reaches_the_agent(tools, library):
 def test_the_listing_does_not_carry_bodies(tools):
     """A listing that shipped the bodies would be a tool the agent stops calling.
 
-    The three starters are roughly nine thousand characters between them. Returned on
-    every check, most of a tool result goes on documents that turned out not to apply —
-    and the model learns to skip the call that floods it.
+    The seeded documents are roughly fifty thousand characters between them, most of it
+    the four visual ones. Returned on every check, the whole tool result goes on
+    documents that turned out not to apply — and the model learns to skip the call that
+    floods it.
     """
     result = text_of(call(tools["list_skills"]))
     listed = json.loads(result)
-    assert listed["count"] == 3
+    assert listed["count"] == len(skills.starters())
 
     for row in listed["skills"]:
         assert set(row) == {"slug", "name", "when_to_use", "words"}
@@ -91,7 +92,13 @@ def test_the_listing_does_not_carry_bodies(tools):
     # Sentences that only exist inside the bodies, checked against the whole payload.
     assert "Never say \"but first\"" not in result
     assert "Minimum 1.2 seconds on screen" not in result
-    assert len(result) < 2000
+    assert "SUBJECT] + [ACTION]" not in result
+    # Bounded against what the bodies actually weigh rather than a flat number, so
+    # adding a document cannot quietly turn the listing into the flood it exists to
+    # avoid: a row is a name and a trigger sentence, never a page.
+    bodies = sum(len(skill.body) for skill in skills.starters())
+    assert len(result) < bodies // 10
+    assert len(result) / listed["count"] < 450
 
 
 def test_an_unknown_slug_is_an_error_the_agent_can_act_on(tools):

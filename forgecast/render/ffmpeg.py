@@ -47,15 +47,26 @@ class Scene:
     narration: str = ""
     audio_path: Path | None = None
     meta: dict = field(default_factory=dict)
+    # Every plate this scene may cut between, `visual_path` first. A scene that was only
+    # ever given one visual leaves this empty and reads as `[visual_path]`, so callers
+    # that predate subdivision keep working unchanged.
+    plates: list[Path] = field(default_factory=list)
 
     @property
     def is_video(self) -> bool:
-        return self.visual_path is not None and self.visual_path.suffix.lower() in {
-            ".mp4",
-            ".mov",
-            ".webm",
-            ".mkv",
-        }
+        return self.visual_path is not None and _is_video(self.visual_path)
+
+    def plate(self, index: int) -> Path | None:
+        """The plate a shot draws from, falling back to the first one it can use."""
+        available = self.plates or ([self.visual_path] if self.visual_path else [])
+        usable = [path for path in available if path is not None and path.exists()]
+        if not usable:
+            return None
+        return usable[min(max(index, 0), len(usable) - 1)]
+
+
+def _is_video(path: Path) -> bool:
+    return path.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"}
 
 
 def run_ffmpeg(args: list[str], *, label: str = "ffmpeg") -> None:
@@ -157,6 +168,18 @@ def _escape_drawtext(text: str) -> str:
 # --------------------------------------------------------------------- clip building
 
 
+def _punch_crop(punch_in: float) -> str:
+    """A centre crop that tightens the framing by `punch_in`, or nothing at 1.0.
+
+    Expressed relative to the input rather than in pixels so it composes with whatever
+    scaling the caller already needed. `crop` floors odd results; every chain here ends
+    in a scale to the even output size, so that never reaches the encoder.
+    """
+    if punch_in is None or punch_in <= 1.001:
+        return ""
+    return f"crop=iw/{punch_in:.4f}:ih/{punch_in:.4f},"
+
+
 def still_to_clip(
     image_path: Path,
     out_path: Path,
@@ -165,11 +188,19 @@ def still_to_clip(
     width: int = 1280,
     height: int = 720,
     ken_burns: bool = True,
+    punch_in: float = 1.0,
 ) -> Path:
-    """Animate a still so a slideshow does not look like a slideshow."""
+    """Animate a still so a slideshow does not look like a slideshow.
+
+    `punch_in` tightens the framing before anything else happens, which is how one plate
+    becomes several shots. See `render.cutting` for why a punched shot is rendered with
+    `ken_burns=False`: the push would close most of the gap between adjacent framings and
+    take the cut below the size at which it is visible at all.
+    """
     out_path.parent.mkdir(parents=True, exist_ok=True)
     duration = max(seconds, 0.2)
     frames = max(int(duration * 30), 2)
+    punch = _punch_crop(punch_in)
     if ken_burns:
         # zoompan cost scales with input pixels, so oversample by 1.25x and no more —
         # 2x looks identical after the crop and runs four times slower.
@@ -178,12 +209,14 @@ def still_to_clip(
         vf = (
             f"scale={source_w}:{source_h}:force_original_aspect_ratio=increase,"
             f"crop={source_w}:{source_h},"
+            f"{punch}"
             f"zoompan=z='min(zoom+{zoom_step},1.12)':d={frames}:"
             f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps=30,"
             f"format=yuv420p"
         )
     else:
         vf = (
+            f"{punch}"
             f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
             f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,format=yuv420p"
         )
@@ -206,17 +239,34 @@ def still_to_clip(
 
 
 def normalise_clip(
-    src: Path, out_path: Path, seconds: float, *, width: int = 1280, height: int = 720
+    src: Path,
+    out_path: Path,
+    seconds: float,
+    *,
+    width: int = 1280,
+    height: int = 720,
+    punch_in: float = 1.0,
+    seek: float = 0.0,
 ) -> Path:
-    """Trim/pad a provider clip to the exact scene length and uniform codec."""
+    """Trim/pad a provider clip to the exact scene length and uniform codec.
+
+    `seek` and `punch_in` together turn one clip into several shots. `seek` alone would
+    not: consecutive segments of a clip played in order are the clip, with no cut in it.
+    The reframe is what the viewer reads as an edit; the seek is what stops the same
+    seconds of footage being shown twice.
+    """
     out_path.parent.mkdir(parents=True, exist_ok=True)
     duration = max(seconds, 0.2)
     vf = (
+        f"{_punch_crop(punch_in)}"
         f"scale={width}:{height}:force_original_aspect_ratio=increase,"
         f"crop={width}:{height},format=yuv420p"
     )
     run_ffmpeg(
         [
+            # Input-side seek so the decoder skips rather than decodes-and-discards; a
+            # shot 50s into a plate should not cost 50s of decoding.
+            *(["-ss", f"{seek:.3f}"] if seek > 0 else []),
             "-i", str(src),
             "-vf", vf,
             "-t", f"{duration:.3f}",
@@ -448,6 +498,77 @@ def burn_subtitles(video_path: Path, srt_path: Path, out_path: Path) -> Path:
 # ---------------------------------------------------------------------- orchestration
 
 
+def _shot_clip(
+    scene: Scene, cut, out_path: Path, *, width: int, height: int, subdivided: bool
+) -> Path:
+    """One visual segment of a scene, from whichever plate the plan assigned it."""
+    plate = scene.plate(getattr(cut, "plate_index", 0))
+    if plate is None:
+        make_color_clip(
+            out_path, cut.seconds, width=width, height=height,
+            label=scene.narration[:80] or f"scene {scene.index}",
+        )
+        return out_path
+
+    punch = float(getattr(cut, "punch_in", 1.0) or 1.0)
+    if _is_video(plate):
+        normalise_clip(
+            plate, out_path, cut.seconds, width=width, height=height,
+            punch_in=punch, seek=float(getattr(cut, "source_offset", 0.0) or 0.0),
+        )
+    else:
+        still_to_clip(
+            plate, out_path, cut.seconds, width=width, height=height,
+            # See `render.cutting`: the Ken Burns push ends 12% in, which would leave the
+            # next shot's 24% reframe reading as an 11% one — under the size at which a
+            # cut is detected at all. The cut carries the motion instead.
+            ken_burns=not subdivided,
+            punch_in=punch,
+        )
+    return out_path
+
+
+def _build_scene_clip(
+    scene: Scene, target: Path, cuts: list, *, workdir: Path, width: int, height: int
+) -> Path:
+    """Build one scene's visual bed, as one clip or as several cut together."""
+    if len(cuts) <= 1:
+        # The single-shot path stays byte-for-byte what it was: one encode, no concat, and
+        # the Ken Burns push still earns its place on a visual nobody cuts away from.
+        only = cuts[0] if cuts else None
+        if only is not None and scene.plate(only.plate_index) is not None:
+            return _shot_clip(
+                scene, only, target, width=width, height=height, subdivided=False
+            )
+        if scene.visual_path and scene.visual_path.exists():
+            if scene.is_video:
+                normalise_clip(
+                    scene.visual_path, target, scene.seconds, width=width, height=height
+                )
+            else:
+                still_to_clip(
+                    scene.visual_path, target, scene.seconds, width=width, height=height
+                )
+        else:
+            make_color_clip(
+                target, scene.seconds, width=width, height=height,
+                label=scene.narration[:80] or f"scene {scene.index}",
+            )
+        return target
+
+    pieces = [
+        _shot_clip(
+            scene, cut,
+            workdir / f"scene_{scene.index:03d}_shot_{cut.shot_index:03d}.mp4",
+            width=width, height=height, subdivided=True,
+        )
+        for cut in cuts
+    ]
+    # Stream-copied: every piece came out of the same VCODEC settings, so re-encoding the
+    # concat would cost a second generation loss for nothing.
+    return concat_clips(pieces, target)
+
+
 def assemble_video(
     scenes: list[Scene],
     out_path: Path,
@@ -462,6 +583,7 @@ def assemble_video(
     motion_plans=None,
     motion_backend: str = "ffmpeg",
     loudness_target: str = "youtube",
+    shot_cuts=None,
 ) -> Path:
     """Turn scenes + narration into one finished file.
 
@@ -471,9 +593,19 @@ def assemble_video(
     `motion_preset` and `motion_plans` come from `render.motion_layer`. Both are
     optional and are planned by the caller rather than here, so the node that spends
     the credits also owns the record of what was animated.
+
+    `shot_cuts` comes from `render.cutting` and is what stops a scene being one visual
+    held for its whole narration. Absent, every scene is a single shot — the behaviour
+    that existed before subdivision — so nothing here has to know whether a caller has
+    been updated. Captions and motion graphics still see whole scenes: a cue timed to a
+    1-second shot would be unreadable, and a title animating over a scene that cuts
+    underneath it is the intended effect rather than a conflict.
     """
     workdir.mkdir(parents=True, exist_ok=True)
     plan_by_scene = {item.scene_index: item for item in (motion_plans or [])}
+    cuts_by_scene: dict[int, list] = {}
+    for cut in (shot_cuts or []):
+        cuts_by_scene.setdefault(cut.scene_index, []).append(cut)
 
     engine = None
     if motion_preset is not None and plan_by_scene:
@@ -486,19 +618,10 @@ def assemble_video(
     clips: list[Path] = []
     for scene in scenes:
         target = workdir / f"scene_{scene.index:03d}.mp4"
-        if scene.visual_path and scene.visual_path.exists():
-            if scene.is_video:
-                normalise_clip(scene.visual_path, target, scene.seconds, width=width, height=height)
-            else:
-                still_to_clip(scene.visual_path, target, scene.seconds, width=width, height=height)
-        else:
-            make_color_clip(
-                target,
-                scene.seconds,
-                width=width,
-                height=height,
-                label=scene.narration[:80] or f"scene {scene.index}",
-            )
+        _build_scene_clip(
+            scene, target, cuts_by_scene.get(scene.index) or [],
+            workdir=workdir, width=width, height=height,
+        )
 
         item = plan_by_scene.get(scene.index)
         if engine is not None and item is not None and item.active:

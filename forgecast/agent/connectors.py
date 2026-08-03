@@ -63,16 +63,30 @@ class ConnectorSpec:
     # What the agent gains. Written as capabilities, not marketing.
     gives: str
     where: str
-    # "mcp" for a service that hands the agent tools over MCP; "api" for one that has a
-    # REST API and no MCP server at all.
+    # How this service can be reached: "mcp", "api", or "both".
     #
-    # This distinction is not cosmetic and it was missing. `Store.active()` handed every
+    # The distinction is not cosmetic and it was missing. `Store.active()` handed every
     # connected entry to the SDK as an MCP server, so an API-only service was wired up as
     # an endpoint that speaks a protocol it has never spoken — a permanent 401 that looks
     # exactly like a bad token, so the operator retries their credentials forever. An
     # `api` connector is never passed to the SDK; it is read by the provider adapter that
     # knows the service, and the agent reaches it through that adapter's tools.
+    #
+    # "both" is not a choice between them, which is why it is a third state rather than a
+    # flag. Epidemic Sound is the case: it has an MCP server the *agent* can call in a
+    # conversation, and a GraphQL API the *render pipeline* needs, because a pipeline node
+    # runs on a worker thread with no conversation around it and cannot call an MCP tool.
+    # Both may be configured at once, they authorise separately, and one working is not
+    # evidence about the other — so they are stored and reported separately.
     kind: str = "mcp"
+
+    @property
+    def supports_mcp(self) -> bool:
+        return self.kind in ("mcp", "both")
+
+    @property
+    def supports_api(self) -> bool:
+        return self.kind in ("api", "both")
     # "http" or "sse". Remote MCP servers are one or the other; the service says which.
     # Ignored for `api` connectors.
     transport: str = "http"
@@ -168,12 +182,35 @@ class Connection:
     key: str
     url: str
     token: str = ""
+    # The API credential, kept apart from `token` rather than reusing it. On a `both`
+    # service the two are different secrets for different mechanisms — an MCP bearer and
+    # an API key — and one field holding either would make "is the API configured"
+    # unanswerable, so the page could not tell the operator which half is live.
+    api_key: str = ""
     enabled: bool = True
     note: str = ""
 
     @property
     def spec(self) -> ConnectorSpec:
         return BY_KEY.get(self.key, ConnectorSpec(self.key, self.key, "", ""))
+
+    def credential(self) -> str:
+        """The API credential, wherever this connection happens to keep it.
+
+        An `api`-only connector predates the separate field and stores its key in
+        `token`, so reading `api_key` alone would report every one of those as
+        unconfigured after an upgrade — the file on disk is the operator's, and it does
+        not get rewritten just because the schema grew a field.
+        """
+        return self.api_key or (self.token if self.spec.kind == "api" else "")
+
+    @property
+    def mcp_ready(self) -> bool:
+        return self.spec.supports_mcp and bool(self.url)
+
+    @property
+    def api_ready(self) -> bool:
+        return self.spec.supports_api and bool(self.credential())
 
     def as_mcp(self) -> dict:
         """The SDK's server config for this connection."""
@@ -195,9 +232,14 @@ class Connection:
                 "kind": spec.kind,
                 "where": spec.where, "docs": spec.docs, "url": self.url,
                 "token": mask(self.token) if self.token else "",
-                # An `api` connector has no URL, so a URL test reported every one of
-                # them as not connected however good the credential was.
-                "connected": bool(self.token) if spec.kind == "api" else bool(self.url),
+                "api_key": mask(self.credential()) if self.credential() else "",
+                # Reported apart, because on a `both` service they authorise separately
+                # and one working says nothing about the other. Collapsing them into a
+                # single "connected" would show a green dot for a service whose API half
+                # — the half the render pipeline needs — was never configured.
+                "mcp_ready": self.mcp_ready,
+                "api_ready": self.api_ready,
+                "connected": self.mcp_ready or self.api_ready,
                 "enabled": self.enabled,
                 "note": self.note}
 
@@ -278,24 +320,31 @@ class Store:
     def active(self) -> dict[str, dict]:
         """MCP server configs for everything connected, switched on, and *actually MCP*.
 
-        The `kind == "mcp"` filter is the fix for a real mis-wiring: without it an
+        Filtering on `supports_mcp` is the fix for a real mis-wiring: without it an
         API-only service was handed to the SDK as an MCP endpoint, which fails with a 401
         that is indistinguishable from a rejected token — so the operator re-pastes
         working credentials indefinitely.
+
+        A `both` service with only its API half configured is correctly absent: it has no
+        URL, so there is nothing to hand over, and inventing one would recreate exactly
+        the 401 this filter exists to prevent.
         """
         return {key: conn.as_mcp() for key, conn in self.connections.items()
-                if conn.enabled and conn.url and conn.spec.kind == "mcp"}
+                if conn.enabled and conn.mcp_ready}
 
     def api_credentials(self, key: str) -> Connection | None:
-        """A configured `api` connector, for the provider adapter that speaks to it.
+        """A configured API connector, for the provider adapter that speaks to it.
 
-        Separate from `active()` because these never go near the SDK. The adapter asks
-        for its own service by name and gets the credential or nothing.
+        Separate from `active()` because these never go near the SDK. The adapter asks for
+        its own service by name and gets the credential or nothing. `both` services answer
+        here as well as appearing in `active()` — a pipeline node runs on a worker thread
+        with no conversation around it, so it cannot call an MCP tool however well that
+        half is configured, and the API half is the only way it can reach the service.
         """
         conn = self.connections.get(key)
-        if conn is None or not conn.enabled or conn.spec.kind != "api":
+        if conn is None or not conn.enabled or not conn.api_ready:
             return None
-        return conn if (conn.token or conn.url) else None
+        return conn
 
     def listing(self) -> list[dict]:
         """Every connector in the catalogue, connected or not, in catalogue order."""

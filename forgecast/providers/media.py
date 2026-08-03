@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
@@ -380,16 +381,196 @@ class RunwayVideoProvider(VideoProvider):
         raise ProviderTimeout(f"runway task {task_id} never finished", provider=self.name)
 
 
+# --------------------------------------------------------------- the video catalogue
+#
+# Image-to-video prices span forty times across the models this app routes to: $0.03 a
+# second and $0.40 a second are both normal. A single flat rate therefore makes every
+# estimate wrong in one direction or the other, and the direction that hurts is the cheap
+# one — a reserve taken at $0.09/sec against a $0.40/sec model promises credits the ledger
+# does not hold, and the run dies partway through a batch having already spent.
+#
+# Each entry also carries the shortest duration the endpoint will accept, because that is
+# what the Sample Gate in `forgecast/skills/data/image-to-video.md` renders its one sample
+# at. Hard-coding five seconds there quietly overspends on every model whose minimum is
+# six, and fails outright on the ones that refuse it.
+#
+# PRICES DRIFT, AND THESE ARE ALREADY EVIDENCE OF IT. Checked against fal's own model
+# pages on 2026-08-03, the operational skill's own table was out by more than 3x in both
+# directions — it had Kling v3 Pro at $0.40/sec against a published $0.112, and WAN 2.2
+# A14B at $0.02/sec against a published $0.08. Re-check before trusting a quote, and treat
+# the numbers below as a floor for reserving rather than as a contract.
+PRICES_CHECKED = "2026-08-03"
+
+
+@dataclass(frozen=True)
+class VideoModel:
+    """One i2v endpoint's price and duration envelope.
+
+    `sample_seconds` is the shortest submittable duration, not a recommendation: it is
+    what the sample gate costs on this model, and the gate is priced before it runs.
+    """
+
+    usd_per_second: float
+    sample_seconds: float
+    max_seconds: float
+    note: str = ""
+
+
+# Keyed by the fal slug. Resolutions matter to the price on several of these, so the tier
+# the figure belongs to is named — a 720p price quoted for a 4K render under-reserves by
+# the same mechanism a flat rate does.
+VIDEO_MODELS: dict[str, VideoModel] = {
+    # Kling. The workhorse for B-roll and dialogue close-ups; audio off, which is how
+    # this pipeline uses it — narration is recorded separately and mixed in the render.
+    "fal-ai/kling-video/v2.6/pro/image-to-video": VideoModel(
+        0.07, 5.0, 10.0, "audio off; $0.14/s with native audio"),
+    "fal-ai/kling-video/v2.5-turbo/pro/image-to-video": VideoModel(
+        0.07, 5.0, 10.0, "$0.35 for the first 5s, then $0.07/s"),
+    "fal-ai/kling-video/v3/pro/image-to-video": VideoModel(
+        0.112, 5.0, 10.0, "audio off; $0.168/s with audio, $0.196/s with voice control"),
+    # WAN, open weights. Priced per resolution tier; 720p is what this app renders at.
+    "fal-ai/wan/v2.2-a14b/image-to-video": VideoModel(
+        0.08, 5.0, 10.0, "720p; $0.06/s at 580p, $0.04/s at 480p, seconds at 16fps"),
+    # Hailuo. Cheapest credible i2v here, and the reason `sample_seconds` exists: its
+    # shortest generation is six seconds, so its sample costs six seconds, not five.
+    "fal-ai/minimax/hailuo-2.3-fast/standard/image-to-video": VideoModel(
+        0.0317, 6.0, 10.0, "768p; $0.19 per 6s clip, $0.32 per 10s clip"),
+    # LTX, the volume workhorse. Also a six-second floor.
+    "fal-ai/ltx-2.3/image-to-video": VideoModel(
+        0.06, 6.0, 10.0, "1080p; $0.12/s at 1440p, $0.24/s at 2160p"),
+    "fal-ai/ltx-2.3/image-to-video/fast": VideoModel(
+        0.04, 6.0, 10.0, "1080p; $0.08/s at 1440p, $0.16/s at 2160p"),
+    # The premium edge cases. Veo for physics and realism, Sora for coherence.
+    "fal-ai/veo3/image-to-video": VideoModel(
+        0.20, 8.0, 8.0, "audio off; $0.40/s with audio. Duration not re-verified"),
+    "fal-ai/veo3/fast/image-to-video": VideoModel(
+        0.10, 8.0, 8.0, "audio off; $0.15/s with audio. Duration not re-verified"),
+    "fal-ai/sora-2/image-to-video": VideoModel(
+        0.10, 4.0, 12.0, "720p standard; Pro is $0.30-$0.70/s. Duration not re-verified"),
+}
+
+# Kling v2.6 Pro rather than the v1 *text*-to-video slug this defaulted to before. Two
+# reasons: every caller here passes a conditioning still, and a text-to-video endpoint
+# handed an `image_url` either ignores it — billing for a clip of the wrong thing — or
+# rejects the submission. And it is the model the i2v skill names as the reliable
+# workhorse, at $0.07/sec against the $0.09 flat rate that used to be assumed.
+DEFAULT_VIDEO_MODEL = "fal-ai/kling-video/v2.6/pro/image-to-video"
+
+# What an unrecognised slug is priced at: the top of the observed range, not the middle
+# and certainly not the cheapest. An estimate that is too high is released back to the
+# operator when the node settles; one that is too low is a run that stops mid-batch with
+# work already paid for, which no later correction recovers.
+UNPRICED_MODEL = VideoModel(
+    0.40, 8.0, 10.0,
+    f"unrecognised model — reserved at the ceiling of the range priced on "
+    f"{PRICES_CHECKED}")
+
+# Families, so an unrecognised variant of a known vendor is priced from its own siblings
+# rather than from the global ceiling. fal adds and renames variants faster than any table
+# tracks, and `kling-video/v3.1/pro` arriving tomorrow should cost about what Kling costs.
+_FAMILIES = ("kling", "hailuo", "wan", "ltx", "veo", "sora")
+
+
+def _family(slug: str) -> str:
+    lowered = slug.lower()
+    return next((name for name in _FAMILIES if name in lowered), "")
+
+
+def video_model(slug: str) -> VideoModel:
+    """Price and duration envelope for a slug, erring expensive when unsure."""
+    key = (slug or "").strip().lower()
+    if key in VIDEO_MODELS:
+        return VIDEO_MODELS[key]
+
+    family = _family(key)
+    siblings = [model for name, model in VIDEO_MODELS.items() if _family(name) == family]
+    if family and siblings:
+        # The dearest sibling's rate, the longest sample, the shortest ceiling: three
+        # conservative picks rather than one sibling's row, because guessing which
+        # sibling an unknown variant resembles is how the guess comes in under cost.
+        return VideoModel(
+            max(model.usd_per_second for model in siblings),
+            max(model.sample_seconds for model in siblings),
+            min(model.max_seconds for model in siblings),
+            f"unrecognised {family} variant — priced from the dearest known {family}",
+        )
+    return UNPRICED_MODEL
+
+
+def video_reserve_credits(model: str, seconds: float, *, samples: int = 0) -> int:
+    """Credits to hold for `seconds` on `model`, plus `samples` sample renders.
+
+    `samples` is counted rather than folded into the duration because a sample and a full
+    render are separate provider submissions, each billed on its own `request_id`. A
+    reserve that quietly added five seconds to the shot would be the "rolled in" framing
+    the i2v skill forbids, expressed as money.
+    """
+    priced = video_model(model)
+    total = priced.usd_per_second * (
+        max(0.0, float(seconds)) + priced.sample_seconds * max(0, int(samples)))
+    return _credits(total)
+
+
 class FalVideoProvider(VideoProvider):
-    """Text/image-to-video through FAL — covers Kling, Minimax, LTX and friends."""
+    """Image-to-video through FAL — covers Kling, Hailuo, WAN, LTX, Veo and Sora.
+
+    The per-second cost and the duration envelope come from `VIDEO_MODELS` rather than
+    from an attribute on this class, because they are properties of the model chosen per
+    shot and this one adapter serves all of them.
+    """
 
     name = "fal-video"
     base_url = "https://fal.run"
-    usd_per_second = 0.09
 
-    def __init__(self, api_key: str = "", model: str = "fal-ai/kling-video/v1/standard/text-to-video") -> None:
+    def __init__(self, api_key: str = "", model: str = DEFAULT_VIDEO_MODEL) -> None:
         super().__init__(api_key)
         self.model = model
+
+    @property
+    def pricing(self) -> VideoModel:
+        return video_model(self.model)
+
+    @property
+    def usd_per_second(self) -> float:
+        return self.pricing.usd_per_second
+
+    @property
+    def sample_seconds(self) -> float:
+        """What one Sample Gate clip on this model is generated at, and costs."""
+        from ..skills.gates import sample_seconds_for
+
+        return sample_seconds_for(self.pricing.sample_seconds,
+                                  longest_supported=self.pricing.max_seconds)
+
+    def clamp_seconds(self, seconds: float) -> int:
+        """The duration this endpoint will actually accept, nearest to what was asked.
+
+        Clamped per model rather than to a hard 5-10: submitting five seconds to a
+        six-second minimum is a rejected request, and submitting ten to an eight-second
+        ceiling is either rejected or silently truncated after being billed for ten.
+        """
+        priced = self.pricing
+        wanted = round(float(seconds) or priced.sample_seconds)
+        return int(max(priced.sample_seconds, min(priced.max_seconds, wanted)))
+
+    def reserve_credits(self, seconds: float, *, samples: int = 0) -> int:
+        return video_reserve_credits(self.model, self.clamp_seconds(seconds),
+                                     samples=samples)
+
+    def sample_and_full_quote(self, seconds: float):
+        """The two charges this shot owes, priced from the catalogue.
+
+        Returned as a `gates.Quote` so the gate that surfaces it and the ledger that
+        settles it read the same arithmetic — a second implementation of "sample plus
+        full" is how one of them ends up quoting a discount that does not exist.
+        """
+        from ..skills.gates import quote
+
+        priced = self.pricing
+        return quote(model=self.model, usd_per_second=priced.usd_per_second,
+                     full_seconds=self.clamp_seconds(seconds),
+                     shortest_supported=priced.sample_seconds,
+                     longest_supported=priced.max_seconds)
 
     async def generate_clip(
         self,
@@ -403,9 +584,10 @@ class FalVideoProvider(VideoProvider):
     ) -> MediaResult:
         key = self._require_key()
         out_path = out_path.with_suffix(".mp4")
+        billed_seconds = self.clamp_seconds(seconds)
         body: dict = {
             "prompt": prompt,
-            "duration": str(int(max(5, min(10, round(seconds))))),
+            "duration": str(billed_seconds),
             "aspect_ratio": "16:9" if width >= height else "9:16",
         }
         if image_path and Path(image_path).exists():
@@ -431,10 +613,15 @@ class FalVideoProvider(VideoProvider):
         return MediaResult(
             path=out_path,
             mime="video/mp4",
-            credits=_credits(self.usd_per_second * seconds),
+            # Billed on the duration submitted, not the one requested. A shot asked for at
+            # four seconds against a six-second minimum is charged for six, and settling
+            # the cheaper number puts the difference on the house every clip.
+            credits=_credits(self.usd_per_second * billed_seconds),
             provider=self.name,
-            duration_seconds=seconds,
-            meta={"model": self.model, "prompt": prompt[:300]},
+            duration_seconds=float(billed_seconds),
+            meta={"model": self.model, "prompt": prompt[:300],
+                  "usd_per_second": self.usd_per_second,
+                  "billed_seconds": billed_seconds},
         )
 
 

@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..agent import assistant, auth, connectors, prefs, tools
+from ..agent import assistant, connectors, engines, prefs, tools
 from ..agent.studio import Studio
 from ..auth import current_user
 from ..config import get_settings
@@ -75,13 +75,20 @@ def _studio(user: User) -> Studio:
 
 
 @router.get("/auth")
-def agent_auth(_user: User = Depends(current_user)) -> dict:
-    return auth.check().as_dict()
+def agent_auth(engine: str = "", _user: User = Depends(current_user)) -> dict:
+    """Is the agent connected — for the selected backend, or a named one.
+
+    `engine=` is what lets the picker say what switching would cost *before* you
+    switch. Choosing ChatGPT and only then being told the Codex CLI is missing is the
+    same "looked fine until it failed" shape this module exists to avoid.
+    """
+    return engines.auth_check(engine or None)
 
 
 @router.post("/auth/login")
-def agent_login(_user: User = Depends(current_user)) -> dict:
-    ok, message = auth.start_login()
+def agent_login(payload: dict | None = None,
+                _user: User = Depends(current_user)) -> dict:
+    ok, message = engines.start_login((payload or {}).get("engine"))
     return {"ok": ok, "message": message}
 
 
@@ -90,21 +97,55 @@ def agent_login(_user: User = Depends(current_user)) -> dict:
 
 @router.get("/prefs")
 def get_prefs(_user: User = Depends(current_user)) -> dict:
-    return {**prefs.load().as_dict(), "models": assistant.MODELS}
+    """The composer's settings, plus what may be chosen.
+
+    `models` stays the flat list the composer already reads, and it is the *selected
+    engine's* list — so the picker cannot offer a model the running backend would
+    reject. `engines` carries the rest, including the one-line description of how each
+    one signs in, which is the claim the operator is choosing between.
+    """
+    settings = prefs.load()
+    engine = engines.current(settings)
+    return {**settings.as_dict(),
+            "engine": engine.key,
+            "model": settings.model_for(engine.key),
+            "models": engine.models,
+            "engines": engines.catalogue()}
 
 
 @router.post("/prefs")
 def set_prefs(payload: dict, _user: User = Depends(current_user)) -> dict:
-    known = {model["id"] for model in assistant.MODELS}
+    """Change them, refusing a combination that could not work.
+
+    The model is validated against the engine it is *for* — the one being switched to
+    in this same request if there is one. Validating against the currently stored
+    engine would reject the pair the page sends when it switches both at once, and
+    accepting it blindly would store `gpt-5.6-terra` as Claude's model.
+    """
+    engine_key = payload.get("engine")
+    if engine_key is not None and engine_key not in engines.BY_KEY:
+        raise HTTPException(status_code=400, detail=f"unknown agent {engine_key!r}")
+
+    settings = prefs.load()
+    target = engines.resolve(engine_key or settings.engine)
+
     model = payload.get("model")
-    if model is not None and model not in known:
-        raise HTTPException(status_code=400, detail=f"unknown model {model!r}")
+    if model is not None:
+        if model not in {entry["id"] for entry in target.models}:
+            raise HTTPException(
+                status_code=400,
+                detail=f"{model!r} is not a {target.label} model")
+        settings.set_model_for(target.key, model)
+
     updated = prefs.update(
-        model=model,
+        engine=engine_key,
+        model=settings.model,
+        chatgpt_model=settings.chatgpt_model,
         confirm_edits=payload.get("confirm_edits"),
         allow_web=payload.get("allow_web"),
     )
-    return updated.as_dict()
+    return {**updated.as_dict(), "model": updated.model_for(target.key),
+            "models": target.models}
 
 
 # ------------------------------------------------------------------------ threads
@@ -384,6 +425,12 @@ async def chat(
     resume = thread.session_id or None
     thread_pk = thread.id
     studio = _studio(user)
+    # Read here, not inside the stream: `user` belongs to the request session, which is
+    # closed by the time the generator runs, and touching a detached instance then
+    # raises where nothing can report it. The ChatGPT backend needs the id to tell its
+    # out-of-process tool server whose studio to open.
+    user_id = user.id
+    engine = engines.current(settings)
 
     def _save(text_parts: list[str], tool_calls: list[dict], session_id: str) -> None:
         """Write the turn down. Called from a `finally`, so it must not raise.
@@ -403,7 +450,11 @@ async def chat(
                         text="".join(text_parts), tool_calls=tool_calls))
                 if session_id:
                     row.session_id = session_id
-                row.model = settings.model
+                # The model that actually answered, which is the engine's own — not
+                # `settings.model`, which is always Claude's. A thread labelled
+                # claude-sonnet-5 that ChatGPT answered is a transcript that lies about
+                # its own history, and there is no way to tell afterwards.
+                row.model = settings.model_for(engine.key)
                 store.commit()
         except Exception:                                         # pragma: no cover
             log.exception("could not save the assistant turn")
@@ -451,10 +502,11 @@ async def chat(
         try:
             while True:
                 restart = False
-                async for event in assistant.run(
-                    prompt, studio=studio, resume=attempt, model=settings.model,
+                async for event in engines.run(
+                    prompt, studio=studio, settings=settings, resume=attempt,
                     permission_mode="default" if settings.confirm_edits else "acceptEdits",
                     allow_web=settings.allow_web, budget_usd=settings.budget_usd,
+                    user_id=user_id,
                 ):
                     kind = event.get("type")
 

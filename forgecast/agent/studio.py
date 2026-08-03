@@ -55,6 +55,18 @@ _YOUTUBE = re.compile(
 )
 
 
+def epidemic_cache_path() -> Path:
+    """Where the Epidemic Sound half of the voice catalogue lives.
+
+    Under the configured storage directory rather than beside
+    `voice.discover.DEFAULT_CACHE`, which is a *relative* path: a launcher started from
+    somewhere other than the project root writes a catalogue at a second location that
+    nothing afterwards reads. Anchoring to `storage_dir` also keeps the test suite out
+    of the repository, since it points that at a temporary directory.
+    """
+    return get_settings().storage_dir / "voice_catalogue_epidemic.json"
+
+
 @dataclass
 class Link:
     """What a pasted YouTube link turned out to be."""
@@ -709,6 +721,24 @@ class Studio:
 
     # --------------------------------------------------------------------- voice
 
+    def _measured_voices(self) -> list:
+        """Every cached voice from every vendor, as one pool to rank.
+
+        Two caches, one ranking. `forgecast-voice sync` writes the ElevenLabs catalogue
+        and `sync_voice_artists` writes the Epidemic Sound one, and casting reads both
+        together — because a shortlist that only ever contains one vendor's voices is a
+        shortlist that silently answers a different question than the one asked. Each
+        voice carries its `provenance`, so the merge is visible rather than implied.
+        """
+        from ..voice.discover import load_catalogue
+
+        pool = list(load_catalogue())
+        known = {voice.voice_id for voice in pool}
+        for voice in load_catalogue(epidemic_cache_path()):
+            if voice.voice_id not in known:
+                pool.append(voice)
+        return pool
+
     def cast_voice(self, *, channel: Any = None, pitch: str = "", pace: str = "",
                    energy: str = "", accent: str = "", limit: int = 3) -> dict:
         """Shortlist voices against a described target, ranked with the reasons.
@@ -729,16 +759,25 @@ class Studio:
                   (("pitch", pitch), ("pace", pace), ("energy", energy),
                    ("accent", accent)) if not part],
         )
-        found = shortlist(target, limit=max(1, min(int(limit), 8)))
+        pool = self._measured_voices()
+        # `measured=None` would make shortlist load only the ElevenLabs cache, undoing
+        # the merge above. An empty list is not the same as None here, and passing the
+        # pool explicitly is what keeps the two vendors in one ranking.
+        found = shortlist(target, limit=max(1, min(int(limit), 8)),
+                          measured=pool or None)
         if not found:
             return {"error": "No voices to rank. Run `forgecast-voice sync` to read "
-                             "your ElevenLabs account, or describe the voice you want."}
+                             "your ElevenLabs account, or sync_voice_artists to read "
+                             "Epidemic Sound, or describe the voice you want."}
 
+        vendors = sorted({voice.provenance for voice in pool}) if pool else []
         out = {
             "target": target.as_dict(),
             "candidates": [candidate.as_dict() for candidate in found],
             "summary": casting_summary(target, found),
         }
+        if vendors:
+            out["ranked_across"] = vendors
         if channel is not None:
             out["apply_with"] = ("update_channel with voice_id set to the one you "
                                  "pick — I will not choose the voice for you")
@@ -747,12 +786,16 @@ class Studio:
     def voice_catalogue(self) -> dict:
         """What voices are known, and whether they were measured or assumed."""
         from ..voice.catalogue import STOCK_VOICES
-        from ..voice.discover import load_catalogue
 
-        measured = load_catalogue()
+        measured = self._measured_voices()
         if measured:
-            return {"source": "measured from your ElevenLabs account",
+            # Named per vendor rather than always "your ElevenLabs account", which was
+            # true when ElevenLabs was the only vendor and became a wrong label the
+            # moment a second one could appear in the same list.
+            vendors = sorted({voice.provenance or "account" for voice in measured})
+            return {"source": "measured from " + ", ".join(vendors),
                     "count": len(measured),
+                    "vendors": vendors,
                     "voices": [voice.as_dict() for voice in measured[:40]]}
         return {
             "source": "offline fallback list",
@@ -760,8 +803,105 @@ class Studio:
             "voices": [voice.as_dict() for voice in STOCK_VOICES],
             "caveat": "These names are the stock set and may not exist on your "
                       "account. Run `forgecast-voice sync` to read the real one and "
-                      "measure each preview clip.",
+                      "measure each preview clip, or sync_voice_artists to read "
+                      "Epidemic Sound's voice artists.",
         }
+
+    # ------------------------------------------------------- epidemic sound voices
+
+    async def voice_artists(self, *, limit: int = 20) -> dict:
+        """Epidemic Sound's voice artists, read live rather than from the cache.
+
+        Live because this reports the one thing the cache cannot: each artist's
+        `languages` list. `voice.discover.MeasuredVoice` has no field for it, so a
+        synced catalogue drops it — and it is the honest basis for narrating one script
+        in more than one language.
+        """
+        from ..providers.base import ProviderError
+        from ..providers.epidemic import EpidemicVoiceProvider, MockEpidemicVoice
+
+        settings = get_settings()
+        provider = MockEpidemicVoice() if settings.is_mock else EpidemicVoiceProvider()
+        usable, reason = provider.available()
+        if not usable:
+            return {"error": reason}
+
+        try:
+            artists = await provider.list_voices(limit=max(1, min(int(limit), 100)))
+        except ProviderError as exc:
+            return {"error": str(exc)}
+
+        return {
+            "source": "mock Epidemic Sound roster (offline)" if settings.is_mock
+                      else "Epidemic Sound",
+            "count": len(artists),
+            "artists": [
+                {
+                    "voice_id": artist["voice_id"],
+                    "name": artist["name"],
+                    "gender": artist["labels"]["gender"],
+                    "from": artist["labels"]["accent"],
+                    "characteristics": artist["labels"]["descriptive"],
+                    "languages": artist["languages"],
+                    "has_preview": bool(artist["preview_url"]),
+                }
+                for artist in artists
+            ],
+            "caveat": "These are the vendor's own words about each artist, not "
+                      "measurements. sync_voice_artists downloads each preview clip and "
+                      "measures its pitch so cast_voice can rank them on the same scale "
+                      "as everything else.",
+            "next": "sync_voice_artists to put these into the casting pool.",
+        }
+
+    async def sync_voice_artists(self, *, measure: bool = True, limit: int = 60) -> dict:
+        """Build the Epidemic Sound half of the casting catalogue, pitch and all.
+
+        Written to its own file rather than the shared one. Overwriting
+        `voice_catalogue.json` would delete the ElevenLabs catalogue as a side effect of
+        adding a second vendor, and the operator would find out at the next casting.
+        """
+        from ..providers.base import ProviderError
+        from ..providers.epidemic import EpidemicVoiceProvider, MockEpidemicVoice
+        from ..voice.discover import build_catalogue, measured_summary
+
+        settings = get_settings()
+        provider = MockEpidemicVoice() if settings.is_mock else EpidemicVoiceProvider()
+        usable, reason = provider.available()
+        if not usable:
+            return {"error": reason}
+
+        cache = epidemic_cache_path()
+        try:
+            voices = await build_catalogue(
+                provider, cache_path=cache,
+                # Measuring means one preview download per artist. Worth it: measured
+                # pitch is the only signal casting actually trusts.
+                measure=bool(measure), limit=max(1, min(int(limit), 200)),
+            )
+        except ProviderError as exc:
+            return {"error": str(exc)}
+        except OSError as exc:
+            return {"error": f"could not write the catalogue to {cache}: {exc}"}
+
+        measured = [voice for voice in voices if voice.measurement == "measured"]
+        unmeasured = [voice for voice in voices if voice.measurement != "measured"]
+        out = {
+            "vendor": "epidemic",
+            "voices": len(voices),
+            "measured": len(measured),
+            "summary": measured_summary(voices),
+            "cache": str(cache),
+            "next": "cast_voice now ranks these alongside any ElevenLabs voices, on "
+                    "measured pitch where it exists.",
+        }
+        if unmeasured:
+            # Named, not counted. "3 unmeasured" hides that all three failed the same
+            # way, which is the difference between a flaky download and a wrong URL.
+            out["not_measured"] = [
+                f"{voice.name}: {voice.measurement}" for voice in unmeasured[:10]
+            ]
+        return out
 
     # -------------------------------------------------------------------- assets
 

@@ -17,6 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..providers import ProviderError
 from ..render import ffmpeg as ff
+from ..render.cutting import plates_for, shot_estimate, spec_for
 from ._common import ask_json, dimensions, request_payload
 
 THUMBNAIL_INSTRUCTIONS = """Design thumbnail concepts for this video.
@@ -351,10 +352,16 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
             continue
         by_index[index] = shot
 
-    # Every scene must end up with a shot, planned or inferred.
+    # How fast this channel cuts. The rate decides how many plates a scene has to buy,
+    # so it is resolved here — where the spend is planned — and again at render time from
+    # the measured voiceover, which is the only place the shot *lengths* can be right.
+    spec = spec_for(ctx.channel.style_profile)
+
+    # Every scene must end up with at least one plate, planned or inferred.
     shots: list[dict] = []
     video_budget = max(1, len(scenes) // 3)
     videos = 0
+    planned_shots = 0
     for scene in scenes:
         planned = by_index.get(scene["index"], {})
         kind = str(planned.get("kind") or scene.get("visual_kind") or "image")
@@ -368,26 +375,56 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
             kind = "image"  # protect the budget from an over-eager plan
         if kind == "video":
             videos += 1
+        kind = kind if kind in {"video", "map"} else "image"
 
-        shots.append(
-            {
-                "scene_index": scene["index"],
-                "prompt": str(planned.get("prompt") or scene.get("visual_prompt") or "").strip()
-                or f"cinematic b-roll: {scene['narration'][:120]}",
-                "kind": kind if kind in {"video", "map"} else "image",
-                "motion": str(planned.get("motion") or "slow push in"),
-                "places": places,
-                "seconds": scene["seconds"],
-            }
-        )
+        seconds = float(scene["seconds"])
+        shot_count = shot_estimate(seconds, spec)
+        planned_shots += shot_count
+        # An animated clip and a map are bought once and sliced; only a still is cheap
+        # enough that a second one is worth buying to break up a long beat.
+        plates = plates_for(seconds, spec, reusable=kind == "image")
+
+        prompt = str(planned.get("prompt") or scene.get("visual_prompt") or "").strip() \
+            or f"cinematic b-roll: {scene['narration'][:120]}"
+        for plate_index in range(plates):
+            shots.append(
+                {
+                    "scene_index": scene["index"],
+                    "plate_index": plate_index,
+                    "plates": plates,
+                    "planned_shots": shot_count,
+                    # Later plates re-enter the same scene, so they need a prompt that
+                    # differs enough to be worth the money. Asking the model for two
+                    # prompts per scene would double the planning tokens for a variation
+                    # a suffix already gets: the same subject, seen another way.
+                    "prompt": prompt if plate_index == 0
+                    else f"{prompt}. Alternative angle {plate_index + 1} on the same subject.",
+                    "kind": kind,
+                    "motion": str(planned.get("motion") or "slow push in"),
+                    "places": places,
+                    "seconds": seconds,
+                }
+            )
 
     path = ctx.path_for("shot_list.json")
     path.write_text(json.dumps({"shots": shots}, indent=2, ensure_ascii=False), encoding="utf-8")
     ctx.emit_artifact("json", path, "application/json", shots=len(shots))
-    ctx.log(f"planned {len(shots)} shots ({videos} animated)")
+    ctx.log(
+        f"planned {planned_shots} visual shots across {len(scenes)} scenes from "
+        f"{len(shots)} plates ({videos} animated), cutting every "
+        f"{spec.target_shot_seconds:.1f}s"
+    )
 
     return NodeResult(
-        output={"shots": shots, "video_shots": videos}, credits=credits, provider=provider
+        output={
+            "shots": shots,
+            "video_shots": videos,
+            "plates": len(shots),
+            "planned_shots": planned_shots,
+            "target_shot_seconds": round(spec.target_shot_seconds, 3),
+        },
+        credits=credits,
+        provider=provider,
     )
 
 
@@ -448,6 +485,11 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
 
     for shot in shots:
         index = int(shot["scene_index"])
+        # A scene can own several plates now, so the slug — and therefore every file this
+        # loop writes — has to carry both numbers. Keyed on the scene alone, plate 2 would
+        # overwrite plate 1 on disk and the render would cut between one image and itself.
+        plate_index = int(shot.get("plate_index") or 0)
+        slug = f"shot_{index:03d}" + (f"_{plate_index}" if plate_index else "")
         prompt = shot["prompt"]
         seconds = float(shot.get("seconds") or 5.0)
         plate: Path | None = None
@@ -456,7 +498,7 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
         # conditioning frame that image-to-video models need.
         try:
             still = await image_provider.generate(
-                prompt, out_path=ctx.path_for(f"shot_{index:03d}_plate"),
+                prompt, out_path=ctx.path_for(f"{slug}_plate"),
                 width=width, height=height,
             )
             credits += still.credits
@@ -473,8 +515,8 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                     level="warning",
                 )
             ctx.emit_artifact(
-                "image", plate, still.mime, scene_index=index, role="plate",
-                prompt=prompt[:300], relevance=relevance,
+                "image", plate, still.mime, scene_index=index, plate_index=plate_index,
+                role="plate", prompt=prompt[:300], relevance=relevance,
                 licence=still.meta.get("licence"),
                 attribution=still.meta.get("attribution"),
             )
@@ -495,11 +537,13 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                 final_path = map_path
                 kind = "map"
                 ctx.emit_artifact(
-                    "video", map_path, "video/mp4", scene_index=index, role="map",
-                    seconds=seconds, places=shot["places"],
+                    "video", map_path, "video/mp4", scene_index=index,
+                    plate_index=plate_index, role="map", seconds=seconds,
+                    places=shot["places"],
                 )
-                produced.append({"scene_index": index, "path": str(final_path),
-                                 "kind": kind, "seconds": seconds})
+                produced.append({"scene_index": index, "plate_index": plate_index,
+                                 "path": str(final_path), "kind": kind,
+                                 "seconds": seconds})
                 continue
             except Exception as exc:
                 degraded += 1
@@ -510,7 +554,7 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
             try:
                 clip = await video_provider.generate_clip(
                     f"{prompt}. Camera: {shot.get('motion', 'slow push in')}.",
-                    out_path=ctx.path_for(f"shot_{index:03d}_clip"),
+                    out_path=ctx.path_for(f"{slug}_clip"),
                     seconds=seconds,
                     width=width,
                     height=height,
@@ -521,8 +565,9 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                 final_path = clip.path
                 kind = "video"
                 ctx.emit_artifact(
-                    "video", clip.path, clip.mime, scene_index=index, role="shot",
-                    prompt=prompt[:300], seconds=clip.duration_seconds,
+                    "video", clip.path, clip.mime, scene_index=index,
+                    plate_index=plate_index, role="shot", prompt=prompt[:300],
+                    seconds=clip.duration_seconds,
                 )
             except ProviderError as exc:
                 degraded += 1
@@ -534,22 +579,26 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
         if final_path is None:
             # Nothing usable — the renderer will draw a captioned card here.
             degraded += 1
-            produced.append({"scene_index": index, "path": None, "kind": "missing"})
+            produced.append({"scene_index": index, "plate_index": plate_index,
+                             "path": None, "kind": "missing"})
             continue
 
-        produced.append({"scene_index": index, "path": str(final_path), "kind": kind,
-                         "seconds": seconds})
+        produced.append({"scene_index": index, "plate_index": plate_index,
+                         "path": str(final_path), "kind": kind, "seconds": seconds})
 
     usable = [s for s in produced if s["path"]]
     if not usable:
         raise ProviderError("no shot produced a usable visual", retryable=True)
 
+    scenes_covered = len({s["scene_index"] for s in usable})
     ctx.log(
-        f"generated {len(usable)}/{len(shots)} shots"
+        f"generated {len(usable)}/{len(shots)} plates across {scenes_covered} scenes"
         + (f", {degraded} degraded" if degraded else "")
     )
     return NodeResult(
-        output={"shots": produced, "degraded": degraded}, credits=credits, provider=provider
+        output={"shots": produced, "degraded": degraded, "plates": len(usable)},
+        credits=credits,
+        provider=provider,
     )
 
 

@@ -43,13 +43,13 @@ SERVER_NAME = "forgecast"
 _READ_ONLY = (
     "studio_status", "list_channels", "study_youtube_channel", "list_runs",
     "run_status", "preview_run", "list_styles", "score_videos", "research_channel",
-    "run_files", "cast_voice", "voice_catalogue",
+    "run_files", "cast_voice", "voice_catalogue", "voice_artists",
     # Reading the operator's own instruction documents. See skills_tools.py for why
     # they are read-only and why their descriptions are as long as they are.
     *skills_tools.READ_ONLY,
 )
 _WRITES = ("create_channel", "update_channel", "start_run", "apply_style",
-           "blend_styles", "cancel_run")
+           "blend_styles", "cancel_run", "sync_voice_artists")  # all re-runnable
 
 # `decide_gate` is intentionally absent: approving a gate is the moment the run is
 # allowed to spend on the stage behind it, and that is the user's call, not a step
@@ -225,10 +225,31 @@ def build_server(studio):
             limit=int(args.get("limit") or 3)))
 
     @tool("voice_catalogue",
-          "Which voices are known, and whether each was measured from the account's "
-          "own preview clips or assumed from the offline fallback list.", {})
+          "Which voices are known, from which vendors, and whether each was measured "
+          "from the account's own preview clips or assumed from the offline fallback "
+          "list.", {})
     async def voice_catalogue(args):
         return _text(studio.voice_catalogue())
+
+    @tool("voice_artists",
+          "Epidemic Sound's voice artists for narration: who they are, where they are "
+          "from, the vendor's description of each, and which languages each one reads. "
+          "Read-only and free. Says what to do instead if Epidemic Sound is not "
+          "connected.",
+          {"limit": int})
+    async def voice_artists(args):
+        return _text(await studio.voice_artists(limit=int(args.get("limit") or 20)))
+
+    @tool("sync_voice_artists",
+          "Read Epidemic Sound's voice artists and measure the pitch of each one's "
+          "preview clip, so cast_voice can rank them on the same measured scale as the "
+          "ElevenLabs voices. Writes its own catalogue file and leaves the ElevenLabs "
+          "one alone. Spends no credits.",
+          {"measure": bool, "limit": int})
+    async def sync_voice_artists(args):
+        return _text(await studio.sync_voice_artists(
+            measure=bool(args.get("measure", True)),
+            limit=int(args.get("limit") or 60)))
 
     # --------------------------------------------------------------------- styles
 
@@ -261,6 +282,7 @@ def build_server(studio):
         tools=[studio_status, list_channels, study_youtube_channel, create_channel,
                update_channel, list_runs, start_run, run_status, decide_gate,
                cancel_run, preview_run, run_files, research_channel, score_videos,
-               cast_voice, voice_catalogue, list_styles, apply_style, blend_styles,
+               cast_voice, voice_catalogue, voice_artists, sync_voice_artists,
+               list_styles, apply_style, blend_styles,
                *skills_tools.build(studio)],
     )

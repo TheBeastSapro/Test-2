@@ -1,3 +1,12 @@
+from .cutting import (
+    SceneBeat,
+    ShotCut,
+    estimate_plates,
+    plan_cuts,
+    plates_for,
+    shots_per_minute,
+    spec_for,
+)
 from .ffmpeg import (
     RenderError,
     Scene,
@@ -18,16 +27,23 @@ from .ffmpeg import (
 __all__ = [
     "RenderError",
     "Scene",
+    "SceneBeat",
+    "ShotCut",
     "assemble_video",
     "burn_subtitles",
     "concat_clips",
+    "estimate_plates",
     "ffprobe_duration",
     "make_color_clip",
     "make_silent_audio",
     "make_tone_audio",
     "normalise_clip",
     "overlay_video",
+    "plan_cuts",
+    "plates_for",
     "run_ffmpeg",
+    "shots_per_minute",
+    "spec_for",
     "still_to_clip",
     "write_srt",
 ]

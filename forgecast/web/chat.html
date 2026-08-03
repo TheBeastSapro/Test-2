@@ -56,7 +56,13 @@
               d="M21.4 11.05 12.25 20.2a6 6 0 0 1-8.49-8.49l9.2-9.19a4 4 0 0 1 5.65 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
           </button>
           <input type="file" id="attach-file" multiple hidden>
-          <span class="agent-tag">Claude agent</span>
+          {# WHICH AGENT, THEN WHICH OF ITS MODELS — in that order, because the second
+             list depends on the first. Both are subscription sign-ins: Claude through
+             the Claude Code CLI, ChatGPT through OpenAI's Codex CLI. Neither takes an
+             API key, and the sentence under the composer says so where the choice is
+             actually made rather than in a document nobody opens. #}
+          <span class="agent-tag" id="agent-tag">Claude agent</span>
+          <select id="engine-pick" class="mini-select" title="Which agent answers"></select>
           <select id="model-pick" class="mini-select" title="Which model answers"></select>
           <label class="mini-toggle" title="On: it asks before editing a file. Tool calls are unaffected.">
             <input type="checkbox" id="confirm-edits" checked><span></span>Confirm calls
@@ -68,6 +74,7 @@
           </button>
         </div>
       </div>
+      <p class="sub" id="engine-note" style="margin:6px 2px 0;font-size:12px"></p>
     </div>
   </section>
 
@@ -99,15 +106,84 @@
     </div>
 
     <div class="pane" id="pane-claude">
-      <h3>Claude</h3>
+      <h3 id="agent-pane-title">Claude</h3>
       <p class="sub" id="claude-detail">Checking your sign-in…</p>
       <div class="row" id="claude-actions" hidden style="margin-top:10px">
         <button class="primary btn-sm" id="btn-login">Sign in</button>
         <button class="btn-sm" id="btn-recheck">Check again</button>
       </div>
+      {# What the selected agent cannot do that the other one can. Empty for Claude.
+         Shown rather than documented, because the alternative is someone leaving
+         "Confirm calls" ticked on a backend that has no way to honour it. #}
+      <ul class="sub" id="engine-limits" hidden
+          style="margin:10px 0 0;padding-left:16px;font-size:12px"></ul>
     </div>
   </aside>
 
 </div>
 <script src="/static/chat.js"></script>
+<script>
+/* THE AGENT PICKER.
+ *
+ * Its own script rather than a patch to chat.js: everything here is about *which*
+ * backend answers, and chat.js is about rendering a turn. It reads the same
+ * /api/agent/prefs it already reads and reuses its `esc` and `refreshAuth`, so there
+ * is one auth panel and one model list rather than a second set that drifts.
+ *
+ * Switching is one POST and then a re-read, not a local guess: the server decides
+ * which models the new engine offers, and painting an optimistic list here is how you
+ * end up sending a Claude model id to Codex. */
+(function () {
+  const pick = document.getElementById('engine-pick');
+  const note = document.getElementById('engine-note');
+  const tag = document.getElementById('agent-tag');
+  const title = document.getElementById('agent-pane-title');
+  const limits = document.getElementById('engine-limits');
+  const models = document.getElementById('model-pick');
+  const clean = s => (typeof esc === 'function' ? esc(s) : String(s == null ? '' : s));
+  let ENGINES = [];
+
+  function paint(prefs) {
+    ENGINES = prefs.engines || [];
+    const current = ENGINES.find(e => e.key === prefs.engine) || ENGINES[0];
+    if (!current) return;
+
+    pick.innerHTML = ENGINES.map(e =>
+      `<option value="${clean(e.key)}"${e.key === current.key ? ' selected' : ''}
+        title="${clean(e.signin)}">${clean(e.label)}</option>`).join('');
+    // Repainted from the server's answer, because the model list belongs to the engine.
+    models.innerHTML = (prefs.models || []).map(m =>
+      `<option value="${clean(m.id)}"${m.id === prefs.model ? ' selected' : ''}
+        title="${clean(m.note)}">${clean(m.label)}</option>`).join('');
+
+    tag.textContent = `${current.label} agent`;
+    title.textContent = current.label;
+    note.textContent = current.signin;
+    limits.innerHTML = (current.limits || [])
+      .map(line => `<li>${clean(line)}</li>`).join('');
+    limits.hidden = !(current.limits || []).length;
+  }
+
+  const load = () => fetch('/api/agent/prefs', { headers: { Accept: 'application/json' } })
+    .then(r => r.json()).then(paint).catch(() => {});
+
+  pick.onchange = async event => {
+    const key = event.target.value;
+    const response = await fetch('/api/agent/prefs', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ engine: key }),
+    });
+    if (!response.ok) return;
+    await load();
+    // The sign-in state is per agent, so the panel has to be re-asked. Switching to a
+    // backend that is not installed must say so here and now — not on the first
+    // message, when the reply is where the explanation lands.
+    if (typeof refreshAuth === 'function') refreshAuth();
+    const chosen = ENGINES.find(e => e.key === key);
+    if (chosen && typeof toast === 'function') toast(`${chosen.label} is answering now`);
+  };
+
+  load();
+})();
+</script>
 {% endblock %}

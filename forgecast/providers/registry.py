@@ -29,6 +29,7 @@ from .base import (
     VideoProvider,
     VoiceProvider,
 )
+from .epidemic import EpidemicVoiceProvider, MockEpidemicVoice
 from .llm import AnthropicProvider, OpenAIProvider
 from .llm_cli import ClaudeCliProvider
 from .media import (
@@ -49,6 +50,12 @@ CATALOGUE: dict[str, tuple[Capability, type, str]] = {
     # resolution treats them as always-available rather than always-unconfigured.
     "claude-cli": (Capability.llm, ClaudeCliProvider, ""),
     "openverse": (Capability.image, OpenverseProvider, ""),
+    # Keyless here means "no ProviderKey row", not "no credential". Epidemic Sound's
+    # credential is a *connector* — the agent's connector store, not the Settings key
+    # table — so the adapter fetches its own and `available()` is what decides whether
+    # this vendor can serve a run. Giving it a key name would have made the registry
+    # look for an `epidemic` provider key that nothing ever writes.
+    "epidemic-sound": (Capability.voice, EpidemicVoiceProvider, ""),
     "elevenlabs": (Capability.voice, ElevenLabsProvider, "elevenlabs"),
     "fal": (Capability.image, FalImageProvider, "fal"),
     "fal-video": (Capability.video, FalVideoProvider, "fal"),
@@ -62,7 +69,11 @@ CATALOGUE: dict[str, tuple[Capability, type, str]] = {
 # works instead of failing at the first node.
 DEFAULT_ROUTING: dict[Capability, list[str]] = {
     Capability.llm: ["anthropic", "openai", "claude-cli"],
-    Capability.voice: ["elevenlabs"],
+    # ElevenLabs first because a stored provider key means the operator chose it.
+    # Epidemic Sound sits behind it for the same reason the keyless providers do: it is
+    # there so an install with no ElevenLabs key still narrates instead of failing at
+    # the voice node, not because it is the preferred vendor.
+    Capability.voice: ["elevenlabs", "epidemic-sound"],
     Capability.image: ["fal", "openverse"],
     Capability.video: ["fal-video", "runway"],
     Capability.avatar: ["heygen"],
@@ -75,6 +86,39 @@ MOCKS: dict[Capability, type] = {
     Capability.video: MockVideo,
     Capability.avatar: MockAvatar,
 }
+
+# Vendor-shaped offline stand-ins, used in `mock` mode when an override names that vendor.
+#
+# The generic mock per capability is the right default, but it answers in one vendor's
+# shape: `MockVoice.list_voices` mirrors the ElevenLabs catalogue. So the fields a
+# different adapter maps — Epidemic Sound's `location`, `characteristics`, `languages` —
+# were unreachable offline, which is to say untested and undemonstrable on a fresh
+# install. Naming the vendor now gets that vendor's shapes, still with no network.
+MOCK_VENDORS: dict[str, type] = {
+    "epidemic-sound": MockEpidemicVoice,
+}
+
+
+def _availability(provider) -> tuple[bool, str]:
+    """Is this provider usable, and if not, the sentence that says why.
+
+    Two shapes are in the tree and both are legitimate: `ClaudeCliProvider.available()`
+    returns a bool, and the connector-backed adapters return `(ok, why_not)` — the shape
+    `research.keyless.available` established, because the reason is the useful half.
+
+    Reading them the same way was a bug waiting to happen: `(False, "not connected")` is
+    a non-empty tuple, so a plain truth test accepted an unusable provider and the run
+    failed later at the vendor call with an error about a missing credential instead of
+    falling through to the next vendor.
+    """
+    checker = getattr(provider, "available", None)
+    if checker is None:
+        return True, ""
+    verdict = checker()
+    if isinstance(verdict, tuple):
+        ok = bool(verdict[0])
+        return ok, "" if ok else str(verdict[1] if len(verdict) > 1 else "")
+    return bool(verdict), "" if verdict else "reported itself unavailable"
 
 
 @dataclass
@@ -95,14 +139,22 @@ class ProviderRegistry:
     # -- capability resolution --------------------------------------------------
 
     def resolve(self, capability: Capability):
+        preferred = self.overrides.get(capability.value)
+
         if self.mode == "mock":
+            stand_in = MOCK_VENDORS.get(preferred or "")
+            if stand_in is not None:
+                return self._cached(f"mock:{preferred}", stand_in)
             return self._cached(f"mock:{capability.value}", MOCKS[capability])
 
-        preferred = self.overrides.get(capability.value)
         candidates = [preferred] if preferred else []
         candidates += [v for v in DEFAULT_ROUTING.get(capability, []) if v != preferred]
 
         tried: list[str] = []
+        # Why each candidate was passed over. Without these the failure said only that
+        # nothing was usable, so an operator with a connector configured but disabled got
+        # the same sentence as one who had configured nothing at all.
+        refused: list[str] = []
         for vendor in candidates:
             entry = CATALOGUE.get(vendor)
             if entry is None:
@@ -113,22 +165,27 @@ class ProviderRegistry:
             tried.append(vendor)
 
             if not key_name:
-                # Keyless provider. Some still have a precondition — the CLI has to
-                # be installed — so ask before handing it back.
+                # No provider key. Most still have a precondition — the CLI has to be
+                # installed, the connector has to be connected — so ask before handing
+                # it back.
                 candidate = self._cached(f"{vendor}", cls)
-                checker = getattr(candidate, "available", None)
-                if checker is None or checker():
+                usable, reason = _availability(candidate)
+                if usable:
                     return candidate
+                if reason:
+                    refused.append(f"{vendor}: {reason}")
                 continue
 
             api_key = self.key_for(key_name)
             if api_key:
                 return self._cached(f"{vendor}", cls, api_key)
+            refused.append(f"{vendor}: no {key_name} key configured")
 
+        detail = (" " + " ".join(refused)) if refused else ""
         raise ProviderError(
             f"no usable {capability.value} provider: tried {tried or candidates} "
-            "and none was usable. Add a key under Settings → Provider keys, or run "
-            "with FORGECAST_PROVIDER_MODE=mock."
+            f"and none was usable.{detail} Add a key under Settings → Provider keys, or "
+            "run with FORGECAST_PROVIDER_MODE=mock."
         )
 
     def _cached(self, cache_key: str, cls: type, *args):

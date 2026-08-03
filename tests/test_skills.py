@@ -501,10 +501,24 @@ def test_a_hand_added_slug_key_cannot_repoint_a_skill(tmp_path):
 # -------------------------------------------------------------------- the starters
 
 
+# Every document a fresh install seeds, in the order `available` sorts them. Pinned as a
+# list rather than counted, because the failure this catches is a shipped document that
+# stopped arriving — and a count passes just as happily when one file is missing and
+# another was added.
+SEEDED_SLUGS = [
+    "caption-discipline",
+    "documentary-reveal-structure",
+    "hook-writing",
+    "i2v-prompt-cookbook",
+    "image-to-video-prompting",
+    "photoreal-vs-cinematic-register",
+    "storyboard-and-scene-breakdown",
+]
+
+
 def test_the_starters_are_created_once_and_never_rewritten(tmp_path):
     first = skills.available(tmp_path)
-    assert [row["slug"] for row in first] == [
-        "caption-discipline", "documentary-reveal-structure", "hook-writing"]
+    assert [row["slug"] for row in first] == SEEDED_SLUGS
 
     folder = skills.directory(tmp_path)
     stamps = {path.name: path.stat().st_mtime_ns for path in folder.glob("*.md")}
@@ -514,20 +528,18 @@ def test_the_starters_are_created_once_and_never_rewritten(tmp_path):
     skills.save("hook-writing", "Hook writing", "mine now", "my own rules", tmp_path)
 
     second = skills.available(tmp_path)
-    assert len(second) == 3
+    assert len(second) == len(SEEDED_SLUGS)
     assert skills.get("hook-writing", tmp_path).body == "my own rules"
     assert {path.name for path in folder.glob("*.md")} == set(stamps)
 
     # And a starter deleted on purpose stays deleted while the others remain.
     skills.delete("caption-discipline", tmp_path)
-    assert [row["slug"] for row in skills.available(tmp_path)] == [
-        "documentary-reveal-structure", "hook-writing"]
+    assert [row["slug"] for row in skills.available(tmp_path)] == SEEDED_SLUGS[1:]
 
 
 def test_the_starters_are_real_craft_rather_than_placeholders(tmp_path):
     rows = {row["slug"]: row for row in skills.available(tmp_path)}
-    assert set(rows) == {"hook-writing", "documentary-reveal-structure",
-                         "caption-discipline"}
+    assert set(rows) == set(SEEDED_SLUGS)
 
     for slug in rows:
         skill = skills.get(slug, tmp_path)
@@ -655,7 +667,7 @@ def test_a_slug_from_the_url_cannot_delete_outside_the_folder(client, tmp_path, 
 
     assert canary.read_text(encoding="utf-8") == "do not touch"
     assert sorted(item.name for item in tmp_path.iterdir()) == ["passwd.md", "skills"]
-    assert len(list((tmp_path / "skills").glob("*.md"))) == 3
+    assert len(list((tmp_path / "skills").glob("*.md"))) == len(SEEDED_SLUGS)
 
 
 def test_a_delete_by_display_name_hits_that_same_document(client):

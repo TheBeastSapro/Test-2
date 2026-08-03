@@ -11,17 +11,22 @@ expensive stages sit *behind* gates on the cheap stages that determine them.
 
 from __future__ import annotations
 
+from ..render.cutting import estimate_plates
 from .spec import NodeSpec, PipelineSpec
 
 WORDS_PER_SECOND = 2.6
-SECONDS_PER_SHOT = 6.0
 
 
 def faceless_longform(
     *, target_seconds: int = 480, use_avatar: bool = False, publish: bool = True
 ) -> PipelineSpec:
     words = int(target_seconds * WORDS_PER_SECOND)
-    shots = max(4, round(target_seconds / SECONDS_PER_SHOT))
+    # The shots node buys *plates*, not shots: one image carries several shots at
+    # different crops. This used to reserve `target_seconds / 6` units — about 80 for an
+    # 8-minute video against the eight the node then spent, wrong by an order of
+    # magnitude in the safe direction. Deriving it from the same constants the node uses
+    # means the reserve now tracks the spend instead of guessing at it.
+    shots = estimate_plates(target_seconds)
 
     nodes: list[NodeSpec] = [
         NodeSpec(
@@ -156,7 +161,9 @@ def faceless_longform(
 
 def faceless_shorts(*, target_seconds: int = 45, publish: bool = True, **_) -> PipelineSpec:
     words = int(target_seconds * WORDS_PER_SECOND)
-    shots = max(3, round(target_seconds / 4))
+    # A short is mostly floor rather than rate: its beats are too brief to want a second
+    # plate, so the reserve is one per scene and the runtime term barely contributes.
+    shots = estimate_plates(target_seconds)
 
     nodes: list[NodeSpec] = [
         NodeSpec(

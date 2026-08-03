@@ -27,6 +27,20 @@ with an arbitrary-object surface, all bought for `name:` and `when_to_use:`. Wha
 supported instead is exactly what is written: `key: value` lines above a `---` fence.
 Anything else in the block is kept in `extra` rather than dropped, so a file hand-edited
 with a third key does not lose it on the next save.
+
+## Why this is a package with a `data/` directory
+
+The three original starters are Python strings a few hundred words each. The four visual
+documents are ten to thirteen kilobytes of operational craft apiece, and they are edited
+as prose — reordered, re-argued, re-costed. Pasted into a `\"\"\"` literal they become a
+file nobody reviews and every edit a diff nobody can read, so they live as markdown in
+`data/` beside this module and are read at seed time.
+
+The cost of that choice is a packaging obligation: a wheel built without
+`[tool.setuptools.package-data]` naming `data/*.md` installs the seeding code and none of
+the documents. That failure is invisible — the library simply comes up with three skills
+instead of seven — so a document that cannot be read is logged by name rather than
+skipped in silence.
 """
 
 from __future__ import annotations
@@ -37,7 +51,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .config import get_settings
+from ..config import get_settings
 
 log = logging.getLogger("forgecast.skills")
 
@@ -517,11 +531,12 @@ race ahead of it and spoil the sentence.
 """
 
 
-# Three, and these three, because they are the decisions that come up in every single
-# faceless script: how it opens, how it holds, and what the type on screen may do. They
-# ship as content rather than as a "your skill here" placeholder for a plain reason — a
-# starter with nothing in it teaches the format and none of the craft, and an operator
-# who has to invent both at once writes neither.
+# The three scripting starters. These three, because they are the decisions that come up
+# in every single faceless script: how it opens, how it holds, and what the type on screen
+# may do. They ship as content rather than as a "your skill here" placeholder for a plain
+# reason — a starter with nothing in it teaches the format and none of the craft, and an
+# operator who has to invent both at once writes neither. The visual documents that ship
+# beside them are in `SHIPPED_DOCS` below, as files.
 STARTERS: tuple[tuple[str, str, str], ...] = (
     (
         "Hook writing",
@@ -544,22 +559,101 @@ STARTERS: tuple[tuple[str, str, str], ...] = (
 )
 
 
+# The four visual-production documents, shipped as files rather than as string literals
+# for the reason in the module docstring. The `when_to_use` line beside each one is not
+# a description: it is the entire basis on which the agent decides whether to spend a
+# turn loading twelve kilobytes, so each names the moment work reaches the document, the
+# artefact being produced, and — where the neighbouring document is the better answer —
+# the case it does *not* cover. "Use when generating visuals" fires on every image the
+# app ever makes, which is the same as never firing usefully.
+DATA_DIR = Path(__file__).resolve().parent / "data"
+
+SHIPPED_DOCS: tuple[tuple[str, str, str], ...] = (
+    (
+        "Image-to-video prompting",
+        "Before submitting any image-to-video render: picking the i2v model against its "
+        "per-second cost, writing the subject/action/camera/lighting/mood/technical "
+        "prompt, setting motion intensity, running the Sample Gate before a full-length "
+        "render, and inspecting returned frames. Not for stills, thumbnails or stock.",
+        "image-to-video.md",
+    ),
+    (
+        "i2v prompt cookbook",
+        "While actually writing an i2v prompt, or after a clip came back melted, warped, "
+        "looping or off-brief: match the shot to one of the ten templates, pick the model "
+        "from the fingerprint table, check the verb against the clean/risky/forbidden "
+        "tiers, diagnose the anti-pattern. Load with the image-to-video skill, not "
+        "instead of it.",
+        "i2v-prompt-cookbook.md",
+    ),
+    (
+        "Photoreal vs cinematic register",
+        "Before the first image or clip of a new channel or video exists, and whenever a "
+        "host shot comes back glossier than the niche expects: choosing authentic-amateur, "
+        "cinematic-polished or a deliberate mix per niche, audience and surface, locking "
+        "that choice to channel memory, and diagnosing studio-lighting drift. Not for "
+        "prompt wording or model choice.",
+        "visual-register.md",
+    ),
+    (
+        "Storyboard and scene breakdown",
+        "When a script is approved and visuals are next: deciding whether this format "
+        "needs a storyboard at all, at what depth, mapping beats or bars to shots with "
+        "durations that fit the model's clip cap, and walking the four commit gates. Skip "
+        "for a locked-host talking-head channel and for ambient single-scene loops.",
+        "storyboard.md",
+    ),
+)
+
+
+def _shipped_body(filename: str) -> str:
+    """The text of one shipped document, or "" with the reason logged.
+
+    Read here rather than at import time so that a packaging mistake degrades the skills
+    library instead of breaking every import of it — and named in the log because the
+    symptom otherwise is a page listing three skills where seven were installed, which
+    looks like a product decision rather than a missing wheel entry.
+    """
+    try:
+        return (DATA_DIR / filename).read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        log.warning(
+            "shipped skill %s is missing from %s (%s) — the install is incomplete; "
+            "package-data must carry forgecast/skills/data/*.md", filename, DATA_DIR, exc)
+        return ""
+
+
+def starters() -> list[Skill]:
+    """Every document this install ships, as skills, in seeding order.
+
+    Public because it is the only honest way to test that the shipped documents survived
+    packaging: asserting on the seeded folder passes just as well when a document was
+    silently dropped, since the folder is non-empty either way.
+    """
+    made = [Skill(slug=slugify(name), name=name, when_to_use=when_to_use,
+                  body=body.strip())
+            for name, when_to_use, body in STARTERS]
+    made += [Skill(slug=slugify(name), name=name, when_to_use=when_to_use, body=body)
+             for name, when_to_use, filename in SHIPPED_DOCS
+             if (body := _shipped_body(filename))]
+    return made
+
+
 def _ensure_starters(folder: Path) -> list[Skill]:
-    """Seed the three starters into an empty folder, once.
+    """Seed the starters into an empty folder, once.
 
     Guarded on the folder being empty rather than on a marker file, which means an
     install whose skills were all deleted gets them back on the next visit. That is the
     right trade: an empty skills page is indistinguishable from a broken one, and these
-    three documents are also the only worked examples of the format anyone editing a
-    skill has to go on. Deleting one of the three is respected — the seed only runs when
-    there is nothing at all.
+    documents are also the only worked examples of the format anyone editing a skill has
+    to go on. Deleting one of them is respected — the seed only runs when there is
+    nothing at all. The cost of that rule is the reverse case: an operator who deletes
+    six and keeps one never gets an upgrade's new documents, and finds them on the
+    Skills page of a fresh install instead.
     """
     if any(folder.glob("*.md")):
         return []
-    made = []
-    for name, when_to_use, body in STARTERS:
-        skill = Skill(slug=slugify(name), name=name, when_to_use=when_to_use,
-                      body=body.strip())
+    made = starters()
+    for skill in made:
         (folder / f"{skill.slug}.md").write_text(skill.document(), encoding="utf-8")
-        made.append(skill)
     return made

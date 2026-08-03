@@ -16,6 +16,7 @@ from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..providers import ProviderError
 from ..providers.youtube import publisher_for
 from ..render import Scene, assemble_video
+from ..render.cutting import SceneBeat, plan_cuts, shots_per_minute, spec_for
 from ._common import ask_json, dimensions, request_payload
 
 COMPLIANCE_INSTRUCTIONS = """Review this video for platform-policy and honesty risk
@@ -39,33 +40,56 @@ Style disagreements are not failures."""
 @node_handler("render")
 async def render_node(ctx: NodeContext) -> NodeResult:
     script = ctx.output("script")
-    shots = {int(s["scene_index"]): s for s in ctx.output("shots").get("shots", [])}
+    plates = _plates_by_scene(ctx.output("shots").get("shots", []))
     voice_output = ctx.output("voice")
     segments = {int(s["scene_index"]): s for s in voice_output.get("segments", [])}
 
     width, height = dimensions(ctx)
     scenes: list[Scene] = []
+    beats: list[SceneBeat] = []
     for entry in script.get("scenes") or []:
         index = int(entry["index"])
         # The narration decides the cut length — visuals stretch to fit, never the reverse.
-        seconds = float(segments.get(index, {}).get("seconds") or entry["seconds"])
-        shot = shots.get(index) or {}
-        visual = Path(shot["path"]) if shot.get("path") else None
-        if visual is not None and not visual.exists():
+        seconds = round(float(segments.get(index, {}).get("seconds") or entry["seconds"]), 3)
+        found = plates.get(index) or []
+        usable = [Path(item["path"]) for item in found if item.get("path")]
+        usable = [path for path in usable if path.exists()]
+        if found and not usable:
             ctx.log(f"scene {index}: visual missing on disk, using a card", level="warning")
-            visual = None
         scenes.append(
             Scene(
                 index=index,
-                seconds=round(seconds, 3),
-                visual_path=visual,
+                seconds=seconds,
+                visual_path=usable[0] if usable else None,
                 narration=entry["narration"],
                 meta={"on_screen_text": entry.get("on_screen_text", "")},
+                plates=usable,
+            )
+        )
+        beats.append(
+            SceneBeat(
+                index=index,
+                seconds=seconds,
+                plates=max(1, len(usable)),
+                # Two reasons not to cut a scene up. A map animates itself along a route,
+                # and punching in mid-route reads as a mistake rather than an edit. And a
+                # scene with no visual at all falls back to a colour card, so subdividing
+                # it would spend a dozen encodes cutting between identical cards.
+                hold=not usable or any(item.get("kind") == "map" for item in found),
             )
         )
 
     if not scenes:
         raise ProviderError("nothing to render")
+
+    # Subdivision. Without it a scene is one visual held for its entire voiceover, which
+    # on an 8-minute video is roughly eight pictures at a minute each. The narration
+    # lengths used here are the measured ones from the voice node, not the script's
+    # estimates, because these are the numbers the audio track actually has — and
+    # `plan_cuts` raises rather than letting the two disagree by a millisecond.
+    spec = spec_for(ctx.channel.style_profile)
+    cuts = plan_cuts(beats, spec)
+    rate = shots_per_minute(cuts)
 
     narration = Path(voice_output["narration_path"])
     avatar_output = ctx.upstream_outputs.get("avatar") or {}
@@ -77,7 +101,11 @@ async def render_node(ctx: NodeContext) -> NodeResult:
 
     out_path = ctx.path_for("final.mp4")
     workdir = ctx.path_for("work")
-    ctx.log(f"rendering {len(scenes)} scenes at {width}x{height}")
+    ctx.log(
+        f"rendering {len(scenes)} scenes as {len(cuts)} shots at {width}x{height} — "
+        f"{rate:.1f} shots/min from {sum(len(s.plates) for s in scenes)} plates "
+        f"(target {spec.target_shot_seconds:.1f}s per shot)"
+    )
 
     preset, plans = _motion_for(ctx, scenes, script)
     backend_name = str(ctx.options.get("motion_backend")
@@ -110,6 +138,7 @@ async def render_node(ctx: NodeContext) -> NodeResult:
         motion_preset=preset,
         motion_plans=plans,
         motion_backend=backend_name,
+        shot_cuts=cuts,
     )
 
     from ..render import ffprobe_duration
@@ -131,6 +160,15 @@ async def render_node(ctx: NodeContext) -> NodeResult:
             "width": width,
             "height": height,
             "size_bytes": out_path.stat().st_size,
+            "cutting": {
+                "shots": len(cuts),
+                "scenes": len(scenes),
+                "plates": sum(len(scene.plates) for scene in scenes),
+                "shots_per_minute": round(rate, 2),
+                "target_shot_seconds": round(spec.target_shot_seconds, 3),
+                "style": "measured" if (ctx.channel.style_profile or {}).get("render_spec")
+                         else "default",
+            },
             "motion": {
                 "preset": preset.name if preset else None,
                 "backend": backend_name if preset else None,
@@ -142,6 +180,23 @@ async def render_node(ctx: NodeContext) -> NodeResult:
         credits=0,
         provider="local-ffmpeg",
     )
+
+
+def _plates_by_scene(produced: list) -> dict[int, list[dict]]:
+    """Group the shots node's output by scene, in plate order.
+
+    Sorted on `plate_index` rather than trusting the emission order: the node degrades
+    per plate, so a scene whose second plate failed and was retried can hand these back
+    out of sequence, and plate 0 is the establishing framing every scene opens on.
+    """
+    grouped: dict[int, list[dict]] = {}
+    for item in produced or []:
+        if not isinstance(item, dict) or item.get("scene_index") is None:
+            continue
+        grouped.setdefault(int(item["scene_index"]), []).append(item)
+    for entries in grouped.values():
+        entries.sort(key=lambda item: int(item.get("plate_index") or 0))
+    return grouped
 
 
 def _motion_for(ctx: NodeContext, scenes: list[Scene], script: dict):
