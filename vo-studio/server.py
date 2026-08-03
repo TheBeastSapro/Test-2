@@ -327,21 +327,20 @@ def lab_sample(payload: dict):
         STATE["lab_text"] = payload["text"].strip()
     text = STATE.get("lab_text") or SAMPLE
 
-    # A take is ONE generate() call, and generate() stops at max_new_tokens=1000
-    # -- about 40 s of speech -- by truncating, not by raising. Paste four
-    # paragraphs here and the tail would vanish with nothing said about it, and
-    # you would be tuning against a read you never heard the end of. So the
-    # sample is cut to one chunk at a sentence boundary, using the same splitter
-    # the pipeline uses, and the reply says what was actually read.
+    # A TAKE READS EVERYTHING YOU GAVE IT.
+    #
+    # generate() stops at max_new_tokens=1000 -- roughly 40 s of speech -- by
+    # truncating rather than raising, so a single call cannot hold a long
+    # passage. That used to mean the take was CUT to the first chunk: hand it
+    # thirty seconds of script and hear six, which is not a sample of anything.
+    #
+    # So a long text is chunked at sentence boundaries with the same splitter
+    # the pipeline uses, every chunk is generated, and they are joined. A take
+    # is now as long as the words you gave it.
     from vostudio.script_prep import chunk_text
     limit = SETTINGS.generation.max_chars_per_chunk
+    pieces = chunk_text(text, limit) if len(text) > limit else [text]
     note = ""
-    if len(text) > limit:
-        pieces = chunk_text(text, limit)
-        text = pieces[0] if pieces else text[:limit]
-        note = (f"Read the first {len(text)} characters — a take is a single "
-                f"pass and anything past roughly 40 seconds gets cut off. "
-                f"Step 3 chunks a full script for you.")
 
     started = time.perf_counter()
     prof = VoiceProfile.load(config.VOICES_DIR, name)
@@ -368,10 +367,33 @@ def lab_sample(payload: dict):
         # "downloading 1 GB" reads very differently from "hung".
         gen.load()
         JOB.update(phase="generating", started=time.perf_counter())
-        gen.generate_chunk(text, STATE["voice"], out,
-                           exaggeration=prof.exaggeration,
-                           temperature=prof.temperature,
-                           cfg_weight=prof.cfg_weight, speed=prof.speed)
+        if len(pieces) == 1:
+            gen.generate_chunk(text, STATE["voice"], out,
+                               exaggeration=prof.exaggeration,
+                               temperature=prof.temperature,
+                               cfg_weight=prof.cfg_weight, speed=prof.speed)
+        else:
+            # Joined with a short pause at the sentence boundary the split
+            # happened on, and a 3 ms fade at each edge. Butt-joining two
+            # generated pieces clicks audibly -- it is the same reason the
+            # master fades every splice.
+            parts, rate = [], SETTINGS.generation.work_sr
+            for i, piece in enumerate(pieces):
+                tmp = out.with_name(f"{out.stem}-part{i:02d}.wav")
+                gen.generate_chunk(piece, STATE["voice"], tmp,
+                                   exaggeration=prof.exaggeration,
+                                   temperature=prof.temperature,
+                                   cfg_weight=prof.cfg_weight, speed=prof.speed)
+                audio, rate = sf.read(tmp)
+                fade = max(1, int(rate * SETTINGS.master.edge_fade_ms / 1000))
+                audio[:fade] *= np.linspace(0, 1, fade)
+                audio[-fade:] *= np.linspace(1, 0, fade)
+                parts.append(audio)
+                if i < len(pieces) - 1:
+                    parts.append(np.zeros(int(rate * 0.18)))
+                tmp.unlink(missing_ok=True)
+            sf.write(out, np.concatenate(parts), rate, subtype="PCM_24")
+            note = f"Read all {len(text)} characters, in {len(pieces)} passes."
     except Exception as exc:
         JOB.update(phase="idle", started=0.0)
         return {"error": friendly(exc)}

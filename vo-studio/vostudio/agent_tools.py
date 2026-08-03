@@ -46,9 +46,13 @@ def build_server(ctx):
         return _text(ctx.set_voice(args["path"]))
 
     @tool("render_take",
-          "Render one short sample in the current voice so the user can hear it. "
-          "Pass `text` to read a specific line, or leave it out to re-read the "
-          "line already being tested. Seconds, not minutes.",
+          "Render a sample in the current voice so the user can hear it. Pass "
+          "`text` and it reads EXACTLY that, all of it, however long — it "
+          "chunks and joins internally. Do not shorten what the user gave you: "
+          "if they hand you thirty seconds of script, they want to hear thirty "
+          "seconds. Leave `text` out to re-read whatever was tested last, which "
+          "is what you want after adjust_voice so the comparison is the same "
+          "words at new settings.",
           {"text": str})
     async def render_take(args):
         return _text(ctx.take(args.get("text") or ""))
