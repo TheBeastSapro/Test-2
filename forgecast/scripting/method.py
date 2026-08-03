@@ -367,20 +367,21 @@ counting rule, not a mood:
 
   - Open a loop by asking it out loud, once, in plain words. A loop the viewer has to
     infer is not open.
-  - Leave it open across at least $min_open_beats following beat. A question asked and
-    answered inside one beat is not a loop, it is a sentence.
+  - Leave it open across at least $min_open_beats following beat before closing it. A
+    question asked and answered inside one beat is not a loop, it is a sentence.
   - Close it on screen, in the narration, at a beat you can point to. Every loop you open
     has a beat index where it closes — write that index down as you outline, because
     writing it down is how you find out you never closed it.
-  - At most $max_open_at_once loops are open at any moment. A fourth is not tension, it
-    is the viewer losing track of which question they were promised an answer to.
+  - At most $max_open_at_once loops are open at any one moment. One more than that is
+    not tension: it is the viewer losing track of which question they were promised an
+    answer to, and a promise nobody is holding cannot be paid.
   - Loops may nest, and closing an inner one is a payoff in its own right. They close
     inside-out: never close the outer loop while an inner one is still open, or an answer
     arrives for a question the viewer has already put down.
 
-Open loops at the final beat: $unclosed_at_end. An unclosed loop at the end is a defect,
-not a cliffhanger. If a loop cannot be closed, cut the sentence that opened it — an
-unanswered question is what the comments end up being about instead of the video.
+Loops still open at the final beat: $unclosed_at_end. An unclosed loop at the end is a
+defect, not a cliffhanger. If a loop cannot be closed, cut the sentence that opened it —
+an unanswered question is what the comments end up being about instead of the video.
 
 Never announce a loop as a delay. "We'll come back to that", "more on that in a moment"
 and "but first" all tell the viewer the next stretch is safe to skip, and they skip it.
