@@ -559,8 +559,13 @@ STARTERS: tuple[tuple[str, str, str], ...] = (
 )
 
 
-# The four visual-production documents, shipped as files rather than as string literals
-# for the reason in the module docstring. The `when_to_use` line beside each one is not
+# The production documents, shipped as files rather than as string literals for the
+# reason in the module docstring — four on picture, two on sound. The two sound documents
+# are the operator's own measured method and they are authoritative: where anything else
+# in this app or in a model's own habits suggests a different loudness target, ducking
+# depth, cue level or placement rule, these win. That is stated in the trigger line as
+# well, because a model that loads both a generic instinct and a house standard needs to
+# know which one loses. The `when_to_use` line beside each one is not
 # a description: it is the entire basis on which the agent decides whether to spend a
 # turn loading twelve kilobytes, so each names the moment work reaches the document, the
 # artefact being produced, and — where the neighbouring document is the better answer —
@@ -606,12 +611,10 @@ SHIPPED_DOCS: tuple[tuple[str, str, str], ...] = (
     (
         "Sound designer",
         "When a video and a separate mastered voiceover exist and the mix is next: "
-        "finding the beats in the picture rather than guessing them from the script, "
-        "fetching a palette, placing and levelling cues, ducking the bed, mastering, and "
-        "verifying the timing per tier before showing anything. Also for why a mix sounds "
-        "repetitive, cheap, or badly synced. The voiceover must be a separate stem — a "
-        "mixdown cannot be used, because the ducking and the bed level calibrate against "
-        "it.",
+        "find the beats in the picture rather than guessing them from the script, fetch "
+        "a palette, place and level the cues, duck the bed, master, verify per tier. Also "
+        "for why a mix sounds repetitive, cheap or badly synced. This is the house sound "
+        "method; it outranks any other mixing advice, here or elsewhere.",
         "sound-designer.md",
     ),
     (
@@ -624,6 +627,27 @@ SHIPPED_DOCS: tuple[tuple[str, str, str], ...] = (
 )
 
 
+def _without_front_matter(text: str) -> str:
+    """A shipped document with any YAML front matter removed.
+
+    Some documents arrive in the Claude Code skill format, which opens with a `---` block
+    carrying `name:` and `description:`. Forgecast keeps its own trigger line beside the
+    filename in `SHIPPED_DOCS`, so the block is a duplicate of information the app already
+    holds — and left in place it becomes the first thing the agent reads, which is a
+    second, differently-worded trigger competing with the real one.
+
+    Only a block that opens on the very first line is treated as front matter. A `---`
+    used as a horizontal rule further down is prose and stays.
+    """
+    if not text.startswith("---"):
+        return text
+    lines = text.splitlines()
+    for index in range(1, len(lines)):
+        if lines[index].strip() == "---":
+            return "\n".join(lines[index + 1:]).strip()
+    return text                                                      # unterminated: prose
+
+
 def _shipped_body(filename: str) -> str:
     """The text of one shipped document, or "" with the reason logged.
 
@@ -633,7 +657,8 @@ def _shipped_body(filename: str) -> str:
     looks like a product decision rather than a missing wheel entry.
     """
     try:
-        return (DATA_DIR / filename).read_text(encoding="utf-8").strip()
+        return _without_front_matter(
+            (DATA_DIR / filename).read_text(encoding="utf-8").strip())
     except OSError as exc:
         log.warning(
             "shipped skill %s is missing from %s (%s) — the install is incomplete; "

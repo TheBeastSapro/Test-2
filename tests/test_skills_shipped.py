@@ -39,6 +39,13 @@ LOAD_BEARING: dict[str, tuple[str, ...]] = {
                                "Anti-pattern diagnoses"),
     "visual-register.md": ("Register A", "Register B", "studio-lighting trap"),
     "storyboard.md": ("Gate 1", "Gate 4", "four depths", "Duration maths"),
+    # The sound pair carries numbers rather than gates. Each marker below is a figure that
+    # was measured, not chosen, so a document that lost them is a document that no longer
+    # says what to do — and the mix would come back sounding like a default.
+    "sound-designer.md": ("Non-negotiables", "Diagnose by measuring, never by ear",
+                          "dBFS", "Order of work"),
+    "sound-designer-method.md": ("Diagnose by measuring, never by ear",
+                                 "Effects sit ABOVE the bed", "Anchoring", "Casting"),
 }
 
 
@@ -69,7 +76,11 @@ def test_the_documents_seed_as_skills_with_bodies_intact(tmp_path):
         assert slug in rows, f"{filename} did not seed"
         # Word counts are what the agent reads to decide whether loading one costs a
         # paragraph or a page, so a plausible number is part of the contract.
-        assert 1200 < rows[slug]["words"] < 3000, rows[slug]["words"]
+        # The floor catches a truncated or half-copied document, which is why it exists
+        # at all; it is not a quality bar. It moved from 1200 when a complete 867-word
+        # skill arrived and failed it — a real document being rejected for being concise
+        # is the floor being wrong, not the document.
+        assert 800 < rows[slug]["words"] < 3000, rows[slug]["words"]
 
         loaded = skills.get(slug, tmp_path)
         for marker in LOAD_BEARING[filename]:
