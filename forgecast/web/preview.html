@@ -7,10 +7,10 @@
   @media (max-width: 1000px) { .studio { grid-template-columns: 1fr; } }
 
   /* ------------------------------------------------------------------ plan */
-  .plan { background: var(--panel); border: 1px solid var(--line);
+  .plan { background: var(--raise); border: 1px solid var(--line);
           border-radius: var(--radius); overflow: hidden; position: sticky; top: 74px; }
   .plan header { display: flex; align-items: baseline; gap: 8px; padding: 11px 14px;
-                 border-bottom: 1px solid var(--line); background: var(--panel-2);
+                 border-bottom: 1px solid var(--line); background: var(--raise-2);
                  position: static; }
   .plan h3 { margin: 0; font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
              color: var(--muted); font-weight: 600; }
@@ -35,10 +35,10 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ---------------------------------------------------------------- player */
-  .stage { background: var(--panel); border: 1px solid var(--line);
+  .stage { background: var(--raise); border: 1px solid var(--line);
            border-radius: var(--radius); overflow: hidden; }
   .stage header { display: flex; align-items: center; gap: 10px; padding: 9px 13px;
-                  border-bottom: 1px solid var(--line); background: var(--panel-2);
+                  border-bottom: 1px solid var(--line); background: var(--raise-2);
                   position: static; }
   .stage header .name { font-size: 13px; font-weight: 600; }
   .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
@@ -56,7 +56,7 @@
            align-items: center; justify-content: center; gap: 6px; color: var(--muted);
            text-align: center; padding: 24px; }
   .transport { display: flex; align-items: center; gap: 12px; padding: 10px 13px;
-               border-top: 1px solid var(--line); background: var(--panel-2); }
+               border-top: 1px solid var(--line); background: var(--raise-2); }
   .transport button.play { width: 34px; height: 34px; padding: 0; border-radius: 50%;
                            display: grid; place-items: center; flex: none; }
   #scrub { flex: 1; -webkit-appearance: none; appearance: none; height: 4px; padding: 0;
@@ -68,7 +68,7 @@
   .clock { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
            color: var(--muted); flex: none; }
   .ticks { display: flex; gap: 2px; padding: 0 13px 11px; }
-  .ticks i { height: 4px; border-radius: 2px; background: var(--panel-2);
+  .ticks i { height: 4px; border-radius: 2px; background: var(--raise-2);
              border: 1px solid var(--line); cursor: pointer; }
   .ticks i.on { background: var(--accent-dim); border-color: var(--accent); }
   .caption { padding: 9px 13px; border-top: 1px solid var(--line); font-size: 13px;
@@ -87,7 +87,7 @@
               overflow-x: auto; }
   .tl-clip { position: relative; flex: none; min-width: 26px; height: 62px;
              border: 1px solid var(--line); border-radius: 5px; overflow: hidden;
-             background: var(--panel-2) center/cover no-repeat; cursor: pointer; }
+             background: var(--raise-2) center/cover no-repeat; cursor: pointer; }
   .tl-clip.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .tl-clip .meta { position: absolute; inset: auto 0 0 0;
                    background: linear-gradient(transparent, rgba(0,0,0,.85));

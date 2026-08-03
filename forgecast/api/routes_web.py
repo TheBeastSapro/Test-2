@@ -6,6 +6,8 @@ Jinja templates and form posts, no build step. The node graph is drawn from the 
 
 from __future__ import annotations
 
+import os
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -32,6 +34,57 @@ TEMPLATES = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent
 # about a missing ffmpeg, and threading it through each context is how one page ends up
 # silently not warning.
 TEMPLATES.env.globals["ffmpeg_ok"] = ffmpeg_available
+
+
+def when(value) -> str:
+    """A timestamp a person can read, from whatever the caller has.
+
+    Registered as a filter rather than formatted per page because a raw ISO string on
+    screen — `2026-08-03T08:16:23+00:00` — is the single clearest sign that nobody
+    looked at the page. Relative for the last day, because "4 minutes ago" is what you
+    actually want to know about something you just did; absolute after that, because
+    "17 days ago" is not a date anyone can act on.
+    """
+    if not value:
+        return ""
+    moment = value
+    if isinstance(value, str):
+        try:
+            moment = datetime.fromisoformat(value)
+        except ValueError:
+            return value
+    if not isinstance(moment, datetime):
+        return str(value)
+
+    now = datetime.now(moment.tzinfo) if moment.tzinfo else datetime.now()
+    seconds = (now - moment).total_seconds()
+    if seconds < 0:
+        return moment.strftime("%-d %b, %H:%M") if os.name != "nt" else moment.strftime("%d %b, %H:%M")
+    if seconds < 60:
+        return "just now"
+    if seconds < 3600:
+        return f"{int(seconds // 60)} min ago"
+    if seconds < 86400:
+        hours = int(seconds // 3600)
+        return f"{hours} hour ago" if hours == 1 else f"{hours} hours ago"
+    fmt = "%d %b, %H:%M" if os.name == "nt" else "%-d %b, %H:%M"
+    return moment.strftime(fmt)
+
+
+def tail(value, keep: int = 44) -> str:
+    """The end of a long path, which is the part that identifies it.
+
+    An absolute path wrapped across three lines of mono type is noise pretending to be
+    information: nobody reads `/tmp/claude-0/-home-user-Test-2/…` and the bit that
+    matters is always the last two segments. The full value goes in a title attribute
+    at the call site.
+    """
+    text = str(value or "")
+    return text if len(text) <= keep else "…" + text[-(keep - 1):]
+
+
+TEMPLATES.env.filters["when"] = when
+TEMPLATES.env.filters["tail"] = tail
 
 COOKIE = "forgecast_session"
 

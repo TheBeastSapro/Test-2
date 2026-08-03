@@ -8,7 +8,7 @@
            position: relative; min-width: max-content; padding: 6px 2px; }
   .layer { display: flex; flex-direction: column; gap: 14px; min-width: 176px; }
   .node {
-    position: relative; z-index: 2; background: var(--panel-2);
+    position: relative; z-index: 2; background: var(--raise-2);
     border: 1px solid var(--line); border-left: 3px solid var(--line);
     border-radius: 9px; padding: 11px 12px;
   }
@@ -26,10 +26,14 @@
   .node[data-status="skipped"] { opacity: .42; }
   .node .gatetag { font-size: 10.5px; color: var(--gate); letter-spacing: .05em; }
   #wires { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-  .log { background: #0a0d12; border: 1px solid var(--line); border-radius: var(--radius);
-         padding: 12px 14px; max-height: 330px; overflow-y: auto; }
-  .log div { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
-             padding: 2px 0; color: #b9c3d3; }
+  /* Tokens, not the hex values the old stylesheet used. A hard-coded blue-grey log
+     against a green-cast near-black is the kind of half-degree mismatch that reads as
+     carelessness without ever looking like a bug. */
+  .log { background: var(--raise-2); border: 1px solid var(--line);
+         border-radius: var(--radius); padding: 12px 14px; max-height: 330px;
+         overflow-y: auto; }
+  .log div { font-family: var(--mono); font-size: 12.5px;
+             padding: 2px 0; color: var(--text-2); }
   .log .warning { color: var(--warn); }
   .log .error { color: var(--err); }
   .log .nk { color: var(--muted); }
@@ -220,7 +224,7 @@
 <div class="log" id="log">
   {% for event in events %}
     <div class="{{ event.level }}">
-      <span class="nk">{{ '%-13s'|format(event.node_key or 'run') }}</span> {{ event.message }}
+      <span class="nk">{{ '%-13s'|format(event.node_key or '') }}</span> {{ event.message }}
     </div>
   {% endfor %}
 </div>
@@ -287,13 +291,24 @@
   // Live updates. Falls back to a reload loop if EventSource is unavailable.
   const log = document.getElementById("log");
   if (!window.EventSource) return;
-  const stream = new EventSource("/api/runs/{{ run.id }}/stream");
+  // The template has already drawn every event up to this id. EventSource reconnects
+  // on its own after a network blip, so the guard below is what stops the whole log
+  // reappearing each time — `since` alone would not survive a reconnect.
+  let lastEvent = {{ events | map(attribute='id') | max | default(0, true) }};
+  const seen = new Set();
+  const stream = new EventSource(
+    "/api/runs/{{ run.id }}/stream?since=" + lastEvent);
 
   stream.addEventListener("log", (message) => {
     const event = JSON.parse(message.data);
+    if (event.id) {
+      if (event.id <= lastEvent || seen.has(event.id)) return;
+      seen.add(event.id);
+      lastEvent = Math.max(lastEvent, event.id);
+    }
     const line = document.createElement("div");
     line.className = event.level;
-    const key = (event.node_key || "run").padEnd(13, " ");
+    const key = (event.node_key || "").padEnd(13, " ");
     line.innerHTML = `<span class="nk">${key}</span> `;
     line.appendChild(document.createTextNode(event.message));
     log.appendChild(line);

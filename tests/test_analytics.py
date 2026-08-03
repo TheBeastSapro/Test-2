@@ -55,17 +55,22 @@ def client(user):
 def a_run(
     session: Session, channel: Channel, *,
     seconds: int | None = None,
-    credits_spent: int = 0,
+    spend: int = 0,
+    stage: str = "render",
     status: RunStatus = RunStatus.completed,
     died_at: str = "",
 ) -> Run:
-    """One run with a known wall-clock time, and optionally the stage it died at."""
+    """One run with a known wall-clock time, and optionally what it spent or died at.
+
+    Credits go in through `billing.settle_node` rather than by setting
+    `Run.credits_spent`, because the page reads the ledger. A fixture that only set the
+    counter would test a code path the app does not have.
+    """
     run = Run(
         channel_id=channel.id,
         user_id=channel.user_id,
         topic="Anything",
         status=status,
-        credits_spent=credits_spent,
         created_at=QUEUED_AT,
         finished_at=None if seconds is None else QUEUED_AT + timedelta(seconds=seconds),
     )
@@ -75,6 +80,13 @@ def a_run(
         session.add(Node(run_id=run.id, key=died_at, type=died_at, title=died_at,
                          status=NodeStatus.failed))
         session.flush()
+    if spend:
+        node = Node(run_id=run.id, key=stage, type=stage, title=stage,
+                    status=NodeStatus.completed, attempts=1)
+        session.add(node)
+        session.flush()
+        billing.settle_node(session, run, node, estimated=0, actual=spend,
+                            provider="mock")
     return run
 
 
@@ -97,9 +109,9 @@ def test_per_channel_numbers_are_the_ones_worked_out_by_hand(session, user):
 
     # Six finished runs: 60, 120, 180, 240, 300, 600 seconds. The median of an even
     # sample is the mean of the middle pair — (180 + 240) / 2 = 210 = 3m 30s.
-    for seconds, spend in zip((60, 120, 180, 240, 300, 600),
+    for seconds, spent in zip((60, 120, 180, 240, 300, 600),
                               (100, 100, 100, 100, 100, 160), strict=True):
-        a_run(session, channel, seconds=seconds, credits_spent=spend)
+        a_run(session, channel, seconds=seconds, spend=spent)
     # 660 credits over 6 finished videos = 110.0 each.
     a_run(session, channel, seconds=90, status=RunStatus.failed, died_at="render")
     a_run(session, channel, seconds=95, status=RunStatus.failed, died_at="render")
@@ -118,6 +130,10 @@ def test_per_channel_numbers_are_the_ones_worked_out_by_hand(session, user):
     assert row["deaths"] == [{"node_type": "render", "count": 2},
                              {"node_type": "voice", "count": 1}]
     assert row["complete_pct"] == pytest.approx(54.55, abs=0.01)
+    # Six finished videos and three dead runs is not a failing channel, and the neutral
+    # status colour is what says so. Red here would be a verdict the numbers do not
+    # support, on the screen someone checks before deciding to abandon a channel.
+    assert row["health"] == "queued"
 
 
 def test_a_median_of_two_runs_is_refused_rather_than_printed(session, user, client):
@@ -125,8 +141,8 @@ def test_a_median_of_two_runs_is_refused_rather_than_printed(session, user, clie
     channel = Channel(user_id=user.id, name="Thin Sample", aspect_ratio="16:9")
     session.add(channel)
     session.flush()
-    a_run(session, channel, seconds=120, credits_spent=100)
-    a_run(session, channel, seconds=7_200, credits_spent=100)
+    a_run(session, channel, seconds=120, spend=100)
+    a_run(session, channel, seconds=7_200, spend=100)
     session.commit()
 
     summary = report(session, user)
@@ -152,7 +168,7 @@ def test_the_median_appears_once_the_sample_is_large_enough(session, user, clien
     session.flush()
     # Five runs, 60/120/180/240/300 — an odd sample, so the median is the middle one.
     for seconds in (60, 120, 180, 240, 300):
-        a_run(session, channel, seconds=seconds, credits_spent=40)
+        a_run(session, channel, seconds=seconds, spend=40)
     session.commit()
 
     totals = report(session, user)["totals"]
@@ -169,7 +185,7 @@ def test_credits_are_attributed_to_the_stage_that_spent_them(session, user):
     channel = Channel(user_id=user.id, name="Spend Test", aspect_ratio="16:9")
     session.add(channel)
     session.flush()
-    run = a_run(session, channel, seconds=300, credits_spent=300)
+    run = a_run(session, channel, seconds=300)
 
     nodes = {}
     for key, node_type in (("script", "script"), ("voice", "voice"), ("shots", "shots")):
@@ -207,7 +223,7 @@ def test_a_refunded_stage_is_not_billed_for_what_it_gave_back(session, user):
     channel = Channel(user_id=user.id, name="Refund Test", aspect_ratio="16:9")
     session.add(channel)
     session.flush()
-    run = a_run(session, channel, seconds=120, credits_spent=200)
+    run = a_run(session, channel, seconds=120)
     node = Node(run_id=run.id, key="shots", type="shots", title="shots",
                 status=NodeStatus.completed, attempts=1)
     session.add(node)
@@ -244,8 +260,10 @@ def test_gate_behaviour_is_counted_per_stage_and_worst_first(session, user):
     session.commit()
 
     rows = {row["node_type"]: row for row in report(session, user)["gates"]}
+    # Worst readable rate first, and the one-decision stage last: a 100% send-back rate
+    # off a single gate is not the thing to look at first.
     assert [row["node_type"] for row in report(session, user)["gates"]] == \
-        ["thumbnail", "script", "brief"]
+        ["script", "brief", "thumbnail"]
 
     script = rows["script"]
     assert (script["approved"], script["revised"], script["total"]) == (2, 4, 6)
@@ -301,6 +319,43 @@ async def test_a_real_gate_decision_shows_up_on_the_page(session, channel, user,
     assert "brief" in client.get("/analytics").text
 
 
+# ------------------------------------------------------------------- what is drawn
+
+
+def test_every_bar_is_a_server_rendered_width_and_nothing_is_fetched(session, user, client):
+    """The page has to draw itself on a machine with no network.
+
+    A charting library from a CDN renders as an empty box exactly when it is needed —
+    offline, which is every machine this app runs on — so the bars are divs with a
+    width computed on the server. Asserted on the markup because "it looked fine in
+    the browser" is a test that only passes on a connected laptop.
+    """
+    channel = Channel(user_id=user.id, name="Busy Channel", aspect_ratio="16:9")
+    session.add(channel)
+    session.flush()
+    for seconds in (60, 120, 180, 240, 300):
+        a_run(session, channel, seconds=seconds, spend=100, stage="shots")
+    a_run(session, channel, seconds=45, status=RunStatus.failed, died_at="render")
+    for _ in range(4):
+        learn_from_revision(session, channel.id, "script", "blunter hook")
+    for _ in range(2):
+        learn_from_approval(session, channel.id, "script", "fine")
+    session.commit()
+
+    page = client.get("/analytics")
+    assert page.status_code == 200
+    body = page.text
+    # The widest bar is the biggest stage, drawn inline.
+    assert 'style="width:100.0%"' in body
+    assert 'style="width:66.67%"' in body        # 4 of 6 script gates sent back
+    assert "Died at" in body and "render" in body
+    assert "needs work" in body                  # the verdict the counts earn
+    # Nothing is loaded from anywhere but this app's own static mount, and no canvas
+    # is waiting for a script to fill it in.
+    assert 'src="http' not in body and 'href="http' not in body
+    assert "<canvas" not in body
+
+
 # ------------------------------------------------------------ the awkward accounts
 
 
@@ -345,13 +400,13 @@ def test_another_account_is_never_counted(session, user):
     session.add(their_channel)
     session.flush()
     for seconds in (60, 120, 180, 240, 300):
-        a_run(session, their_channel, seconds=seconds, credits_spent=99)
+        a_run(session, their_channel, seconds=seconds, spend=99)
     learn_from_revision(session, their_channel.id, "script", "not your business")
 
     mine = Channel(user_id=user.id, name="Mine", aspect_ratio="16:9")
     session.add(mine)
     session.flush()
-    a_run(session, mine, seconds=60, credits_spent=10)
+    a_run(session, mine, seconds=60, spend=10)
     session.commit()
 
     summary = report(session, user)

@@ -16,15 +16,17 @@ from ..providers import ProviderError
 from . import runner
 from .local import router as local_router
 from .media import router as media_router
+from .routes_activity import router as activity_router
 from .routes_agent import connector_router
 from .routes_agent import router as agent_router
+from .routes_analytics import router as analytics_router
 from .routes_api import router as api_router
-from .routes_preview import router as preview_router
 from .routes_files import router as files_router
+from .routes_preview import router as preview_router
 from .routes_research import router as research_router
 from .routes_settings import router as settings_router
-from .routes_skills import router as skills_router
 from .routes_setup import router as setup_router
+from .routes_skills import router as skills_router
 from .routes_styles import router as styles_router
 from .routes_web import router as web_router
 
@@ -71,6 +73,10 @@ def create_app() -> FastAPI:
     # instruction documents the agent loads when they apply.
     app.include_router(files_router)
     app.include_router(skills_router)
+    # What the agent has spent its tool calls on, and where the
+    # credits actually went — both read from rows that already exist.
+    app.include_router(activity_router)
+    app.include_router(analytics_router)
     # Artifacts are served through signed, expiring, per-user URLs rather than a
     # static mount of the storage directory. See `api.media` — a plain mount hands
     # every run's video to anyone who can guess a path.

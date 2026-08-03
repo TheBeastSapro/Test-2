@@ -5,12 +5,12 @@
 <style>
   .styles { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
   @media (max-width: 940px) { .styles { grid-template-columns: 1fr; } }
-  .shelf { background: var(--panel); border: 1px solid var(--line);
+  .shelf { background: var(--raise); border: 1px solid var(--line);
            border-radius: var(--radius); overflow: hidden; }
   .shelf a { display: block; padding: 10px 13px; border-bottom: 1px solid var(--line);
              color: var(--text); text-decoration: none; }
   .shelf a:last-child { border-bottom: 0; }
-  .shelf a:hover { background: var(--panel-2); text-decoration: none; }
+  .shelf a:hover { background: var(--raise-2); text-decoration: none; }
   .shelf a.on { background: var(--accent-dim); }
   .shelf .nm { font-weight: 600; font-size: 14px; }
   .shelf .sm { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
@@ -22,7 +22,7 @@
   .origin.blend   { color: var(--gate); border-color: #40306b; }
   .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
            gap: 10px; }
-  .fact { background: var(--panel-2); border: 1px solid var(--line);
+  .fact { background: var(--raise-2); border: 1px solid var(--line);
           border-radius: 8px; padding: 9px 11px; }
   .fact b { display: block; font-size: 10.5px; text-transform: uppercase;
             letter-spacing: .08em; color: var(--muted); font-weight: 600; }
@@ -60,7 +60,7 @@
        the project into .venv rather than onto PATH, so the bare name only works for
        someone who has activated it — which a person who double-clicked the app has
        not. Run these from the Forgecast folder. #}
-    <pre style="background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:11px;overflow-x:auto;font-size:12.5px"># macOS / Linux
+    <pre style="background:var(--raise-2);border:1px solid var(--line);border-radius:7px;padding:11px;overflow-x:auto;font-size:12.5px"># macOS / Linux
 ./.venv/bin/forgecast-vision learn-style ep1.mp4 ep2.mp4 ep3.mp4 --name "Their Look"
 
 # Windows

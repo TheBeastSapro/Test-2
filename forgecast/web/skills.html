@@ -104,7 +104,7 @@
       <div class="editor-foot">
         <button class="primary">{{ 'Save skill' if chosen and not creating else 'Create skill' }}</button>
         {% if chosen and not creating %}
-          <span class="note">Last edited {{ chosen.updated_at }}</span>
+          <span class="note" title="{{ chosen.updated_at }}">Last edited {{ chosen.updated_at | when }}</span>
         {% endif %}
       </div>
     </form>
@@ -118,7 +118,7 @@
     {% endif %}
 
     <p class="fmt">
-      Each skill is one markdown file in <code>{{ folder }}</code>, with
+      Each skill is one markdown file in <code title="{{ folder }}">{{ folder | tail(46) }}</code>, with
       <code>name:</code> and <code>when_to_use:</code> above a <code>---</code> fence.
       They are plain files on purpose: the agent can open one itself, and you can keep
       them in a repo beside the scripts they govern.

@@ -115,7 +115,7 @@ def human_duration(seconds: float | None) -> str:
     """
     if seconds is None:
         return "—"
-    seconds = int(round(seconds))
+    seconds = round(seconds)
     if seconds < 60:
         return f"{seconds}s"
     if seconds < 3600:
@@ -139,7 +139,72 @@ def _bar(value: float, largest: float) -> float:
     return round(max(0.0, value) / largest * 100, 2)
 
 
-def channel_rows(session: Session, user: User) -> list[dict]:
+def spend_report(session: Session, user: User) -> dict:
+    """Net credits spent, per run and per node type, from the ledger.
+
+    Both cuts come out of one pass on purpose. The per-video cost on a channel and the
+    stage breakdown across the account are the same credits counted two ways, and
+    computing them from two different sources — the ledger for one, `Run.credits_spent`
+    for the other — is how the two halves of this page end up disagreeing about what a
+    video cost.
+
+    The ledger rather than the row counters, and net of refunds, because those are the
+    same fact: `refund_node` hands the credits back and decrements the run, but never
+    the node's own counter. Summing node rows bills you for output a provider was
+    already refunded for returning garbage, and the stage that fails most often is the
+    one that overstates worst.
+    """
+    movements = session.execute(
+        select(LedgerEntry.run_id, LedgerEntry.node_key, LedgerEntry.kind,
+               LedgerEntry.delta)
+        .where(
+            LedgerEntry.user_id == user.id,
+            LedgerEntry.kind.in_([LedgerKind.spend, LedgerKind.refund]),
+        )
+    ).all()
+    if not movements:
+        return {"by_run": {}, "by_stage": []}
+
+    # The ledger stores a node *key*, and a key is not a type — two shot-generating
+    # nodes in one pipeline have distinct keys. Resolved through the node rows, which
+    # are the only place that mapping lives.
+    keyed_types = {
+        (run_id, key): node_type
+        for run_id, key, node_type in session.execute(
+            select(Node.run_id, Node.key, Node.type)
+            .join(Run, Node.run_id == Run.id)
+            .where(Run.user_id == user.id)
+        ).all()
+    }
+
+    by_run: Counter[int] = Counter()
+    by_stage: Counter[str] = Counter()
+    for run_id, node_key, kind, delta in movements:
+        # A spend whose run has since been deleted keeps its key but loses its node.
+        # Reporting the key beats dropping the credits, which would make the breakdown
+        # quietly stop adding up to the total.
+        label = keyed_types.get((run_id, node_key)) or node_key or "unattributed"
+        signed = -abs(int(delta)) if kind is LedgerKind.refund else abs(int(delta))
+        by_stage[label] += signed
+        if run_id is not None:
+            by_run[run_id] += signed
+
+    # A stage refunded more than it ever spent would otherwise draw a negative bar.
+    net = {node_type: total for node_type, total in by_stage.items() if total > 0}
+    grand = sum(net.values())
+    largest = max(net.values(), default=0)
+    stages = [
+        {"node_type": node_type, "credits": credits,
+         "share": round(credits / grand * 100, 1) if grand else 0.0,
+         "bar": _bar(credits, largest)}
+        for node_type, credits in sorted(
+            net.items(), key=lambda item: (-item[1], item[0]))
+    ]
+    return {"by_run": {run_id: max(0, total) for run_id, total in by_run.items()},
+            "by_stage": stages}
+
+
+def channel_rows(session: Session, user: User, spend_by_run: dict[int, int]) -> list[dict]:
     """Per channel: what it starts, what it finishes, where it dies, and the cost.
 
     One query for the runs and one for the failed nodes. Asking per channel would be
@@ -179,7 +244,7 @@ def channel_rows(session: Session, user: User) -> list[dict]:
             seconds for seconds in (_elapsed_seconds(run) for run in completed)
             if seconds is not None
         ]
-        spent = sum(run.credits_spent or 0 for run in completed)
+        spent = sum(spend_by_run.get(run.id, 0) for run in completed)
         enough = len(completed) >= MIN_SAMPLE
 
         deaths = Counter(
@@ -195,6 +260,13 @@ def channel_rows(session: Session, user: User) -> list[dict]:
             "cancelled": len(cancelled),
             "in_flight": len(mine) - len(completed) - len(failed) - len(cancelled),
             "complete_pct": _bar(len(completed), len(mine)),
+            # Which of the shared status colours the channel's tally earns. Decided
+            # here rather than in the template so that "any failure at all" cannot
+            # quietly become the rule: a channel with six finished videos and one dead
+            # run is not a failing channel, and colouring it red says it is.
+            "health": ("failed" if failed and not completed
+                       else "completed" if completed and not failed
+                       else "queued"),
             # Withheld rather than rounded below the sample floor. `enough` is what
             # the template branches on so the reason travels with the gap.
             "enough": enough,
@@ -209,63 +281,6 @@ def channel_rows(session: Session, user: User) -> list[dict]:
             ],
         })
     return rows
-
-
-def credit_rows(session: Session, user: User) -> list[dict]:
-    """Where the credits actually went, by node type — the expensive-stage answer.
-
-    Taken from the ledger rather than from `Node.credits_spent`, and net of refunds,
-    because those two facts are the same fact: `refund_node` gives the credits back
-    and decrements the *run*, but never the node's own counter. Summing node rows
-    therefore bills you for output a provider was already refunded for returning
-    garbage, and the stage that fails most often is the one it overstates worst.
-    """
-    movements = session.execute(
-        select(LedgerEntry.run_id, LedgerEntry.node_key, LedgerEntry.kind,
-               LedgerEntry.delta)
-        .where(
-            LedgerEntry.user_id == user.id,
-            LedgerEntry.kind.in_([LedgerKind.spend, LedgerKind.refund]),
-        )
-    ).all()
-    if not movements:
-        return []
-
-    # The ledger stores a node *key*, and a key is not a type — two clips nodes in one
-    # pipeline would have distinct keys. Resolved through the node rows, which are the
-    # only place the mapping lives.
-    keyed_types = {
-        (run_id, key): node_type
-        for run_id, key, node_type in session.execute(
-            select(Node.run_id, Node.key, Node.type)
-            .join(Run, Node.run_id == Run.id)
-            .where(Run.user_id == user.id)
-        ).all()
-    }
-
-    totals: Counter[str] = Counter()
-    for run_id, node_key, kind, delta in movements:
-        # A spend whose run has since been deleted keeps its key but loses its node.
-        # Reporting the key beats dropping the credits, which would make the
-        # breakdown quietly stop adding up to the total.
-        label = keyed_types.get((run_id, node_key)) or node_key or "unattributed"
-        amount = abs(int(delta))
-        totals[label] += -amount if kind is LedgerKind.refund else amount
-
-    # A stage refunded more than it ever spent would otherwise draw a negative bar.
-    net = {node_type: total for node_type, total in totals.items() if total > 0}
-    if not net:
-        return []
-
-    grand = sum(net.values())
-    largest = max(net.values())
-    return [
-        {"node_type": node_type, "credits": credits,
-         "share": round(credits / grand * 100, 1) if grand else 0.0,
-         "bar": _bar(credits, largest)}
-        for node_type, credits in sorted(
-            net.items(), key=lambda item: (-item[1], item[0]))
-    ]
 
 
 def gate_rows(session: Session, user: User) -> list[dict]:
@@ -307,15 +322,19 @@ def gate_rows(session: Session, user: User) -> list[dict]:
             "reliable": total >= MIN_GATE_SAMPLE,
             "needs_work": total >= MIN_GATE_SAMPLE and rate >= REVISE_ALARM,
         })
-    # Worst first: the page should open on the stage that wastes the most of your day.
-    rows.sort(key=lambda row: (row["revise_pct"], row["revised"]), reverse=True)
+    # Worst *readable* rate first. Sorting on the rate alone floats a stage with one
+    # send-back and no approvals to the top at 100%, which puts the least trustworthy
+    # row where the eye lands and buries the stage actually costing you afternoons.
+    rows.sort(key=lambda row: (row["reliable"], row["revise_pct"], row["revised"]),
+              reverse=True)
     return rows
 
 
 def report(session: Session, user: User) -> dict:
     """Everything the page shows, in one call the tests can check by hand."""
-    channels = channel_rows(session, user)
-    credits = credit_rows(session, user)
+    spend = spend_report(session, user)
+    channels = channel_rows(session, user, spend["by_run"])
+    credits = spend["by_stage"]
     gates = gate_rows(session, user)
 
     started = sum(row["started"] for row in channels)

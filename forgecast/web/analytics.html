@@ -48,6 +48,10 @@
                   font-style: italic; }
   .died { font-size: 12.5px; color: var(--muted); margin-top: 11px; }
   .died b { color: var(--err); font-weight: 600; }
+  /* A note that belongs to the bar above it, so it hangs off the bottom of that row
+     rather than reading as the next row's label. */
+  .subnote { font-size: 12.5px; color: var(--muted); margin-top: -4px; }
+  .subnote b { color: var(--err); font-weight: 600; }
   .flag { font-size: 11px; color: var(--warn); border: 1px solid var(--warn);
           border-radius: 999px; padding: 1px 8px; }
   .thin-note { font-size: 12.5px; color: var(--muted); max-width: 72ch;
@@ -116,8 +120,9 @@
   <h3 style="margin-top:0">By stage, across the whole account</h3>
   <p class="muted" style="font-size:12.5px;margin:0;max-width:72ch">
     Read from the credit ledger, so a stage that ran twice because you revised it is
-    counted twice. This is the number that says which stage is expensive — and the one
-    to look at before deciding a video costs too much to make.
+    counted twice, and a stage that was refunded is not billed for what it gave back.
+    This is the number that says which stage is expensive — and the one to look at
+    before deciding a video costs too much to make.
   </p>
   {% if credit_rows %}
     <div class="bars">
@@ -157,13 +162,13 @@
           </span>
         </div>
         {% if row.needs_work %}
-          <div class="died" style="margin-top:-4px">
+          <div class="subnote">
             <span class="flag">needs work</span>
             <b>{{ row.node_type }}</b> was sent back {{ row.revised }} of
             {{ row.total }} times. Fix the stage rather than the run.
           </div>
         {% elif not row.reliable %}
-          <div class="died" style="margin-top:-4px">
+          <div class="subnote">
             {{ row.total }} decision{{ '' if row.total == 1 else 's' }} so far — the
             counts are real, the rate is not worth reading yet.
           </div>
@@ -184,8 +189,7 @@
         <h3>{{ row.name }}</h3>
         <span class="fmt">{{ row.format }}</span>
         <span class="grow"></span>
-        <span class="status {{ 'completed' if row.completed and not row.failed else ('failed' if row.failed else 'queued') }}">
-          {{ row.completed }}/{{ row.started }} finished</span>
+        <span class="status {{ row.health }}">{{ row.completed }}/{{ row.started }} finished</span>
       </div>
 
       <div class="chan-facts">
@@ -237,9 +241,9 @@
       {% if not row.enough and row.started %}
         <p class="thin-note">
           {{ row.completed }} finished run{{ '' if row.completed == 1 else 's' }} on this
-          channel. The counts above are exact; the median and the per-video cost are
-          held back until {{ totals.sample_floor }} runs have finished, because two runs cannot tell you
-          what the third will cost.
+          channel. The counts above are exact; the median and the per-video cost wait
+          for {{ totals.sample_floor }}, because a figure drawn from two runs is a guess
+          with a decimal point on it.
         </p>
       {% endif %}
     </div>

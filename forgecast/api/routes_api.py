@@ -409,19 +409,29 @@ def run_events(
 
 @router.get("/runs/{run_id}/stream")
 async def stream_run(
-    run_id: int, user: User = Depends(current_user), session: Session = Depends(get_session)
+    run_id: int,
+    since: int = 0,
+    user: User = Depends(current_user),
+    session: Session = Depends(get_session),
 ) -> StreamingResponse:
     """Server-sent events: node status changes and log lines as they happen.
 
     Polling the events table is not elegant, but it is correct across multiple
     workers and needs no message bus. Swap for LISTEN/NOTIFY on Postgres later.
+
+    `since` is the last event id the caller already has. Without it the stream starts
+    from zero and replays the whole log — which the page has already rendered, so every
+    line appeared twice, and appeared again on each of EventSource's automatic
+    reconnects. A long run's log is thousands of lines, so this is bandwidth as well as
+    a visible defect. The client also de-duplicates by id, because correctness here
+    should not depend on the caller passing the parameter.
     """
     run = _owned_run(session, run_id, user)
     run_id = run.id
     from ..db import session_scope
 
     async def publish():
-        last_event = 0
+        last_event = max(0, int(since))
         last_snapshot = ""
         deadline = datetime.now(UTC).timestamp() + 1800
         while datetime.now(UTC).timestamp() < deadline:

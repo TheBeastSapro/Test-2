@@ -14,7 +14,8 @@
              display: flex; flex-direction: column; }
   .fb-head { padding: 13px 15px; border-bottom: 1px solid var(--line); }
   .fb-head .where { font-family: var(--mono); font-size: 11px; color: var(--faint);
-                    margin-top: 5px; word-break: break-all; }
+                    margin-top: 5px; overflow: hidden; text-overflow: ellipsis;
+                    white-space: nowrap; }
   .fb-scroll { overflow: auto; padding: 8px 6px 12px; flex: 1; min-height: 0; }
 
   .kids { margin-left: 13px; border-left: 1px solid var(--line); padding-left: 5px; }
@@ -29,13 +30,14 @@
   .node.dir .nm { font-weight: 550; color: var(--text); }
   .node.on .nm { color: var(--accent); }
 
-  .fb-view { min-height: 340px; }
+  .fb-view { min-height: 0; }
   .fb-title { padding: 15px 18px; border-bottom: 1px solid var(--line);
               display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .fb-title b { font-size: 14.5px; font-weight: 600; }
   .fb-facts { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .fb-body { padding: 18px; }
-  .fb-empty { color: var(--muted); font-size: 14px; padding: 60px 18px; text-align: center; }
+  .fb-empty { color: var(--muted); font-size: 13.5px; padding: 34px 18px;
+              text-align: center; }
   .fb-note { font-size: 12.5px; color: var(--warn); margin: 0 0 12px; }
   .fb-body pre { margin: 0; background: var(--raise-2); border: 1px solid var(--line);
                  border-radius: var(--radius-sm); padding: 14px; overflow: auto;
@@ -65,7 +67,7 @@
   <div class="fb-tree">
     <div class="fb-head">
       <b style="font-size:13px">Storage</b>
-      <div class="where">{{ storage_dir }}</div>
+      <div class="where" title="{{ storage_dir }}">{{ storage_dir | tail(38) }}</div>
     </div>
     <div class="fb-scroll" id="tree"></div>
   </div>
