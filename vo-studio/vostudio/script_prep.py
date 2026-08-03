@@ -35,18 +35,36 @@ def _under_1000(n: int) -> str:
     return _ONES[n // 100] + " hundred" + (" " + _under_1000(n % 100) if n % 100 else "")
 
 
-def spell_number(n: int) -> str:
-    """Years read as years: 1798 -> 'seventeen ninety-eight', not 'one thousand...'."""
-    if 1100 <= n <= 1999 and n % 100 != 0:
-        return f"{_under_1000(n // 100)} {_under_1000(n % 100)}"
+_SCALES = ((1_000_000_000_000, "trillion"), (1_000_000_000, "billion"),
+           (1_000_000, "million"), (1_000, "thousand"))
+
+
+def spell_number(n: int, year_ok: bool = True) -> str:
+    """
+    Words for a number.
+
+    year_ok says whether the year reading is allowed. "1798" is a year;
+    "1,250 soldiers" is a quantity, and reading it "twelve fifty" was wrong.
+    The comma in the source is what tells them apart, so the caller decides.
+
+    1805 reads "eighteen oh five", not "eighteen five".
+    """
+    if year_ok and 1100 <= n <= 1999 and n % 100 != 0:
+        tail = n % 100
+        # "oh five", the way a year with a single-digit tail is actually said.
+        spoken_tail = f"oh {_ONES[tail]}" if 1 <= tail <= 9 else _under_1000(tail)
+        return f"{_under_1000(n // 100)} {spoken_tail}"
     if n < 1000:
         return _under_1000(n)
-    if n < 1_000_000:
-        head = _under_1000(n // 1000) + " thousand"
-        return head + (" " + _under_1000(n % 1000) if n % 1000 else "")
-    head = _under_1000(n // 1_000_000) + " million"
-    rest = n % 1_000_000
-    return head + (" " + spell_number(rest) if rest else "")
+    # Scales, largest first. The old code went straight to millions and handed
+    # _under_1000 a value >= 2000 for anything over two billion -- an
+    # IndexError that killed the render on a phone number.
+    for value, word in _SCALES:
+        if n >= value:
+            head = spell_number(n // value, year_ok=False) + " " + word
+            rest = n % value
+            return head + (" " + spell_number(rest, year_ok=False) if rest else "")
+    return _under_1000(n)
 
 
 _ORDINAL = {1: "first", 2: "second", 3: "third", 5: "fifth", 8: "eighth",
@@ -67,7 +85,10 @@ def spell_ordinal(n: int) -> str:
         base = base[:-1] + "ieth"
     else:
         base = base + "th"
-    last = (stem + "-" + base) if tail else base
+    # rpartition puts the WHOLE string in `tail` when there is no separator,
+    # so testing `tail` produced "-fourth" and "one -thousandth". Test the
+    # separator instead.
+    last = (stem + "-" + base) if stem else base
     return (head + " " + last).strip()
 
 
@@ -75,11 +96,36 @@ _ORDINAL_STEM = {"one": "first", "two": "second", "three": "third", "five": "fif
                  "eight": "eighth", "nine": "ninth", "twelve": "twelfth"}
 
 
+def _plural(word: str) -> str:
+    return word[:-1] + "ies" if word.endswith("y") else word + "s"
+
+
+def _decade(n: int) -> str:
+    """
+    1980s -> nineteen eighties. 1900s -> nineteen hundreds. 2000s -> two
+    thousands. The plain year reading is wrong here: it drops the century for
+    round hundreds ("one thousand nine hundreds") and it is not how a decade
+    is said aloud.
+    """
+    if n % 1000 == 0:
+        return _plural(spell_number(n, year_ok=False))
+    century, tail = divmod(n, 100)
+    if 11 <= century <= 20:
+        head = _under_1000(century)
+        return f"{head} hundreds" if tail == 0 else f"{head} {_plural(_under_1000(tail))}"
+    return _plural(spell_number(n, year_ok=False))
+
+
 def _decimal(whole: str, frac: str) -> str:
     """12.5 -> twelve point five. Digits after the point are read one by one,
     which is how they are said aloud: 'point four five', never 'point 45'."""
     digits = " ".join(_ONES[int(d)] for d in frac)
     return f"{spell_number(int(whole.replace(',', '')))} point {digits}"
+
+
+# "$1.5 million" is not one dollar fifty. A scale word after the amount means
+# the decimal is part of the NUMBER, not cents.
+_SCALE_AFTER = re.compile(r"\s*(million|billion|trillion)\b", re.I)
 
 
 def _money(whole: str, cents: str | None) -> str:
@@ -104,6 +150,12 @@ def spell_numerals(text: str) -> str:
     percentages have to be consumed WITH their symbol, before anything else
     touches the digits.
     """
+    # $1.5 million -> one point five million dollars. Checked first, because
+    # the plain money rule below would read the .5 as fifty cents.
+    text = re.sub(r"\$\s?(\d[\d,]*)(?:\.(\d+))?\s*(million|billion|trillion)\b",
+                  lambda m: (_decimal(m.group(1), m.group(2)) if m.group(2)
+                             else spell_number(int(m.group(1).replace(",", "")), year_ok=False))
+                            + f" {m.group(3).lower()} dollars", text, flags=re.I)
     # $3,400 / $9.99 / $1
     text = re.sub(r"\$\s?(\d[\d,]*)(?:\.(\d{1,2}))?",
                   lambda m: _money(m.group(1), m.group(2)), text)
@@ -118,9 +170,14 @@ def spell_numerals(text: str) -> str:
     # 12.5 on its own
     text = re.sub(r"\b(\d[\d,]*)\.(\d+)\b",
                   lambda m: _decimal(m.group(1), m.group(2)), text)
-    # everything left
+    # 1980s -> nineteen eighties, not "nineteen eightys". The old pattern had
+    # no boundary before the s at all, so the digits reached the model raw.
+    text = re.sub(r"\b(\d{4})s\b", lambda m: _decade(int(m.group(1))), text)
+    # everything left. A comma in the source means a QUANTITY, so "1,250
+    # soldiers" is twelve hundred and fifty, not the year twelve fifty.
     text = re.sub(r"\b\d[\d,]*\b",
-                  lambda m: spell_number(int(m.group(0).replace(",", ""))), text)
+                  lambda m: spell_number(int(m.group(0).replace(",", "")),
+                                         year_ok="," not in m.group(0)), text)
     # & is read as 'ampersand' by some engines and skipped by others
     text = re.sub(r"\s&\s", " and ", text)
     return text
@@ -162,6 +219,21 @@ def split_sentences(text: str) -> list[str]:
     return [p.replace("\x00", ".").strip() for p in parts if p.strip()]
 
 
+def _split_on_spaces(text: str, max_chars: int) -> list[str]:
+    """Break a long run at the last space that fits; only cut a word if a single
+    word is itself longer than the limit."""
+    parts, rest = [], text.strip()
+    while len(rest) > max_chars:
+        cut = rest.rfind(" ", 0, max_chars + 1)
+        if cut <= 0:
+            cut = max_chars                      # one unbroken word, nothing to do
+        parts.append(rest[:cut].strip())
+        rest = rest[cut:].strip()
+    if rest:
+        parts.append(rest)
+    return [p for p in parts if p]
+
+
 def chunk_text(text: str, max_chars: int) -> list[str]:
     """
     Pack whole sentences up to max_chars. A single sentence longer than the limit
@@ -185,8 +257,14 @@ def chunk_text(text: str, max_chars: int) -> list[str]:
                         out.append(piece.strip())
                     piece = clause if len(clause) <= max_chars else ""
                     if not piece:
-                        for i in range(0, len(clause), max_chars):
-                            out.append(clause[i:i + max_chars].strip())
+                        # AT A SPACE, not at a character count. The docstring
+                        # promised mid-word only as a last resort, and then went
+                        # straight to a fixed-width slice -- so a long
+                        # comma-free sentence (routine in narration) was handed
+                        # to the model as "...the obvious qu" / "estion about".
+                        # Both halves then fail the read-check, burn every
+                        # re-roll, and land in NEEDS AN EAR.
+                        out.extend(_split_on_spaces(clause, max_chars))
             if piece:
                 out.append(piece.strip())
             continue

@@ -110,6 +110,17 @@ class Generator:
         random.seed(self.cfg.seed)
         np.random.seed(self.cfg.seed)
 
+    def resolve_speed(self, speed: float | None) -> float:
+        """
+        The pace, from the caller or from settings.
+
+        A take passed the profile's speed; a full render passed nothing, and
+        nothing was where the pace stopped existing -- the render came out at
+        1.00 however the voice had been tuned. Settings now carries it, so both
+        paths land on the same number.
+        """
+        return float(getattr(self.cfg, "speed", 1.0) if speed is None else speed)
+
     def _generate(self, model, text: str, kwargs: dict):
         """
         Run the model, in mixed precision where that is safe.
@@ -146,10 +157,16 @@ class Generator:
             self.log(f"ElevenLabs: {len(text)} chars "
                      f"(about ${eleven.estimate_usd(text):.3f})")
             eleven.synthesize(text, out_path, self._settings, self.cfg.work_sr)
-            if speed is not None and abs(speed - 1.0) >= 0.005:
+            audio, rate = sf.read(out_path)
+            # Headroom here too. The local branch applies it to every chunk and
+            # this one returned before it -- so an ElevenLabs render skipped
+            # the -3 dB ceiling and the clip report entirely.
+            sf.write(out_path, apply_headroom(audio, self.log), rate, subtype="PCM_24")
+            spd = self.resolve_speed(speed)
+            if abs(spd - 1.0) >= 0.005:
                 from .voice_profile import apply_speed
                 import shutil
-                shutil.copy(apply_speed(out_path, speed), out_path)
+                shutil.copy(apply_speed(out_path, spd), out_path)
             return out_path
 
         model = self.load()
@@ -184,7 +201,7 @@ class Generator:
         if speed is not None and abs(speed - 1.0) >= 0.005:
             from .voice_profile import apply_speed
             import shutil
-            shutil.copy(apply_speed(out_path, speed), out_path)
+            shutil.copy(apply_speed(out_path, spd), out_path)
 
         if self.cfg.empty_cache_between_chunks and self._device == "cuda":
             import torch
@@ -207,6 +224,11 @@ def apply_headroom(audio: np.ndarray, log=print, ceiling_db: float = -3.0) -> np
     if clipped:
         log(f"  {clipped} sample(s) generated at full scale — distortion is "
             f"baked in. Re-roll this chunk if it is audible.")
+    if audio.size == 0:
+        # A chunk that generated nothing. .max() on an empty array raises, so
+        # the whole render used to die here rather than reporting the chunk.
+        log("  WARNING: this chunk generated no audio at all.")
+        return audio
     peak = float(np.abs(audio).max())
     if peak <= 0:
         return audio

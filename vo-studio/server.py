@@ -13,6 +13,7 @@ desktop.py. Nothing is reachable from the network.
 import asyncio
 import json
 import os
+import re
 import time
 import shutil
 import tempfile
@@ -42,7 +43,10 @@ UI = ROOT / "ui"
 CHUNK = 1 << 20
 
 
-def profile_name(asked: str = "") -> str:
+_SAFE_PROFILE = re.compile(r"[^A-Za-z0-9 _-]")
+
+
+def profile_name(asked: str = "", remember: bool = True) -> str:
     """
     THE profile. One name, resolved in one place.
 
@@ -55,11 +59,19 @@ def profile_name(asked: str = "") -> str:
     A name that arrives from the UI wins and is remembered, so switching
     profiles in the box switches it for the agent too.
     """
-    asked = (asked or "").strip()
-    if asked and asked != SETTINGS.active_profile:
+    # The name becomes a folder under VOICES_DIR, so it is a path fragment and
+    # has to be treated as one. "../../../tmp/x" was accepted, remembered and
+    # saved -- relocating every later take and lock outside the app's folder
+    # with no way back except editing settings.json by hand.
+    asked = _SAFE_PROFILE.sub("", (asked or "").strip())[:60].strip()
+    if asked and remember and asked != SETTINGS.active_profile:
         SETTINGS.active_profile = asked
         SETTINGS.save()
-    return SETTINGS.active_profile or "explaintory"
+    if asked and not remember:
+        return asked
+    if not SETTINGS.active_profile:
+        SETTINGS.active_profile = "explaintory"
+    return SETTINGS.active_profile
 
 
 def upload_limit() -> int:
@@ -326,7 +338,10 @@ def render_audio():
 # -------------------------------------------------------------- voice lab
 @app.get("/api/profile")
 def get_profile(name: str = ""):
-    return asdict(VoiceProfile.load(config.VOICES_DIR, profile_name(name)))
+    """A GET that switched the app's active profile and wrote settings.json was
+    a mistake waiting for a typo in the profile box. Reading never remembers;
+    the switch happens when something is actually rendered or locked."""
+    return asdict(VoiceProfile.load(config.VOICES_DIR, profile_name(name, remember=False)))
 
 
 @app.get("/api/lab/text")
@@ -379,8 +394,13 @@ def lab_sample(payload: dict):
     # still there to play.
     takes = config.VOICES_DIR / name / "takes"
     takes.mkdir(parents=True, exist_ok=True)
-    STATE["take_no"] = STATE.get("take_no", 0) + 1
-    out = takes / f"take-{STATE['take_no']:04d}.wav"
+    # Numbered from what is ON DISK, not from a counter that resets with the
+    # process. After a restart the old counter started at 1 again and the next
+    # take destroyed take-0001 -- the comparison history this folder exists to
+    # keep -- while the panel still played the highest-numbered old file.
+    existing = [int(f.stem.split("-")[1]) for f in takes.glob("take-*.wav")
+                if f.stem.split("-")[-1].isdigit()]
+    out = takes / f"take-{(max(existing) if existing else 0) + 1:04d}.wav"
     JOB.update(phase="loading", started=time.perf_counter(), chars=len(text))
     try:
         # Loading is separated from generating so the bar can say which one it
@@ -453,7 +473,7 @@ SAMPLE = ("The most spectacular story in this video is the one nobody can prove.
 def lab_latest(name: str = ""):
     """The newest take, for the panel — so the last thing rendered is to hand
     instead of scrolled away up the transcript."""
-    name = profile_name(name)
+    name = profile_name(name, remember=False)
     folder = config.VOICES_DIR / name / "takes"
     takes = sorted(folder.glob("take-*.wav")) if folder.exists() else []
     return {"name": name, "file": takes[-1].name if takes else ""}
@@ -463,7 +483,8 @@ def lab_latest(name: str = ""):
 def lab_audio(name: str = "", file: str = ""):
     """One take, by name. `file` is validated rather than trusted -- it arrives
     from the page, and a page is not where path rules belong."""
-    folder = (config.VOICES_DIR / profile_name(name) / "takes").resolve()
+    name = profile_name(name, remember=False)
+    folder = (config.VOICES_DIR / name / "takes").resolve()
     if file:
         try:
             p = (folder / Path(file).name).resolve()
@@ -491,9 +512,15 @@ def lab_lock(payload: dict):
     prof = VoiceProfile.load(config.VOICES_DIR, name)
     prof.save(config.VOICES_DIR)
     SETTINGS.active_profile = name
+    # EVERY dial the render reads, not three of five. speed and
+    # repetition_penalty were tuned in the lab and then dropped on the floor
+    # here, so the take you approved and the file you shipped were not the
+    # same voice.
     SETTINGS.generation.exaggeration = prof.exaggeration
     SETTINGS.generation.cfg_weight = prof.cfg_weight
     SETTINGS.generation.temperature = prof.temperature
+    SETTINGS.generation.speed = prof.speed
+    SETTINGS.generation.repetition_penalty = prof.repetition_penalty
     SETTINGS.save()
     return {"message": f"Locked · {prof.summary()}"}
 
@@ -663,18 +690,61 @@ def get_settings():
 
 @app.post("/api/settings")
 def put_settings(payload: dict):
-    for path, value in payload.get("values", {}).items():
+    """
+    Validate everything, THEN apply.
+
+    It used to coerce and assign field by field, so a value that failed halfway
+    through left the earlier ones live in the running app while the request
+    500'd and the file on disk kept the old numbers. You saw "save failed",
+    used the new values for the next render, and lost them on restart. It also
+    accepted anything: exaggeration 99, or max_chars_per_chunk 0, which is
+    fatal later inside parse_script.
+    """
+    bounds = {f"{g['key']}.{it['key']}": it for g in _schema(SETTINGS)
+              for it in g["items"]}
+    staged, rejected = [], []
+
+    for path, value in (payload.get("values") or {}).items():
+        if "." not in path:
+            rejected.append(f"{path}: not a settings key")
+            continue
         group, key = path.split(".", 1)
-        target = getattr(SETTINGS, group)
+        target = getattr(SETTINGS, group, None)
+        if target is None or not hasattr(target, key):
+            rejected.append(f"{path}: no such setting")
+            continue
         current = getattr(target, key)
-        if isinstance(current, bool):
-            setattr(target, key, bool(value))
-        elif isinstance(current, str):
-            setattr(target, key, str(value))
-        else:
-            setattr(target, key, type(current)(value))
+        try:
+            if isinstance(current, bool):
+                new = bool(value)
+            elif isinstance(current, str):
+                new = str(value)
+            else:
+                new = type(current)(value)
+        except (TypeError, ValueError):
+            rejected.append(f"{path}: {value!r} is not a {type(current).__name__}")
+            continue
+        row = bounds.get(path) or {}
+        if isinstance(new, (int, float)) and not isinstance(new, bool):
+            lo, hi = row.get("min"), row.get("max")
+            if lo is not None and hi is not None:
+                clamped = type(current)(min(hi, max(lo, new)))
+                if clamped != new:
+                    rejected.append(f"{path}: {new} is outside {lo}–{hi}, kept {clamped}")
+                new = clamped
+        if row.get("options") and new not in row["options"]:
+            rejected.append(f"{path}: {new!r} is not one of {row['options']}")
+            continue
+        staged.append((target, key, new))
+
+    for target, key, new in staged:
+        setattr(target, key, new)
     SETTINGS.save()
-    return {"message": f"Saved to {config.SETTINGS_FILE}"}
+
+    msg = f"Saved to {config.SETTINGS_FILE}"
+    if rejected:
+        msg += " — except: " + "; ".join(rejected)
+    return {"message": msg}
 
 
 @app.post("/api/settings/reset")
@@ -801,6 +871,9 @@ class Studio:
                                   SETTINGS, project, log=lines.append)
         except Exception as exc:
             JOB.update(phase="idle", started=0.0)
+            # Cleared, or /api/render/result keeps handing out the LAST render
+            # that worked -- with its duration -- as though it were this one.
+            STATE["render"] = None
             lines.append("FAILED: " + friendly(exc))
             return {"error": friendly(exc), "log_tail": lines[-12:]}
         JOB.update(phase="idle", started=0.0)

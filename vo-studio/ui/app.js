@@ -88,12 +88,14 @@ function startClock(el, label) {
   const fill = el.querySelector('.prog-fill');
   const what = el.querySelector('.what');
   const tick = el.querySelector('.tick');
-  let polling = false;
+  let polling = 0;
 
   const id = setInterval(async () => {
     tick.textContent = mmss((performance.now() - t0) / 1000);
-    if (polling) return;
-    polling = true;
+    // A single hung request would otherwise leave polling true forever and
+    // freeze the bar at whatever width it had reached.
+    if (polling && Date.now() - polling < 5000) return;
+    polling = Date.now();
     try {
       const j = await api('/api/job');
       if (j.label) what.textContent = j.label;
@@ -109,7 +111,7 @@ function startClock(el, label) {
         fill.classList.add('sweep');
       }
     } catch { /* the take is what matters; the bar is not worth an error */ }
-    polling = false;
+    polling = 0;
   }, 700);
 
   return { stop: () => { clearInterval(id); return (performance.now() - t0) / 1000; } };
@@ -123,7 +125,10 @@ function paintVoice(v) {
   $('#ref-empty').hidden = !!v.loaded;
   $('#ref-set').hidden = !v.loaded;
   if (!v.loaded) return;
-  $('#ref-audio').src = '/api/voice/audio?t=' + Date.now();
+  // Only re-stamped when the clip actually changed — otherwise every turn
+  // reloaded it and killed whatever you were listening to.
+  const want = '/api/voice/audio?t=' + (v.name || '') + (v.duration || '');
+  if ($('#ref-audio').getAttribute('src') !== want) $('#ref-audio').src = want;
   $('#ref-name').textContent =
     `${v.name}${v.duration ? ` · ${v.duration}s` : ''}${v.peak != null ? ` · peak ${v.peak} dBFS` : ''}`;
 }
@@ -252,6 +257,10 @@ async function stream(text, files = []) {
   // the next text after one starts a fresh span so order is preserved.
   let text_span = null, wrote = false;
   let live = null;
+  // Every startClock() opens a 700 ms poller. Removing its DOM node does NOT
+  // stop it, so a session with twenty renders ended up firing ~29 requests a
+  // second at an idle server, writing to nodes that could never be collected.
+  const clocks = [];
 
   const write = chunk => {
     if (!text_span) {
@@ -271,13 +280,21 @@ async function stream(text, files = []) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text, files }),
     });
+    if (!res.ok) throw new Error(`backend ${res.status}: ${(await res.text()).slice(0, 300)}`);
     const reader = res.body.getReader(), dec = new TextDecoder();
     let buf = '';
     for (;;) {
       const { value, done } = await reader.read();
       if (value) buf += dec.decode(value, { stream: true });
+      // Flush the decoder and keep the remainder on the last read: a stream
+      // cut short (agent crash, window reload) would otherwise silently eat
+      // its final event — which is the one carrying the error or the file.
+      if (done) buf += dec.decode();          // flush the decoder's tail
       const lines = buf.split('\n');
-      buf = lines.pop();
+      // On the last read, keep the remainder as a line: a stream cut short
+      // (agent crash, window reload) would otherwise silently drop its final
+      // event — the one carrying the error or the rendered file.
+      buf = done ? '' : lines.pop();
       for (const line of lines) {
         if (!line.trim()) continue;
         let ev; try { ev = JSON.parse(line); } catch { continue; }
@@ -294,7 +311,7 @@ async function stream(text, files = []) {
           bubble.append(live);
           block();
           // Only the slow ones get a bar; a status check does not need one.
-          if (/render/.test(ev.name || '')) startClock(live, label + '…');
+          if (/render/.test(ev.name || '')) clocks.push(startClock(live, label + '…'));
           else live.innerHTML = `<span class="msg-wait">${esc(label)}…</span>`;
           chat().scrollTop = chat().scrollHeight;
         } else if (ev.type === 'result') {
@@ -307,8 +324,9 @@ async function stream(text, files = []) {
             const el = document.createElement('div');
             el.className = 'took-audio';
             el.innerHTML =
-              `<audio controls src="/api/lab/audio?file=${encodeURIComponent(take.file)}"></audio>` +
-              (take.seconds ? `<div class="took">${take.seconds}s on the GPU</div>` : '');
+              `<audio controls src="/api/lab/audio?name=${encodeURIComponent($('#prof').value)}` +
+              `&file=${encodeURIComponent(take.file)}"></audio>` +
+              (take.seconds ? `<div class="took">${esc(take.seconds)}s on the GPU</div>` : '');
             bubble.append(el);
             block();
             wrote = true;
@@ -321,8 +339,10 @@ async function stream(text, files = []) {
       if (done) break;
     }
   } catch (e) {
-    write(`\n${e}`);
+    if (!wrote) bubble.innerHTML = '';     // clear the … placeholder first
+    write(String(e));
   }
+  clocks.forEach(c => c.stop());
   if (live) live.remove();
   if (!wrote) bubble.innerHTML = '<span class="msg-wait">(no reply)</span>';
   BUSY = false;
@@ -335,25 +355,28 @@ async function stream(text, files = []) {
 
 function refreshPanel() {
   api('/api/voice/status').then(paintVoice).catch(() => {});
-  loadProfile();
+  loadProfile();                      // no name: read the server, do not set it
   api('/api/lab/latest').then(j => {
-    if (j.file) $('#last-take').innerHTML =
-      `<audio controls src="/api/lab/audio?name=${encodeURIComponent(j.name)}&file=${encodeURIComponent(j.file)}"></audio>`;
+    const box = $('#last-take');
+    if (!j.file) { box.innerHTML = ''; return; }   // a fresh profile has none
+    const src = `/api/lab/audio?name=${encodeURIComponent(j.name)}&file=${encodeURIComponent(j.file)}`;
+    // Rebuilt only when it is a DIFFERENT take. Rebuilding every turn stopped
+    // playback dead and rewound to 0:00 the moment you sent a message.
+    if (box.firstElementChild?.getAttribute('src') === src) return;
+    box.innerHTML = `<audio controls src="${src}"></audio>`;
   }).catch(() => {});
 }
 
 /* ── takes ──────────────────────────────────────────────────────────── */
-async function renderTake(into, text) {
+async function renderTake() {
   if (!VOICE.loaded) { say('<span class="msg-bad">No voice loaded — drop an audio clip in first.</span>'); return; }
-  const holder = into || say('');
+  const holder = say('');
   const slot = document.createElement('div');
   holder.append(slot);
   const clock = startClock(slot, 'starting…');
   $('#btn-take').disabled = true;
   try {
-    const body = { name: $('#prof').value };
-    if (text) body.text = text;
-    const j = await api('/api/lab/sample', body);
+    const j = await api('/api/lab/sample', { name: $('#prof').value });
     const took = clock.stop();
     if (j.error) { slot.innerHTML = `<span class="msg-bad">${esc(j.error)}</span>`; }
     else {
@@ -365,6 +388,7 @@ async function renderTake(into, text) {
         `<div class="took">${(j.seconds ?? took).toFixed(1)}s on the GPU</div>`;
     }
   } catch (e) { clock.stop(); slot.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
+  finally { clock.stop(); }
   $('#btn-take').disabled = false;
   chat().scrollTop = chat().scrollHeight;
 }
@@ -374,7 +398,11 @@ $('#btn-take').onclick = () => renderTake();
 const RANGES = { exaggeration: [.2, .9], cfg_weight: [.2, .9], temperature: [.4, 1.1], speed: [.85, 1.25] };
 function paintParams(p) {
   $('#params').innerHTML = Object.entries(RANGES).map(([k, [lo, hi]]) => {
-    const v = p[k], name = k === 'cfg_weight' ? 'reference adherence' : k;
+    // A profile.json missing one key used to throw inside .map and leave the
+    // panel empty with no console error, while the PREVIOUS profile's sliders
+    // stayed on screen looking authoritative.
+    const v = typeof p[k] === 'number' ? p[k] : (lo + hi) / 2;
+    const name = k === 'cfg_weight' ? 'reference adherence' : k;
     return `<div class="param">
       <span class="param-name">${name}</span>
       <span class="param-val" id="pv-${k}">${k === 'speed' ? v.toFixed(2) + '×' : v.toFixed(2)}</span>
@@ -397,12 +425,19 @@ function paintParams(p) {
     };
   });
 }
-// The name goes to the server, which remembers it — so Claude and this panel
-// are always talking about the same profile. They were not, and that is why a
-// take could come back reading the previous line.
-const loadProfile = () => api('/api/profile?name=' + encodeURIComponent($('#prof').value))
-  .then(paintParams).catch(() => {});
-$('#prof').addEventListener('change', loadProfile);
+/* THE SERVER OWNS THE PROFILE NAME.
+   Asking with a name SETS it, so calling this on page load with the box's
+   hardcoded "explaintory" silently rewrote whatever profile was actually
+   active — and doing it again after every turn undid profile switches Claude
+   had just made. A name is sent ONLY when you type one. */
+async function loadProfile(name) {
+  try {
+    const p = await api('/api/profile' + (name ? '?name=' + encodeURIComponent(name) : ''));
+    if (p.name) $('#prof').value = p.name;
+    paintParams(p);
+  } catch { /* the panel is not worth an error */ }
+}
+$('#prof').addEventListener('change', e => loadProfile(e.target.value.trim()));
 
 $('#btn-lock').onclick = async () => {
   const j = await api('/api/lab/lock', { name: $('#prof').value });
@@ -415,15 +450,6 @@ $('#btn-revert').onclick = async () => {
 };
 
 /* ── Claude ─────────────────────────────────────────────────────────── */
-async function askClaude(text, files = []) {
-  const bubble = say('<span class="msg-wait">…</span>');
-  try {
-    const j = await api('/api/assistant', { message: text, files });
-    bubble.innerHTML = asText(j.reply || '(no output)');
-  } catch (e) { bubble.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
-  chat().scrollTop = chat().scrollHeight;
-}
-
 function paintAuth(a) {
   $('#auth-card').innerHTML = a.ok ? esc(a.detail)
     : `<b>Not ready.</b><br><span style="white-space:pre-wrap">${esc(a.detail)}</span>`;
@@ -561,9 +587,9 @@ drawIcons();
 loadProfile();
 refreshAuth();
 
+refreshPanel();
 api('/api/voice/status').then(v => {
   paintVoice(v);
-  if (v.profile) $('#prof').value = v.profile;
   const box = $('#chat-empty');
   if (!box) return;
   box.innerHTML = v.loaded
@@ -571,4 +597,8 @@ api('/api/voice/status').then(v => {
       `becomes before rendering it — or press <b>Render a take</b> to hear where the voice is.`
     : `Drop an audio clip anywhere in here and it becomes the voice. 8–12 seconds ` +
       `of continuous speech, no music. Then paste a script.`;
-}).catch(() => {});
+}).catch(e => {
+  const box = $('#chat-empty');
+  if (box) box.innerHTML = `The backend is not answering (${esc(e)}). ` +
+    `Close the app and open it again — if it keeps happening, runtime\\last-run.log has the reason.`;
+});

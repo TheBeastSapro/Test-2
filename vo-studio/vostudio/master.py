@@ -179,14 +179,36 @@ def place_beats(audio: np.ndarray, sr: int, script: str, cfg, log=print,
 
 
 def measure_loudness(audio: np.ndarray, sr: int) -> tuple[float, float]:
-    """Integrated LUFS and true peak. MEASURED — never the target line from a log."""
+    """
+    Integrated LUFS and true peak. MEASURED — never the target line from a log.
+
+    Returns -inf LUFS for anything too short or too quiet to measure, which the
+    caller must check. pyloudnorm RAISES on audio shorter than its 400 ms block,
+    so a one-word test render used to come out of mastering as a traceback.
+    """
     import pyloudnorm as pyln
-    lufs = pyln.Meter(sr).integrated_loudness(audio)
-    # 4x oversample for true peak: inter-sample peaks exceed the sample peak and are
-    # what a consumer decoder actually clips on.
-    up = np.interp(np.arange(0, len(audio), 0.25), np.arange(len(audio)), audio)
-    tp = 20 * np.log10(np.abs(up).max() + 1e-12)
-    return float(lufs), float(tp)
+
+    if len(audio) < int(sr * 0.4) + 1:
+        lufs = float("-inf")
+    else:
+        lufs = float(pyln.Meter(sr).integrated_loudness(audio))
+
+    # TRUE peak needs a real resample. np.interp is LINEAR, and a straight line
+    # between two samples can never rise above either of them -- so the old
+    # "4x oversampled" figure was mathematically identical to the sample peak
+    # and the ceiling check below could essentially never fire. Measured
+    # against a proper polyphase resample it was understating sibilance by
+    # over 3 dB.
+    if len(audio) < 16:
+        up = audio
+    else:
+        try:
+            from scipy.signal import resample_poly
+            up = resample_poly(audio, 4, 1)
+        except Exception:
+            up = audio
+    peak = float(np.abs(up).max()) if len(up) else 0.0
+    return lufs, float(20 * np.log10(peak + 1e-12))
 
 
 def normalize(audio: np.ndarray, sr: int, cfg, log=print) -> np.ndarray:
@@ -199,6 +221,15 @@ def normalize(audio: np.ndarray, sr: int, cfg, log=print) -> np.ndarray:
     """
     lufs, tp = measure_loudness(audio, sr)
     log(f"  measured {lufs:.2f} LUFS, true peak {tp:.2f} dBTP")
+
+    # Silence measures -inf, and the gain from -inf is inf: the old code
+    # multiplied the array by it and wrote a file full of NaN, which ffmpeg
+    # then happily encoded. If there is nothing to normalise, say so and
+    # return the audio untouched.
+    if not np.isfinite(lufs):
+        log("  nothing measurable to normalise — the audio is silent or too "
+            "short. Left at its own level; DO NOT ship this without listening.")
+        return audio
 
     out = audio * (10 ** ((cfg.target_lufs - lufs) / 20.0))
     _, tp_after = measure_loudness(out, sr)

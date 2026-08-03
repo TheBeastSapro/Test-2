@@ -60,8 +60,19 @@ def run(script_text: str, title: str, voice_ref: Path, settings,
 
     # -- generate + read-check --------------------------------------------
     rendered: list[Path] = []
+    # ONE NUMBER ACROSS THE WHOLE SCRIPT.
+    #
+    # Chunk.index restarts at 0 in every section, and render_with_retries built
+    # its filename from it -- so section 2's first chunk overwrote section 1's,
+    # and the delivered file was the LAST section read once per section with
+    # everything before it gone. The counter here is global, so the filenames
+    # are unique, the progress log counts up instead of repeating, and an entry
+    # in `unresolved` names one chunk rather than one per section.
+    seq = 0
     for section in sections:
         for chunk in section.chunks:
+            chunk.index = seq
+            seq += 1
             log(f"chunk {chunk.index+1}/{result.chunks}: {chunk.text[:56]}")
             verdict, path = render_with_retries(
                 generator, checker, chunk, voice_ref, work,

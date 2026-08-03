@@ -68,6 +68,11 @@ class Generation:
     use_fp16: bool = True
     empty_cache_between_chunks: bool = True
 
+    # The pace the voice was tuned to. It lived only on the VoiceProfile, so a
+    # take played back at 0.97 and the forty-minute render came out at 1.00 --
+    # the one dial tuned by ear was thrown away between the two.
+    speed: float = 1.0
+
     top_k: int = 1000           # turbo only; Standard rejects it
     seed: int | None = None     # set for reproducible re-rolls
 
