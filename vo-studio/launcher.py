@@ -14,7 +14,7 @@ WHY THIS IS A THIN LAUNCHER AND NOT ONE GIANT .EXE
     is a real Windows executable with a real icon and a real taskbar entry. What
     it is not is a copy of PyTorch pretending to be one.
 
-    Rebuild it any time with build_exe.bat.
+    Setup rebuilds it as its last step.
 """
 import os
 import subprocess
@@ -62,18 +62,39 @@ def main() -> int:
                      rt / "python" / "python.exe") if p.exists()),
         rt / "python" / "python.exe")
 
-    if not interpreter.exists():
-        # First run. Setup happens in a window of the app's own, not in a
-        # console — you double-clicked an app, so an app is what should open.
+    # COMPLETE, not just started. Asking "does python.exe exist" meant a setup
+    # interrupted during the 2.5 GB PyTorch step could never be resumed: the
+    # installer was skipped on every later launch and the app failed with
+    # ModuleNotFoundError instead.
+    try:
+        import bootstrap
+        needs_setup = not bootstrap.ready(root)
+    except Exception:
+        bootstrap = None
+        needs_setup = not interpreter.exists()
+
+    if needs_setup:
+        # Setup happens in a window of the app's own, not in a console — you
+        # double-clicked an app, so an app is what should open.
         try:
-            import bootstrap
+            if bootstrap is None:
+                import bootstrap
         except Exception as exc:
             return die("VO Studio — cannot set up",
                        f"The setup module is missing ({exc}).\n\n"
                        "Re-download and unzip the folder.")
-        if not bootstrap.show(root):
+        # tkinter is missing from the embeddable Python build, so show() can
+        # raise where nothing would ever be seen in a --noconsole process.
+        try:
+            finished = bootstrap.show(root)
+        except Exception as exc:
+            return die("VO Studio — setup could not open",
+                       f"{type(exc).__name__}: {exc}\n\n"
+                       "Start it with \"VO Studio.bat\" instead, which runs the "
+                       "same setup using the Python already on this machine.")
+        if not finished:
             # Either it failed — the window already said why — or it was closed
-            # part-way. Downloads resume where they stopped on the next launch.
+            # part-way. It picks up where it stopped on the next launch.
             return 1
         # Re-resolve: a venv nests the interpreter under Scripts\, the
         # embeddable build does not, and which one was used is only known now.

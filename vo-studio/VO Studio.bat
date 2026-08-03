@@ -16,8 +16,20 @@ cd /d "%~dp0"
 
 REM pythonw first: it draws the window with no console behind it. The console
 REM only appears if pythonw is missing, and then it is the useful kind.
-where pythonw >nul 2>&1 && (start "" pythonw "%~dp0launcher.py" & exit /b 0)
-where python  >nul 2>&1 && (python "%~dp0launcher.py" & exit /b 0)
+REM  Not `where python`: Windows 11 ships python.exe as an app-execution alias
+REM  in WindowsApps even when no Python is installed, so `where` succeeds and
+REM  running it opens the Microsoft Store instead. Ask the interpreter to prove
+REM  it can run before trusting it.
+for %%P in (pythonw.exe python.exe) do (
+  for /f "delims=" %%I in ('where %%P 2^>nul') do (
+    echo %%I | find /i "WindowsApps" >nul || (
+      "%%I" -c "import sys" >nul 2>&1 && (
+        start "" "%%I" "%~dp0launcher.py"
+        exit /b 0
+      )
+    )
+  )
+)
 
 echo.
 echo   Python was not found on this machine.

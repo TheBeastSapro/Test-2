@@ -160,6 +160,15 @@ class Setup:
         src = inner[0] if len(inner) == 1 and inner[0].is_dir() else tmp
         if dest.exists():
             shutil.rmtree(dest, ignore_errors=True)
+        if dest.exists():
+            # move() onto a SURVIVING directory puts the source INSIDE it, so
+            # you get runtime\node\node-v22-win-x64\node.exe and every later
+            # check quietly fails. Better to stop and say what to delete.
+            shutil.rmtree(tmp, ignore_errors=True)
+            raise RuntimeError(
+                f"Could not replace {dest.name} — something is holding it open "
+                f"(antivirus, or a path too long). Close this, delete "
+                f"{dest}, and run setup again.")
         shutil.move(str(src), str(dest))
         shutil.rmtree(tmp, ignore_errors=True)
         zip_path.unlink(missing_ok=True)
@@ -206,8 +215,32 @@ class Setup:
                     pct=self.done_weight / self.total * 100, detail="starting")
         return label, weight, False
 
+    # What each step must leave behind. Checked AFTER the step, not just
+    # before: a download that 403s, an extract that nests a folder or an npm
+    # that quietly fails used to turn the row green anyway, and the first sign
+    # of trouble was the app failing to start days later.
+    PROOF = {
+        1: lambda rt: (rt / "ffmpeg" / "bin" / "ffmpeg.exe").exists(),
+        2: lambda rt: (rt / "node" / "claude.cmd").exists() or (rt / "node" / "node.exe").exists(),
+        5: lambda rt: (rt / "espeak" / "espeak-ng.exe").exists(),
+    }
+    # Node and espeak are not fatal -- the Assistant and the pronunciation
+    # check are the only things that need them.
+    REQUIRED = {0, 1, 3, 4, 6}
+
     def _finish(self, i: int, weight: int, skipped: bool):
         """Mark a step done and charge its weight to the bar — unless it never ran."""
+        proof = self.PROOF.get(i)
+        if not skipped and proof and not proof(self.rt):
+            label = STEPS[i][0]
+            if i in self.REQUIRED:
+                raise RuntimeError(
+                    f"{label} did not install. Nothing was left in .\\runtime. "
+                    f"Close this, delete the runtime folder, and run setup again.")
+            self.report(status=(i, "failed"),
+                        detail=f"{label} did not install — continuing without it.")
+            self.done_weight += weight
+            return
         self.report(status=(i, "installed" if skipped else "done"))
         if not skipped:
             self.done_weight += weight
@@ -337,7 +370,7 @@ class Setup:
         if not (self.root / "VOStudio.exe").exists():
             self.report(detail=f"{label} — building VOStudio.exe")
             try:
-                subprocess.run(
+                built = subprocess.run(
                     [str(self.python_exe()), "-m", "PyInstaller", "--onefile",
                      "--noconsole", "--clean", "--name", "VOStudio",
                      "--icon", str(self.root / "assets" / "icon.ico"),
@@ -349,18 +382,83 @@ class Setup:
                     capture_output=True, cwd=str(self.root), timeout=900,
                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
                 shutil.rmtree(self.rt / "build", ignore_errors=True)
-            except Exception:
-                pass
+                if not (self.root / "VOStudio.exe").exists():
+                    tail = (built.stderr or b"").decode("utf-8", "replace")[-300:]
+                    self.report(detail="VOStudio.exe did not build — use "
+                                       f"\"VO Studio.bat\" to start it. {tail}")
+            except subprocess.TimeoutExpired:
+                # A part-written exe is worse than none: it exists, so nothing
+                # ever rebuilds it, and it will not run.
+                (self.root / "VOStudio.exe").unlink(missing_ok=True)
+                self.report(detail="Building VOStudio.exe timed out (antivirus "
+                                   "scanning it, usually). Start with \"VO Studio.bat\".")
+            except Exception as exc:
+                self.report(detail=f"VOStudio.exe did not build ({exc}). "
+                                   "Start with \"VO Studio.bat\".")
 
         self.report(status=(6, "done"))
         self.done_weight += w
-        self.report(pct=100, detail=out.stdout.strip(), finished=True)
+
+        # Written down, not just flashed. INSTALL.md tells him the CUDA line is
+        # the one thing to check, and the window used to close 1.2 s after
+        # showing it, with the text saved nowhere.
+        verdict = out.stdout.strip()
+        # Written last and only here, after the import check has passed. This
+        # is what tells the launcher the runtime is finished rather than
+        # merely begun.
+        try:
+            (self.rt / ".setup-complete").write_text(verdict, encoding="utf-8")
+        except OSError:
+            pass
+        try:
+            (self.root / "setup-result.txt").write_text(
+                verdict + "\n\nCUDA True and your GPU named = it worked.\n"
+                "CPU only = generation runs about 10x realtime; update your "
+                "NVIDIA driver and reopen the app.\n", encoding="utf-8")
+        except OSError:
+            pass
+        self.report(pct=100, detail=verdict, finished=True)
+
+
+def interpreter(root_dir: Path) -> Path | None:
+    """The runtime's Python, whichever layout setup produced."""
+    rt = Path(root_dir) / "runtime" / "python"
+    for c in (rt / "Scripts" / "pythonw.exe", rt / "pythonw.exe",
+              rt / "Scripts" / "python.exe", rt / "python.exe"):
+        if c.exists():
+            return c
+    return None
 
 
 def ready(root_dir: Path) -> bool:
-    """Is there a runtime to launch? Cheap enough to call on every start."""
-    rt = Path(root_dir) / "runtime" / "python"
-    return (rt / "Scripts" / "python.exe").exists() or (rt / "python.exe").exists()
+    """
+    Is the runtime COMPLETE, not merely started?
+
+    This used to ask only whether python.exe existed, and launcher.py used the
+    same test to decide whether to open the installer. So a setup that died
+    during PyTorch -- the 2.5 GB step, the one most likely to be interrupted --
+    left a Python behind, and every later launch skipped the installer
+    entirely and failed with ModuleNotFoundError instead. There was no way
+    back to setup except deleting the runtime folder, which nothing told you
+    to do.
+
+    A MARKER, not an import check: asking the runtime to import torch would
+    add ten to thirty seconds to every single launch to answer a question that
+    only changes when setup runs.
+    """
+    rt = Path(root_dir) / "runtime"
+    if interpreter(root_dir) is None:
+        return False
+    if not (rt / "ffmpeg" / "bin" / "ffmpeg.exe").exists():
+        return False
+    if (rt / ".setup-complete").exists():
+        return True
+    # No marker, but the packages are on disk: a runtime installed by an
+    # earlier version of this file, which never wrote one. Treated as finished
+    # rather than dragging a working install back through setup — checked by
+    # looking for the folder, not by importing it, so it stays instant.
+    return any((rt / "python" / lib / "site-packages" / "torch").is_dir()
+               for lib in ("Lib", "lib"))
 
 
 # ══════════════════════════════════════════════════════════════════ window
@@ -427,7 +525,8 @@ def show(root_dir: Path) -> bool:
         row.pack(anchor="w", fill="x")
         rows.append(row)
 
-    MARK = {"pending": ("  •   {}", MUTED),
+    MARK = {"failed": ("  !   {} — not installed", "#fbbf24"),
+            "pending": ("  •   {}", MUTED),
             "working": ("  ▸   {}", TEXT),
             "done": ("  ✓   {}", "#4ade80"),
             "installed": ("  ✓   {} — already installed", "#4ade80")}
@@ -492,7 +591,8 @@ def show(root_dir: Path) -> bool:
                 if msg.get("finished"):
                     step_lbl.config(text="Ready", fg="#4ade80")
                     btn.config(state="normal", text="Open VO Studio")
-                    win.after(1200, win.destroy)
+                    # Waits for a click now. The verification line is the whole
+                    # point of the last step and it used to vanish in a second.
                     return
         except queue.Empty:
             pass
