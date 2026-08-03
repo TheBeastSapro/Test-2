@@ -277,12 +277,33 @@ def build_server(studio):
             args.get("first") or "", args.get("second") or "",
             weight=float(args.get("weight") or 0.5), name=args.get("name") or ""))
 
-    return create_sdk_mcp_server(
-        name=SERVER_NAME, version="1.0.0",
-        tools=[studio_status, list_channels, study_youtube_channel, create_channel,
-               update_channel, list_runs, start_run, run_status, decide_gate,
-               cancel_run, preview_run, run_files, research_channel, score_videos,
-               cast_voice, voice_catalogue, voice_artists, sync_voice_artists,
-               list_styles, apply_style, blend_styles,
-               *skills_tools.build(studio)],
-    )
+    # Returned as a list as well as a server, because a backend that is not MCP needs the
+    # same operations as function schemas. Introspecting the assembled server for them was
+    # the first attempt and it is a dead end: `create_sdk_mcp_server` hands back an opaque
+    # MCP `Server` whose tool list is only reachable through a request handler that needs a
+    # live request context. The list is right here, so it is exposed here.
+    built = [studio_status, list_channels, study_youtube_channel, create_channel,
+             update_channel, list_runs, start_run, run_status, decide_gate,
+             cancel_run, preview_run, run_files, research_channel, score_videos,
+             cast_voice, voice_catalogue, voice_artists, sync_voice_artists,
+             list_styles, apply_style, blend_styles,
+             *skills_tools.build(studio)]
+    server = create_sdk_mcp_server(name=SERVER_NAME, version="1.0.0", tools=built)
+    _BUILT[id(server)] = built
+    return server
+
+
+# Keyed by the server it was built for, so two studios in one process cannot hand each
+# other's tools out. Small and bounded — one entry per server, and a server lives as long
+# as the conversation it serves.
+_BUILT: dict[int, list] = {}
+
+
+def built_tools(server) -> list:
+    """The tool objects that went into `server`, for a non-MCP backend to describe.
+
+    Empty for a server this module did not build, which is the honest answer rather than a
+    guess: a caller that gets nothing shows a model with no tools, and a caller that gets
+    somebody else's shows a model the wrong ones.
+    """
+    return list(_BUILT.get(id(server), []))
