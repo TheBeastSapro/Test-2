@@ -199,6 +199,15 @@ const card = $('#chat-card');
 }));
 card.addEventListener('drop', e => e.dataTransfer.files.length && takeFiles(e.dataTransfer.files));
 
+/* Tool results come back as JSON text. The only part worth drawing is a
+   rendered file — everything else the agent will say in its own words. */
+function takeFrom(text) {
+  try {
+    const j = JSON.parse(text);
+    return j && j.file && /take-\d+\.wav$/.test(j.file) ? j : null;
+  } catch { return null; }
+}
+
 /* ── one turn ───────────────────────────────────────────────────────── */
 const TOOL_SAYS = {
   voice_status: 'checking the voice',
@@ -236,15 +245,26 @@ async function stream(text, files = []) {
   BUSY = true;
   $('#btn-send').disabled = true;
   const bubble = say('<span class="msg-wait">…</span>');
-  let body = '', started = false;
-  // A tool that renders gets its own progress line, because that is the one
-  // that takes minutes and a still transcript reads as a hang.
+  // The bubble is a SEQUENCE, not one string. It used to be rebuilt with
+  // innerHTML on every text event, which silently deleted anything appended
+  // between them -- including the player for a take that had just rendered.
+  // Text goes into its own span; a player or a progress bar is a sibling, and
+  // the next text after one starts a fresh span so order is preserved.
+  let text_span = null, wrote = false;
   let live = null;
 
-  const paint = () => {
-    bubble.innerHTML = asText(body) || '<span class="msg-wait">…</span>';
+  const write = chunk => {
+    if (!text_span) {
+      text_span = document.createElement('div');
+      bubble.append(text_span);
+      text_span.dataset.text = '';
+    }
+    text_span.dataset.text += chunk;
+    text_span.innerHTML = asText(text_span.dataset.text);
+    wrote = true;
     chat().scrollTop = chat().scrollHeight;
   };
+  const block = () => { text_span = null; };   // next text starts a new span
 
   try {
     const res = await fetch('/api/assistant', {
@@ -263,29 +283,48 @@ async function stream(text, files = []) {
         let ev; try { ev = JSON.parse(line); } catch { continue; }
 
         if (ev.type === 'text') {
-          if (live) { live.remove(); live = null; }
-          started = true; body += ev.text; paint();
+          if (live) { live.remove(); live = null; block(); }
+          if (!wrote) bubble.innerHTML = '';
+          write(ev.text);
         } else if (ev.type === 'tool') {
           const label = TOOL_SAYS[ev.name?.split('__').pop()] || 'working';
-          if (!started) bubble.innerHTML = '';
+          if (!wrote) bubble.innerHTML = '';
           live?.remove();
           live = document.createElement('div');
           bubble.append(live);
+          block();
           // Only the slow ones get a bar; a status check does not need one.
           if (/render/.test(ev.name || '')) startClock(live, label + '…');
           else live.innerHTML = `<span class="msg-wait">${esc(label)}…</span>`;
           chat().scrollTop = chat().scrollHeight;
+        } else if (ev.type === 'result') {
+          // The tool just rendered something. Put it on screen where it was
+          // asked for, rather than describing a path on disk.
+          const take = takeFrom(ev.text);
+          if (take) {
+            live?.remove(); live = null;
+            if (!wrote) bubble.innerHTML = '';
+            const el = document.createElement('div');
+            el.className = 'took-audio';
+            el.innerHTML =
+              `<audio controls src="/api/lab/audio?file=${encodeURIComponent(take.file)}"></audio>` +
+              (take.seconds ? `<div class="took">${take.seconds}s on the GPU</div>` : '');
+            bubble.append(el);
+            block();
+            wrote = true;
+            chat().scrollTop = chat().scrollHeight;
+          }
         } else if (ev.type === 'error') {
-          body += (body ? '\n\n' : '') + ev.text; paint();
+          write((wrote ? '\n\n' : '') + ev.text);
         }
       }
       if (done) break;
     }
   } catch (e) {
-    body += `\n${e}`; paint();
+    write(`\n${e}`);
   }
   if (live) live.remove();
-  if (!body.trim()) bubble.innerHTML = '<span class="msg-wait">(no reply)</span>';
+  if (!wrote) bubble.innerHTML = '<span class="msg-wait">(no reply)</span>';
   BUSY = false;
   $('#btn-send').disabled = false;
 
@@ -358,6 +397,9 @@ function paintParams(p) {
     };
   });
 }
+// The name goes to the server, which remembers it — so Claude and this panel
+// are always talking about the same profile. They were not, and that is why a
+// take could come back reading the previous line.
 const loadProfile = () => api('/api/profile?name=' + encodeURIComponent($('#prof').value))
   .then(paintParams).catch(() => {});
 $('#prof').addEventListener('change', loadProfile);
@@ -521,6 +563,7 @@ refreshAuth();
 
 api('/api/voice/status').then(v => {
   paintVoice(v);
+  if (v.profile) $('#prof').value = v.profile;
   const box = $('#chat-empty');
   if (!box) return;
   box.innerHTML = v.loaded

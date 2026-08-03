@@ -42,6 +42,26 @@ UI = ROOT / "ui"
 CHUNK = 1 << 20
 
 
+def profile_name(asked: str = "") -> str:
+    """
+    THE profile. One name, resolved in one place.
+
+    Claude used to take SETTINGS.active_profile ("default") while the panel
+    sent whatever was typed in its box ("explaintory"). Two different profiles:
+    Claude rendered takes into one folder and the panel played the other, and
+    Claude's adjust_voice moved dials the sliders were not showing. Every
+    symptom of "it is giving me the old one" came from that split.
+
+    A name that arrives from the UI wins and is remembered, so switching
+    profiles in the box switches it for the agent too.
+    """
+    asked = (asked or "").strip()
+    if asked and asked != SETTINGS.active_profile:
+        SETTINGS.active_profile = asked
+        SETTINGS.save()
+    return SETTINGS.active_profile or "explaintory"
+
+
 def upload_limit() -> int:
     """Settings -> App -> Max upload, in bytes. Read per request, not captured at
     import, so raising it takes effect without restarting the app."""
@@ -213,7 +233,8 @@ def voice_status():
     if not path or not Path(path).exists():
         return {"loaded": False}
     return {"loaded": True, "name": Path(path).name,
-            "duration": STATE.get("voice_duration"), "peak": STATE.get("voice_peak")}
+            "duration": STATE.get("voice_duration"), "peak": STATE.get("voice_peak"),
+            "profile": profile_name()}
 
 
 @app.post("/api/script/analyse")
@@ -304,8 +325,8 @@ def render_audio():
 
 # -------------------------------------------------------------- voice lab
 @app.get("/api/profile")
-def get_profile(name: str = "default"):
-    return asdict(VoiceProfile.load(config.VOICES_DIR, name))
+def get_profile(name: str = ""):
+    return asdict(VoiceProfile.load(config.VOICES_DIR, profile_name(name)))
 
 
 @app.get("/api/lab/text")
@@ -316,7 +337,7 @@ def lab_text():
 
 @app.post("/api/lab/sample")
 def lab_sample(payload: dict):
-    name = payload.get("name") or "default"
+    name = profile_name(payload.get("name"))
     if not STATE.get("voice"):
         return {"error": "Set a reference clip on the Voice tab first."}
 
@@ -432,17 +453,17 @@ SAMPLE = ("The most spectacular story in this video is the one nobody can prove.
 def lab_latest(name: str = ""):
     """The newest take, for the panel — so the last thing rendered is to hand
     instead of scrolled away up the transcript."""
-    name = name or SETTINGS.active_profile or "explaintory"
+    name = profile_name(name)
     folder = config.VOICES_DIR / name / "takes"
     takes = sorted(folder.glob("take-*.wav")) if folder.exists() else []
     return {"name": name, "file": takes[-1].name if takes else ""}
 
 
 @app.get("/api/lab/audio")
-def lab_audio(name: str = "explaintory", file: str = ""):
+def lab_audio(name: str = "", file: str = ""):
     """One take, by name. `file` is validated rather than trusted -- it arrives
     from the page, and a page is not where path rules belong."""
-    folder = (config.VOICES_DIR / name / "takes").resolve()
+    folder = (config.VOICES_DIR / profile_name(name) / "takes").resolve()
     if file:
         try:
             p = (folder / Path(file).name).resolve()
@@ -457,7 +478,7 @@ def lab_audio(name: str = "explaintory", file: str = ""):
 
 @app.post("/api/lab/feedback")
 def lab_feedback(payload: dict):
-    name = payload.get("name") or "default"
+    name = profile_name(payload.get("name"))
     prof = VoiceProfile.load(config.VOICES_DIR, name)
     prof, changes = apply_feedback(prof, payload.get("feedback", ""))
     prof.save(config.VOICES_DIR)
@@ -466,7 +487,7 @@ def lab_feedback(payload: dict):
 
 @app.post("/api/lab/lock")
 def lab_lock(payload: dict):
-    name = payload.get("name") or "default"
+    name = profile_name(payload.get("name"))
     prof = VoiceProfile.load(config.VOICES_DIR, name)
     prof.save(config.VOICES_DIR)
     SETTINGS.active_profile = name
@@ -487,7 +508,7 @@ PARAM_RANGE = {"exaggeration": (0.2, 0.9), "cfg_weight": (0.2, 0.9),
 def lab_params(payload: dict):
     """Set a dial by hand. The feedback loop is the main way in, but sometimes
     you already know it is the speed and want to move it 0.02 yourself."""
-    name = payload.get("name") or "default"
+    name = profile_name(payload.get("name"))
     prof = VoiceProfile.load(config.VOICES_DIR, name)
     for key, value in (payload.get("values") or {}).items():
         if key not in PARAM_RANGE:
@@ -500,7 +521,7 @@ def lab_params(payload: dict):
 
 @app.post("/api/lab/revert")
 def lab_revert(payload: dict):
-    name = payload.get("name") or "default"
+    name = profile_name(payload.get("name"))
     prof = VoiceProfile.load(config.VOICES_DIR, name)
     if not prof.history:
         return {"profile": asdict(prof), "message": "Nothing to undo."}
@@ -691,7 +712,7 @@ class Studio:
         return {"loaded": True, "name": Path(p).name,
                 "duration_s": STATE.get("voice_duration"),
                 "peak_dbfs": STATE.get("voice_peak"),
-                "profile": SETTINGS.active_profile or "explaintory"}
+                "profile": profile_name()}
 
     def set_voice(self, path: str) -> dict:
         src = Path(path)
@@ -730,8 +751,7 @@ class Studio:
                 "peak_dbfs": round(peak, 1), "warning": warn}
 
     def take(self, text: str = "") -> dict:
-        name = SETTINGS.active_profile or "explaintory"
-        payload = {"name": name}
+        payload = {"name": profile_name()}
         if text:
             payload["text"] = text
         out = lab_sample(payload)
@@ -744,8 +764,7 @@ class Studio:
                              ("exaggeration", "cfg_weight", "temperature", "speed")}}
 
     def tune(self, feedback: str) -> dict:
-        name = SETTINGS.active_profile or "explaintory"
-        out = lab_feedback({"name": name, "feedback": feedback})
+        out = lab_feedback({"name": profile_name(), "feedback": feedback})
         if not out.get("changes"):
             return {"changed": [], "note": "Nothing in that matched a known "
                     "adjustment. Say which way it is wrong — too fast, too flat, "
@@ -755,8 +774,7 @@ class Studio:
     def set_param(self, key: str, value: float) -> dict:
         if key not in PARAM_RANGE:
             return {"error": f"Unknown dial {key}. One of: {', '.join(PARAM_RANGE)}"}
-        out = lab_params({"name": SETTINGS.active_profile or "explaintory",
-                          "values": {key: value}})
+        out = lab_params({"name": profile_name(), "values": {key: value}})
         return {"set": key, "to": out["profile"][key]}
 
     def analyse(self, script: str) -> dict:

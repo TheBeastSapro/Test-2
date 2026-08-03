@@ -243,6 +243,11 @@ def build_options(app_root: Path, permission_mode: str = "default",
             "tools. When you disagree, say so in one sentence and then do what he "
             "asked.\n\n"
 
+            "You CAN show him audio. Every take you render appears as a player "
+            "in the chat automatically — never tell him to open a file from disk "
+            "or that you have no way to play it. Mention the file name if it is "
+            "useful and move on.\n\n"
+
             "Say what you did and what the numbers were. 'Rendered a take, 11.4s, "
             "speed 1.00 to 0.96' is useful; 'Done!' is not. Report failures with the "
             "actual error.\n\n"
@@ -255,6 +260,17 @@ def build_options(app_root: Path, permission_mode: str = "default",
             "be recovered."
         ),
     )
+
+
+def _result_text(block) -> str:
+    """A tool result is a string or a list of content dicts. Flattened here so
+    the UI has one shape to look at."""
+    content = getattr(block, "content", None)
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(c.get("text", "") for c in content if isinstance(c, dict))
+    return ""
 
 
 # ONE CONVERSATION, NOT A SERIES OF STRANGERS
@@ -299,8 +315,9 @@ async def run(prompt: str, app_root: Path, **kwargs):
     now RENDER something -- tens of minutes of GPU -- and a UI that shows
     nothing until it finishes is indistinguishable from one that has hung.
     """
-    from claude_agent_sdk import (ClaudeSDKClient, AssistantMessage, TextBlock,
-                                  ToolUseBlock, CLINotFoundError)
+    from claude_agent_sdk import (ClaudeSDKClient, AssistantMessage, UserMessage,
+                                  TextBlock, ToolUseBlock, ToolResultBlock,
+                                  CLINotFoundError)
 
     status = check_auth()
     if not status.ok:
@@ -332,6 +349,16 @@ async def run(prompt: str, app_root: Path, **kwargs):
         try:
             await client.query(prompt)
             async for message in client.receive_response():
+                # A tool RESULT comes back as a user message. That is where the
+                # rendered file name is, and without forwarding it the app can
+                # never put the audio on screen -- which is why it told you it
+                # had "no way to embed audio" while sitting inside a UI that
+                # plays audio in every other message.
+                if isinstance(message, UserMessage):
+                    for block in (message.content if isinstance(message.content, list) else []):
+                        if isinstance(block, ToolResultBlock):
+                            yield {"type": "result", "text": _result_text(block)}
+                    continue
                 if not isinstance(message, AssistantMessage):
                     continue
                 for block in message.content:
