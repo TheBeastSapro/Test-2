@@ -285,6 +285,39 @@ def check_attachment(client: httpx.Client) -> str:
     return f"{saved['name']} stored as kind={saved['kind']} and served back"
 
 
+def check_research_can_fetch(client: httpx.Client) -> str:
+    """The research desk can read a channel, or says exactly what would let it.
+
+    The complaint this answers is "research is not working": on an install with no
+    YouTube Data API key the fetch box was disabled, which looks identical to a broken
+    page. It is not disabled any more — `yt-dlp` reads the public listing without a key
+    — so the two acceptable states are "the box is open" and "the box is shut and the
+    sentence beside it names the fix".
+
+    No channel is fetched. This script runs against a real install and a real network
+    read would make it slow and dependent on a third party being up, which is the
+    opposite of what a smoke check is for. What is asserted is the capability and the
+    honesty of the message, both of which are decided server-side before any request.
+    """
+    page = client.get("/research")
+    expect(page.status_code == 200,
+           f"/research answered {page.status_code}, so the desk is not reachable")
+
+    markup = page.text
+    expect('id="channel"' in markup,
+           "the /research page has no channel box at all, so nothing can be fetched")
+    box = markup.split('id="channel"', 1)[1][:400]
+
+    if "disabled" not in box:
+        return "the channel box is open, so a link can be fetched"
+
+    # Shut is allowed. Shut with no way out is not: that is the original complaint.
+    expect("yt-dlp" in markup or "API key" in markup,
+           "the channel box is disabled and the page does not say what would enable "
+           "it, which reads as the feature being broken rather than unconfigured")
+    return "the channel box is shut, and the page names the fix"
+
+
 @dataclass(frozen=True)
 class Check:
     name: str
@@ -299,6 +332,7 @@ CHECKS: tuple[Check, ...] = (
     Check("the Claude report is self-consistent", check_agent_auth),
     Check("a thread round-trips", check_thread_round_trip),
     Check("an attachment uploads and is classified", check_attachment),
+    Check("research can fetch a channel, or says why not", check_research_can_fetch),
 )
 
 

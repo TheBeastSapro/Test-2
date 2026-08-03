@@ -7,6 +7,11 @@ build/
 dist/
 
 .env
+# Every other env file too. `.env.local` and `.env.production` hold the same kind of
+# thing `.env` does, and `.env` alone does not match them. The example is the one that
+# is meant to be tracked — it holds defaults, not secrets.
+.env.*
+!.env.example
 *.db
 *.db-journal
 # SQLite writes these two beside the database and they hold page data, so a commit
@@ -14,7 +19,24 @@ dist/
 # in a commit before anyone noticed.
 *.db-shm
 *.db-wal
+*.sqlite
+*.sqlite3
 storage/
+
+# Private keys, certificates and credential drops, by the names tools hand out. None of
+# these belong in the repo, so the pattern is here rather than a review catching it.
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+credentials.json
+client_secret*.json
+token.json
+*.log
 .pytest_cache/
 .ruff_cache/
 

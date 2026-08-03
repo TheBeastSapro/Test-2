@@ -55,6 +55,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["forgecast*"]
+# Nothing outside the package, even if it acquires an `__init__.py`. `include` already
+# does this; naming the exclusions as well means a future `include = ["*"]` cannot quietly
+# turn `tests` or `tools` into shipped modules.
+exclude = ["tests*", "tools*", "docs*", "remotion*", "migrations*"]
 
 [tool.setuptools.package-data]
 # The land mask the world-map renderer draws from. Without this a non-editable
@@ -65,6 +69,20 @@ include = ["forgecast*"]
 # routes and no pages, and the failure is a Jinja TemplateNotFound on the first
 # request rather than anything visible at install time.
 "forgecast.web" = ["*.html", "static/*"]
+
+[tool.setuptools.exclude-package-data]
+# The `static/*` glob above is a wildcard over a directory in the working tree, so it
+# would carry anything that lands there. MANIFEST.in prunes these from an sdist; this is
+# the same list for a wheel built straight from the source directory, where MANIFEST.in
+# has no say. Both mirror EXCLUDE in tools/package.py.
+"*" = [
+    ".env", ".env.*",
+    "*.pem", "*.key", "*.crt", "*.cer", "*.p12", "*.pfx",
+    "id_rsa*", "id_ed25519*",
+    "credentials.json", "client_secret*.json", "token.json",
+    "*.db", "*.db-shm", "*.db-wal", "*.db-journal", "*.sqlite", "*.sqlite3",
+    "*.log",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

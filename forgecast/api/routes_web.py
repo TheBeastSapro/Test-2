@@ -93,6 +93,33 @@ def _redirect(url: str) -> RedirectResponse:
     return RedirectResponse(url, status_code=303)
 
 
+def _rail_channels(channels: list, runs: list) -> list[dict]:
+    """Each channel as a rail entry: where it goes, and what it is doing right now.
+
+    The word is derived from the run list `shell` already has rather than queried per
+    channel, which would be one query per channel on every page load. That list is the
+    most recent runs, and a run that is producing or sitting at a gate is by definition
+    recent — so the two states worth showing are the two the window cannot miss. An
+    older finished run falling outside it changes nothing: the answer is "idle" either
+    way.
+    """
+    from .routes_channel import status_word
+
+    by_channel: dict[int, list] = {}
+    for run in runs:
+        by_channel.setdefault(run.channel_id, []).append(run)
+
+    return [
+        {
+            "id": channel.id,
+            "name": channel.name,
+            "icon": formats.get(formats.format_of_channel(channel)).icon,
+            "status": status_word(by_channel.get(channel.id, [])),
+        }
+        for channel in channels
+    ]
+
+
 def shell(
     session: Session, user: User, nav: str, *,
     channels: list | None = None, runs: list | None = None,
@@ -119,6 +146,10 @@ def shell(
     return {
         "nav": nav,
         "recent_runs": runs[:8],
+        # The rail's own list, under its own name: pages that already load a filtered
+        # `channels` put theirs in the context after this dict, and a shared key would
+        # let the dashboard's format-filtered list decide what the sidebar shows.
+        "rail_channels": _rail_channels(channels, runs),
         "formats": list(formats.FORMATS.values()),
         "format_counts": formats.counts(channels, runs),
         "credits": billing.balance(session, user.id),

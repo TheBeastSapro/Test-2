@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}{{ channel.name }} · Forgecast{% endblock %}
+
+{% block head %}
+<style>
+  /* The breadcrumb is this page's own rather than the shell's `.crumbs`, which is
+     built for the flush chat layout — 34px of side padding and a bottom rule that
+     spans the window. Inside a padded `main` that rule stops short of both edges and
+     reads as a stray line. */
+  .crumbline { display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+               font-size: 12.5px; margin: 0 0 18px; }
+  .crumbline .seg { color: var(--text-2); }
+  .crumbline .seg::before { content: "/ "; color: var(--faint); }
+  .crumbline a.seg:hover { color: var(--accent); text-decoration: none; }
+  .crumbline .here { color: var(--muted); }
+
+  .hubhead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .hubhead h1 { margin: 0; }
+  /* One word and one dot, in the app's own status colours: mint is what `running`
+     already looks like everywhere else, violet is what a gate already looks like.
+     A fifth colour invented here would mean the same thing in two hues. */
+  .state { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px;
+           letter-spacing: .02em; color: var(--muted); }
+  .state i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint);
+             display: inline-block; flex: none; }
+  .state.producing { color: var(--accent); }
+  .state.producing i { background: var(--accent);
+                       box-shadow: 0 0 0 3px rgba(94, 234, 212, .15);
+                       animation: hubpulse 1.7s ease-in-out infinite; }
+  .state.waiting { color: var(--gate); }
+  .state.waiting i { background: var(--gate); box-shadow: 0 0 0 3px rgba(196, 181, 253, .15); }
+  @keyframes hubpulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+  @media (prefers-reduced-motion: reduce) { .state.producing i { animation: none } }
+
+  .hubsub { color: var(--muted); font-size: 13px; margin: 7px 0 0; }
+  .hubsub b { color: var(--text-2); font-weight: 550; }
+
+  /* The nav that makes this a place: it lives inside the channel, so both entries
+     keep the id and neither can drop you back into an account-wide list. */
+  .hubnav { display: flex; gap: 4px; margin: 20px 0 0;
+            border-bottom: 1px solid var(--line); }
+  .hubnav a { padding: 9px 13px; font-size: 13px; color: var(--text-2);
+              border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .hubnav a:hover { color: var(--text); text-decoration: none; }
+  .hubnav a.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 550; }
+  .hubnav a .n { color: var(--faint); font-variant-numeric: tabular-nums; }
+
+  .tiles { display: grid; gap: 12px; margin-top: 20px;
+           grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); }
+  .tile { background: var(--raise); border: 1px solid var(--line);
+          border-radius: var(--radius); padding: 14px 16px; }
+  .tile b { display: block; font-size: 10.5px; font-weight: 620; letter-spacing: .09em;
+            text-transform: uppercase; color: var(--faint); }
+  .tile .v { font-size: 23px; font-weight: 620; letter-spacing: -.02em; margin-top: 5px;
+             font-variant-numeric: tabular-nums; }
+  .tile .n { font-size: 11.5px; color: var(--muted); line-height: 1.45; margin-top: 3px; }
+  /* Only the tile that can ask you for something is allowed to shout, and only when
+     it has something to ask. A permanently violet "waiting on you: 0" trains you to
+     stop seeing the one tile that matters. */
+  .tile.asks { border-color: #33295c; }
+  .tile.asks .v { color: var(--gate); }
+
+  .away { display: grid; gap: 10px; margin-top: 14px;
+          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .away a { display: flex; align-items: baseline; gap: 9px; padding: 11px 13px;
+            background: var(--raise-2); border: 1px solid var(--line);
+            border-radius: var(--radius-sm); color: var(--text); font-size: 13.5px; }
+  .away a:hover { border-color: var(--line-2); background: var(--raise-3);
+                  text-decoration: none; }
+  .away a .ic { color: var(--accent); font-size: 12px; }
+  .away a span.w { color: var(--faint); font-size: 11.5px; margin-left: auto; }
+</style>
+{% endblock %}
+
+{% block body %}
+
+{# "/ <channel> / hub". The channel segment is a link even on the hub, because the
+   segment you are on being dead is what tells you the two are the same page. #}
+<nav class="crumbline" aria-label="Breadcrumb">
+  <a class="seg" href="/c/{{ channel.id }}">{{ channel.name }}</a>
+  <span class="seg here">{{ view }}</span>
+</nav>
+
+<div class="hubhead">
+  <h1>{{ channel.name }}</h1>
+  <span class="state {{ state }}"><i></i>{{ state }}</span>
+  <span class="grow"></span>
+  <span class="pill">{{ format.icon }} {{ format.label }}</span>
+</div>
+
+<p class="hubsub">
+  {% if channel.niche %}<b>{{ channel.niche }}</b> ·{% endif %}
+  {{ channel.aspect_ratio }} · {{ channel.target_duration_seconds }}s target
+  {%- if channel.voice_id %} · voice <b>{{ channel.voice_id }}</b>{% endif %}
+  · created {{ channel.created_at|when }}
+</p>
+
+<nav class="hubnav">
+  <a href="/c/{{ channel.id }}" class="{{ 'on' if view == 'hub' }}">Hub</a>
+  <a href="/c/{{ channel.id }}/runs" class="{{ 'on' if view == 'runs' }}">
+    Runs <span class="n">{{ facts.runs }}</span></a>
+</nav>
+
+<div class="tiles">
+  <div class="tile">
+    <b>Runs</b>
+    <div class="v">{{ facts.runs }}</div>
+    <div class="n">
+      {%- if facts.in_flight %}{{ facts.in_flight }} in flight
+      {%- elif facts.runs %}none in flight
+      {%- else %}nothing asked for yet{% endif -%}
+    </div>
+  </div>
+  <div class="tile">
+    <b>Finished</b>
+    <div class="v">{{ facts.completed }}</div>
+    <div class="n">
+      {%- if facts.finished_pct is not none %}{{ facts.finished_pct }}% of what it started
+      {%- else %}no runs to finish{% endif -%}
+    </div>
+  </div>
+  <div class="tile {{ 'asks' if facts.at_gate }}">
+    <b>Waiting on you</b>
+    <div class="v">{{ facts.at_gate }}</div>
+    <div class="n">
+      {%- if facts.at_gate %}sitting at a gate until you decide
+      {%- else %}nothing to approve{% endif -%}
+    </div>
+  </div>
+  <div class="tile">
+    <b>Credits spent</b>
+    <div class="v">{{ facts.credits_spent }}</div>
+    <div class="n">on this channel, net of refunds</div>
+  </div>
+</div>
+
+{% if facts.failed %}
+  <p class="hubsub">{{ facts.failed }} run(s) died on this channel — the stage each one
+    died at is on <a href="/analytics">Analytics</a>.</p>
+{% endif %}
+
+<h2>{% if view == 'runs' %}Every run{% else %}Latest runs{% endif %}</h2>
+{% if runs %}
+  <div class="card" style="padding:0">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Topic</th><th>Status</th><th>Started</th><th>Credits</th></tr>
+      </thead>
+      <tbody>
+        {% for run in runs %}
+          <tr>
+            <td class="mono"><a href="/runs/{{ run.id }}">{{ run.id }}</a></td>
+            <td><a href="/runs/{{ run.id }}">{{ run.topic }}</a></td>
+            <td><span class="status {{ run.status.value }}">{{ run.status.value }}</span></td>
+            <td class="muted">{{ run.created_at|when }}</td>
+            <td class="mono muted">{{ run.credits_spent }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if view == 'hub' and more_runs %}
+    <p class="hubsub"><a href="/c/{{ channel.id }}/runs">{{ more_runs }} older run(s)</a></p>
+  {% endif %}
+{% else %}
+  <div class="card">
+    <p class="muted" style="margin:0">
+      Nothing has run on this channel yet. Start one from the
+      <a href="/f/{{ format.slug }}">{{ format.label }} workspace</a>, where the
+      pipeline and the aspect are already chosen — or just ask in
+      <a href="/">Studio</a>.
+    </p>
+  </div>
+{% endif %}
+
+{% if view == 'hub' %}
+<h2>Elsewhere</h2>
+<div class="card">
+  <p class="muted" style="margin:0;font-size:13px">
+    {# Said out loud rather than implied. None of these four pages takes a channel, so
+       linking to them as if they arrived filtered would be the page lying about what
+       the next click does — and a "Research for this channel" link that quietly shows
+       both channels is worse than one that says it shows both. #}
+    These are account-wide: they cover every channel, not just this one. Pick
+    {{ channel.name }} again when you get there.
+  </p>
+  <div class="away">
+    <a href="/f/{{ format.slug }}"><span class="ic">{{ format.icon }}</span>
+      Start a run <span class="w">{{ format.label|lower }}</span></a>
+    <a href="/research"><span class="ic">◎</span> Research</a>
+    <a href="/styles"><span class="ic">◈</span> Styles</a>
+    <a href="/files"><span class="ic">▤</span> Files</a>
+    <a href="/analytics"><span class="ic">▥</span> Analytics</a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

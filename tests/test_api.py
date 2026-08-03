@@ -382,8 +382,17 @@ def test_web_pages_render(client: TestClient):
     shorts = client.get("/f/shorts")
     assert 'name="pipeline" value="faceless_shorts"' in shorts.text
     assert "Vertical" in shorts.text
-    # And it does not leak into the other tab.
-    assert "Vertical" not in client.get("/f/longform").text
+
+    # And it does not leak into the other tab's *workspace*. Cut at `</aside>` because
+    # the sidebar is account-wide on purpose — it lists every channel so that one of
+    # them is reachable while you are looking at the other — so asserting against the
+    # whole document would fail for the rail doing its job.
+    def workspace(body: str) -> str:
+        assert "</aside>" in body, "the page rendered without its sidebar"
+        return body.split("</aside>", 1)[1]
+
+    assert "Vertical" in workspace(shorts.text)
+    assert "Vertical" not in workspace(client.get("/f/longform").text)
 
 
 def test_dashboard_redirects_when_signed_out(client: TestClient):

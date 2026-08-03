@@ -69,6 +69,28 @@ NexLev's niche finder and outlier search, Drive, Epidemic Sound. Each takes a se
 URL and token from that service and can be reached with a real request before you
 trust it.
 
+### Research takes no API key
+
+Paste a channel link into Research, or hand one to the agent, and its uploads are read
+off the public channel page with `yt-dlp` — no key, no quota, no account. It is an
+optional extra rather than a base dependency, because the desk still answers without it
+and because it is a binary that wants updating often:
+
+```bash
+.venv/bin/pip install -e ".[research]"     # or: .venv/bin/pip install yt-dlp
+```
+
+What that listing does not carry is publish dates — only labels like "2 months ago" — so
+a date read this way is reconstructed and can be half a month out. An outlier is views
+per day, so the error is negligible on a two-year-old video and decisive on a
+three-month-old one. Each video is therefore checked on its own: one whose multiple could
+fall below the threshold comes back as a range and marked unreliable, rather than as a
+single number that looks measured.
+
+A `FORGECAST_YOUTUBE_API_KEY` is still preferred when you have one — real timestamps,
+plus likes and comments — and the public page is the fallback when its quota runs out
+mid-afternoon. With neither, a table you paste scores exactly the same way.
+
 ## Hosting it privately
 
 ```bash

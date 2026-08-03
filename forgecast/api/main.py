@@ -21,6 +21,7 @@ from .routes_agent import connector_router
 from .routes_agent import router as agent_router
 from .routes_analytics import router as analytics_router
 from .routes_api import router as api_router
+from .routes_channel import router as channel_router
 from .routes_files import router as files_router
 from .routes_preview import router as preview_router
 from .routes_research import router as research_router
@@ -61,6 +62,9 @@ def create_app() -> FastAPI:
     app.include_router(preview_router)
     app.include_router(research_router)
     app.include_router(styles_router)
+    # One channel as a place, at `/c/{id}`. Every other entry in the rail is the
+    # account, which is invisible with one channel and is the whole problem with two.
+    app.include_router(channel_router)
     # The chat and everything behind it. Registered before the web routes' catch-alls
     # so `/api/agent/...` is never matched by a page route's path converter.
     app.include_router(agent_router)

@@ -1,0 +1,49 @@
+# What an sdist or wheel must never carry.
+#
+# The third way this tree ships. `python -m build` picks files up from the working tree,
+# and `[tool.setuptools.package-data]` in pyproject.toml includes globs — `static/*` under
+# forgecast/web, for instance — that would happily carry a key someone dropped in that
+# directory. Only removals live in this file: it never adds anything, so it cannot make an
+# installable package incomplete, and every line has a counterpart in the EXCLUDE list in
+# tools/package.py.
+
+# --- secrets ----------------------------------------------------------------------------
+global-exclude .env
+global-exclude .env.*
+global-exclude *.pem
+global-exclude *.key
+global-exclude *.crt
+global-exclude *.cer
+global-exclude *.p12
+global-exclude *.pfx
+global-exclude id_rsa*
+global-exclude id_ed25519*
+global-exclude credentials.json
+global-exclude client_secret*.json
+global-exclude token.json
+
+# --- one machine's state ----------------------------------------------------------------
+# `*.db` matches neither `forgecast.db-wal` nor `forgecast.db-shm`, and those two hold
+# database pages. Name them.
+global-exclude *.db
+global-exclude *.db-shm
+global-exclude *.db-wal
+global-exclude *.db-journal
+global-exclude *.sqlite
+global-exclude *.sqlite3
+global-exclude *.log
+prune storage
+prune attachments
+prune runtime
+
+# --- build and dev droppings ------------------------------------------------------------
+global-exclude *.py[cod]
+global-exclude .DS_Store
+prune .git
+prune .github
+prune .claude
+prune .venv
+prune dist
+prune build
+prune tests
+prune remotion/node_modules

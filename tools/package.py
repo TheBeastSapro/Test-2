@@ -20,6 +20,14 @@ contain exactly the runtime and nothing that would confuse or endanger them:
   for running it, and a first-time user opening the folder should see the launcher, not
   a `tests/` directory.
 
+There is one exclusion rule set — `EXCLUDE` — and it is used twice: to filter what gets
+collected, and to assert what ended up in the finished archive. It is one list on purpose.
+The last leak of this class happened because two lists disagreed: `.gitignore` named `*.db`
+but not `*.db-wal`, and SQLite's write-ahead sidecars, which contain database pages, were
+covered by neither the pattern anyone was maintaining nor the check that was supposed to
+catch it. A new secret-ish file is meant to be caught by a pattern, not by somebody
+remembering to add a case.
+
 Everything the launcher needs is included, including `pyproject.toml` — the first run
 pip-installs the project from it, so an archive without it produces an app that cannot
 start.
@@ -28,9 +36,10 @@ start.
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import sys
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent.parent
 NAME = "Forgecast"
@@ -49,19 +58,112 @@ INCLUDE_FILES = [
 ]
 INCLUDE_TREES = ["forgecast", "migrations", "remotion"]
 
-# Checked against every archive member before the zip is written. These are the paths
-# that would leak secrets or one machine's state onto another's.
-FORBIDDEN = (".env", ".venv/", "forgecast.db", "storage/", ".git/", "node_modules/")
+# --------------------------------------------------------------- the exclusion rule set
+#
+# The single list of things that must never reach the archive. Every pattern is an fnmatch
+# glob, matched case-insensitively against *each component* of a path — so a pattern that
+# names a directory excludes everything beneath it, and a pattern that names a file
+# excludes it at any depth. Used by `files_to_ship` to filter and by `check` to assert.
+#
+# Add to this list rather than adding a check somewhere. The patterns are deliberately
+# wider than the files that exist today: `*.db-*` covers the `-wal`, `-shm` and `-journal`
+# sidecars *and* whatever SQLite invents next, which is the failure that started this.
+EXCLUDE = (
+    # --- secrets and credentials --------------------------------------------------------
+    # `.env` holds the credential-encryption key and the account password. `.env.*` covers
+    # `.env.local`, `.env.production` and friends; it also catches `.env.example`, which
+    # holds nothing secret, but a rule that lets `.env.<anything>` through is exactly how a
+    # real one ships. The example is for people who cloned the repo, not for the zip.
+    ".env",
+    ".env.*",
+    "*.env",
+    # Private keys and certificates. Nothing in the shipped tree needs one: TLS trust
+    # comes from `certifi` inside the virtualenv the launcher builds on the target
+    # machine, and provider credentials are typed into Settings and encrypted into the
+    # database. So every one of these names in a source tree is somebody's key.
+    "*.pem",
+    "*.key",
+    "*.crt",
+    "*.cer",
+    "*.der",
+    "*.p12",
+    "*.pfx",
+    "*.jks",
+    "*.keystore",
+    "id_rsa*",
+    "id_dsa*",
+    "id_ecdsa*",
+    "id_ed25519*",
+    "*.ppk",
+    # OAuth and service-account drops, by the names the issuing consoles hand out.
+    "credentials.json",
+    ".credentials.json",
+    "client_secret*.json",
+    "token.json",
+    "*service-account*.json",
+    "*service_account*.json",
+    "secrets.*",
+    "*.secret",
+    # --- one machine's state ------------------------------------------------------------
+    # The database and every SQLite sidecar. `*.db` alone does not match `forgecast.db-wal`
+    # — neither as a glob nor as a suffix, since `Path("x.db-wal").suffix` is `.db-wal` —
+    # and the sidecars hold database pages, so shipping one ships rows.
+    "*.db",
+    "*.db-*",
+    "*.sqlite",
+    "*.sqlite3",
+    "*.sqlite-*",
+    "storage",  # renders and uploads: gigabytes of someone else's output
+    "attachments",  # chat attachments; they live in the app root because the agent is
+    # sandboxed to it, so they sit next to the source while developing
+    "runtime",  # the downloaded toolchain: Node, the Claude CLI, ffmpeg. Machine-specific
+    # binaries, and the launcher fetches them on first run anyway.
+    "*.log",
+    # --- build and editor droppings -----------------------------------------------------
+    ".git",
+    ".github",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "*.py[cod]",
+    "*.egg-info",
+    "node_modules",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".mypy_cache",
+    ".tox",
+    "dist",
+    "build",
+    "out",
+    ".claude",
+    ".idea",
+    ".vscode",
+    ".ds_store",
+)
 
-SKIP_SUFFIXES = {".pyc", ".pyo", ".log", ".db", ".sqlite", ".sqlite3"}
-SKIP_DIRS = {"__pycache__", ".git", ".venv", "node_modules", ".pytest_cache",
-             ".ruff_cache", "out", "dist", "storage"}
+
+def excluded(path: str | Path) -> str | None:
+    """The pattern that excludes `path`, or `None` if nothing does.
+
+    Every component is tested, not just the file name, so `EXCLUDE` entries naming
+    directories exclude their whole subtree. Matching is case-insensitive on every
+    platform — a check that lets `.ENV` through on Linux is not a check.
+    """
+    for part in PurePosixPath(str(path).replace("\\", "/")).parts:
+        lowered = part.lower()
+        for pattern in EXCLUDE:
+            if fnmatch.fnmatchcase(lowered, pattern):
+                return pattern
+    return None
 
 
 def files_to_ship() -> list[tuple[Path, str]]:
     """(absolute path, path inside the archive) for everything being shipped."""
     picked: list[tuple[Path, str]] = []
 
+    # Not filtered through `excluded` on purpose: this list is hand-written, so an entry
+    # that is forbidden is a mistake somebody should be told about. Dropping it quietly
+    # here would build a silently different archive; `check` refuses to build instead.
     for name in INCLUDE_FILES:
         path = ROOT / name
         if path.exists():
@@ -77,9 +179,7 @@ def files_to_ship() -> list[tuple[Path, str]]:
             if not path.is_file():
                 continue
             relative = path.relative_to(ROOT)
-            if set(relative.parts) & SKIP_DIRS:
-                continue
-            if path.suffix in SKIP_SUFFIXES:
+            if excluded(relative):
                 continue
             picked.append((path, f"{NAME}/{relative.as_posix()}"))
 
@@ -102,14 +202,16 @@ def read_for_shipping(path: Path, member: str) -> bytes:
 
 
 def check(members: list[str]) -> None:
-    """Refuse to write an archive containing anything on the forbidden list.
+    """Refuse to write an archive containing anything `EXCLUDE` names.
 
-    Asserted rather than trusted. The include list already excludes these, but the cost
-    of being wrong is shipping an encryption key, and the check is three lines.
+    Asserted rather than trusted, and asserted with the same rule set that did the
+    filtering. The collection pass already drops these, but the cost of being wrong is
+    shipping an encryption key or a database, and the check is a loop.
     """
     leaked = [
-        member for member in members
-        if any(part in member for part in FORBIDDEN)
+        f"{member}  (matched {pattern})"
+        for member, pattern in ((member, excluded(member)) for member in members)
+        if pattern
     ]
     if leaked:
         raise SystemExit(

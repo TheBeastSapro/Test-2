@@ -70,8 +70,12 @@ PROVIDER_FIELDS = [
 
 # Settings that describe the installation rather than an account.
 ENV_FIELDS = [
+    # Not "unlocks reading a channel": `sources.read_channel` falls back to yt-dlp, so
+    # the old copy sent people to the Google console for a feature they already had.
+    # What the key buys is measured dates and engagement counts.
     {"key": "FORGECAST_YOUTUBE_API_KEY", "label": "YouTube Data API key",
-     "unlocks": "pasting a channel or video link on the Research tab",
+     "unlocks": "measured publish dates, likes and comments in research (without it, "
+                "pip install yt-dlp reads the same channel with approximate dates)",
      "where": "console.cloud.google.com — enable YouTube Data API v3"},
     {"key": "FORGECAST_TAVILY_API_KEY", "label": "Tavily",
      "unlocks": "better research sources (Wikipedia is used without it)",

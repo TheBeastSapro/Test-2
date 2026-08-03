@@ -53,6 +53,22 @@
   </nav>
 
   <div class="scroll">
+    {# The channels themselves, because every entry in the nav above is the account.
+       With one channel that is the same thing; with two, "how is the space channel
+       doing" has no page to go to and the dot is the only place the answer shows. #}
+    {% if rail_channels %}
+      <div class="lane">Channels</div>
+      {% for item in rail_channels %}
+        <a class="chan" href="/c/{{ item.id }}" title="{{ item.name }} — {{ item.status }}">
+          <span class="dot {{ 'dot-ok' if item.status == 'producing'
+                              else 'dot-warn' if item.status == 'waiting'
+                              else 'dot-idle' }}"></span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            {{ item.icon }} {{ item.name }}</span>
+        </a>
+      {% endfor %}
+    {% endif %}
+
     {% if recent_runs %}
       <div class="lane">Recent runs</div>
       {% for item in recent_runs %}

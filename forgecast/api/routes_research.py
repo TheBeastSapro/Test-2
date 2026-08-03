@@ -84,11 +84,21 @@ def research_page(request: Request, session: Session = Depends(get_session)) -> 
         {
             **shell(session, user, "research"),
             "channels": channels,
-            "has_youtube_key": bool(settings.youtube_api_key),
+            # Deliberately no `has_youtube_key` here. The page ran on it and gated the
+            # fetch box on it, which is the wall this change removes; leaving the flag
+            # in the context is an invitation to write `{% if has_youtube_key %}` copy
+            # later and put the wall back.
             "can_fetch": bool(settings.youtube_api_key) or keyless_ready,
+            # The short form of the caveat, not `keyless.SOURCE_NOTE`. The full note
+            # comes back as `via` with the results and the page prints it there, so
+            # using it here as well put the same paragraph on screen twice — once
+            # above the button and once below it.
             "fetch_note": (
                 "" if settings.youtube_api_key
-                else keyless.SOURCE_NOTE if keyless_ready
+                else "No API key needed: the public channel page is read instead, so "
+                     "publish dates are approximate and a video whose verdict turns on "
+                     "one comes back with a range."
+                if keyless_ready
                 else keyless_fix
             ),
         },

@@ -101,6 +101,31 @@ the status is in the sidebar on every page and in full under **Settings → Clau
 > account instead of the plan you already pay for. An empty value still counts as set.
 > The launcher checks for this before anything starts.
 
+### yt-dlp — for reading a channel from a link
+
+Optional, and the difference between pasting a link and pasting a spreadsheet. With it,
+**Research** reads a channel's uploads off its public page: no API key, no quota, no
+account. The launcher does not install it — it is a binary that wants updating often, and
+pinning that into everyone's first launch is a worse trade than a one-line install:
+
+```bash
+./.venv/bin/pip install -e ".[research]"      # macOS / Linux
+.venv\Scripts\pip install -e ".[research]"    # Windows
+```
+
+`pip install yt-dlp` on its own does the same thing; the extra just names it.
+
+Without it, Research still scores a table you paste, and a `FORGECAST_YOUTUBE_API_KEY`
+still reads a channel from a link. What you lose is the case with neither — which is what
+a fresh install is, and the reason this is worth the one line.
+
+The public listing has no real publish dates on it, only labels like "2 months ago", so a
+date read this way is reconstructed and can be half a month out. Because an outlier is
+views per day, that matters for a recent video and barely at all for an old one: each
+video is checked on its own, and one whose multiple could fall under the threshold is
+reported as a range and marked unreliable instead of as a number that looks measured.
+Numbers that came from an API key are measured, and are never marked.
+
 ### Node.js for Remotion — optional
 
 Only for the Remotion render backend. The default ffmpeg backend needs nothing extra.
@@ -123,7 +148,8 @@ the agent does it, because it holds the app's operations as tools:
 The rest of the rail is where you go to *look* at what happened:
 
 - **Long-form / Shorts** — the two workspaces, each with its own channels and runs
-- **Research** — score a channel or a pasted table into ranked outliers
+- **Research** — score a channel link, or a table you pasted, into ranked outliers; a
+  link needs no API key
 - **Styles** — editing styles learned from real videos, applied or blended
 - **Settings** — Claude, connectors, provider keys, and what will actually be used
 
@@ -154,8 +180,12 @@ Switch to live and add keys in **Settings** — they are encrypted at rest with 
 ```ini
 FORGECAST_PROVIDER_MODE=live
 FORGECAST_ELEVENLABS_API_KEY=...
-FORGECAST_YOUTUBE_API_KEY=...        # lets research read a channel from a link
+FORGECAST_YOUTUBE_API_KEY=...        # measured dates and engagement in research
 ```
+
+Research reads a channel from a link without that key — `pip install yt-dlp` is enough,
+and the publish dates it recovers are approximate. The key replaces them with measured
+timestamps and adds like and comment counts.
 
 ---
 

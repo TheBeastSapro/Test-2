@@ -1,19 +1,96 @@
 # Keep the build context small and free of secrets.
+#
+# Mirrors the EXCLUDE list in tools/package.py: the zip and the image are two ways this
+# working tree ships, and a pattern that is in one and not the other is a leak with a
+# different delivery mechanism.
+#
+# Note the `**/` prefixes. Docker matches these patterns against the whole path from the
+# context root and does NOT recurse on its own — bare `*.db` ignores `./forgecast.db` and
+# happily copies `./forgecast/forgecast.db`. Since the Dockerfile does `COPY forgecast/`,
+# every pattern that must hold at depth needs the prefix as well as the plain form.
+
+# --- version control and CI -------------------------------------------------------------
 .git
 .github
+.claude
+.gitignore
+.gitattributes
+
+# --- environments and caches ------------------------------------------------------------
 .venv
 venv
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
 __pycache__
 *.py[cod]
 *.egg-info
 .pytest_cache
 .ruff_cache
+.mypy_cache
+.tox
+
+# --- secrets ----------------------------------------------------------------------------
 # Never ship a real .env into an image — the compose file mounts it at run time.
 .env
+.env.*
+**/.env
+**/.env.*
+# Private keys and certificates. The image gets its TLS trust from the base image's CA
+# store, so any of these in the context is somebody's key, not a dependency.
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+credentials.json
+client_secret*.json
+token.json
+**/*.pem
+**/*.key
+**/*.crt
+**/*.cer
+**/*.p12
+**/*.pfx
+**/id_rsa*
+**/id_ed25519*
+**/credentials.json
+**/client_secret*.json
+**/token.json
+
+# --- this machine's state ---------------------------------------------------------------
+# The database and every SQLite sidecar. `-shm` and `-wal` hold database pages, so they
+# are as sensitive as the database itself; `*.db` matches neither of them.
 *.db
+*.db-shm
+*.db-wal
 *.db-journal
+*.sqlite
+*.sqlite3
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.db-journal
+**/*.sqlite
+**/*.sqlite3
 storage/
+attachments/
+runtime/
+**/storage
+**/attachments
+**/runtime
+*.log
+**/*.log
+
+# --- build output and development-only files --------------------------------------------
 dist/
+build/
+**/node_modules
+node_modules
+remotion/out/
 tests/
 evidence.md
 mirror.md

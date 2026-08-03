@@ -1,0 +1,206 @@
+"""One channel as a place in the app, rather than a row in somebody else's table.
+
+## Why this page exists
+
+Every entry in the rail is the account: Studio, the two format workspaces, Research,
+Styles, Files, Analytics. With one channel that is invisible, because the account *is*
+the channel. With two it is the whole problem — nothing in the app means "this
+channel", so "how is the space channel doing" has to be answered by reading an
+account-wide table with the other channel in it, and "what is waiting on me *here*"
+cannot be asked at all.
+
+Rookcast scopes its shell to a channel: a breadcrumb, the channel's name with a live
+status dot, and a nav inside that channel. This is that, at `/c/{id}`, and the numbers
+on it are the four you act on — what this channel started, what it finished, what is
+sitting at a gate waiting for you, and what it has cost.
+
+## Why the status word is derived rather than stored
+
+A `Channel.status` column would be a cache of the runs that only the worker writes,
+and a cache like that is wrong in exactly the situation you most need it: a process
+killed mid-render leaves a channel claiming to be producing forever, with nothing
+producing. The run rows are the fact, so the word is read off them per request and
+cannot be stale for longer than a reload.
+
+## Why a foreign channel id is 404 and never 403
+
+A distinguishable "forbidden" confirms that channel 12 exists, and existence is the
+part worth not confirming — an id is a small integer, so the whole space is walkable.
+`/files` already draws this line for storage paths; drawing the same one here keeps the
+two from disagreeing about what a wrong id means.
+
+## Why the spend figure comes from the analytics pass
+
+`spend_report` nets refunds against spends off the ledger, and Analytics prints the
+same numbers per channel. Recomputing them here — even from `Run.credits_spent`, which
+happens to be maintained — is how a hub and an analytics page come to quote different
+costs for the same channel, and then neither is believed. It reads the account's spend
+rows rather than this channel's, which is one pass over a table with a `run_id` index
+and is the right trade until an account has years of ledger in it; at that point the
+pass wants a channel-scoped variant, not a second implementation.
+"""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from ..auth import optional_user
+from ..db import get_session
+from ..graph import formats
+from ..models import Channel, Run, RunStatus, User
+from .routes_analytics import spend_report
+
+router = APIRouter(include_in_schema=False)
+
+# Runs shown on the hub before it stops being a hub and starts being a list. The full
+# list is one click away at /c/{id}/runs, so this is a preview and is allowed to be one.
+HUB_RUNS = 8
+
+# The whole list, capped. A channel producing daily passes a thousand runs in three
+# years, and a page that renders all of them is a page you give up waiting for.
+ALL_RUNS = 200
+
+PRODUCING = "producing"
+WAITING = "waiting"
+IDLE = "idle"
+
+
+def owned_channel(session: Session, user: User, channel_id: int) -> Channel:
+    """This account's channel, or 404.
+
+    The one place the URL's id is turned into a row, so there is no second path that
+    could forget the ownership half. `get` then compare, rather than a filtered select,
+    only because the not-found and not-yours answers are deliberately identical.
+    """
+    channel = session.get(Channel, channel_id)
+    if channel is None or channel.user_id != user.id:
+        raise HTTPException(status_code=404, detail="channel not found")
+    return channel
+
+
+def channel_runs(session: Session, user: User, channel: Channel, limit: int) -> list[Run]:
+    """This channel's runs, newest first.
+
+    Filtered on the account as well as the channel. The channel was already proved to
+    be this account's, so the second predicate is redundant today — and it is what
+    keeps a future `Run` written against someone else's account from surfacing here if
+    that invariant ever slips. It costs an indexed column in the WHERE clause.
+    """
+    return list(session.execute(
+        select(Run)
+        .where(Run.channel_id == channel.id, Run.user_id == user.id)
+        .order_by(Run.id.desc())
+        .limit(limit)
+    ).scalars().all())
+
+
+def status_word(runs: list[Run]) -> str:
+    """What this channel is doing right now, in one word.
+
+    Producing wins over waiting when both are true, because the dot describes the
+    machine and the machine is busy. That would hide a gate, so it does not have to:
+    "waiting on you" is a number of its own next to the dot, and it is the only figure
+    on the page that can ask you for something.
+
+    A queued run is deliberately not producing. Nothing is being produced yet, and the
+    case where it stays queued is the worker being down — a dot reading "producing"
+    while no worker exists is the exact lie this page is built to not tell.
+    """
+    live = {run.status for run in runs}
+    if RunStatus.running in live:
+        return PRODUCING
+    if RunStatus.awaiting_approval in live:
+        return WAITING
+    return IDLE
+
+
+def hub_facts(session: Session, user: User, channel: Channel, runs: list[Run]) -> dict:
+    """The four numbers for one channel, plus the notes that keep them readable.
+
+    `runs` is the channel's whole run list rather than the preview, because a count off
+    a truncated list is a wrong count that looks like a right one.
+    """
+    completed = [run for run in runs if run.status is RunStatus.completed]
+    at_gate = [run for run in runs if run.status is RunStatus.awaiting_approval]
+    running = [run for run in runs if run.status is RunStatus.running]
+    queued = [run for run in runs if run.status is RunStatus.queued]
+    failed = [run for run in runs if run.status is RunStatus.failed]
+
+    by_run = spend_report(session, user)["by_run"]
+    spent = sum(by_run.get(run.id, 0) for run in runs)
+
+    return {
+        "runs": len(runs),
+        "completed": len(completed),
+        "at_gate": len(at_gate),
+        "running": len(running),
+        "queued": len(queued),
+        "failed": len(failed),
+        "in_flight": len(running) + len(queued) + len(at_gate),
+        "credits_spent": spent,
+        # Printed only when there is a denominator: "0% finished" on a channel that has
+        # never been asked for anything reads as a failure rather than as a fresh start.
+        "finished_pct": round(len(completed) / len(runs) * 100) if runs else None,
+    }
+
+
+def _context(session: Session, user: User, channel: Channel, view: str) -> dict:
+    """Everything both views share, so the header cannot differ between them."""
+    from .routes_web import shell
+
+    every_run = channel_runs(session, user, channel, ALL_RUNS)
+    shape = formats.get(formats.format_of_channel(channel))
+    return {
+        # The rail still highlights the format this channel belongs to. A channel page
+        # with nothing lit in the rail reads as having navigated out of the app.
+        **shell(session, user, f"format:{shape.slug}"),
+        "channel": channel,
+        "format": shape,
+        "view": view,
+        "state": status_word(every_run),
+        "facts": hub_facts(session, user, channel, every_run),
+        "runs": every_run if view == "runs" else every_run[:HUB_RUNS],
+        "more_runs": max(0, len(every_run) - HUB_RUNS),
+    }
+
+
+@router.get("/c/{channel_id}", response_class=HTMLResponse)
+def channel_hub(
+    channel_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    from .routes_web import TEMPLATES
+
+    user = optional_user(request, session)
+    if user is None:
+        # `next` so signing in lands back on the channel rather than on the chat, which
+        # is what makes a shared link to a hub worth sending.
+        return RedirectResponse(f"/login?next=/c/{channel_id}", 303)  # type: ignore[return-value]
+
+    channel = owned_channel(session, user, channel_id)
+    return TEMPLATES.TemplateResponse(
+        request, "channel.html", _context(session, user, channel, "hub")
+    )
+
+
+@router.get("/c/{channel_id}/runs", response_class=HTMLResponse)
+def channel_run_list(
+    channel_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    """Every run on this channel — the one list in the app that is not account-wide."""
+    from .routes_web import TEMPLATES
+
+    user = optional_user(request, session)
+    if user is None:
+        return RedirectResponse(f"/login?next=/c/{channel_id}/runs", 303)  # type: ignore[return-value]
+
+    channel = owned_channel(session, user, channel_id)
+    return TEMPLATES.TemplateResponse(
+        request, "channel.html", _context(session, user, channel, "runs")
+    )

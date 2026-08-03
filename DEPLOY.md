@@ -54,7 +54,7 @@ money at your providers, metered through the ledger.
 
 Either put them in `.env` (the instance uses them for everything) or add them in the
 UI under **Settings → Provider keys** (encrypted at rest with
-`FORGECAST_ENCRYPTION_KEY`, and preferred over the instance's own). Two work with no
+`FORGECAST_ENCRYPTION_KEY`, and preferred over the instance's own). Three work with no
 key at all: `claude-cli` for text if the `claude` CLI is installed in the container,
 Openverse for stock imagery, and Wikipedia for research grounding.
 
@@ -66,6 +66,14 @@ with a Ken Burns push, which the shots node degrades to on its own and logs.
 Keyless research uses Wikipedia, which is genuine and citable but encyclopaedic — no
 good for anything recent, local, or contested. Add a Tavily or Brave key when the
 topics need a general web index; both take precedence automatically.
+
+The outlier desk is a separate thing from that grounding, and it also needs no key: it
+reads a channel's uploads off the public page with `yt-dlp`. The image does not ship it,
+though — the Dockerfile installs `.[postgres]`, not `.[research]` — so in a container you
+either add `research` to that extra and rebuild, or set `FORGECAST_YOUTUBE_API_KEY`, or
+paste the rows into the desk, which scores them the same way. Dates recovered from the
+public page are reconstructed from labels like "2 months ago"; the scorer reports a range
+and marks the video unreliable where that error could change the verdict.
 
 ---
 

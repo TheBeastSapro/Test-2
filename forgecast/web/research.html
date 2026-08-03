@@ -9,8 +9,29 @@
   .band.clear  { color: var(--ok);   border-color: #1f4b38; background: #10201a; }
   .band.soft   { color: var(--warn); border-color: #5c4a1e; background: #241f10; }
   .multiple { font-family: ui-monospace, Menlo, monospace; font-weight: 650; }
+  /* The multiple and its band are one reading: keeping them on a line together stops
+     the widest pill ("strong") from dropping under the number on only some rows. The
+     range, when there is one, always gets its own line rather than racing the pill
+     for what is left of the cell. */
+  .mline { display: flex; align-items: center; gap: 7px; }
+  .mrange { font-size: 11px; color: var(--muted); margin-top: 3px; white-space: nowrap; }
+  /* A source with no like or comment counts. Dimmer than a number and underlined like
+     a footnote, because a bare em dash in a column of percentages reads as zero. */
+  .unknown { color: var(--faint); border-bottom: 1px dotted var(--line-2); cursor: help; }
+  /* Six columns do not fit a phone. The card clips to its own corners, so without an
+     inner scroller the last column is not narrow — it is gone, and unreachable. The
+     min-width is what stops the columns collapsing to one word per line instead. */
+  .tscroll { overflow-x: auto; }
+  .tscroll table { min-width: 660px; }
+  /* Nothing in app.css dims a disabled field, so the gated fetch box looked typeable
+     and the explanation under it looked like an unrelated remark. Faded the way
+     `button:disabled` already is, rather than a colour this page invents. */
+  input:disabled { background: var(--bg); border-color: var(--line);
+                   opacity: .5; cursor: not-allowed; }
   .base-strip { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
-  .base-card { flex: 1; min-width: 220px; background: var(--raise-2);
+  /* Grows to share a row with the other cohort, but does not stretch to 1100px to
+     hold three words when a channel only has one. */
+  .base-card { flex: 1 1 220px; max-width: 340px; background: var(--raise-2);
                border: 1px solid var(--line); border-radius: var(--radius);
                padding: 10px 13px; font-size: 13px; }
   .base-card b { display: block; font-size: 11px; text-transform: uppercase;
@@ -102,6 +123,13 @@ const esc = (text) => { const d = document.createElement("div"); d.textContent =
 const niche = {{ (channels[0].niche if channels else "")|tojson }};
 const channelId = {{ (channels[0].id if channels else 0)|tojson }};
 
+// An interval rounded outwards, the way research.outliers._widest rounds the one it
+// writes into the row note. Rounding to nearest instead printed "could be 3.5–5.8×"
+// directly under a note saying "anywhere from 3.5× to 5.9×" — same video, same
+// arithmetic, two different answers on one row.
+const widest = (low, high) => [(Math.floor(low * 10) / 10).toFixed(1),
+                               (Math.ceil(high * 10) / 10).toFixed(1)];
+
 $("score").addEventListener("click", async () => {
   const button = $("score");
   button.disabled = true;
@@ -168,10 +196,14 @@ function render(payload) {
     parts.push(`<h2>${outliers.length} outlier${outliers.length === 1 ? "" : "s"}
       <span class="muted" style="text-transform:none;letter-spacing:0">
       of ${payload.count} scored</span></h2>`);
-    parts.push('<div class="card" style="padding:0;overflow:hidden"><table><thead><tr>' +
+    parts.push('<div class="card" style="padding:0;overflow:hidden">' +
+      '<div class="tscroll"><table><thead><tr>' +
       "<th>Video</th><th>Multiple</th><th>Views/day</th><th>Age</th><th>Engagement</th><th></th>" +
       "</tr></thead><tbody>");
     outliers.forEach((item, index) => {
+      const spread = item.date_is_approximate
+        && (item.multiple_high - item.multiple_low) > 0.05;
+      const [low, high] = spread ? widest(item.multiple_low, item.multiple_high) : [];
       parts.push(`<tr class="out" id="row-${index}">
         <td>
           <div>${esc(item.title)}</div>
@@ -182,16 +214,17 @@ function render(payload) {
           </div>
           ${(item.notes || []).map((n) => `<div class="muted" style="font-size:12px">— ${esc(n)}</div>`).join("")}
         </td>
-        <td><span class="multiple">${item.multiple.toFixed(1)}×</span>
-            <span class="band ${item.band}">${item.band}</span>
-            ${item.date_is_approximate && (item.multiple_high - item.multiple_low) > 0.05
-              ? `<div class="muted" style="font-size:11px;margin-top:2px">could be
-                 ${item.multiple_low.toFixed(1)}–${item.multiple_high.toFixed(1)}×</div>`
-              : ""}</td>
+        <td>
+          <div class="mline">
+            <span class="multiple">${item.multiple.toFixed(1)}×</span>
+            <span class="band ${item.band}">${esc(item.band)}</span>
+          </div>
+          ${spread ? `<div class="mrange">could be ${low}–${high}×</div>` : ""}
+        </td>
         <td>${Math.round(item.views_per_day).toLocaleString()}</td>
         <td>${item.age_days.toFixed(0)}d</td>
         <td>${item.engagement_known === false
-              ? '<span class="muted" title="this source carries no like or comment counts">—</span>'
+              ? '<span class="unknown" title="this source carries no like or comment counts">—</span>'
               : (item.engagement_rate * 100).toFixed(1) + "%"}</td>
         <td><div class="rowactions">
           <button class="ghost" onclick='ideas(${index}, ${JSON.stringify(item.title)}, ${item.multiple}, ${JSON.stringify(item.band)})'>Ideas</button>
@@ -199,7 +232,7 @@ function render(payload) {
       </tr>
       <tr id="ideas-${index}" style="display:none"><td colspan="6"><div class="ideas"></div></td></tr>`);
     });
-    parts.push("</tbody></table></div>");
+    parts.push("</tbody></table></div></div>");
     if (s.unreliable) {
       parts.push(`<p class="muted" style="font-size:13px">${s.unreliable} of these are
         marked unreliable; the note on the row says why — either a cohort too small for

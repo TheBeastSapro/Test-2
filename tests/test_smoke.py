@@ -308,6 +308,36 @@ def test_the_thread_check_leaves_nothing_behind(client):
     assert client.get("/api/agent/threads").json()["threads"] == before
 
 
+def test_the_research_check_accepts_both_honest_states(client):
+    """An open box and a shut box that names the fix are both fine."""
+    open_box = '<input id="channel" placeholder="@handle">'
+    assert "open" in smoke.check_research_can_fetch(
+        Stub(client, {"/research": Canned(None, 200, text=open_box)})
+    )
+
+    shut_with_a_way_out = (
+        '<input id="channel" disabled>'
+        "<p>yt-dlp is not installed. Install it with pip install yt-dlp.</p>"
+    )
+    assert "names the fix" in smoke.check_research_can_fetch(
+        Stub(client, {"/research": Canned(None, 200, text=shut_with_a_way_out)})
+    )
+
+
+def test_the_research_check_fails_on_a_dead_end(client):
+    """The original complaint: disabled, with nothing saying what would enable it."""
+    dead_end = '<input id="channel" disabled><p>Fetching is unavailable.</p>'
+    complaint = fails(smoke.check_research_can_fetch, client,
+                      {"/research": Canned(None, 200, text=dead_end)})
+    assert "reads as the feature being broken" in complaint
+
+    # And a page with no box at all is a different failure with its own sentence.
+    assert "no channel box" in fails(
+        smoke.check_research_can_fetch, client,
+        {"/research": Canned(None, 200, text="<h1>Research</h1>")},
+    )
+
+
 # ------------------------------------------------------------------ the parts around them
 
 
