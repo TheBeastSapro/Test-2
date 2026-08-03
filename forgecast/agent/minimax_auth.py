@@ -7,11 +7,24 @@ Their subscription covers `mmx`, MiniMax's own CLI, which authenticates by OAuth
 browser exactly the way Claude Code and Codex do. So the same trick works: sign in to the
 plan once, and let the CLI spend it.
 
-What the subscription does **not** cover is text-to-speech. `providers.media`'s MiniMax
-voice adapter bills the API balance per character and says so, and nothing in this file
-changes that — there is no CLI subcommand, no scope and no token that routes T2A through
-the plan. Two different MiniMax things, paid for two different ways, and conflating them
-would be a lie about someone's money.
+## What this file is for now, which is not what it was written for
+
+It was written to sign MiniMax in as a third *agent* backend, beside Claude and ChatGPT.
+That is gone: MiniMax is a narration vendor here, next to ElevenLabs, and offering it in
+the composer's agent picker meant one dropdown answering two different questions. See
+`engines.py` for the argument.
+
+The sign-in did not go with it, because narration is where the sign-in now earns its
+keep. This file used to state, flatly, that the plan does not cover text-to-speech and
+that "there is no CLI subcommand, no scope and no token" that routes it through the
+plan. That was the state of the investigation and it is wrong: `mmx` has a `speech`
+command group beside `text`, `image`, `video` and `music`, and speech sits under the
+same Token Plan tiers. `providers/minimax_cli.py` is the route that uses it.
+
+So there are still two MiniMax things paid for two different ways, and the distinction
+is still the point of this module — it just falls in a different place. `with_api_key`
+is the field that carries it: a CLI signed in with `--api-key` works, and bills per
+character exactly like the HTTP route, so it must never be reported as the plan.
 
 ## Verified rather than assumed
 
@@ -76,6 +89,13 @@ class MiniMaxStatus:
     # see the module docstring. The front end reads it; making it absent would be a
     # KeyError in one of three cases.
     api_key_shadowing: bool = False
+    # Signed in, but with a key rather than with the plan. `check()` has always known
+    # this — it is the difference between two of its return branches — and used to keep
+    # it in the prose only. It is a field now because the narration route reads it: a
+    # key-authenticated CLI bills per character exactly like the HTTP route, so treating
+    # it as "on the subscription" would render audio that draws down a balance while
+    # every artifact says it came out of the plan.
+    with_api_key: bool = False
     fixes: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict:
@@ -83,7 +103,7 @@ class MiniMaxStatus:
                 "cli_found": self.cli_found, "cli_path": self.cli_path,
                 "signed_in": self.signed_in, "can_login": self.can_login,
                 "account": self.account, "api_key_shadowing": self.api_key_shadowing,
-                "fixes": list(self.fixes)}
+                "with_api_key": self.with_api_key, "fixes": list(self.fixes)}
 
 
 def config_home() -> Path:
@@ -212,7 +232,7 @@ def check(root: Path | None = None) -> MiniMaxStatus:
                 "token against the API balance. It works. To use the plan instead, run "
                 "`mmx auth logout` and press Sign in."
             ),
-            cli_found=True, cli_path=cli, signed_in=True,
+            cli_found=True, cli_path=cli, signed_in=True, with_api_key=True,
             account=state.account or "API key",
             fixes=["mmx auth logout", "then press Sign in for the browser flow."],
         )

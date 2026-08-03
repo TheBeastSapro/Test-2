@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 
+from .. import scripting
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..providers import ProviderError
 from ._common import ask_json, request_payload, target_seconds
@@ -52,16 +53,57 @@ Rules for scenes:
   - Cover every beat from the brief, in order."""
 
 
+def scripting_block(ctx: NodeContext, seconds: int, *, only: tuple[str, ...] = ()) -> str:
+    """The channel's scripting method, and a log line for anything wrong with it.
+
+    Two things are reported here rather than swallowed, and both are the kind of failure
+    that otherwise presents as "the writing got worse".
+
+    A selection that no longer resolves — a renamed folder, a machine change — falls back
+    to the house method inside `prompt_block`, so the run continues. Silently, though,
+    the operator would see a run written to a method they did not choose with nothing
+    anywhere saying so.
+
+    And a style that loaded with warnings is the sixteen-documents-three-missing case: the
+    style works, writes, and is quietly missing part of itself. The warnings belong in the
+    run log because that is where somebody looks when a script came out wrong.
+    """
+    style = scripting.get(ctx.channel.scripting_style)
+    if style is None:
+        ctx.log(
+            f"scripting style {ctx.channel.scripting_style!r} could not be loaded — "
+            f"writing to the house method instead",
+            level="warning",
+        )
+    else:
+        for warning in style.warnings:
+            ctx.log(f"scripting style {style.name}: {warning}", level="warning")
+    return scripting.prompt_block(
+        ctx.channel.scripting_style, target_seconds=seconds, only=only)
+
+
 @node_handler("brief")
 async def brief_node(ctx: NodeContext) -> NodeResult:
     seconds = target_seconds(ctx)
     payload = request_payload(ctx, target_duration_seconds=seconds)
+
+    # The structural half only. A brief is a beat outline and no prose, so the ladder,
+    # the loops and the joins are exactly what it has to obey — and the banned-phrase
+    # list would be spending tokens on every run policing writing this stage does not
+    # produce. Appended as a constraint rather than as background, for the reason the
+    # research block is: an instruction the model may treat as context is one it drops
+    # the moment the output gets long.
+    instructions = (
+        f"{BRIEF_INSTRUCTIONS}\n\n"
+        f"{scripting_block(ctx, seconds, only=scripting.STRUCTURE_IDS)}"
+    )
+
     data, credits, provider = await ask_json(
         ctx,
         role="Write a production brief that makes the video specific instead of generic.",
         schema_name="brief",
         payload=payload,
-        instructions=BRIEF_INSTRUCTIONS,
+        instructions=instructions,
         max_tokens=2048,
     )
 
@@ -84,14 +126,20 @@ async def script_node(ctx: NodeContext) -> NodeResult:
     seconds = int(brief.get("target_duration_seconds") or target_seconds(ctx))
     payload = request_payload(ctx, target_duration_seconds=seconds, brief=brief)
 
+    # The channel's scripting method, in full: this is the stage that writes sentences,
+    # so the banned constructions and the rotation banks apply here as well as the
+    # structure. Appended as a hard constraint for the same reason the research block
+    # below is — a method offered as background is a method the model agrees with and
+    # then does not follow.
+    instructions = f"{SCRIPT_INSTRUCTIONS}\n\n{scripting_block(ctx, seconds)}"
+
     # Research, when the pipeline ran it, is appended as a hard constraint rather than
     # background reading: it names exactly which facts are available and forbids the
     # rest. Without it the house rule against inventing statistics has nothing to
     # stand on, because a documentary script with no sources will manufacture them.
-    instructions = SCRIPT_INSTRUCTIONS
     research = ctx.upstream_outputs.get("research") or {}
     if research.get("prompt_block"):
-        instructions = f"{SCRIPT_INSTRUCTIONS}\n\n{research['prompt_block']}"
+        instructions = f"{instructions}\n\n{research['prompt_block']}"
 
     data, credits, provider = await ask_json(
         ctx,

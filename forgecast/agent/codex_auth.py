@@ -270,7 +270,14 @@ def check() -> CodexStatus:
                 "with your own ChatGPT plan. It is a Node program, so it needs Node "
                 "and one install. Claude is unaffected and still works."
             ),
-            fixes=[INSTALL_HINT,
+            # The app's own installer first, and the npm line kept behind it. For a
+            # while this list started at the npm line while nothing in the app installed
+            # anything, so the only way forward was a terminal — which is what "chatgpt
+            # cli isn't installing properly" was actually describing. `toolchain` now
+            # fetches it into `runtime/`, so the button is named before the homework.
+            fixes=["Open Setup in this app and press Install — it fetches the CLI into "
+                   "runtime/ beside the app, so deleting the folder is the uninstall.",
+                   f"Or do it yourself, anywhere Node is installed:  {INSTALL_HINT}",
                    "Then press Check again — no restart needed.",
                    "Or stay on Claude: it is the default and needs nothing new."],
         )

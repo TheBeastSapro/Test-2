@@ -111,16 +111,20 @@ def test_inventory_counts_a_tool_already_on_path(tmp_path):
 
 
 def test_node_is_only_offered_when_it_would_actually_help(tmp_path, monkeypatch):
-    """Node is a means to an end, and the end is usually already met.
+    """Node is a means to an end, and the end is sometimes already met.
 
     The claude-agent-sdk wheel bundles a native CLI and the SDK resolves it before
-    PATH, so on most machines there is nothing to install. Listing a 30 MB JavaScript
+    PATH, so Claude alone often needs nothing installed. Listing a 30 MB JavaScript
     runtime anyway invites the reasonable question of why an app that makes videos
-    needs one — and on Windows it is worse than pointless, because npm produces a
-    `claude.cmd` shim the SDK refuses to spawn.
-    """
-    from forgecast.agent import auth
+    needs one.
 
+    Both CLIs are found here, deliberately: with either one missing Node is a
+    prerequisite rather than a spare download, and this test is about the case where it
+    is neither.
+    """
+    from forgecast.agent import auth, codex_auth
+
+    monkeypatch.setattr(codex_auth, "find_cli", lambda: ["/somewhere/codex"])
     monkeypatch.setattr(auth, "find_cli", lambda: "/somewhere/claude")
     keys = [t.key for t in toolchain.inventory(tmp_path)]
     assert "node" not in keys
@@ -129,9 +133,8 @@ def test_node_is_only_offered_when_it_would_actually_help(tmp_path, monkeypatch)
     tools = {t.key: t for t in toolchain.inventory(tmp_path)}
     assert not tools["claude"].present
     if os.name == "nt":
-        # The only fix is the native installer, so it is reported as needing you
-        # rather than offered as a download that would produce a refused shim.
-        assert "install.ps1" in tools["claude"].manual
+        # Windows gets its Claude CLI from the vendor installer, which brings its own
+        # runtime — so a missing Claude alone is not a reason to download Node there.
         assert "node" not in tools
     else:
         assert "node" in tools
@@ -195,3 +198,210 @@ def test_setup_state_is_safe_to_render_before_an_account_exists(tmp_path, monkey
         assert "install" in page.text.lower()
         body = client.get("/api/setup/state").json()
         assert {"tools", "ready", "runtime", "job"} <= set(body)
+
+
+# ------------------------------------------------------------------ the Codex CLI
+#
+# Reported as "chatgpt cli isn't installing properly". It was not installing badly — it
+# was not in this module at all, so nothing ever installed it and the ChatGPT backend
+# only worked for someone who had run npm themselves. These pin the parts of that fix
+# that a later edit could quietly undo.
+
+
+def _fake_npm(root):
+    """An npm that exists on disk, so the installer gets as far as running it.
+
+    Only its existence is used — `run_watched` is replaced in every test below, because
+    a real `npm install -g @openai/codex` is a network download and a suite that needs
+    the internet is a suite that fails on a train.
+    """
+    npm = toolchain.npm_exe(root)
+    npm.parent.mkdir(parents=True, exist_ok=True)
+    npm.write_text("", encoding="utf-8")
+    return npm
+
+
+def test_the_codex_cli_is_offered_at_all(tmp_path):
+    """The bug itself: no entry meant no installer, and no installer meant homework.
+
+    `toolchain.py` exists to remove exactly the "go and run npm yourself" step, and the
+    ChatGPT backend was the one thing still asking for it.
+    """
+    tools = {tool.key: tool for tool in toolchain.inventory(tmp_path)}
+    assert "codex" in tools
+    assert tools["codex"].weight == toolchain.WEIGHT_CODEX
+    # No `manual` on any platform: one npm install is the whole story, and a tool marked
+    # manual is one the setup page refuses to install.
+    assert tools["codex"].manual == ""
+
+
+def test_codex_presence_is_decided_by_the_module_that_runs_it(tmp_path, monkeypatch):
+    """Asked through `codex_auth.find_cli`, never by looking for a file called codex.
+
+    It knows three things a file check does not: the app's own runtime copy, PATH, and
+    that the Windows `.cmd` shim cannot be spawned directly. Answering from disk instead
+    reports connected on a machine where the first message dies with WinError 193.
+    """
+    from forgecast.agent import codex_auth
+
+    monkeypatch.setattr(codex_auth, "find_cli", lambda: None)
+    tools = {tool.key: tool for tool in toolchain.inventory(tmp_path)}
+    assert tools["codex"].present is False
+    assert tools["codex"].where == ""
+
+    monkeypatch.setattr(codex_auth, "find_cli",
+                        lambda: ["/runtime/node/bin/node", "/runtime/codex/bin/codex.js"])
+    tools = {tool.key: tool for tool in toolchain.inventory(tmp_path)}
+    assert tools["codex"].present is True
+    # The script, not the interpreter in front of it — "where it is" has to name the
+    # thing someone could go and look at.
+    assert tools["codex"].where == "/runtime/codex/bin/codex.js"
+
+
+def test_node_is_offered_whenever_codex_is_missing_on_every_platform(tmp_path, monkeypatch):
+    """Windows included, which is where the old condition was wrong.
+
+    Node used to be offered only when the Claude CLI was missing *and* the platform was
+    not Windows — right for Claude, whose Windows CLI comes from a vendor installer with
+    its own runtime. The Codex CLI has no bundled build anywhere and arrives only through
+    npm, so under the old condition Windows was offered a CLI with nothing to run it: an
+    install that could only fail, reported as npm's fault.
+    """
+    import os as real_os
+    from types import SimpleNamespace
+
+    from forgecast.agent import auth, codex_auth
+
+    monkeypatch.setattr(codex_auth, "find_cli", lambda: None)
+    monkeypatch.setattr(auth, "find_cli", lambda: "/somewhere/claude")
+    assert "node" in {tool.key for tool in toolchain.inventory(tmp_path)}
+
+    # `toolchain.os` is replaced rather than the real `os.name` patched: setting that to
+    # "nt" on Linux makes pathlib instantiate WindowsPath and takes the session with it.
+    monkeypatch.setattr(toolchain, "os",
+                        SimpleNamespace(name="nt", environ=real_os.environ,
+                                        pathsep=";"))
+    assert "node" in {tool.key for tool in toolchain.inventory(tmp_path)}
+
+
+def test_installing_codex_without_npm_refuses_and_names_npm(tmp_path, monkeypatch):
+    """No npm is a fact worth stating, not a mystery to hand back.
+
+    "The Codex CLI could not be installed" sends someone to look at Codex. npm is what
+    is absent and Node is what provides it, so both are named — and nothing is spawned,
+    because there is nothing to spawn.
+    """
+    def must_not_run(*_args, **_kwargs):                       # pragma: no cover
+        raise AssertionError("no npm exists, so nothing may be started")
+
+    monkeypatch.setattr(toolchain, "run_watched", must_not_run)
+    monkeypatch.setattr(toolchain.shutil, "which", lambda _name: None)
+
+    ok, detail = toolchain.install_codex_cli(tmp_path)
+
+    assert ok is False
+    assert "npm" in detail
+    assert "Node" in detail
+
+
+def test_a_failed_npm_hands_back_npms_own_words(tmp_path, monkeypatch):
+    """A failure whose reason went nowhere is a failure with nothing to act on."""
+    _fake_npm(tmp_path)
+    monkeypatch.setattr(toolchain, "run_watched", lambda *a, **k: (
+        1, "npm error code E404\nnpm error 404 Not Found - GET @openai/codex"))
+
+    ok, detail = toolchain.install_codex_cli(tmp_path)
+
+    assert ok is False
+    assert "404 Not Found" in detail
+
+
+def test_an_npm_that_exits_zero_with_nothing_runnable_is_not_a_success(tmp_path, monkeypatch):
+    """The exact failure `auth.py` documents for Windows shims, refused here.
+
+    An install reported as successful when nothing findable came out of it takes the
+    setup page green, the chip to "connected", and the first message to a crash. npm's
+    exit code is not evidence that this app can run what npm wrote, so the answer to
+    "can it be found" is the one that decides — and the detail says which of the two
+    happened, an empty prefix or a package the lookup missed.
+    """
+    from forgecast.agent import codex_auth
+
+    _fake_npm(tmp_path)
+    monkeypatch.setattr(toolchain, "run_watched", lambda *a, **k: (0, "added 1 package"))
+    monkeypatch.setattr(codex_auth, "find_cli", lambda: None)
+
+    ok, detail = toolchain.install_codex_cli(tmp_path)
+    assert ok is False
+    assert "nothing was written" in detail
+
+    # And with the package on disk the message has to change, because the fix does: one
+    # is a failed download, the other is a lookup that did not look where npm put it.
+    entry = (toolchain.node_bin(tmp_path) / "lib" / "node_modules" / "@openai" / "codex"
+             / "bin" / "codex.js")
+    entry.parent.mkdir(parents=True)
+    entry.write_text("#!/usr/bin/env node\n", encoding="utf-8")
+
+    ok, detail = toolchain.install_codex_cli(tmp_path)
+    assert ok is False
+    assert "_bundled_js" in detail
+    assert str(entry.parent) in detail
+
+
+def test_a_working_install_reports_where_it_landed(tmp_path, monkeypatch):
+    """And installs into the one prefix the app looks in.
+
+    `--prefix runtime/node` is not tidiness: `codex_auth._bundled_js` looks for the
+    package under that folder and spawns its `bin/codex.js` with the bundled node. A
+    copy installed anywhere else works from a terminal and is invisible to the app.
+    """
+    from forgecast.agent import codex_auth
+
+    _fake_npm(tmp_path)
+    seen: dict = {}
+
+    def fake_run(command, **kwargs):
+        seen["command"] = command
+        return 0, "added 1 package"
+
+    monkeypatch.setattr(toolchain, "run_watched", fake_run)
+    monkeypatch.setattr(codex_auth, "find_cli",
+                        lambda: ["/node", "/prefix/@openai/codex/bin/codex.js"])
+
+    ok, detail = toolchain.install_codex_cli(tmp_path)
+
+    assert ok is True
+    assert detail == "/prefix/@openai/codex/bin/codex.js"
+    assert toolchain.CODEX_PACKAGE in seen["command"]
+    assert seen["command"][seen["command"].index("--prefix") + 1] == str(
+        toolchain.node_bin(tmp_path))
+
+
+def test_what_npm_writes_is_what_the_agent_goes_looking_for(tmp_path, monkeypatch):
+    """The silent miss this prevents: installed, working, and reported as absent.
+
+    npm's `--prefix` layout differs by platform — `lib/node_modules` on POSIX, plain
+    `node_modules` on Windows — so the installer and `codex_auth._bundled_js` have to
+    agree about both. They are checked against each other here rather than each against
+    its own idea of the layout, which is how they drift apart.
+    """
+    import shutil as _shutil
+
+    from forgecast.agent import codex_auth
+
+    runtime = toolchain.node_bin(tmp_path)
+    node = toolchain.node_exe(tmp_path)
+    node.parent.mkdir(parents=True, exist_ok=True)
+    node.write_text("", encoding="utf-8")
+    monkeypatch.setattr(codex_auth, "APP_ROOT", tmp_path)
+
+    for layout in (runtime / "lib" / "node_modules", runtime / "node_modules"):
+        entry = layout / "@openai" / "codex" / "bin" / "codex.js"
+        entry.parent.mkdir(parents=True)
+        entry.write_text("#!/usr/bin/env node\n", encoding="utf-8")
+
+        assert toolchain.codex_entry(tmp_path) == entry
+        assert codex_auth.find_cli() == [str(node), str(entry)]
+        assert toolchain.codex_where(tmp_path) == str(entry)
+
+        _shutil.rmtree(layout)

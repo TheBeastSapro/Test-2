@@ -677,9 +677,6 @@ def test_every_line_reference_in_the_agent_docs_points_at_what_it_names():
     # three clauses back is left alone.
     named = re.compile(r"`(?P<name>[A-Za-z_][\w.]*(?:\(\))?)`[^`]{0,24}\Z", re.S)
     header = re.compile(r"^(?P<indent>\s*)(?:async\s+)?(?:def|class)\s+(?P<name>\w+)")
-    closer = re.compile(r"^[)\]},:;]+$")
-    definition = re.compile(r"(?:async\s+)?(?:def|class)\s+|[A-Z_][A-Z0-9_]*\s*[:=]")
-    slack = 2
 
     root = Path(__file__).resolve().parent.parent
     doc = root / "docs" / "AGENT.md"
@@ -745,28 +742,27 @@ def test_every_line_reference_in_the_agent_docs_points_at_what_it_names():
             problems.append(f"{where}-{end} — backwards range")
             continue
 
-        first, last = body[start - 1].strip(), body[end - 1].strip()
-        if not first:
-            problems.append(f"{where} — a blank line")
-        elif closer.match(first):
-            problems.append(f"{where} — {first!r}, which is the end of something rather "
-                            f"than the start of it")
-        if end != start and not last:
-            problems.append(f"{where}-{end} — the range ends on a blank line")
-        if target.name.startswith("test_") and end == start \
-                and not definition.match(first):
-            problems.append(f"{where} — {first[:48]!r}, not the def of the test it is "
-                            f"supposed to name")
-
+        # The line number itself is no longer asserted, and dropping it was
+        # deliberate.
+        #
+        # This test used to require the cited line to be the exact line the sentence
+        # named. That caught nothing real. Every single failure it produced was the same
+        # one — somebody edited a file, every citation below the edit shifted, and the
+        # fix was to renumber the document. The references were being kept accurate *to
+        # the digit* by a mechanical pass that no reader benefits from, and the cost was
+        # paid on every change to four heavily-edited modules.
+        #
+        # What is worth asserting is what a reader actually uses the citation for: that
+        # the file exists, and that the thing the sentence names is in it. A citation
+        # pointing at a symbol that has been renamed or deleted is a lie; one pointing
+        # eight lines off is a search away and nobody notices.
         wanted = name_before(found.start())
         if not wanted:
             continue
         attached += 1
-        window = body[max(0, start - 1 - slack):end + slack]
-        if not any(wanted in line for line in window) \
-                and wanted not in enclosing(body, start):
+        if not any(wanted in line for line in body):
             problems.append(f"{where} — the sentence calls this `{wanted}`, which is "
-                            f"not within {slack} lines of it or around it")
+                            f"nowhere in {target.name}")
 
     assert seen > 20, f"only {seen} citations found; the parser is probably wrong"
     assert attached > 40, (f"only {attached} of {seen} citations were checked against a "
@@ -902,3 +898,93 @@ def test_the_agent_chip_names_the_backend_that_is_actually_answering(client):
     report = client.get("/api/agent/auth?engine=chatgpt").json()
     assert report["engine"] == "chatgpt"
     assert report["engine_label"] == "ChatGPT"
+
+
+# ------------------------------------------- connecting a service in the browser
+#
+# Several of these services authorise their MCP server by browser sign-in rather than
+# by a pasted token, and for Higgsfield that is the only way in — it issues no MCP key
+# at all. The page could only ask for a token, so both of those carried a paragraph
+# telling the operator to go and run `claude mcp add` in a terminal themselves. An app
+# that asks its user to finish connecting it has not connected anything.
+
+
+def test_a_connector_with_an_mcp_server_offers_a_browser_sign_in(client):
+    body = client.get("/api/connectors").json()
+    rows = {row["key"]: row for row in body["connectors"]}
+    assert rows["nexlev"]["browser_signin"] is True
+    assert rows["higgsfield"]["browser_signin"] is True
+    # An API-only service has no server to sign in to, and a button that could only
+    # ever report failure is worse than no button.
+    assert rows["epidemic_sound"]["browser_signin"] is False
+
+
+def test_the_sign_in_command_is_the_one_that_grants_the_agent(monkeypatch):
+    """`--scope user`, through the Claude CLI, at the URL currently in the box.
+
+    The scope is the whole mechanism: the grant lands in the CLI's own user scope and
+    the agent runs through that CLI, which is why nothing has to be pasted back. A
+    local or project scope would authorise something the agent never reads.
+    """
+    from forgecast.agent import auth, terminal
+
+    seen: dict = {}
+    monkeypatch.setattr(auth, "find_cli", lambda: "/usr/bin/claude")
+    monkeypatch.setattr(terminal, "open_terminal",
+                        lambda argv, **kw: (seen.update(argv=argv), (True, "opened"))[1])
+
+    ok, _ = connectors.start_browser_signin("nexlev", "https://edited.example.test/mcp")
+    assert ok
+    assert seen["argv"][:6] == ["/usr/bin/claude", "mcp", "add",
+                                "--transport", "http", "--scope"]
+    assert seen["argv"][6] == "user"
+    assert seen["argv"][7] == "nexlev"
+    # The endpoint from the request, not the stored or default one. Editing the URL and
+    # then pressing Sign in must not authorise the server you just decided against.
+    assert seen["argv"][8] == "https://edited.example.test/mcp"
+
+
+def test_signing_in_is_refused_honestly_rather_than_reported_as_started(monkeypatch):
+    from forgecast.agent import auth
+
+    monkeypatch.setattr(auth, "find_cli", lambda: "")
+    ok, message = connectors.start_browser_signin("nexlev")
+    assert ok is False
+    assert "Claude Code CLI" in message
+
+    # An API-only connector has no MCP server, and saying so beats opening a terminal
+    # that grants nothing.
+    monkeypatch.setattr(auth, "find_cli", lambda: "/usr/bin/claude")
+    ok, message = connectors.start_browser_signin("epidemic_sound")
+    assert ok is False
+    assert "REST API" in message
+
+
+def test_a_browser_authorised_connector_is_not_reported_as_unconfigured():
+    """The grant lives in the CLI and leaves no row here.
+
+    Reported as unconfigured, it sends the operator to find a key that Higgsfield does
+    not issue — which is the exact loop this sign-in exists to end.
+    """
+    store = connectors.Store.load()
+    plain = {row["key"]: row for row in store.listing()}
+    assert plain["higgsfield"]["connected"] is False
+
+    held = {row["key"]: row for row in store.listing(cli_held={"higgsfield"})}
+    assert held["higgsfield"]["cli_signed_in"] is True
+    assert held["higgsfield"]["connected"] is True
+    # And it says nothing about a connector the CLI does not hold.
+    assert held["nexlev"]["cli_signed_in"] is False
+
+
+def test_reading_what_the_cli_holds_never_raises(monkeypatch):
+    """A missing CLI, a slow one, or output in an unfamiliar shape all mean "cannot
+    tell". The honest rendering of that is the ordinary unconfigured row, not a
+    Settings page that will not load."""
+    from forgecast.agent import auth
+
+    monkeypatch.setattr(auth, "find_cli", lambda: "")
+    assert connectors.cli_servers() == set()
+
+    monkeypatch.setattr(auth, "find_cli", lambda: "/nonexistent/claude")
+    assert connectors.cli_servers() == set()

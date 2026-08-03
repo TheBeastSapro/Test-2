@@ -35,6 +35,10 @@ global-exclude *.log
 prune storage
 prune attachments
 prune runtime
+# Somebody else's licensed scripting documents, for a copy that ended up in the tree.
+# `prune` takes a literal directory, so the duplicate folder is named as well.
+prune scripting-library
+prune scripting-library-2
 
 # --- build and dev droppings ------------------------------------------------------------
 global-exclude *.py[cod]

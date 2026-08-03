@@ -82,6 +82,10 @@ runtime/
 **/storage
 **/attachments
 **/runtime
+# The operator's own scripting documents, if a copy ever lands in the tree. Somebody
+# else's licensed work must not be baked into an image that gets pushed to a registry.
+scripting-library*/
+**/scripting-library*
 *.log
 **/*.log
 

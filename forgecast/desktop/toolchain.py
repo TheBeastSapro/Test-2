@@ -17,6 +17,11 @@ goes on the machine, and deleting the folder is the uninstall.
 * **Node + the Claude Code CLI** — the chat. The agent SDK is the Python half only; it
   drives the real CLI, and the CLI is a Node program. Two runtimes is not a design
   choice, it is what the SDK is.
+* **The Codex CLI** — the same chat on the ChatGPT backend. It was left out of this
+  module for a while, which was reported as "chatgpt cli isn't installing properly".
+  It was not installing badly; it was never being installed, so the backend only ever
+  worked for someone who had run `npm install -g @openai/codex` themselves. That is
+  the homework this module exists to remove, and it is now installed like the rest.
 
 ## Rules this file follows
 
@@ -57,11 +62,18 @@ from pathlib import Path
 NODE_VERSION = "22.14.0"
 FFMPEG_WIN_URL = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
 CLI_PACKAGE = "@anthropic-ai/claude-code"
+# Named here rather than read from `codex_auth.PACKAGE`: this module has to keep working
+# on a bare interpreter where the agent package may not import at all, and a constant
+# that disappears with an ImportError is a constant that cannot be used in the install.
+CODEX_PACKAGE = "@openai/codex"
 
 # Rough download sizes in MB, used to weight the progress bar so it tracks reality.
 WEIGHT_NODE = 30
 WEIGHT_FFMPEG = 80
 WEIGHT_CLI = 12
+# Heavier than the Claude CLI because the package carries a native build of the agent
+# rather than only JavaScript.
+WEIGHT_CODEX = 25
 
 
 def runtime_dir(root: Path) -> Path:
@@ -268,6 +280,33 @@ def cli_exe(root: Path) -> Path:
     return directory / ("claude.cmd" if os.name == "nt" else "bin/claude")
 
 
+def codex_exe(root: Path) -> Path:
+    """The shim npm writes for the Codex CLI, in the same prefix and by the same rules.
+
+    Only ever a fallback answer to "is it there". What actually runs is the package's
+    own `bin/codex.js` under a bundled node — see `codex_entry` and `codex_auth._argv` —
+    because on Windows this shim is a `.cmd` and `CreateProcess` cannot execute one.
+    """
+    directory = node_bin(root)
+    return directory / ("codex.cmd" if os.name == "nt" else "bin/codex")
+
+
+def codex_entry(root: Path) -> Path | None:
+    """The Codex package's entry script under the runtime prefix, or None.
+
+    Both layouts are checked, in the order `codex_auth._bundled_js` checks them, and
+    that agreement is the whole point of the function: npm's `--prefix` install puts
+    packages under `lib/node_modules` on POSIX and directly under `node_modules` on
+    Windows, so an installer that only knew one of them would report a perfectly good
+    install as missing on the other platform.
+    """
+    for base in (node_bin(root) / "lib" / "node_modules", node_bin(root) / "node_modules"):
+        script = base / "@openai" / "codex" / "bin" / "codex.js"
+        if script.is_file():
+            return script
+    return None
+
+
 def ffmpeg_bin(root: Path) -> Path:
     return runtime_dir(root) / "ffmpeg" / "bin"
 
@@ -294,18 +333,49 @@ class Tool:
                 "where": self.where, "manual": self.manual}
 
 
+def codex_where(root: Path) -> str:
+    """Where a *runnable* Codex CLI is on this machine, or "" when there is none.
+
+    Asked through `codex_auth.find_cli` for the same reason the Claude entry is asked
+    through `auth.find_cli`: it already knows about this app's own runtime copy, about
+    PATH, and about the Windows `.cmd` shim — which Python cannot spawn directly, so a
+    probe that just looks for a file called `codex` reports connected on a machine where
+    the first message dies with WinError 193. One question, one answer, in one place.
+
+    The disk probe below it is the fallback for the launcher's pre-virtualenv run, where
+    the agent package may not import. It can only say whether *something* is there, which
+    is enough to decide whether to download; the real check runs later, inside the
+    virtualenv, where it works.
+    """
+    try:
+        from ..agent import codex_auth
+    except ImportError:                                             # pragma: no cover
+        codex_auth = None
+
+    if codex_auth is not None:
+        return codex_auth.cli_label(codex_auth.find_cli())
+
+    entry = codex_entry(root)
+    if entry is not None:
+        return str(entry)
+    if codex_exe(root).exists():
+        return str(codex_exe(root))
+    return shutil.which("codex") or ""
+
+
 def inventory(root: Path) -> list[Tool]:
     """What is here, before a single byte is downloaded.
 
     A tool already on PATH counts. Downloading a second ffmpeg next to the one someone
     deliberately installed is not being helpful.
 
-    The CLI is asked about through `agent.auth.find_cli`, never by looking for the name
-    directly, and that is not tidiness. The SDK resolves its own bundled binary before
-    it looks at PATH, and on Windows it refuses the `claude.cmd` shim npm installs — so
-    a probe that just checks "is there something called claude" reports connected on a
-    machine where the first message will fail with a batch-script refusal. One
-    question, one answer, in one place.
+    Each CLI is asked about through the module that runs it — `agent.auth.find_cli` for
+    Claude, `agent.codex_auth.find_cli` for Codex — never by looking for the name
+    directly, and that is not tidiness. The Claude SDK resolves its own bundled binary
+    before it looks at PATH, and on Windows npm's `.cmd` shim is unusable for both: the
+    SDK refuses to spawn a batch script, and `CreateProcess` cannot execute one at all.
+    So a probe that just checks "is there something called claude" reports connected on
+    a machine where the first message dies. One question, one answer, in one place.
     """
     # Imported here, and tolerantly. `inventory()` runs from the launcher on the system
     # interpreter before the virtualenv exists, so anything this reaches must survive a
@@ -356,15 +426,33 @@ def inventory(root: Path) -> list[Tool]:
         present=bool(cli), where=cli or "", manual=cli_manual,
     ))
 
-    # Node is listed only when it is actually needed: as the way to get a CLI on a
-    # platform whose wheel carries no bundled binary. With the CLI already present it
-    # is a 30 MB download for nothing, and a setup page that offers it anyway invites
-    # the reasonable question of why an app that makes videos needs a JavaScript
-    # runtime.
-    if not cli and os.name != "nt":
+    # The ChatGPT backend's half of the same job, and it was missing from this list
+    # entirely — which is why it was reported as installing improperly. Nothing installed
+    # it, so the setup page never offered it, and `codex_auth.check()` told everyone who
+    # picked ChatGPT to go and run npm themselves. No `manual` on any platform: unlike
+    # ffmpeg there is no package manager that owns this, and unlike the Claude CLI on
+    # Windows there is no vendor installer to defer to — one npm install is the whole
+    # story, so the app does it.
+    codex = codex_where(root)
+    tools.append(Tool(
+        key="codex", label="Codex CLI (the ChatGPT chat)", weight=WEIGHT_CODEX,
+        present=bool(codex), where=codex,
+    ))
+
+    # Node is listed only when something still needs it, and either CLI can be that
+    # something. It stays hidden once they are here: a 30 MB JavaScript runtime on the
+    # setup page of an app that makes videos invites the reasonable question of why, and
+    # answering "for a download you did not need" is the wrong answer.
+    #
+    # The Codex clause carries no platform test, and that is the correction. The Claude
+    # one has one because Windows gets its CLI from a vendor installer that brings its
+    # own runtime, so Node there would be for nothing. Codex has no bundled build on any
+    # platform and no installer but npm, so on Windows the old condition offered the CLI
+    # with nothing to run it — an install that could only fail, reported as npm's fault.
+    if not codex or (not cli and os.name != "nt"):
         have_node = node_exe(root).exists() or bool(shutil.which("node"))
         tools.append(Tool(
-            key="node", label="Node.js (to install the CLI)", weight=WEIGHT_NODE,
+            key="node", label="Node.js (to install the chat CLIs)", weight=WEIGHT_NODE,
             present=have_node,
             where=(str(node_exe(root)) if node_exe(root).exists()
                    else (shutil.which("node") or "")),
@@ -468,6 +556,19 @@ def install_node(root: Path, on_progress=None) -> Path:
     return node_exe(root)
 
 
+def _npm_env(root: Path) -> dict:
+    """The environment every `npm install` here runs under. One copy, two installers."""
+    env = dict(os.environ)
+    # npm resolves its own node from PATH; the bundled one has to come first or a
+    # system Node of the wrong major version answers instead.
+    binaries = node_bin(root) / ("" if os.name == "nt" else "bin")
+    env["PATH"] = str(binaries) + os.pathsep + env.get("PATH", "")
+    # npm writes caches and logs; keeping them inside the app folder means the
+    # uninstall really is "delete the folder".
+    env["npm_config_cache"] = str(runtime_dir(root) / "npm-cache")
+    return env
+
+
 def install_claude_cli(root: Path, on_progress=None, *, on_note=None,
                       on_tick=None) -> tuple[bool, str]:
     """The CLI into `runtime/node`, using that same Node's npm.
@@ -489,14 +590,7 @@ def install_claude_cli(root: Path, on_progress=None, *, on_note=None,
     if on_progress:
         on_progress(0, WEIGHT_CLI * 1_000_000)
 
-    env = dict(os.environ)
-    # npm resolves its own node from PATH; the bundled one has to come first or a
-    # system Node of the wrong major version answers instead.
-    binaries = node_bin(root) / ("" if os.name == "nt" else "bin")
-    env["PATH"] = str(binaries) + os.pathsep + env.get("PATH", "")
-    # npm writes caches and logs; keeping them inside the app folder means the
-    # uninstall really is "delete the folder".
-    env["npm_config_cache"] = str(runtime_dir(root) / "npm-cache")
+    env = _npm_env(root)
 
     # `run_watched`, not `subprocess.run`. This step takes minutes and prints almost
     # nothing, and a blocking call holds the only thread that can redraw the setup window —
@@ -591,6 +685,69 @@ def _install_claude_windows(*, on_note=None, on_tick=None) -> tuple[bool, str]:
     return True, (f"{found}  (installed by Anthropic's own installer, so this one lives "
                   f"in your user profile rather than in runtime/ — deleting the Forgecast "
                   f"folder will not remove it)")
+
+
+def install_codex_cli(root: Path, on_progress=None, *, on_note=None,
+                      on_tick=None) -> tuple[bool, str]:
+    """The Codex CLI into `runtime/node`, using that same Node's npm.
+
+    The same shape as `install_claude_cli` and into the same prefix on purpose: one
+    Node, one npm cache, one folder to delete. It has to be that prefix in particular
+    because `codex_auth._bundled_js` looks for the package under `runtime/node` and
+    spawns its `bin/codex.js` with the bundled node — a copy installed anywhere else
+    would work from a terminal and be invisible to the app.
+
+    There is no vendor installer to fall back to here, the way Windows has one for
+    Claude, so every failure is reported as itself rather than papered over: no npm, a
+    non-zero npm, or an npm that said yes and left nothing this app can run.
+    """
+    npm = npm_exe(root)
+    if not npm.exists():
+        system_npm = shutil.which("npm")
+        if not system_npm:
+            # Named as the missing thing it is. "The Codex CLI could not be installed"
+            # sends someone to look at Codex; npm is what is absent, and Node is what
+            # brings it — which is why `inventory` now offers Node whenever this tool
+            # is missing, on every platform.
+            return False, ("npm was not found — neither beside the bundled Node in "
+                           f"{node_bin(root)} nor on PATH — so the Codex CLI cannot be "
+                           "installed. Installing Node first provides it.")
+        npm = Path(system_npm)
+
+    if on_progress:
+        on_progress(0, WEIGHT_CODEX * 1_000_000)
+
+    # `run_watched` for the reason given above `install_claude_cli`'s call: this takes
+    # minutes and prints almost nothing, and a blocking call holds the only thread that
+    # can redraw the setup window.
+    code, output = run_watched(
+        [str(npm), "install", "-g", CODEX_PACKAGE, "--prefix", str(node_bin(root))],
+        on_line=on_note, tick=on_tick, timeout=900, env=_npm_env(root))
+
+    if code != 0:
+        tail = output.strip().splitlines()
+        return False, "npm failed:\n" + "\n".join(tail[-6:])
+
+    if on_progress:
+        on_progress(WEIGHT_CODEX * 1_000_000, WEIGHT_CODEX * 1_000_000)
+
+    found = codex_where(root)
+    if not found:
+        # The failure `auth.py` documents for Windows shims, refused here rather than
+        # reported as success: an install that produced nothing findable would take the
+        # setup page green, the chip to "connected", and the first message to a crash.
+        # npm's exit code is not evidence that this app can run what npm wrote, so the
+        # answer to "can it be found" is the one that decides.
+        entry = codex_entry(root)
+        landed = (f"its entry script is at {entry}, so the lookup in "
+                  "`codex_auth._bundled_js` is what missed it"
+                  if entry is not None else
+                  f"nothing was written under {node_bin(root)} at all")
+        return False, (f"npm exited 0 but no Codex CLI this app can run was found — "
+                       f"{landed}. Its own output:\n"
+                       + "\n".join(output.strip().splitlines()[-6:]))
+
+    return True, found
 
 
 def install_ffmpeg(root: Path, on_progress=None) -> tuple[bool, str]:

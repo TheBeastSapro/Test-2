@@ -100,10 +100,25 @@
               {% if item.connected %}
                 <span class="pill {{ 'local' if item.enabled else '' }}">{{ 'on' if item.enabled else 'off' }}</span>
               {% endif %}
+              {# Filled in from /api/connectors after load, not rendered here: reading
+                 what the CLI holds means running it, and a subprocess during the page
+                 render lets one wedged CLI hold up the whole Settings page. #}
+              <span class="pill" data-role="cli" hidden>signed in</span>
               <span class="grow"></span>
               {# Test speaks MCP at a URL. An `api` connector has neither, so the
                  button could only ever report it as broken — which is a lie about a
                  credential that may be perfectly good. #}
+              {# A browser sign-in, offered on any connector that has an MCP server —
+                 not only on one already configured. It is how several of these
+                 services expect to be connected, and for some of them it is the only
+                 way in: Higgsfield issues no MCP key at all, and NexLev accepts either.
+                 The page used to be able to ask for a token and nothing else, so both
+                 of those carried a paragraph telling the operator to go and run
+                 `claude mcp add` in a terminal themselves. #}
+              {% if item.browser_signin %}
+                <button class="btn-sm primary" onclick="signinConnector('{{ item.key }}')">
+                  Sign in</button>
+              {% endif %}
               {% if item.connected and item.kind != 'api' %}
                 <button class="btn-sm" onclick="testConnector('{{ item.key }}')">Test</button>
               {% endif %}
@@ -392,6 +407,41 @@
     }
     setTimeout(() => location.reload(), 1400);
   }
+
+  async function signinConnector(key) {
+    // The URL from the box, not from storage. Editing the endpoint and then pressing
+    // Sign in would otherwise authorise the previous one, and the grant that comes
+    // back is for a server the operator has just decided against.
+    const urlBox = $(`#url-${key}`);
+    const r = await fetch(`/api/connectors/${key}/signin`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url: urlBox ? urlBox.value.trim() : ''}),
+    });
+    const j = await r.json();
+    toast(j.message);
+    const out = $(`#test-${key}`);
+    if (out) {
+      out.textContent = j.message;
+      out.style.color = j.ok ? 'var(--text-2)' : 'var(--err)';
+    }
+  }
+
+  /* What the Claude CLI already holds. A connector authorised in the browser stores
+     its grant in the CLI's user scope and leaves nothing in this app's own settings —
+     so without this it renders as untouched, and the operator goes looking for a key
+     the service does not issue. */
+  fetch('/api/connectors', {headers: {Accept: 'application/json'}})
+    .then(r => r.json())
+    .then(data => {
+      for (const item of (data.connectors || [])) {
+        if (!item.cli_signed_in) continue;
+        const row = document.querySelector(`.conn[data-key="${item.key}"]`);
+        if (!row) continue;
+        row.querySelector('[data-role="cli"]').hidden = false;
+        row.querySelector('.dot').className = 'dot dot-ok';
+      }
+    })
+    .catch(() => {});
 
   async function testConnector(key) {
     const out = $(`#test-${key}`);

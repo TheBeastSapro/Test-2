@@ -67,6 +67,10 @@ class ChannelSnapshot:
     # Which vendor narrates. Defaulted so every existing construction of this snapshot —
     # tests, fixtures, the CLI — keeps working and means "let the routing decide".
     voice_vendor: str = ""
+    # Which scripting method the text stages write to. Empty means the built-in house
+    # method, which is what `scripting.prompt_block` falls back to anyway — so a snapshot
+    # built by an older caller produces a script written to a method rather than to none.
+    scripting_style: str = ""
 
 
 @dataclass
@@ -515,6 +519,7 @@ class GraphEngine:
                 youtube_channel_id=channel.youtube_channel_id,
                 youtube_refresh_token=refresh_token,
                 voice_vendor=channel.voice_vendor or "",
+                scripting_style=channel.scripting_style or "",
             )
 
             upstream_outputs: dict[str, dict] = {}

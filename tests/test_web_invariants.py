@@ -555,6 +555,13 @@ def test_the_signed_out_pages_render_with_no_user(session, user):
 
 
 # --------------------------------------------------------- the delete-chat control
+#
+# Delete now lives inside a three-dots overflow menu rather than bare on the row, so
+# these three read `.thread-more` — the dots button — where they used to read
+# `.thread-x`. What they defend is unchanged: the way to delete a chat must be visible
+# without hovering, legible on the selected row, and a real button that is not nested
+# inside the row's own clickable element.
+
 
 def _css() -> str:
     from pathlib import Path
@@ -580,19 +587,21 @@ def test_the_delete_chat_control_is_not_hidden():
     of the *selected* row, which is the chat you most want to delete.
 
     So this pins the outcome rather than the styling: the control may be restyled freely,
-    but it may not be made transparent again.
+    but it may not be made transparent again. It is now the dots that open the menu
+    Delete lives in, which is the same control by a different name — a dots button you
+    cannot see is a chat you cannot delete.
     """
-    declarations = _block(_css(), ".thread-x")
+    declarations = _block(_css(), ".thread-more")
     assert "opacity" not in declarations, (
-        "the delete control must not be hidden with opacity — it has been reported "
-        "missing twice for exactly that reason")
+        "the control that reaches delete must not be hidden with opacity — it has been "
+        "reported missing twice for exactly that reason")
 
 
 def test_it_stays_legible_on_the_selected_row():
     """`.thread.on` fills the row with `--accent-dim`, so the foreground token that works
     on the page background does not necessarily work here."""
     css = _css()
-    assert ".thread.on .thread-x" in css, (
+    assert ".thread.on .thread-more" in css, (
         "the selected row paints an accent background; the control needs its own colour "
         "there or it disappears on the one row that matters most")
 
@@ -605,4 +614,216 @@ def test_the_control_is_a_real_button_outside_the_row_button():
     script = (Path(__file__).resolve().parent.parent / "forgecast" / "web" / "static"
               / "chat.js").read_text(encoding="utf-8")
     assert 'class="thread ' in script and 'role="button"' in script
-    assert 'button class="thread-x"' in script
+    assert 'button class="thread-more"' in script
+
+
+# ------------------------------------------------------- the row overflow menu
+#
+# "add delete button like clicking the 3 dots at the chat" — so the row now carries a
+# three-dots button and the destructive action moved into the menu behind it. That is one
+# more place for the control to go missing, not one fewer, and the three checks above
+# only pin the button. These pin the rest of the shape: that the dots are on the row at
+# all, that they are a real button the row does not swallow, that no rule hides them
+# until a pointer arrives, and that Delete is still reachable once the menu is open.
+
+CHAT_JS = WEB / "static" / "chat.js"
+CHAT_HTML = WEB / "chat.html"
+
+RULE = re.compile(r"([^{}]+)\{([^{}]*)\}")
+CSS_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+# `visibility: hidden` and `display: none` hide as thoroughly as `opacity: 0`, and a
+# rule that sets any of them on this control is the reported defect wearing a new
+# property name.
+VANISHES = re.compile(r"\b(opacity|visibility)\s*:|display\s*:\s*none")
+
+
+def _rules_for(css: str, selector_text: str) -> list[tuple[str, str, int]]:
+    """Every rule whose selector names `selector_text`, with the line its brace is on.
+
+    Comments are blanked rather than removed so offsets still point into the real file,
+    and the line is taken from the opening brace: a selector's match starts wherever the
+    previous rule ended, which is a blank line or the top of a comment, not the rule.
+    """
+    bare = CSS_COMMENT.sub(lambda m: " " * len(m.group()), css)  # keep offsets honest
+    return [
+        (match.group(1).strip(), match.group(2), _line(css, match.end(1)))
+        for match in RULE.finditer(bare)
+        if selector_text in match.group(1)
+    ]
+
+
+def _row_markup() -> str:
+    """The template literal `paintThreads` builds one row from, as written.
+
+    Bounded by the literal's own closing backtick rather than by the first `</div>`,
+    which belongs to the title inside the row.
+    """
+    script = CHAT_JS.read_text(encoding="utf-8")
+    start = script.find('<div class="thread ')
+    assert start != -1, (
+        "chat.js no longer renders a `.thread` row — every check below is about that row")
+    end = script.find("`", start)
+    assert end != -1, "the thread row template in chat.js is not a template literal"
+    row = script[start:end].rstrip()
+    assert row.endswith("</div>"), (
+        f"the row template does not close its own div — read it at "
+        f"chat.js:{_line(script, start)} before trusting anything below")
+    return row
+
+
+def test_the_row_carries_a_three_dots_overflow_control():
+    """The operator asked for the dots; a menu with no way in is not the feature.
+
+    Named on the row template rather than on a rendered page so the check survives
+    having no browser: `paintThreads` is the only place a row is built.
+    """
+    row = _row_markup()
+    offenders: list[str] = []
+    if 'class="thread-more"' not in row:
+        offenders.append(
+            "chat.js paints a thread row with no `.thread-more` control, so there is no "
+            "way to reach rename, pin or delete from the list")
+    # Three dots drawn as three circles. A glyph would be at the mercy of the system
+    # font; what matters to this test is only that the button is not empty.
+    if "DOTS" not in row and "<svg" not in row:
+        offenders.append(
+            "the overflow button has no glyph in it — an empty 22px button is a control "
+            "nobody will find")
+    # A button whose only content is three dots has no name at all to a screen reader,
+    # and a menu button that never says whether it is open is a menu you have to guess at.
+    for name, spelling in (
+        ("aria-label", 'aria-label="'),
+        ("aria-expanded", 'aria-expanded="false"'),
+        ("aria-haspopup", "aria-haspopup="),
+    ):
+        if spelling not in row:
+            offenders.append(
+                f"the overflow button carries no {name}, so the three dots have no "
+                f"accessible name or no way to announce that their menu is open")
+    _report(offenders, "the thread row has lost its overflow control:")
+
+
+def test_the_dots_are_a_real_button_the_row_does_not_swallow():
+    """The nesting rule, checked structurally rather than by looking for one string.
+
+    A `<button>` inside a `<button>` is invalid and browsers drop one of the two — which
+    one is up to them, so on some browsers the dots stop responding and on others the row
+    does. The row is a `div` with `role="button"` precisely so the dots can be real.
+    """
+    row = _row_markup()
+    offenders: list[str] = []
+    if not row.startswith("<div "):
+        offenders.append(
+            f"the row's own element is {row[:row.find(' ')]!r}, not a div — a real "
+            f"button inside it would be nested markup the browser has to repair")
+    if 'role="button"' not in row[:row.find(">") + 1]:
+        offenders.append(
+            'the row div has no role="button", so a list that behaves like buttons '
+            "announces itself as a stack of divs")
+    if "<a " in row:
+        offenders.append(
+            "the row wraps its contents in an anchor; a button inside one is the same "
+            "nesting problem with a different tag")
+    if row.count("<button") != 1:
+        offenders.append(
+            f"the row contains {row.count('<button')} buttons — this check reads the "
+            f"count to prove the dots button is not inside another one, so a second "
+            f"control needs this test rewritten rather than relaxed")
+    _report(offenders, "the overflow control is nested where a browser will break it:")
+
+
+def test_no_rule_hides_the_overflow_control_until_you_hover():
+    """The first reported defect, generalised past the one property that caused it.
+
+    `opacity: 0` until `.thread:hover` is the version that shipped. `visibility: hidden`
+    and `display: none` behind the same hover would read identically to a user and to
+    anyone on a touchscreen, where there is no hover to give — so the whole family is
+    refused on this control, and hover may only change its colour.
+    """
+    css = _css()
+    offenders = [
+        f"app.css:{line} sets a visibility property on {selector!r} "
+        f"({' '.join(declarations.split())}) — this control has been reported missing "
+        f"twice and may not be hidden, least of all until a pointer arrives"
+        for selector, declarations, line in _rules_for(css, ".thread-more")
+        if VANISHES.search(declarations)
+    ]
+    _report(offenders, "the overflow control is hidden by a stylesheet rule:")
+
+
+def test_the_hover_scan_catches_the_rule_that_actually_shipped():
+    """A scan that passes on a clean tree looks exactly like a scan that is switched off."""
+    broken = ".thread-more { opacity: 0; }\n.thread:hover .thread-more { opacity: 1; }"
+    caught = [
+        line for _, declarations, line in _rules_for(broken, ".thread-more")
+        if VANISHES.search(declarations)
+    ]
+    assert len(caught) == 2, "the hover-reveal pattern must be caught on both halves"
+    assert not [
+        d for _, d, _ in _rules_for(".thread-more:hover { color: var(--text); }",
+                                    ".thread-more")
+        if VANISHES.search(d)
+    ], "recolouring on hover is the allowed version and must not be flagged"
+
+
+def test_the_menu_behind_the_dots_offers_delete():
+    """Delete moved into the menu, so the menu is now the only route to it.
+
+    Also pinned here: it is a real `<button role="menuitem">` rather than a div someone
+    attached a click to, and the confirmation and the endpoint behind it did not change
+    when the control moved.
+    """
+    template = CHAT_HTML.read_text(encoding="utf-8")
+    script = CHAT_JS.read_text(encoding="utf-8")
+    offenders: list[str] = []
+
+    menu_at = template.find('id="thread-menu"')
+    if menu_at == -1:
+        offenders.append("chat.html has no #thread-menu, so the dots open nothing")
+    else:
+        menu = template[template.rfind("<", 0, menu_at):template.find("</div>", menu_at)]
+        if 'data-act="delete"' not in menu:
+            offenders.append(
+                f'{_at(CHAT_HTML, template, menu_at)} the row menu has no '
+                f'data-act="delete" item — the dots replaced the delete control on the '
+                f"row, so this is the only way left to delete a chat")
+        if "Delete" not in menu:
+            offenders.append(
+                f"{_at(CHAT_HTML, template, menu_at)} nothing in the menu says Delete")
+        if menu.count('role="menuitem"') < 2:
+            offenders.append(
+                f"{_at(CHAT_HTML, template, menu_at)} the menu items are not marked "
+                f'role="menuitem", so the menu is a box of unrelated buttons')
+    if "dropThread(id)" not in script:
+        offenders.append("chat.js no longer routes the menu's delete item to dropThread")
+    if "confirm(" not in script or "'DELETE'" not in script:
+        offenders.append(
+            "dropThread lost its confirmation or its DELETE call — moving the control "
+            "into a menu was not licence to change what it does")
+    _report(offenders, "the row menu cannot delete a chat:")
+
+
+def test_the_menu_is_not_clipped_by_the_scrolling_thread_list():
+    """`.threads .list` scrolls, and a scroller clips whatever is positioned inside it.
+
+    An absolutely positioned menu on the last visible row came out as a sliver with
+    Delete cut off the bottom. It is fixed, and it lives outside the aside, and both
+    halves have to stay true — a fixed menu inside a `display: none` aside is gone
+    entirely on the narrow layout.
+    """
+    css = _css()
+    template = CHAT_HTML.read_text(encoding="utf-8")
+    offenders: list[str] = []
+
+    if "position: fixed" not in _block(css, ".rowmenu"):
+        offenders.append(
+            "app.css positions .rowmenu inside the flow, so the thread list's own "
+            "overflow will clip it at the bottom of the column")
+
+    aside = template.find('<aside class="threads">')
+    menu_at = template.find('id="thread-menu"')
+    if aside != -1 and menu_at != -1 and aside < menu_at < template.find("</aside>", aside):
+        offenders.append(
+            f"{_at(CHAT_HTML, template, menu_at)} the menu is inside the threads aside, "
+            f"which is `display: none` under 1240px and scrolls above it")
+    _report(offenders, "the row menu is placed where it will be clipped:")

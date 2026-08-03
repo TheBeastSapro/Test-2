@@ -75,6 +75,20 @@
                   text-decoration: none; }
   .away a .ic { color: var(--accent); font-size: 12px; }
   .away a span.w { color: var(--faint); font-size: 11.5px; margin-left: auto; }
+
+  /* The scripting method. It is one control, so it is one row rather than a card with a
+     heading — a settings panel on a page whose job is four numbers and a run list makes
+     the numbers look like part of a form. */
+  .method { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .method select { min-width: 240px; }
+  .method .n, .methodnote { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  .methodnote { margin: 10px 0 0; overflow-wrap: anywhere; }
+  /* A warning here is never fatal — the style still loaded — so it is the app's amber
+     rather than its error red. A document that did not load reads as a smaller method,
+     not as a broken page, and colouring it as a failure would train the operator to
+     ignore the line that names which of their sixteen files is missing. */
+  .methodwarn { color: var(--gate); font-size: 12.5px; margin: 8px 0 0; }
+  .methodwarn li { margin: 2px 0; overflow-wrap: anywhere; }
 </style>
 {% endblock %}
 
@@ -193,6 +207,63 @@
 {% endif %}
 
 {% if view == 'hub' %}
+{# The one setting on this page, because it is the one that changes what every future
+   run on this channel produces. `chosen` is looked up rather than assumed to be the
+   first row: the stored slug may be a style whose folder has gone, and that row is
+   deliberately still in the list so the page can say so instead of appearing to have
+   lost the setting. #}
+{% set chosen = scripting_styles | selectattr('slug', 'equalto', channel.scripting_style)
+                                 | list | first %}
+<h2>Scripting method</h2>
+<div class="card">
+  <p class="muted" style="margin:0 0 12px;font-size:13px">
+    What every script written for {{ channel.name }} is structured to — the payoff
+    schedule, how questions are opened and closed, how beats are joined, and which
+    constructions are banned. Applied at the brief and the script, on every run.
+  </p>
+  <form class="method" method="post" action="/c/{{ channel.id }}/scripting">
+    {# Labelled by attribute rather than by a visible `<label>`: the heading above the
+       card already names the control, and a second copy of the words next to the select
+       is what a screen reader would then read twice. #}
+    <select name="scripting_style" aria-label="Scripting method for this channel">
+      {% for row in scripting_styles %}
+        <option value="{{ row.slug }}"
+                {{ 'selected' if row.slug == channel.scripting_style }}>
+          {{ row.name }}{% if not row.available %} (unavailable)
+          {%- elif row.origin != 'built-in' %} ({{ row.documents }} document{{ '' if row.documents == 1 else 's' }})
+          {%- endif %}
+        </option>
+      {% endfor %}
+    </select>
+    <button class="primary">Save</button>
+    {% if saved == 'scripting' %}<span class="n">Saved.</span>{% endif %}
+  </form>
+
+  {% if chosen and not chosen.available %}
+    {# Stated plainly rather than hidden, because the run still produces a script: it is
+       written to the house method, and a page that said nothing would leave the operator
+       reading a script they cannot account for. #}
+    <p class="methodwarn" style="margin-top:12px">
+      <b>{{ chosen.name }}</b> could not be loaded — {{ chosen.reason }}. Scripts are
+      being written to the house method until it is back.
+    </p>
+  {% elif chosen %}
+    <p class="methodnote">{{ chosen.summary }}</p>
+  {% endif %}
+
+  {% if chosen and chosen.warnings %}
+    {# Named one by one on purpose. Sixteen documents with three that did not load is a
+       method quietly missing a fifth of itself, and a count would not tell you which. #}
+    <ul class="methodwarn">
+      {% for warning in chosen.warnings %}<li>{{ warning }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  <p class="methodnote">{{ scripting_folder.note }}
+    Your documents are read where they are and are never copied into Forgecast,
+    committed, or included in a package.</p>
+</div>
+
 <h2>Elsewhere</h2>
 <div class="card">
   <p class="muted" style="margin:0;font-size:13px">

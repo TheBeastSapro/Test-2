@@ -125,6 +125,17 @@ EXCLUDE = (
     ".forgecast-restore",
     "attachments",  # chat attachments; they live in the app root because the agent is
     # sandboxed to it, so they sit next to the source while developing
+    # The operator's own scripting documents. These are not this project's work — they are
+    # bought under a licence covering one person — and `forgecast/scripting/library.py`
+    # reads them from a folder in the home directory precisely so they are never here.
+    # This is the second lock on that door, for the folder somebody copies in "just to
+    # keep it with the app": a zip is a thing you send to other people, and shipping
+    # somebody else's paid documents inside it is not a bug that can be apologised for
+    # afterwards. The trailing glob catches `scripting-library-2` and
+    # `scripting-library backup`, which is what the folder is called the day after it is
+    # first duplicated. It does not touch `forgecast/scripting/`, which is this project's
+    # own code and must ship.
+    "scripting-library*",
     "runtime",  # the downloaded toolchain: Node, the Claude CLI, ffmpeg. Machine-specific
     # binaries, and the launcher fetches them on first run anyway.
     "*.log",
@@ -296,6 +307,11 @@ def verify(archive: Path) -> None:
         f"{NAME}/forgecast/web/static/app.css",
         f"{NAME}/forgecast/web/static/chat.js",
         f"{NAME}/forgecast/agent/assistant.py",
+        # The built-in scripting method. It is the default for every channel and the
+        # fallback for every selection that stops resolving, and `prompt_block` never
+        # raises — so an archive missing it produces an app whose scripts are written to
+        # nothing in particular, with no error anywhere to say why they got worse.
+        f"{NAME}/forgecast/scripting/method.py",
         # The first-run installer. Without these the app starts and tells you to go
         # and install Node yourself, which is the thing they exist to avoid.
         f"{NAME}/forgecast/desktop/toolchain.py",

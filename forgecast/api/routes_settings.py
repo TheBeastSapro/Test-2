@@ -105,6 +105,20 @@ ENV_FIELDS = [
     {"key": "FORGECAST_TAVILY_API_KEY", "label": "Tavily",
      "unlocks": "better research sources (Wikipedia is used without it)",
      "where": "tavily.com"},
+    # A path rather than a credential, and it belongs here for the same reason the keys
+    # do: it describes this machine, not an account. It is also the one setting an
+    # operator has to be able to change without opening `.env`, because the documents it
+    # points at are theirs and live wherever they keep them.
+    #
+    # Nothing is copied out of that folder — it is read while a prompt is being built and
+    # never written to. Keep it outside the repository: the documents are licensed to the
+    # operator alone, and a folder inside the tree is a folder that ends up in a commit.
+    {"key": "FORGECAST_SCRIPTING_DIR", "label": "Scripting documents folder",
+     "unlocks": "your own scripting method as a per-channel style — one subfolder per "
+                "style, or loose .md/.txt files for a single one. Nothing is copied out "
+                "of it and nothing from it is ever packaged",
+     "where": "a folder on this machine, outside the Forgecast folder",
+     "secret": False},
 ]
 
 _SECRET_LINE = re.compile(r"^([A-Z0-9_]+)\s*=\s*(.*)$")
@@ -206,8 +220,13 @@ def settings_page(
     env_values = {}
     for field in ENV_FIELDS:
         attribute = field["key"].removeprefix("FORGECAST_").lower()
-        value = getattr(settings, attribute, "")
-        env_values[field["key"]] = mask(value) if value else ""
+        value = str(getattr(settings, attribute, "") or "")
+        # Masked unless the field says it is not a secret. A folder path shown as
+        # `/hom…rary` is a setting nobody can check, and an operator who cannot read the
+        # value back cannot tell a saved path from a typo'd one — which for the scripting
+        # folder presents as "my documents did not load" with nothing to look at.
+        env_values[field["key"]] = (
+            mask(value) if value and field.get("secret", True) else value)
 
     from ..agent import connectors, engines
 
@@ -234,6 +253,10 @@ def settings_page(
             # CLI that hangs delays its own card instead of the whole page.
             "agents": engines.catalogue(),
             "engine": engines.current().key,
+            # Without `cli_held`, so this render spawns nothing. Reading what the
+            # Claude CLI holds means `claude mcp list`, and a subprocess during a page
+            # render lets one wedged CLI hold up every other panel on it. The page
+            # re-asks `/api/connectors` from the browser and marks the rows there.
             "connectors": connectors.Store.load().listing(),
         },
     )

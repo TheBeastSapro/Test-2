@@ -62,3 +62,11 @@ attachments/
 # The bundled toolchain: Node, the Claude CLI, and ffmpeg on Windows. Downloaded, not
 # authored, and deleting it is the uninstall.
 runtime/
+
+# The operator's own scripting documents. They belong outside this tree entirely — the
+# default is ~/Forgecast/scripting-library and `forgecast/scripting/library.py` reads
+# them from there — but they are somebody else's licensed work, so a copy that lands in
+# here by hand must not become a commit that cannot be taken back. The glob covers the
+# duplicate folder that appears the first time one is backed up. This does not match
+# forgecast/scripting/, which is this project's own code.
+scripting-library*/

@@ -27,7 +27,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .. import credits
+from .. import credits, scripting
 from ..config import get_settings
 from ..db import SessionLocal
 from ..graph import formats
@@ -389,7 +389,17 @@ class Studio:
     def update_channel(self, channel: Any, **changes) -> dict:
         allowed = {"name", "niche", "language", "voice_id", "voice_vendor", "avatar_id",
                    "aspect_ratio", "target_duration_seconds", "style_profile",
-                   "youtube_channel_id"}
+                   "youtube_channel_id", "scripting_style"}
+        # Checked against what can actually be loaded right now, for the same reason the
+        # vendor below is: `prompt_block` deliberately falls back to the house method
+        # rather than failing, so a typo'd slug is not an error anybody sees — it is a
+        # channel that quietly writes to a method nobody chose, run after run.
+        wanted_method = str(changes.get("scripting_style") or "").strip()
+        if wanted_method and scripting.get(wanted_method) is None:
+            return {"error": f"{wanted_method!r} is not a scripting style that can be "
+                             f"loaded right now.",
+                    "available": [row["slug"] for row in scripting.available()],
+                    "folder": scripting.folder_status()["note"]}
         # Checked against the catalogue rather than stored as typed, because a typo here
         # is not a wrong voice — it is a channel whose narration vendor does not exist,
         # which surfaces as an unexplained failure at the voice node several minutes and
@@ -625,6 +635,51 @@ class Studio:
         return {"styles": rows, "count": len(rows),
                 "note": "Learn one from a creator's videos with the vision CLI, "
                         "then apply it to a channel." if not rows else ""}
+
+    def list_scripting_styles(self) -> dict:
+        """Which scripting methods exist, and which channel is written to each.
+
+        A different thing from `list_styles` above, and the two are easy to conflate to
+        the point of being harmful: an *editing* style is cut rhythm, grade and captions,
+        applied by `apply_style`; a *scripting* style is how the words are structured,
+        chosen per channel and stored on the channel row. An agent that offers to "apply
+        a style" after reading this would change the wrong thing entirely, so nothing here
+        writes — changing it is `update_channel`.
+
+        The channel list is scoped to this account, and it is included because the answer
+        to "which method is this channel using" is the reason anyone calls this at all.
+        """
+        rows = scripting.available()
+        by_slug = {row["slug"]: row for row in rows}
+
+        with self._session() as session:
+            user = self._user(session)
+            if user is None:
+                return {"error": "No account."}
+            channels = session.execute(
+                select(Channel).where(Channel.user_id == user.id).order_by(Channel.id)
+            ).scalars().all()
+            using = [
+                {"channel": channel.name,
+                 "scripting_style": channel.scripting_style or scripting.HOUSE_SLUG,
+                 # Named here rather than left for the agent to work out from the two
+                 # lists: a channel pointing at a folder that has gone still writes
+                 # scripts, to the house method, and that is the fact worth surfacing.
+                 "available": (channel.scripting_style or scripting.HOUSE_SLUG) in by_slug}
+                for channel in channels
+            ]
+
+        folder = scripting.folder_status()
+        return {
+            "styles": rows,
+            "count": len(rows),
+            "channels": using,
+            "folder": folder["path"],
+            "folder_note": folder["note"],
+            "default": scripting.HOUSE_SLUG,
+            "note": "Set a channel's method with update_channel(scripting_style=...). "
+                    "This is not the editing style — that is list_styles/apply_style.",
+        }
 
     def apply_style(self, style: str, channel: Any) -> dict:
         from ..style import editing

@@ -153,6 +153,31 @@
     </div>
   </aside>
 
+  {# ═════════════════════════════════════════════════ the row overflow menu
+
+     One menu for the whole list rather than one per row, and it hangs off the
+     grid rather than off the row it belongs to — on purpose.
+
+     The thread list scrolls (`.threads .list` is `overflow-y: auto`), and anything
+     positioned inside a scroller is clipped by it: a menu opened on the last
+     visible row would come out as a sliver with Delete cut off the bottom. So it
+     sits outside the scroller, is placed against the viewport from the dots
+     button's own rect in chat.js, and is closed the moment the list scrolls —
+     because a fixed menu does not travel with the row that opened it.
+
+     Rename and Pin are here because they already exist on the server
+     (`PATCH /api/agent/threads/{id}` takes both) and had nowhere in the interface
+     to be asked for. Delete keeps its confirmation; the menu only decides where
+     the question is asked from. #}
+  <div class="rowmenu" id="thread-menu" role="menu" hidden aria-label="Chat actions">
+    <button type="button" role="menuitem" class="rowmenu-item"
+            data-act="rename" id="thread-menu-rename">Rename</button>
+    <button type="button" role="menuitem" class="rowmenu-item"
+            data-act="pin" id="thread-menu-pin">Pin to top</button>
+    <button type="button" role="menuitem" class="rowmenu-item drop"
+            data-act="delete" id="thread-menu-delete">Delete chat</button>
+  </div>
+
 </div>
 <script src="/static/chat.js"></script>
 <script>

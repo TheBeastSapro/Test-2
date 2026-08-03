@@ -242,14 +242,25 @@ const when = iso => {
   return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
+// Three dots, drawn rather than typed: a glyph would inherit whatever the system font
+// makes of U+22EF, and the three sizes it comes out as across platforms are all wrong
+// next to a 22px target. `currentColor` so the rules in app.css — including the brighter
+// one for the selected row — are the only place the colour is decided.
+const DOTS = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" '
+  + 'focusable="false"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/>'
+  + '<circle cx="13" cy="8" r="1.5"/></svg>';
+
 function paintThreads() {
   const list = $('#thread-list');
+  // A repaint throws away the button the open menu is anchored to, and a menu floating
+  // beside a row that no longer exists is worse than no menu.
+  closeRowMenu();
   if (!THREADS.length) {
     list.innerHTML = `<div class="muted" style="padding:10px 11px;font-size:12.5px">
       No chats yet.</div>`;
     return;
   }
-  // A div rather than a button, because the delete control is a button and a button
+  // A div rather than a button, because the overflow control is a button and a button
   // inside a button is not valid markup — browsers recover from it by dropping one of
   // them, and which one is up to the browser.
   list.innerHTML = THREADS.map(t => `
@@ -258,28 +269,175 @@ function paintThreads() {
       <div class="t">${t.pinned ? '📌 ' : ''}${esc(t.title)}</div>
       <div class="p">${esc(t.preview || 'empty')}</div>
       <div class="when">${when(t.updated_at)}</div>
-      <button class="thread-x" data-drop="${t.id}" title="Delete this chat"
-              aria-label="Delete ${esc(t.title)}">×</button>
+      <button class="thread-more" type="button" data-menu="${t.id}"
+              title="Rename, pin or delete this chat"
+              aria-label="Actions for ${esc(t.title)}"
+              aria-haspopup="menu" aria-expanded="false">${DOTS}</button>
     </div>`).join('');
   $$('#thread-list .thread').forEach(row => {
     row.onclick = () => openThread(+row.dataset.id);
     // Enter and Space, because the row stopped being a real button above and a list you
     // cannot reach from the keyboard is a list some people cannot use at all.
     row.onkeydown = (event) => {
+      // Only when the row itself has focus. Enter on the dots button also bubbles here,
+      // and answering it would open the chat behind the menu that just opened.
+      if (event.target !== row) return;
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         openThread(+row.dataset.id);
       }
     };
   });
-  $$('#thread-list .thread-x').forEach(button => {
+  $$('#thread-list .thread-more').forEach(button => {
     button.onclick = (event) => {
-      // Without this the click also opens the thread being deleted, which then renders
-      // a chat that no longer exists.
+      // Without this the click also opens the chat the menu belongs to — everything
+      // else inside the row is meant to open it, and this is the one thing that is not.
       event.stopPropagation();
-      dropThread(+button.dataset.drop);
+      openRowMenu(button, +button.dataset.menu);
     };
   });
+}
+
+/* ── the row menu ────────────────────────────────────────────────────────────
+   One menu element for the whole list, living in chat.html outside the scrolling
+   list — see the comment there for why it cannot live in the row. Opening it for a
+   second row therefore closes the first without any bookkeeping, because there is
+   only ever one.
+
+   Everything below is about where it is and when it goes away. What the items do is
+   further down: dropThread, renameThread, pinThread. */
+let MENU_FOR = null;               // id of the thread whose menu is open, or null
+
+const rowMenu = () => $('#thread-menu');
+const dotsFor = id => $(`#thread-list .thread-more[data-menu="${id}"]`);
+
+function closeRowMenu(returnFocus = false) {
+  const menu = rowMenu();
+  if (!menu || MENU_FOR === null) return;
+  const opener = dotsFor(MENU_FOR);
+  MENU_FOR = null;
+  menu.hidden = true;
+  $$('#thread-list .thread-more').forEach(b => b.setAttribute('aria-expanded', 'false'));
+  // Only on Escape and on picking an item. Closing by clicking elsewhere must leave
+  // focus where the click put it.
+  if (returnFocus && opener) opener.focus();
+}
+
+// Against the viewport, from the button's own rect, and flipped above the row when
+// there is no room below — the bottom of the list is exactly where a menu that only
+// ever opens downwards loses its last item.
+function placeRowMenu(menu, button) {
+  const rect = button.getBoundingClientRect();
+  const gap = 6, edge = 8;
+  const { offsetWidth: width, offsetHeight: height } = menu;
+  let top = rect.bottom + gap;
+  if (top + height > window.innerHeight - edge) {
+    top = Math.max(edge, rect.top - gap - height);
+  }
+  const left = Math.min(
+    Math.max(edge, rect.right - width), window.innerWidth - width - edge);
+  menu.style.top = `${Math.round(top)}px`;
+  menu.style.left = `${Math.round(left)}px`;
+}
+
+function openRowMenu(button, id) {
+  const menu = rowMenu();
+  if (!menu) return;
+  if (MENU_FOR === id) { closeRowMenu(true); return; }   // a second click closes it
+  closeRowMenu();
+  const thread = THREADS.find(t => t.id === id);
+  MENU_FOR = id;
+  menu.dataset.id = String(id);
+  menu.setAttribute('aria-label', `Actions for ${thread ? thread.title : 'this chat'}`);
+  // The one item whose label depends on the row it was opened from.
+  $('#thread-menu-pin').textContent = thread && thread.pinned ? 'Unpin' : 'Pin to top';
+  menu.hidden = false;                  // shown before measuring: a hidden box has no size
+  placeRowMenu(menu, button);
+  button.setAttribute('aria-expanded', 'true');
+  const first = menu.querySelector('.rowmenu-item');
+  if (first) first.focus();
+}
+
+function wireRowMenu() {
+  const menu = rowMenu();
+  if (!menu) return;
+
+  menu.onclick = event => {
+    // A click on the menu is not a click "elsewhere", so it must not reach the closer
+    // below before the item it landed on has been read.
+    event.stopPropagation();
+    const item = event.target.closest('.rowmenu-item');
+    if (!item) return;
+    const id = +menu.dataset.id;
+    // Focus back on the dots before the action runs: the item it was sitting on is
+    // about to be hidden, and focus on a hidden element falls to the body, which is
+    // nowhere. Rename and Pin therefore leave you on the row you acted on.
+    closeRowMenu(true);
+    if (item.dataset.act === 'delete') dropThread(id);
+    else if (item.dataset.act === 'rename') renameThread(id);
+    else if (item.dataset.act === 'pin') pinThread(id);
+  };
+
+  menu.onkeydown = event => {
+    const items = $$('.rowmenu-item', menu);
+    const at = items.indexOf(document.activeElement);
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const step = event.key === 'ArrowDown' ? 1 : -1;
+      items[(Math.max(at, 0) + step + items.length) % items.length].focus();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      closeRowMenu(true);
+    } else if (event.key === 'Tab') {
+      // Tabbing out of a menu that stays open leaves it hanging over the list. No
+      // preventDefault: focus goes back to the dots here, and the browser's own Tab
+      // then carries on from there, which is where a menu button leaves you.
+      closeRowMenu(true);
+    }
+  };
+
+  // Anywhere else. The dots button stops its own click from getting here, which is what
+  // makes "click the dots again" a toggle rather than a close-then-open.
+  document.addEventListener('click', () => closeRowMenu());
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeRowMenu(true);
+  });
+  // The menu is placed against the viewport, so anything that moves the row underneath
+  // it separates the two. Closing is honest; re-measuring on every scroll frame is not.
+  window.addEventListener('resize', () => closeRowMenu());
+  $('#thread-list').addEventListener('scroll', () => closeRowMenu());
+}
+
+async function renameThread(id) {
+  const thread = THREADS.find(t => t.id === id);
+  const asked = prompt('Rename this chat', thread ? thread.title : '');
+  if (asked === null) return;                  // cancelled, which is not a rename to ''
+  const title = asked.trim();
+  if (!title || (thread && title === thread.title)) return;
+  try {
+    const saved = await api(`/api/agent/threads/${id}`, { title }, 'PATCH');
+    if (thread) thread.title = saved.title;    // the server truncates, so take its answer
+    if (THREAD && THREAD.id === id) THREAD.title = saved.title;
+  } catch (error) {
+    toast('Could not rename: ' + String(error.message || error));
+    return;
+  }
+  paintThreads();
+}
+
+async function pinThread(id) {
+  const thread = THREADS.find(t => t.id === id);
+  if (!thread) return;
+  try {
+    await api(`/api/agent/threads/${id}`, { pinned: !thread.pinned }, 'PATCH');
+  } catch (error) {
+    toast('Could not pin: ' + String(error.message || error));
+    return;
+  }
+  // Re-read rather than re-sort here: pinned-first is the server's ordering, and a
+  // local guess at it is a second sort that has to be kept in step with the first.
+  await loadThreads();
+  markThreadBusy();
 }
 
 async function dropThread(id) {
@@ -892,6 +1050,9 @@ function greet() {
 
 /* ── wiring ─────────────────────────────────────────────────────────────── */
 $('#btn-new').onclick = () => newThread().catch(e => toast(String(e.message || e)));
+// Once, on the one menu element — not per row, which would rebind on every repaint and
+// leave a document-level closer behind each time.
+wireRowMenu();
 $('#btn-send').onclick = () => send().catch(
   error => toast(String(error.message || error)));
 $('#btn-attach').onclick = () => $('#attach-file').click();

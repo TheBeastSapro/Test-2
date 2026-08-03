@@ -161,7 +161,7 @@
           $('#step').textContent = event.ok ? 'Done.' : 'Finished with problems.';
           $('#head').textContent = event.ok ? 'Ready' : 'Not quite';
           $('#lede').textContent = event.ok
-            ? 'Everything is in place. The chat needs one more thing: sign in to Claude with your subscription.'
+            ? 'Everything is in place. The chat needs one more thing: sign in to your agent with the subscription you already pay for.'
             : 'Some of it did not install. The log says what happened — you can retry, or skip and do it by hand.';
           for (const tool of event.tools || []) {
             const row = document.querySelector(`.tool[data-key="${tool.key}"]`);

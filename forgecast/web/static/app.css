@@ -280,35 +280,72 @@ button.danger:hover { background: #1a1011; border-color: #6b2f2f; }
   display: block; width: 100%; text-align: left; border: 0; background: transparent;
   padding: 9px 11px; border-radius: var(--radius-sm); color: var(--text-2);
   cursor: pointer; margin-bottom: 1px;
-  /* Anchors the delete control, which is positioned against this row. */
+  /* Anchors the overflow control, which is positioned against this row. */
   position: relative;
 }
 .thread:hover { background: var(--raise-2); }
 .thread.on { background: var(--accent-dim); }
 .thread:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-/* Always fully visible. This has now been reported as missing twice, and each attempt to
-   keep it discreet is what caused it.
-   First it was `opacity: 0` until the row was hovered — invisible unless you already knew
-   it was there. Then `opacity: .45` in `--muted`, which is legible on the dark row and
-   effectively gone on the *selected* one, because `.thread.on` paints an accent
-   background and a muted grey-green at 45% has almost no contrast against it. The
-   selected chat is the one you most want to delete, so the fix that looked adequate
+
+/* The row's overflow control — three dots, opening the menu that holds Rename, Pin
+   and Delete. It replaced a bare × on the row, and it inherits that control's history,
+   so the two rules it must not break are written down rather than remembered.
+
+   ALWAYS FULLY VISIBLE. The delete control was reported missing twice, and each attempt
+   to keep it discreet is what caused it. First `opacity: 0` until the row was hovered —
+   invisible unless you already knew it was there, and unreachable on a touchscreen,
+   which has no hover at all. Then `opacity: .45` in `--muted`, which is legible on the
+   dark row and effectively gone on the *selected* one, because `.thread.on` paints an
+   accent background and a muted grey-green at 45% has almost no contrast against it.
+   The selected chat is the one you most want to delete, so the fix that looked adequate
    failed in exactly the case that mattered.
-   So: no opacity trick, and a colour that contrasts on both backgrounds. A 20px glyph in
-   the corner does not compete with anything, which is what the hiding was for. */
-.thread-x {
-  position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; padding: 0;
-  border: 0; border-radius: 5px; background: transparent; color: var(--text-2);
-  font-size: 16px; line-height: 1; cursor: pointer;
+
+   So: no opacity, no hover-only reveal, and a colour that contrasts on both
+   backgrounds. A 22px glyph in the corner does not compete with anything, which is what
+   the hiding was for. */
+.thread-more {
+  position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; padding: 0;
+  border: 0; border-radius: 6px; background: transparent; color: var(--text-2);
+  display: grid; place-items: center; cursor: pointer;
   transition: background .12s, color .12s;
 }
+.thread-more svg { width: 15px; height: 15px; display: block; }
 /* On the accent-filled selected row, the brighter foreground token — `--text-2` is tuned
    for the page background, not for this one. */
-.thread.on .thread-x { color: var(--text); }
-.thread-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.thread-x:hover { background: var(--raise-3); color: var(--err); }
+.thread.on .thread-more { color: var(--text); }
+.thread-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Hover and open both read as "this is the row you are acting on". The open state is
+   styled off `aria-expanded` rather than a second class, so the attribute screen readers
+   use is the same one that has to be right for the highlight to appear. */
+.thread-more:hover, .thread-more[aria-expanded="true"] {
+  background: var(--raise-3); color: var(--text);
+}
+
+/* The menu itself. `fixed`, and a child of the grid rather than of the row, because
+   `.threads .list` scrolls and would clip a menu positioned inside it — see chat.html.
+   Its coordinates come from the button's rect in chat.js. */
+.rowmenu {
+  position: fixed; z-index: 70; min-width: 176px; padding: 5px;
+  background: var(--raise-2); border: 1px solid var(--line-2);
+  border-radius: 10px; box-shadow: 0 12px 32px rgba(0, 0, 0, .55);
+}
+.rowmenu-item {
+  display: block; width: 100%; text-align: left; padding: 7px 10px;
+  border: 0; border-radius: 6px; background: transparent; color: var(--text-2);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.rowmenu-item:hover, .rowmenu-item:focus-visible {
+  background: var(--raise-3); color: var(--text); outline: 0;
+}
+/* Destructive, and the only item that is. Red on the item rather than on a confirm
+   button nobody has reached yet, so the cost is visible before the click. */
+.rowmenu-item.drop { color: var(--err); }
+.rowmenu-item.drop:hover, .rowmenu-item.drop:focus-visible {
+  background: var(--raise-3); color: var(--err);
+}
+
 /* Room for the control so a long title does not run underneath it. */
-.thread .t { font-size: 13px; font-weight: 550; color: var(--text); padding-right: 20px;
+.thread .t { font-size: 13px; font-weight: 550; color: var(--text); padding-right: 24px;
              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .thread .p { font-size: 11.5px; color: var(--faint); margin-top: 2px;
              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

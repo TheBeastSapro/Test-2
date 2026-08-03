@@ -44,6 +44,11 @@ _READ_ONLY = (
     "studio_status", "list_channels", "study_youtube_channel", "list_runs",
     "run_status", "preview_run", "list_styles", "score_videos", "research_channel",
     "run_files", "cast_voice", "voice_catalogue", "voice_artists",
+    # Reading which scripting method each channel writes to. It opens the operator's own
+    # documents from a folder and reports what loaded; nothing is written, so it belongs
+    # in the pre-allowed set — a check the agent has to ask permission for is a check it
+    # stops making, and then the script is written to the agent's defaults instead.
+    "list_scripting_styles",
     # Reading the operator's own instruction documents. See skills_tools.py for why
     # they are read-only and why their descriptions are as long as they are.
     *skills_tools.READ_ONLY,
@@ -271,6 +276,19 @@ def build_server(studio):
         return _text(studio.apply_style(args.get("style") or "",
                                         args.get("channel") or ""))
 
+    @tool("list_scripting_styles",
+          "Which SCRIPTING methods exist and which channel writes to each: the built-in "
+          "house method, plus any folders of the operator's own documents, with the "
+          "count of documents read and any that failed to load. This is how a script is "
+          "STRUCTURED — payoff schedule, curiosity loops, beat joins, banned phrases — "
+          "and it is a different thing from list_styles, which is how a video is CUT. "
+          "Read-only. Call it before writing or rewriting a script so you follow the "
+          "method the channel is set to rather than your own defaults, and before "
+          "changing it with update_channel(scripting_style=...). Say which method you "
+          "followed.", {})
+    async def list_scripting_styles(args):
+        return _text(studio.list_scripting_styles())
+
     @tool("blend_styles",
           "Mix two styles into a new one. Weight 0 keeps the first, 1 takes the "
           "second. Numbers interpolate; transitions and caption position switch at "
@@ -290,7 +308,7 @@ def build_server(studio):
              update_channel, list_runs, start_run, run_status, decide_gate,
              cancel_run, preview_run, run_files, research_channel, score_videos,
              cast_voice, voice_catalogue, voice_artists, sync_voice_artists,
-             list_styles, apply_style, blend_styles,
+             list_styles, apply_style, blend_styles, list_scripting_styles,
              *skills_tools.build(studio)]
     server = create_sdk_mcp_server(name=SERVER_NAME, version="1.0.0", tools=built)
     _BUILT[id(server)] = built

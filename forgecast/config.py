@@ -20,6 +20,22 @@ class Settings(BaseSettings):
     storage_dir: Path = Path("./storage")
     base_url: str = "http://localhost:8000"
 
+    # Where the operator's own scripting documents live, read at prompt-build time by
+    # `forgecast.scripting.library`.
+    #
+    # The default is deliberately in the home directory and not under `storage_dir`,
+    # which is `./storage` and therefore inside the working tree. Those documents are
+    # licensed to the operator and to nobody else, and a default that puts them in the
+    # tree is a default that puts them in a commit and in the zip `tools/package.py`
+    # builds — which is a thing that gets sent to other people. Outside the tree, the
+    # accident cannot happen; `EXCLUDE` in the packager is the second lock, for a folder
+    # somebody moves in by hand.
+    #
+    # The folder name is repeated rather than imported: `scripting.library` imports this
+    # module, so importing it back would be a cycle. `tests/test_scripting.py` asserts
+    # the two agree, which is what stops one of them being renamed alone.
+    scripting_dir: Path = Path.home() / "Forgecast" / "scripting-library"
+
     access_token_ttl_minutes: int = 60 * 24 * 7
 
     # Registration is closed by default. This is the one setting whose default has to

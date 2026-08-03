@@ -42,12 +42,13 @@ pass wants a channel-scoped variant, not a second implementation.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..auth import optional_user
+from .. import scripting
+from ..auth import current_user, optional_user
 from ..db import get_session
 from ..graph import formats
 from ..models import Channel, Run, RunStatus, User
@@ -166,6 +167,13 @@ def _context(session: Session, user: User, channel: Channel, view: str) -> dict:
         "facts": hub_facts(session, user, channel, every_run),
         "runs": every_run if view == "runs" else every_run[:HUB_RUNS],
         "more_runs": max(0, len(every_run) - HUB_RUNS),
+        # The scripting method every script on this channel is written to. Built through
+        # `selection` rather than `available` so a style whose folder has gone still
+        # appears, marked unavailable with the reason: a `<select>` that omits its own
+        # stored value shows the first option instead, and the page then reports a
+        # setting the channel does not have — which the next save makes true.
+        "scripting_styles": scripting.selection(channel.scripting_style),
+        "scripting_folder": scripting.folder_status(),
     }
 
 
@@ -185,8 +193,39 @@ def channel_hub(
 
     channel = owned_channel(session, user, channel_id)
     return TEMPLATES.TemplateResponse(
-        request, "channel.html", _context(session, user, channel, "hub")
+        request, "channel.html",
+        {**_context(session, user, channel, "hub"),
+         "saved": request.query_params.get("saved", "")},
     )
+
+
+@router.post("/c/{channel_id}/scripting")
+def save_scripting_style(
+    channel_id: int,
+    scripting_style: str = Form(...),
+    user: User = Depends(current_user),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    """Set which scripting method this channel's scripts are written to.
+
+    An unknown slug is refused rather than stored. The alternative — trusting the form —
+    stores a slug that resolves to nothing, and because `prompt_block` deliberately falls
+    back to the house method rather than failing, the symptom is a channel that quietly
+    writes to the wrong method for as long as nobody reads the run log.
+
+    A slug that is currently *unavailable* is a different case and is allowed through:
+    the folder being unmounted this morning is not a reason to make the operator re-pick
+    their method, and the row is still in `selection()` for exactly that reason.
+    """
+    channel = owned_channel(session, user, channel_id)
+    wanted = (scripting_style or "").strip() or scripting.HOUSE_SLUG
+    known = {row["slug"] for row in scripting.selection(channel.scripting_style)}
+    if wanted not in known:
+        raise HTTPException(status_code=400, detail=f"unknown scripting style {wanted!r}")
+
+    channel.scripting_style = wanted
+    session.commit()
+    return RedirectResponse(f"/c/{channel_id}?saved=scripting", 303)
 
 
 @router.get("/c/{channel_id}/runs", response_class=HTMLResponse)

@@ -14,7 +14,8 @@ on screen when it finishes.
 The chicken-and-egg is smaller than it looks. Python and the virtual environment are
 handled before this exists — they have to be, because this is Python code — and those
 take seconds with the launcher's own console output. What is left is the part that
-takes minutes and deserves a bar: Node, the Claude Code CLI, and ffmpeg.
+takes minutes and deserves a bar: Node, the two chat CLIs — Claude Code and Codex —
+and ffmpeg.
 
 ## Streaming
 
@@ -123,12 +124,24 @@ def _install_everything(root: Path) -> None:
                 # CLI is missing must not assume Node is the bundled one.
                 if not toolchain.node_exe(root).exists() and not toolchain.npm_exe(root).exists():
                     toolchain.install_node(root, progress)
-                ok, detail = toolchain.install_claude_cli(root, progress)
+                ok, detail = toolchain.install_claude_cli(root, progress, on_note=note)
                 note(f"Claude Code CLI ready at {detail}" if ok
                      else f"Claude Code CLI failed — {detail}")
-                if not ok:
-                    JOB.update(done=True, ok=False, step="")
-                    return
+                # No longer a `return` on failure, and that mattered more than it looked.
+                # Abandoning the job here left every later tool untried and unmentioned —
+                # ffmpeg, and now the Codex CLI — so the page finished saying they were
+                # missing with nothing beside them to say why. Each tool reports its own
+                # outcome and the run continues; the verdict comes from what is still
+                # missing at the end, which is the same answer either way.
+            elif tool.key == "codex":
+                # Same order and the same caution about a re-run. Unlike Claude there is
+                # no bundled build and no vendor installer on any platform, so npm is the
+                # only route and Node has to be here for it.
+                if not toolchain.node_exe(root).exists() and not toolchain.npm_exe(root).exists():
+                    toolchain.install_node(root, progress)
+                ok, detail = toolchain.install_codex_cli(root, progress, on_note=note)
+                note(f"Codex CLI ready at {detail}" if ok
+                     else f"Codex CLI failed — {detail}")
             elif tool.key == "ffmpeg":
                 ok, detail = toolchain.install_ffmpeg(root, progress)
                 note(f"ffmpeg ready at {detail}" if ok else f"ffmpeg failed — {detail}")

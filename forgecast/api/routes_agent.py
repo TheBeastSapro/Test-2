@@ -605,10 +605,25 @@ connector_router = APIRouter(prefix="/api/connectors", tags=["connectors"],
 @connector_router.get("")
 def list_connectors(_user: User = Depends(current_user)) -> dict:
     store = connectors.Store.load()
-    return {"connectors": store.listing(),
+    return {"connectors": store.listing(cli_held=connectors.cli_servers()),
             "active": sorted(store.active().keys()),
             "note": "A connector gives the agent that service's tools. It is not the "
                     "same as a provider key, which lets the pipeline call a vendor."}
+
+
+@connector_router.post("/{key}/signin")
+def signin_connector(key: str, payload: dict | None = None,
+                     _user: User = Depends(current_user)) -> dict:
+    """Authorise a connector in the browser instead of asking for a token.
+
+    The URL comes from the request rather than from storage, so the sign-in uses the
+    endpoint currently in the box. Otherwise editing the URL and pressing Sign in
+    authorises the *previous* one, and the grant that comes back is for a server the
+    operator has just decided against.
+    """
+    ok, message = connectors.start_browser_signin(
+        key, (payload or {}).get("url") or "")
+    return {"ok": ok, "message": message}
 
 
 @connector_router.post("")

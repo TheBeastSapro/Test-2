@@ -41,6 +41,7 @@ from .media import (
     MiniMaxVoiceProvider,
     RunwayVideoProvider,
 )
+from .minimax_cli import MiniMaxCliVoiceProvider
 from .mock import MockAvatar, MockImage, MockLLM, MockVideo, MockVoice
 from .stock import OpenverseProvider
 
@@ -60,6 +61,13 @@ CATALOGUE: dict[str, tuple[Capability, type, str]] = {
     "epidemic-sound": (Capability.voice, EpidemicVoiceProvider, ""),
     "elevenlabs": (Capability.voice, ElevenLabsProvider, "elevenlabs"),
     "minimax-voice": (Capability.voice, MiniMaxVoiceProvider, "minimax"),
+    # The same vendor, reached the other way. No key name, because this route takes no
+    # key at all: it drives `mmx` signed in with the operator's subscription, so speech
+    # comes out of the plan's quota instead of the API balance. Its `available()` is
+    # what refuses it when the CLI is missing, not signed in, or signed in with a key —
+    # that last case matters, because a key-authenticated CLI bills per character and
+    # letting it through here would move spend while reporting the opposite.
+    "minimax-voice-cli": (Capability.voice, MiniMaxCliVoiceProvider, ""),
     "fal": (Capability.image, FalImageProvider, "fal"),
     # Its own key name, so it can never be satisfied by another vendor's credential.
     "higgsfield": (Capability.image, HiggsfieldProvider, "higgsfield"),
@@ -85,6 +93,14 @@ DEFAULT_ROUTING: dict[Capability, list[str]] = {
     # narration draws down an API balance. Putting it in this list would mean a lapsed
     # ElevenLabs key silently moves someone's spend from a plan to a wallet, and the first
     # they hear of it is the balance.
+    #
+    # `minimax-voice-cli` is absent for a different reason, and the difference is worth
+    # keeping straight. It spends nothing per character — it is quota inside a plan — so
+    # it is not dangerous to fall back to on the grounds of cost. It is absent because
+    # falling back to it would silently change which vendor's voice a channel is
+    # narrated in, and a series whose narrator changes halfway through is a worse
+    # outcome than a run that stops and says the ElevenLabs key has lapsed. Both MiniMax
+    # routes are chosen, never inherited.
     Capability.voice: ["elevenlabs", "epidemic-sound"],
     # `higgsfield` is deliberately absent, for the same reason as `minimax-voice`: it
     # bills per generation against its own credit balance, so it is chosen per channel and

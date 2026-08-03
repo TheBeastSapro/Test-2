@@ -150,6 +150,20 @@ class Channel(Base):
     # character. Which one a channel uses has to be set deliberately and stay set, so it
     # belongs somewhere a migration knows about rather than in a free-form blob.
     voice_vendor: Mapped[str] = mapped_column(String(64), default="")
+
+    # Which scripting method every script on this channel is written to — a slug from
+    # `forgecast.scripting.available()`, either the built-in house method or one of the
+    # operator's own document folders.
+    #
+    # A column for the same reason `voice_vendor` above is one: it is a standing decision
+    # rather than a learned style fact, it is read on every run, and a channel silently
+    # drifting off the method it was set up with is a channel whose output nobody can
+    # explain. It is also the only field here whose value can stop resolving — the
+    # documents live outside the tree — so the default has to be the one that always
+    # loads. The literal is repeated rather than imported to keep the schema free of an
+    # application import; `tests/test_scripting.py` asserts it equals `HOUSE_SLUG`.
+    scripting_style: Mapped[str] = mapped_column(String(64), default="house")
+
     avatar_id: Mapped[str] = mapped_column(String(128), default="")
     aspect_ratio: Mapped[str] = mapped_column(String(16), default="16:9")
     target_duration_seconds: Mapped[int] = mapped_column(Integer, default=480)
