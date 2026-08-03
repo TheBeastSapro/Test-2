@@ -88,9 +88,12 @@ def available() -> tuple[bool, str]:
     """Can a channel be read without a key, and if not, what would fix it."""
     if _executable():
         return True, ""
+    # No backticks. This string is printed as plain text under the fetch box on the
+    # research page, where a backtick is a backtick and "Install it with `pip install
+    # yt-dlp`" reads as a typo rather than as code.
     return False, (
         "yt-dlp is not installed, so a channel link cannot be read without a YouTube "
-        "Data API key. Install it with `pip install yt-dlp`, or add a key in Settings."
+        "Data API key. Install it with: pip install yt-dlp — or add a key in Settings."
     )
 
 
