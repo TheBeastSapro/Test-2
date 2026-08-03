@@ -8,6 +8,30 @@
 {# Inline rather than a file: it is four shapes, it costs no request, and it works
    on a machine with no network — which is every machine this runs on. #}
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235eead4'/%3E%3Cpath d='M16 7l7 9-7 9-7-9z' fill='%2304211d'/%3E%3C/svg%3E">
+{# The Channels lane, styled here rather than in app.css, because these declarations
+   exist to defend this markup from the page inside it. Every `{% block head %}` below
+   lands after app.css, so a page's own single-class rule beats app.css on source
+   order — and two pages already did it: `/analytics` styles `.chan` and put a rule
+   under every rail entry, `/runs/{id}/preview` styles `.dot` and greyed out every
+   channel's status. A rail that reports a different thing on two pages is worse than
+   one that reports nothing. #}
+<style>
+  .side .chan { border-bottom: 0; }
+  /* Unknown word, visible dot: an unstyled 7px square reads as a rendering failure. */
+  .side .chan .dot { background: var(--faint); box-shadow: none; }
+  /* Mint is producing and violet is a gate everywhere else in the app — `.status.running`,
+     `.status.awaiting_approval`, the gate card, the hub's own status word. The lane used
+     the generic ok/warn pair, so the dot beside a channel's name was green while the hub
+     one click away called the same run mint, and amber where the hub said violet. */
+  .side .chan .dot-producing { background: var(--accent);
+                               box-shadow: 0 0 0 3px rgba(94, 234, 212, .14); }
+  .side .chan .dot-waiting { background: var(--gate);
+                             box-shadow: 0 0 0 3px rgba(196, 181, 253, .14); }
+  /* Which channel you are inside. The format tab above stays lit because that is still
+     the section, so this is the quieter mark of the two rather than a second accent
+     competing with it. */
+  .side .chan.here { background: var(--raise-2); color: var(--text); font-weight: 550; }
+</style>
 {% block head %}{% endblock %}
 </head>
 <body class="{{ 'embedded' if embed }}">
@@ -59,10 +83,13 @@
     {% if rail_channels %}
       <div class="lane">Channels</div>
       {% for item in rail_channels %}
-        <a class="chan" href="/c/{{ item.id }}" title="{{ item.name }} — {{ item.status }}">
-          <span class="dot {{ 'dot-ok' if item.status == 'producing'
-                              else 'dot-warn' if item.status == 'waiting'
-                              else 'dot-idle' }}"></span>
+        {# `here` when this is the channel whose hub is open: the format tab above is lit
+           on a channel page too, and on its own it says you are in an account-wide
+           workspace you are not in fact looking at. #}
+        <a class="chan {{ 'here' if rail_channel == item.id }}" href="/c/{{ item.id }}"
+           {% if rail_channel == item.id %}aria-current="page"{% endif %}
+           title="{{ item.name }} — {{ item.status }}">
+          <span class="dot dot-{{ item.status }}"></span>
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
             {{ item.icon }} {{ item.name }}</span>
         </a>

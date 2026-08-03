@@ -662,8 +662,8 @@ def test_every_line_reference_in_the_agent_docs_points_at_what_it_names():
     * Drift of one or two lines, and drift within the function the sentence names. The
       reference still puts the reader in front of the right thing.
     * A test citation that drifts onto a *different* test's `def`.
-    * Ranges whose sentence names nothing — both ends are only checked for being real,
-      non-blank lines. Roughly half the citations here are of that kind.
+    * Ranges, and citations that sit in plain prose. Well over half of them name nothing
+      extractable, and those get the file, the line and the blank-line check only.
     * Whether the sentence's claim about the code is true. That needs a reader.
     """
     import keyword
@@ -702,7 +702,7 @@ def test_every_line_reference_in_the_agent_docs_points_at_what_it_names():
         return None
 
     def name_before(index: int) -> str:
-        """The identifier this citation is attached to, empty if it is attached to prose."""
+        """The identifier this citation is attached to. Empty when it is attached to prose."""
         found = named.search(text[:index])
         if not found:
             return ""

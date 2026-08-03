@@ -155,8 +155,10 @@ def _context(session: Session, user: User, channel: Channel, view: str) -> dict:
     shape = formats.get(formats.format_of_channel(channel))
     return {
         # The rail still highlights the format this channel belongs to. A channel page
-        # with nothing lit in the rail reads as having navigated out of the app.
-        **shell(session, user, f"format:{shape.slug}"),
+        # with nothing lit in the rail reads as having navigated out of the app. That
+        # alone says "the long-form workspace", which is not where you are, so the
+        # channel's own entry in the rail is marked as well.
+        **shell(session, user, f"format:{shape.slug}", rail_channel=channel.id),
         "channel": channel,
         "format": shape,
         "view": view,

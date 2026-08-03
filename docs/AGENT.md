@@ -23,7 +23,7 @@ There is a second `forgecast/auth.py`, and it is unrelated — passwords, JWTs a
 
 The load-bearing rule is `studio.py:1-16`: an operation exists in exactly one place, and
 both the chat and the buttons reach it there. `Studio.status()` is what the agent gets
-from `studio_status` (`tools.py:200`) *and* what the right-hand panel gets from
+from `studio_status` (`tools.py:85`) *and* what the right-hand panel gets from
 `GET /api/agent/status` (`routes_agent.py:324`). `tests/test_agent.py:228` asserts the
 two cannot disagree; if they could, the panel and the transcript would describe the same
 install differently in the same window.

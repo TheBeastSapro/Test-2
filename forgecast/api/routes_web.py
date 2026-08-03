@@ -123,6 +123,7 @@ def _rail_channels(channels: list, runs: list) -> list[dict]:
 def shell(
     session: Session, user: User, nav: str, *,
     channels: list | None = None, runs: list | None = None,
+    rail_channel: int | None = None,
 ) -> dict:
     """The context every page shares: the format tabs, the nav state, the run list.
 
@@ -133,14 +134,21 @@ def shell(
     A caller that has already loaded the channels and runs passes them in; the counts
     on the tabs are the same query the workspace just ran, and running it twice on
     every page load is waste for no gain.
+
+    `rail_channel` is the channel whose own page this is, if any, so the lane can mark
+    it. Passed rather than derived from `nav`, because `nav` on a channel page names the
+    format tab — the section — and the two are different questions.
     """
     if runs is None:
         runs = list(session.execute(
             select(Run).where(Run.user_id == user.id).order_by(Run.id.desc()).limit(60)
         ).scalars().all())
     if channels is None:
+        # Ordered, because this list is the sidebar: an unordered query is free to
+        # return the rows in a different order on the next page, and a lane whose
+        # entries move between pages cannot be navigated by position.
         channels = list(session.execute(
-            select(Channel).where(Channel.user_id == user.id)
+            select(Channel).where(Channel.user_id == user.id).order_by(Channel.id)
         ).scalars().all())
 
     return {
@@ -150,6 +158,7 @@ def shell(
         # `channels` put theirs in the context after this dict, and a shared key would
         # let the dashboard's format-filtered list decide what the sidebar shows.
         "rail_channels": _rail_channels(channels, runs),
+        "rail_channel": rail_channel,
         "formats": list(formats.FORMATS.values()),
         "format_counts": formats.counts(channels, runs),
         "credits": billing.balance(session, user.id),

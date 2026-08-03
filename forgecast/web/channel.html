@@ -16,6 +16,12 @@
 
   .hubhead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .hubhead h1 { margin: 0; }
+  /* A channel name is whatever its owner typed, and plenty of real ones have no space
+     in them. Without a break opportunity a 45-character name is wider than a phone at
+     24px, and an `h1` that overflows does not overflow alone — it widens `main` and
+     every row under it scrolls sideways with it. Niches and the notes below quote the
+     same user input, so they get the same treatment. */
+  .hubhead h1, .crumbline .seg, .hubsub, .card p { overflow-wrap: anywhere; }
   /* One word and one dot, in the app's own status colours: mint is what `running`
      already looks like everywhere else, violet is what a gate already looks like.
      A fifth colour invented here would mean the same thing in two hues. */
@@ -130,7 +136,12 @@
   <div class="tile">
     <b>Credits spent</b>
     <div class="v">{{ facts.credits_spent }}</div>
-    <div class="n">on this channel, net of refunds</div>
+    <div class="n">
+      {#- "net of refunds" on a channel that has never spent anything describes an
+          accounting rule for a number that does not exist yet. #}
+      {%- if facts.runs %}on this channel, net of refunds
+      {%- else %}nothing has cost anything yet{% endif -%}
+    </div>
   </div>
 </div>
 
