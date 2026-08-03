@@ -195,7 +195,7 @@ stated at `prefs.py:25-27`.
 ## A turn, and how a conversation is resumed
 
 `assistant.run()` (`assistant.py:232`) is an async generator yielding
-`{"type": "text"|"thinking"|"tool"|"tool_result"|"session"|"result"|"error", ...}`.
+`{"type": "text"|"thinking"|"tool"|"tool_result"|"session"|"result"|"setup"|"error", ...}`.
 `routes_agent.chat()` (`routes_agent.py:338`) re-emits each event as one line of
 newline-delimited JSON.
 
@@ -203,8 +203,37 @@ NDJSON rather than SSE, deliberately (`routes_agent.py:3-6`): the client is `fet
 the same window so SSE's framing buys nothing, and NDJSON survives a proxy that
 helpfully buffers `text/event-stream`.
 
-The first thing `run()` does is `auth.check()` (`assistant.py:255`) and yield an error
+The first thing `run()` does is `auth.check()` (`assistant.py:260`) and yield a `setup`
 event if it fails — the refusal is honest and costs nothing.
+
+### `setup` is not an error, and that distinction is the whole point of it
+
+Every backend refuses before spending, which was always right. What was wrong was the
+shape of the refusal. It came back as `{"type": "error"}`, and `chat.js` renders an
+error by putting its text into the assistant's bubble — so on a machine with no Codex
+CLI, typing *hi* produced a paragraph about npm, in the agent's voice, where the answer
+goes. `routes_agent` then appended it to `text_parts` like any other error, so it was
+*saved* as the assistant's reply and was still sitting in the transcript after the CLI
+was installed. It was reported as the agent being broken. Nothing had failed; nothing
+had started.
+
+`setup_notice.notice()` (`setup_notice.py:38`) builds the event from the status object
+each backend already holds — they share field names by design — and both emit it in
+place of running: `assistant.py:260` and `codex_agent.py:405`.
+
+Two rules hold this in place:
+
+* **The vendor's name is stamped by the route, not by the backend**
+  (`routes_agent.py:552-568`). The layer that chose which backend to run is the one that
+  knows which it was; three literal labels in three modules is three things to keep in
+  step with `engines.ENGINES`.
+* **A `setup` event is never appended to `text_parts`.** That is the one line that
+  stopped an install instruction being persisted as something the agent said.
+
+The front end renders it twice, from the same fields: a `.setupcard` in the transcript
+that is visibly not prose, and the banner at the top of the chat column, which is also
+painted on page load from the ordinary sign-in check. The banner is the half that
+matters most — it means an uninstalled backend is on screen *before* anything is typed.
 
 Resumption is one string. Each `Conversation` row stores the CLI's own session id
 (`models.py:356`); `chat()` reads it as `resume` (`routes_agent.py:425`) and passes it
@@ -217,7 +246,7 @@ re-reads the same state every turn and still contradicts itself (`assistant.py:1
 This is the part to understand before changing anything in `chat()`.
 
 `run()` emits a `session` event as soon as it sees a session id on an `AssistantMessage`,
-not at the end of the turn (`assistant.py:264-272`). The route writes it immediately, in
+not at the end of the turn (`assistant.py:272-280`). The route writes it immediately, in
 its own database session, in `_remember_session()` (`routes_agent.py:474-481`).
 
 The comment there names the bug, and it is worth quoting because the symptom does not
@@ -232,7 +261,7 @@ look like a bug at all:
 There were two separate failures here and both had to be fixed:
 
 1. **The write happened too late.** Fixed by emitting and persisting early
-   (`assistant.py:264-272`, `routes_agent.py:495-498`).
+   (`assistant.py:272-280`, `routes_agent.py:495-498`).
 2. **The end-of-turn save was skipped entirely on disconnect.** `_save()` is called from
    a `finally`, not from a statement after the loop (`routes_agent.py:509-524`). Closing
    the window mid-turn makes Starlette close the response generator, which raises
@@ -250,7 +279,7 @@ Two rules fall out of that, and breaking either reintroduces the bug:
   conversation silently fails to save. It swallows and logs.
 * **`assistant.run()` must never `yield` from a `finally`.** Yielding while unwinding
   raises "async generator ignored GeneratorExit", which aborts teardown of the CLI
-  subprocess. `assistant.py:310-314` says so where the `finally` would have gone, and
+  subprocess. `assistant.py:318-322` says so where the `finally` would have gone, and
   `tests/test_agent.py:570` asserts it against the AST of the function — the failure only
   shows up when a generator is closed early, which is the hardest case to notice.
 
@@ -261,8 +290,8 @@ cleared, the app was copied to another machine, storage was reset. Without handl
 thread is bricked — every later message resumes the same dead id and fails identically.
 
 The SDK raises a generic `ProcessError` for this, so there is nothing typed to catch.
-`_looks_like_a_dead_session()` (`assistant.py:327`) matches substrings
-(`_DEAD_SESSION_SIGNS`, `assistant.py:321`) and sets `resume_failed` on the error event.
+`_looks_like_a_dead_session()` (`assistant.py:335`) matches substrings
+(`_DEAD_SESSION_SIGNS`, `assistant.py:329`) and sets `resume_failed` on the error event.
 `chat()` retries **once**, from scratch: clears the stored id via `_forget_session()`,
 drops the partial text and tool calls, and streams a `notice` event saying it started
 fresh (`routes_agent.py:465-479`). Guessing wrong here means either a bricked thread or a
@@ -327,7 +356,7 @@ Keep this distinct from a provider key, because they fail differently:
   the agent should say so.
 
 They are configured in separate places for that reason, and `GET /api/connectors` returns
-that sentence as a `note` (`routes_agent.py:595`).
+that sentence as a `note` (`routes_agent.py:610`).
 
 How they reach the agent: `build_options` merges `connectors.active_servers()` into the
 same `mcp_servers` dict as the app's own server (`assistant.py:164-165`). `active()`
@@ -361,7 +390,7 @@ Things that will bite you:
 * **`listing()` includes configured keys that are not in the catalogue**
   (`connectors.py:366-368`), or they would be invisible and unremovable.
 
-`POST /api/connectors/{key}/test` (`routes_agent.py:569`) sends a real MCP `initialize`
+`POST /api/connectors/{key}/test` (`routes_agent.py:636`) sends a real MCP `initialize`
 to the configured endpoint. Deliberately a request and not a URL-shape check: the failure
 it catches is a token pasted with a trailing space, and no amount of validating the
 string finds that. 401/403 gets its own message; a non-JSON body is treated as a

@@ -13,7 +13,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from forgecast.agent import connectors, prefs
+from forgecast.agent import auth, connectors, engines, prefs
 from forgecast.agent.studio import Studio, parse_link
 from forgecast.api.main import create_app
 from forgecast.models import Channel, Conversation
@@ -307,7 +307,7 @@ def test_settings_page_answers_the_three_questions(client, session, user):
     assert "Connectors" in body        # can I connect integrations?
     assert "NexLev" in body            # the one that was asked for by name
     assert "Provider keys" in body     # where do the keys go?
-    assert "Claude" in body            # is Claude connected?
+    assert "Claude" in body            # is the agent connected?
 
 
 # ------------------------------------------------------------------------- voice
@@ -835,3 +835,70 @@ def test_the_nexlev_url_is_prefilled_so_nobody_has_to_find_it():
     spec = connectors.BY_KEY["nexlev"]
     assert spec.default_url.startswith("https://")
     assert spec.kind == "mcp"
+
+
+# ------------------------------------------------------ every backend, on one page
+#
+# Appended rather than filed beside the other settings-page tests on purpose:
+# `test_every_line_reference_in_the_agent_docs_points_at_what_it_names` above checks
+# `tests/test_agent.py:NNN` citations in docs/AGENT.md, so an insertion in the middle
+# silently re-points seven of them at the wrong function.
+
+
+def test_the_settings_page_lists_every_agent_backend(client):
+    """The tab was headed "Claude" and held one panel, so the other two backends were
+    invisible on a build that ships all three — reported as ChatGPT "not being there".
+
+    Asserted against `engines.ENGINES` rather than three hard-coded names, so adding a
+    fourth backend and forgetting the page fails here instead of shipping.
+    """
+    body = client.get("/settings").text
+    assert 'data-panel="agent"' in body
+    assert ">AI agent<" in body
+    for engine in engines.ENGINES:
+        assert f'data-agent="{engine.key}"' in body, f"{engine.label} has no card"
+        assert engine.label in body
+        # The sentence describing how it signs in, beside the agent it describes.
+        assert engine.signin[:40] in body
+
+
+def test_the_settings_page_does_not_check_a_sign_in_while_rendering(client, monkeypatch):
+    """One of the two checks shells out to a CLI.
+
+    Doing them during the render would let one wedged install hold up the connectors
+    and provider panels too, and the whole page would wait on it. Each card asks for
+    itself from the browser instead, so a slow backend delays only its own line.
+    """
+    from forgecast.agent import codex_auth
+
+    def refuse(*_args, **_kwargs):                                    # pragma: no cover
+        raise AssertionError("the settings render asked a CLI whether it is signed in")
+
+    monkeypatch.setattr(codex_auth, "check", refuse)
+    monkeypatch.setattr(auth, "check", refuse)
+    assert client.get("/settings").status_code == 200
+
+
+def test_an_old_link_to_the_claude_panel_still_lands_on_the_tab():
+    """`#claude` is in bookmarks and in the sidebar chip's history. The panel is
+    `#agent` now, and without the alias an old link opens the page with nothing
+    selected — which looks like the tab was removed rather than renamed."""
+    from pathlib import Path
+
+    page = (Path(auth.__file__).resolve().parents[1] / "web" / "settings.html").read_text()
+    assert "'claude' ? 'agent'" in page
+
+
+def test_the_agent_chip_names_the_backend_that_is_actually_answering(client):
+    """`/api/agent/auth` answers for the *selected* engine, so the chip has to read the
+    label off the answer. Hard-coding "Claude" put ChatGPT's sign-in under Claude's name
+    in the sidebar of every page."""
+    from pathlib import Path
+
+    base = (Path(auth.__file__).resolve().parents[1] / "web" / "base.html").read_text()
+    assert "a.engine_label" in base
+    assert "'Claude · '" not in base
+
+    report = client.get("/api/agent/auth?engine=chatgpt").json()
+    assert report["engine"] == "chatgpt"
+    assert report["engine_label"] == "ChatGPT"

@@ -209,8 +209,7 @@ def settings_page(
         value = getattr(settings, attribute, "")
         env_values[field["key"]] = mask(value) if value else ""
 
-    from ..agent import auth as claude_auth
-    from ..agent import connectors
+    from ..agent import connectors, engines
 
     return TEMPLATES.TemplateResponse(
         request,
@@ -224,9 +223,17 @@ def settings_page(
             "is_mock": settings.is_mock,
             "storage_dir": str(settings.storage_dir.resolve()),
             "saved": saved,
-            # The two questions the old app could not answer at all: is Claude wired
-            # up, and what else is the agent allowed to reach.
-            "claude": claude_auth.check(),
+            # The two questions the old app could not answer at all: is the agent wired
+            # up, and what else is it allowed to reach.
+            #
+            # Every backend, not just the selected one. The page used to render one
+            # panel headed "Claude" and nothing else, so an operator who had ChatGPT
+            # and MiniMax available saw no sign either existed and reported them as
+            # missing from the build. What each one *is* comes from the server here;
+            # whether each one is signed in is asked per agent from the browser, so a
+            # CLI that hangs delays its own card instead of the whole page.
+            "agents": engines.catalogue(),
+            "engine": engines.current().key,
             "connectors": connectors.Store.load().listing(),
         },
     )

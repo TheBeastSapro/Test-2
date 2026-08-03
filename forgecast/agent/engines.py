@@ -20,6 +20,26 @@ What was rejected:
   choosing a model that the running backend cannot serve, and a 400 from a vendor
   instead of a sentence. Models belong to an engine; see `prefs.model_for`.
 
+## Why MiniMax is not in this list
+
+It was, and it is not any more, and the reason is worth writing down so it is not
+added back on the same reasoning.
+
+MiniMax has a CLI you sign in to with a subscription, so it *fits* here mechanically.
+But what MiniMax is used for in this app is narration — it is a voice vendor, next to
+ElevenLabs, chosen per channel by `channels.voice_vendor`. Offering it a third time in
+the composer's agent picker put a voice vendor in a list of things that write scripts
+and call studio tools, and the only honest thing that list can mean is "what answers
+you when you type". Two different jobs sharing one name in one dropdown is how someone
+picks it expecting one and gets the other.
+
+Its sign-in did not go away with it: `minimax_auth` is now what the voice side uses to
+tell a subscription sign-in from an API key, because for narration that difference is
+which account gets billed. See `forgecast/voice/minimax_session.py`.
+
+A stored `engine: "minimax"` from an older build resolves to Claude here rather than
+erroring — see `resolve()`, which has always been the behaviour for an unknown key.
+
 ## Why `run()` is not itself a generator
 
 It picks an implementation and returns *its* generator, rather than iterating it and
@@ -36,12 +56,10 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import (assistant, auth, codex_agent, codex_auth, minimax_agent,
-               minimax_auth, prefs)
+from . import assistant, auth, codex_agent, codex_auth, prefs
 
 CLAUDE = "claude"
 CHATGPT = "chatgpt"
-MINIMAX = "minimax"
 
 
 @dataclass(frozen=True)
@@ -96,25 +114,6 @@ ENGINES: list[Engine] = [
             "Claude needs nothing new.",
         ],
     ),
-    Engine(
-        key=MINIMAX,
-        label="MiniMax",
-        signin="Signs in with your MiniMax subscription through their own CLI — a browser "
-               "flow, no API key. Narration is separate and still bills the MiniMax API "
-               "balance; this covers the chat.",
-        models=minimax_agent.MODELS,
-        default_model=minimax_agent.DEFAULT_MODEL,
-        limits=[
-            "Runs each turn non-interactively, so it cannot stop to ask before editing "
-            "a file — “Confirm calls” has no effect on this backend.",
-            "It is never given decide_gate: approving a gate releases real spend and "
-            "this backend has no way to pause and ask you first.",
-            "Their CLI has no resumable session, so the thread is re-sent each turn. A "
-            "very long conversation costs more here than on Claude.",
-            "Needs the MiniMax CLI installed once (npm install -g mmx-cli). Claude needs "
-            "nothing new.",
-        ],
-    ),
 ]
 
 BY_KEY = {engine.key: engine for engine in ENGINES}
@@ -146,12 +145,7 @@ def auth_check(key: str | None = None) -> dict:
     chat has one auth panel rather than one per vendor.
     """
     engine = resolve(key)
-    if engine.key == CHATGPT:
-        report = codex_auth.check().as_dict()
-    elif engine.key == MINIMAX:
-        report = minimax_auth.check().as_dict()
-    else:
-        report = auth.check().as_dict()
+    report = (codex_auth if engine.key == CHATGPT else auth).check().as_dict()
     return {**report, "engine": engine.key, "engine_label": engine.label}
 
 
@@ -159,8 +153,6 @@ def start_login(key: str | None = None) -> tuple[bool, str]:
     engine = resolve(key)
     if engine.key == CHATGPT:
         return codex_auth.start_login()
-    if engine.key == MINIMAX:
-        return minimax_auth.start_login()
     return auth.start_login()
 
 
@@ -178,9 +170,6 @@ def run(prompt: str, *, studio, settings: prefs.Prefs | None = None,
     # Passing it to both would reach `ClaudeAgentOptions` as an unknown keyword.
     user_id = kwargs.pop("user_id", None)
 
-    if chosen.key == MINIMAX:
-        return minimax_agent.run(prompt, studio=studio, model=model, user_id=user_id,
-                                 allowed=allowed, history=history)
     if chosen.key == CHATGPT:
         return codex_agent.run(prompt, studio=studio, model=model, user_id=user_id,
                                **kwargs)

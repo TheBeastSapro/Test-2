@@ -343,6 +343,25 @@ button.danger:hover { background: #1a1011; border-color: #6b2f2f; }
 
 .msg-wait { color: var(--faint); }
 .msg-bad  { color: var(--err); }
+
+/* A backend that is not installed, in the transcript but deliberately not a reply.
+   It used to arrive as `.msg.ai` text — so "hi" was answered with a paragraph about
+   the Codex CLI, in the agent's voice, in the place the answer goes, and it read as
+   the agent being broken. Nothing had failed; nothing had started. A bordered card
+   with the buttons that fix it is the honest shape, and it is visibly not prose. */
+.setupcard {
+  max-width: 780px; margin: 0 auto 22px; padding: 15px 17px;
+  background: var(--raise-2); border: 1px solid var(--line-2);
+  border-left: 3px solid var(--warn); border-radius: var(--radius-sm);
+  font-size: 13.5px; line-height: 1.6; color: var(--text-2);
+}
+.setupcard b { color: var(--text); display: block; font-size: 14px; margin-bottom: 5px; }
+.setupcard pre {
+  margin: 11px 0 0; padding: 11px 13px; white-space: pre-wrap;
+  background: var(--raise-3); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12.5px;
+}
+.setupcard .row { margin-top: 13px; }
 .empty { max-width: 780px; margin: 0 auto; color: var(--muted); font-size: 14px;
           padding-top: 11vh; }
 

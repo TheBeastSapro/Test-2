@@ -58,7 +58,7 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from types import SimpleNamespace
 
-from . import codex_auth, tools
+from . import codex_auth, setup_notice, tools
 from .assistant import APP_ROOT, _result_text
 from .studio import Studio
 
@@ -404,12 +404,15 @@ async def run(prompt: str, *, studio: Studio, resume: str | None = None,
     """
     status = codex_auth.check()
     if not status.ok:
-        yield {"type": "error", "text": status.detail, "auth": status.as_dict()}
+        # A setup notice rather than an error. This is the backend the complaint was
+        # about: with no Codex CLI installed, "hi" came back as a paragraph about npm
+        # sitting where the answer goes, in the agent's own voice.
+        yield setup_notice.notice(status)
         return
 
     cli = codex_auth.find_cli()
     if not cli:                                                   # pragma: no cover
-        yield {"type": "error", "text": codex_auth.check().detail}
+        yield setup_notice.notice(codex_auth.check())
         return
 
     connector_config, connector_env = remote_servers()

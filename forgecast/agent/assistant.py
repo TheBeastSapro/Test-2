@@ -37,7 +37,7 @@ import logging
 from collections.abc import AsyncIterator
 from pathlib import Path
 
-from . import auth, connectors, tools
+from . import auth, connectors, setup_notice, tools
 from .studio import Studio
 
 log = logging.getLogger("forgecast.agent")
@@ -233,9 +233,14 @@ async def run(prompt: str, *, studio: Studio, resume: str | None = None,
               **kwargs) -> AsyncIterator[dict]:
     """One turn, as a stream of events.
 
-    Yields `{"type": "text"|"tool"|"result"|"error", ...}`. Streamed rather than
-    returned at the end because a turn can start a render or read fifty videos, and a
-    UI that shows nothing until it finishes is indistinguishable from one that hung.
+    Yields `{"type": "text"|"tool"|"result"|"setup"|"error", ...}`. Streamed rather
+    than returned at the end because a turn can start a render or read fifty videos,
+    and a UI that shows nothing until it finishes is indistinguishable from one that
+    hung.
+
+    `setup` is the only one that is not part of a turn — see `setup_notice`. It means
+    the backend is not installed or not signed in, so nothing ran and nothing was
+    spent, and it is rendered as an install to finish rather than as a reply.
 
     The `result` event carries the session id. The caller stores it and passes it back
     as `resume` next turn — that is what makes this a conversation.
@@ -254,7 +259,10 @@ async def run(prompt: str, *, studio: Studio, resume: str | None = None,
 
     status = auth.check()
     if not status.ok:
-        yield {"type": "error", "text": status.detail, "auth": status.as_dict()}
+        # A setup notice, not an error: nothing failed, because nothing started. Sent
+        # as an error event it landed in the assistant's bubble, and "not signed in"
+        # read as the agent answering strangely rather than as an install to finish.
+        yield setup_notice.notice(status)
         return
 
     options = build_options(studio=studio, resume=resume, **kwargs)

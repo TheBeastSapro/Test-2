@@ -22,7 +22,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..agent import assistant, connectors, engines, prefs, tools
+from ..agent import assistant, connectors, engines, prefs, setup_notice, tools
 from ..agent.studio import Studio
 from ..auth import current_user
 from ..config import get_settings
@@ -549,6 +549,20 @@ async def chat(
                         if event["session_id"] != latest_session:
                             latest_session = event["session_id"]
                             _remember_session(latest_session)
+                    elif kind == setup_notice.TYPE:
+                        # Deliberately NOT appended to `text_parts`, which is what an
+                        # error event does. A backend that is not installed never ran a
+                        # turn, so writing its install instructions down as the
+                        # assistant's reply leaves a paragraph about npm in the
+                        # transcript for good — still there, still reading like the
+                        # agent, long after the CLI has been installed.
+                        #
+                        # The vendor's name is added here rather than inside the
+                        # backend: this is the layer that chose which one to run, and
+                        # three literal labels in three modules is three things to keep
+                        # in step with `engines.ENGINES`.
+                        event = {**event, "engine": engine.key,
+                                 "engine_label": engine.label}
                     elif kind == "error":
                         text_parts.append(event.get("text", ""))
                     yield json.dumps(event, default=str) + "\n"

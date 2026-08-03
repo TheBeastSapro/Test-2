@@ -174,7 +174,7 @@
             if (tool.present) row.querySelector('.note').textContent = tool.where;
           }
           $('#actions').innerHTML = event.ok
-            ? '<a class="btn btn-primary" href="/settings#claude">Sign in to Claude</a>' +
+            ? '<a class="btn btn-primary" href="/settings#agent">Sign in to your agent</a>' +
               '<a class="btn" href="/">Open the studio</a>'
             : '<button class="primary" onclick="location.reload()">Try again</button>' +
               '<a class="btn" href="/">Carry on anyway</a>';

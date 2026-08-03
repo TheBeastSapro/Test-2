@@ -656,6 +656,17 @@ async function stream(text, files, host) {
           note.textContent = event.text;
           host.append(note);
           scrollDown();
+        } else if (event.type === 'setup') {
+          // Not a reply. The backend is not installed or not signed in, so no turn
+          // ran and nothing was spent — rendered as a card with the buttons that fix
+          // it rather than as text in the agent's bubble.
+          thinking.hidden = true;
+          closeProse();
+          host.append(setupCard(event));
+          // The banner at the top says the same thing and outlives the scroll, so it
+          // is still there once this card has been scrolled past.
+          paintAgentSetup(event);
+          scrollDown();
         } else if (event.type === 'error') {
           thinking.hidden = true;
           closeProse();
@@ -761,6 +772,60 @@ function paintAuth(a) {
           ? `<pre style="margin-top:9px;white-space:pre-wrap">${esc(a.fixes.join('\n'))}</pre>` : '');
   $('#claude-actions').hidden = a.ok;
   $('#btn-login').hidden = !a.can_login;
+  paintAgentSetup(a);
+}
+
+/* ── the agent's own setup ──────────────────────────────────────────────────
+   An uninstalled backend is not a failed turn: nothing ran, nothing was spent, and
+   what fixes it is a button rather than a rephrased question. So it gets the banner a
+   missing tool gets, and — when it is discovered mid-send — a card in the transcript
+   that is visibly not the agent talking.
+
+   Both are painted from the same fields, because both are describing the same thing.
+   The sign-in check on page load fills them in before anything is typed, which is the
+   half that stops it being discovered by asking a question and being answered with an
+   npm command. */
+/* Both sources carry it: `/api/agent/auth` adds it in `engines.auth_check`, and the
+   chat route stamps it onto a setup event as it goes past. The fallback is for a build
+   where one of them forgot — a card headed "This agent" is wrong-ish, a card headed
+   "undefined" is broken. */
+function agentSetupName(report) {
+  return report.engine_label || 'This agent';
+}
+
+function paintAgentSetup(report) {
+  const banner = $('#toolbar-agent');
+  if (!banner) return;
+  if (!report || report.ok) { banner.hidden = true; return; }
+  $('#agent-setup-text').innerHTML =
+    `<b>${esc(agentSetupName(report))} — ${esc(report.headline)}</b> `
+    + `<span class="muted">${esc(report.detail || '')}</span>`;
+  $('#agent-setup-login').hidden = !report.can_login;
+  banner.hidden = false;
+}
+
+function setupCard(report) {
+  const box = document.createElement('div');
+  box.className = 'setupcard';
+  const fixes = (report.fixes || []).join('\n');
+  box.innerHTML =
+    `<b>${esc(agentSetupName(report))} — ${esc(report.headline)}</b>`
+    + `<div>${esc(report.detail || '')}</div>`
+    + (fixes ? `<pre>${esc(fixes)}</pre>` : '')
+    + `<div class="row">`
+    + (report.can_login ? `<button class="btn-sm primary" data-role="login">Sign in</button>` : '')
+    + `<button class="btn-sm" data-role="check">Check again</button>`
+    + `<a class="btn btn-sm" href="/settings#agent">Open settings</a></div>`;
+  const login = box.querySelector('[data-role="login"]');
+  if (login) login.onclick = () => startLogin();
+  box.querySelector('[data-role="check"]').onclick = () =>
+    refreshAuth().then(() => toast('Checked'));
+  return box;
+}
+
+async function startLogin() {
+  const result = await api('/api/agent/auth/login', {});
+  toast(result.message);
 }
 
 const refreshAuth = () => api('/api/agent/auth').then(paintAuth).catch(() => {});
@@ -870,11 +935,12 @@ document.addEventListener('paste', takePaste);
   });
 })($('#chat-input'));
 
-$('#btn-login').onclick = async () => {
-  const result = await api('/api/agent/auth/login', {});
-  toast(result.message);
-};
+$('#btn-login').onclick = () => startLogin();
 $('#btn-recheck').onclick = () => refreshAuth().then(() => toast('Checked'));
+if ($('#agent-setup-login')) $('#agent-setup-login').onclick = () => startLogin();
+if ($('#agent-setup-check')) {
+  $('#agent-setup-check').onclick = () => refreshAuth().then(() => toast('Checked'));
+}
 
 api('/api/agent/prefs').then(p => {
   $('#model-pick').innerHTML = (p.models || []).map(m =>

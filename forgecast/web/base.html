@@ -125,12 +125,14 @@
   </div>
 
   <div class="foot">
-    {# Whether Claude is connected, on every page. The complaint this answers is
-       "idk if it's connected claude" — an app that looks identical either way. #}
-    <a href="/settings#claude" id="claude-chip"
+    {# Whether the agent is connected, on every page. The complaint this answers is
+       "idk if it's connected claude" — an app that looks identical either way. It
+       names whichever backend is selected, because a chip reading "Claude connected"
+       while ChatGPT is answering is the same lie one layer down. #}
+    <a href="/settings#agent" id="claude-chip"
        style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px">
       <span class="dot dot-idle" id="claude-dot"></span>
-      <span id="claude-text">checking Claude…</span>
+      <span id="claude-text">checking the agent…</span>
     </a>
     <div class="row" style="justify-content:space-between;margin-top:10px">
       <span>{{ credits }} credits</span>
@@ -185,20 +187,24 @@
 
 {% if user and not embed %}
 <script>
-  // The Claude chip. One request per page load, and it degrades to "unknown"
+  // The agent chip. One request per page load, and it degrades to "unknown"
   // rather than to a broken-looking sidebar if the endpoint is unreachable.
+  // `engine_label` rather than a hard-coded "Claude": the endpoint answers for the
+  // selected backend, so a fixed name here would report ChatGPT's sign-in under
+  // Claude's — which is exactly the confusion this chip exists to remove.
   fetch('/api/agent/auth').then(r => r.json()).then(a => {
     const dot = document.getElementById('claude-dot');
     const text = document.getElementById('claude-text');
     if (!dot || !text) return;
+    const name = a.engine_label || 'The agent';
     dot.className = 'dot ' + (a.ok ? 'dot-ok' : (a.api_key_shadowing ? 'dot-bad' : 'dot-warn'));
     text.textContent = a.ok
-      ? (a.account ? 'Claude · ' + a.account : 'Claude connected')
+      ? (a.account ? name + ' · ' + a.account : name + ' connected')
       : a.headline;
     if (a.ok) text.style.color = 'var(--text-2)';
   }).catch(() => {
     const text = document.getElementById('claude-text');
-    if (text) text.textContent = 'Claude status unknown';
+    if (text) text.textContent = 'Agent status unknown';
   });
 </script>
 {% endif %}

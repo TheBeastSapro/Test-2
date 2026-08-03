@@ -59,6 +59,20 @@
       <button id="missing-install" class="btn-sm primary">Install</button>
     </div>
 
+    {# The selected agent's own setup, in the same place and the same shape as a missing
+       tool — because it is the same kind of problem. Painted on load from the sign-in
+       check, so an uninstalled backend is visible before anything is typed rather than
+       arriving as a paragraph where the first answer should be. #}
+    <div id="toolbar-agent" class="card" hidden
+         style="margin:0 0 12px;border-color:var(--line-2);display:flex;
+                align-items:center;gap:12px;flex-wrap:wrap">
+      <span class="dot dot-warn"></span>
+      <span id="agent-setup-text" style="flex:1;min-width:220px;font-size:13.5px"></span>
+      <button id="agent-setup-login" class="btn-sm primary" hidden>Sign in</button>
+      <button id="agent-setup-check" class="btn-sm">Check again</button>
+      <a class="btn btn-sm" href="/settings#agent">Settings</a>
+    </div>
+
     <div class="chat" id="chat">
       <div class="empty" id="chat-empty">Starting up…</div>
     </div>

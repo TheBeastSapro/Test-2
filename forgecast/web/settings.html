@@ -12,7 +12,7 @@
 
 <div class="split" style="margin-top:26px">
   <div class="split-nav">
-    <button class="on" data-panel="claude">Claude</button>
+    <button class="on" data-panel="agent">AI agent</button>
     <button data-panel="connectors">Connectors</button>
     <button data-panel="providers">Provider keys</button>
     <button data-panel="capabilities">What will be used</button>
@@ -21,40 +21,58 @@
 
   <div class="split-body">
 
-    <!-- ═════════════════════════════════════════════════════════ CLAUDE -->
-    <section data-panel="claude" id="claude">
+    <!-- ═══════════════════════════════════════════════════════ AI AGENT -->
+    {# One card per backend, all of them always listed. Which agent is answering is a
+       separate question from which agents exist, and the page that showed only Claude
+       could not tell you the other two were installed at all. #}
+    <section data-panel="agent" id="agent">
       <div class="card">
-        <div class="row" style="justify-content:space-between;align-items:flex-start">
-          <div>
-            <h3 style="margin:0">
-              <span class="dot {{ 'dot-ok' if claude.ok else ('dot-bad' if claude.api_key_shadowing else 'dot-warn') }}"
-                    style="margin-right:8px"></span>{{ claude.headline }}
-            </h3>
-            {% if claude.account %}<div class="muted" style="font-size:12.5px">{{ claude.account }}</div>{% endif %}
+        <h3 style="margin-top:0">Which agent answers</h3>
+        <p class="muted" style="max-width:70ch;font-size:13px">
+          Every one of these signs in to a plan you already pay for, through that
+          vendor's own CLI and its own browser flow. No API key is pasted here and you
+          should not create one. Sign in to as many as you like — the chat uses whichever
+          is marked as answering, and you switch from the picker under the composer or
+          from here.
+        </p>
+
+        {% for agent in agents %}
+          <div class="conn agent" data-agent="{{ agent.key }}">
+            <div class="conn-head">
+              <span class="dot dot-idle" data-role="dot"></span>
+              <b>{{ agent.label }}</b>
+              {% if agent.key == engine %}<span class="pill local">answering now</span>{% endif %}
+              <span class="grow"></span>
+              <button class="btn-sm primary" data-role="login" hidden>Sign in</button>
+              <button class="btn-sm" data-role="check">Check</button>
+              {% if agent.key != engine %}
+                <button class="btn-sm" data-role="use">Use this one</button>
+              {% endif %}
+            </div>
+
+            <p class="conn-gives" data-role="headline">Checking your sign-in…</p>
+            <p class="conn-gives" data-role="detail"></p>
+            <pre data-role="fixes" hidden
+                 style="margin-top:11px;background:var(--raise-2);border:1px solid var(--line);
+                        border-radius:8px;padding:13px;white-space:pre-wrap;font-size:12.5px"></pre>
+
+            <p class="conn-where">{{ agent.signin }}</p>
+            {% if agent.limits %}
+              {# What this one cannot do that another can. Shown rather than documented,
+                 because the alternative is someone leaving a setting ticked on a backend
+                 that has no way to honour it. #}
+              <ul class="conn-where" style="margin:6px 0 0;padding-left:16px">
+                {% for line in agent.limits %}<li>{{ line }}</li>{% endfor %}
+              </ul>
+            {% endif %}
           </div>
-          {% if claude.ok %}<span class="pill local">connected</span>{% endif %}
-        </div>
-
-        <p class="muted" style="margin:14px 0 0;max-width:70ch">{{ claude.detail }}</p>
-
-        {% if claude.fixes %}
-          <pre style="margin-top:14px;background:var(--raise-2);border:1px solid var(--line);
-                      border-radius:8px;padding:13px;white-space:pre-wrap;font-size:12.5px">{{ claude.fixes | join('\n') }}</pre>
-        {% endif %}
-
-        <div class="row" style="margin-top:16px">
-          {% if claude.can_login %}
-            <button class="primary" onclick="claudeLogin()">Sign in</button>
-          {% endif %}
-          <button onclick="location.reload()">Check again</button>
-        </div>
+        {% endfor %}
 
         <p class="muted" style="font-size:12.5px;margin:18px 0 0;max-width:70ch">
-          This is your Claude subscription, signed in through the Claude Code CLI —
-          the same <code>/login</code> browser flow you already use. There is no API
-          key here and you should not create one. If <code>ANTHROPIC_API_KEY</code> is
-          set anywhere in your environment it takes priority over the subscription and
-          silently bills an API account, which is why it is checked above.
+          If <code>ANTHROPIC_API_KEY</code> or <code>CODEX_API_KEY</code> is set anywhere
+          in your environment it takes priority over the matching subscription and
+          silently bills an API account per token. Both are checked above, and an empty
+          value still counts as set.
         </p>
       </div>
     </section>
@@ -266,7 +284,12 @@
     };
   });
   if (location.hash) {
-    const tab = document.querySelector(`.split-nav button[data-panel="${location.hash.slice(1)}"]`);
+    // `#claude` is what the sidebar chip and the setup page linked to for as long as
+    // there was one backend, and those links are in people's history and bookmarks.
+    // The panel is `#agent` now; an alias costs one line and stops an old link
+    // landing on the page with nothing selected.
+    const wanted = location.hash.slice(1) === 'claude' ? 'agent' : location.hash.slice(1);
+    const tab = document.querySelector(`.split-nav button[data-panel="${wanted}"]`);
     if (tab) tab.click();
   }
 
@@ -279,11 +302,66 @@
     toastTimer = setTimeout(() => box.classList.remove('show'), 3200);
   }
 
-  async function claudeLogin() {
+  /* ── the agents ──────────────────────────────────────────────────────────
+     Each card asks about its own backend and paints itself. Three separate
+     requests rather than one page-render answer, because two of these three
+     checks shell out to a CLI: asking on the server would make a wedged Codex
+     install hold up the connectors and provider panels as well, and a page that
+     hangs is a worse answer than a card that is still checking. */
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
+    c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  async function checkAgent(key) {
+    const card = document.querySelector(`.agent[data-agent="${key}"]`);
+    if (!card) return;
+    const at = role => card.querySelector(`[data-role="${role}"]`);
+    at('headline').textContent = 'Checking…';
+    let report;
+    try {
+      const r = await fetch(`/api/agent/auth?engine=${encodeURIComponent(key)}`);
+      report = await r.json();
+    } catch (e) {
+      at('headline').textContent = 'Could not check this one: ' + String(e.message || e);
+      return;
+    }
+    at('dot').className = 'dot ' +
+      (report.ok ? 'dot-ok' : (report.api_key_shadowing ? 'dot-bad' : 'dot-warn'));
+    at('headline').innerHTML = `<b>${esc(report.headline)}</b>` +
+      (report.account ? ` <span class="muted">· ${esc(report.account)}</span>` : '');
+    at('detail').textContent = report.detail || '';
+    const fixes = at('fixes');
+    fixes.textContent = (report.fixes || []).join('\n');
+    fixes.hidden = !(report.fixes || []).length;
+    // Offered only where pressing it can actually finish the job. A backend whose CLI
+    // is not installed has nothing to open a browser flow for, and a button that opens
+    // a terminal printing "command not found" reads as a broken app rather than as a
+    // missing install.
+    at('login').hidden = !report.can_login;
+  }
+
+  async function agentLogin(key) {
     const r = await fetch('/api/agent/auth/login', {method: 'POST',
-      headers: {'Content-Type': 'application/json'}, body: '{}'});
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({engine: key})});
     toast((await r.json()).message);
   }
+
+  async function useAgent(key) {
+    const r = await fetch('/api/agent/prefs', {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({engine: key})});
+    if (!r.ok) { toast('Could not switch to that agent.'); return; }
+    location.reload();
+  }
+
+  document.querySelectorAll('.agent').forEach(card => {
+    const key = card.dataset.agent;
+    card.querySelector('[data-role="check"]').onclick = () => checkAgent(key);
+    card.querySelector('[data-role="login"]').onclick = () => agentLogin(key);
+    const use = card.querySelector('[data-role="use"]');
+    if (use) use.onclick = () => useAgent(key);
+    checkAgent(key);
+  });
 
   async function saveConnector(key) {
     const row = document.querySelector(`.conn[data-key="${key}"]`);

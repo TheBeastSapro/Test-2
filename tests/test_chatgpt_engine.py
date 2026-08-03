@@ -824,9 +824,16 @@ def test_the_backend_refuses_before_spawning_anything_when_not_signed_in(monkeyp
     monkeypatch.setattr(codex_agent.asyncio, "create_subprocess_exec", forbidden)
     events = drive("hello", user_id=user.id)
     assert len(events) == 1
-    assert events[0]["type"] == "error"
+    # A setup notice, not an error. An error is rendered as the assistant's reply, so
+    # this exact case — no Codex CLI, someone types "hi" — put a paragraph about npm
+    # where the answer goes, and it read as the agent being broken.
+    assert events[0]["type"] == "setup"
     assert "Codex CLI" in events[0]["text"]
-    assert events[0]["auth"]["cli_found"] is False
+    assert events[0]["headline"]
+    assert events[0]["fixes"]
+    # Nothing to sign in to yet, so the button that would open a browser flow is not
+    # offered: it could only open a terminal printing "command not found".
+    assert events[0]["can_login"] is False
 
 
 def test_the_stream_never_yields_from_a_finally():
