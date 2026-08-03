@@ -320,3 +320,109 @@ def test_health_wait_gives_up_rather_than_hanging():
     started = time.monotonic()
     assert supervisor.wait_for_health("http://127.0.0.1:9", timeout=1.0) is None
     assert time.monotonic() - started < 6.0
+
+
+# ------------------------------------------------- the launcher installs, not warns
+
+
+class FakeTool:
+    """The shape `toolchain.inventory` returns, without a real machine behind it."""
+
+    def __init__(self, key: str, label: str, present: bool, manual: str = ""):
+        self.key, self.label, self.present, self.manual = key, label, present, manual
+
+
+def test_the_launcher_installs_what_is_missing_rather_than_warning_about_it(monkeypatch):
+    """The complaint this answers, reported three times: "it must install itself".
+
+    `prepare` used to call `check_ffmpeg` and `check_claude`, print a warning and open
+    the app anyway — so a first run landed on a working chat with no rendering, and the
+    fix was to find a page inside the app and click a button on it. Clicking the launcher
+    is the operator asking for the setup; being asked for the rest of the setup
+    afterwards is the launcher not doing its job.
+    """
+    from types import SimpleNamespace
+
+    called: list[str] = []
+    fake = SimpleNamespace(
+        inventory=lambda root: [FakeTool("ffmpeg", "ffmpeg (rendering)", False),
+                                FakeTool("claude", "Claude Code CLI", False)],
+        install_ffmpeg=lambda root, report: (called.append("ffmpeg"), (True, "ok"))[1],
+        install_claude_cli=lambda root, report: (called.append("claude"), (True, "ok"))[1],
+        install_node=lambda root, report: called.append("node"),
+        npm_exe=lambda root: Path("/nonexistent/npm"),
+    )
+    # `from . import toolchain` reads the attribute off the already-imported package,
+    # so sys.modules is the wrong place to substitute it.
+    import forgecast.desktop as desktop_pkg
+
+    monkeypatch.setattr(desktop_pkg, "toolchain", fake)
+    monkeypatch.setattr(bootstrap.shutil, "which", lambda name: "/usr/bin/npm")
+
+    unresolved = bootstrap.install_toolchain(Path("/nowhere"))
+
+    assert unresolved == []
+    assert "ffmpeg" in called
+    assert "claude" in called
+
+
+def test_a_tool_the_installer_cannot_fetch_is_named_with_the_command_that_would(monkeypatch):
+    """ffmpeg on macOS and Linux belongs to a package manager, not to this installer."""
+    from types import SimpleNamespace
+
+    fake = SimpleNamespace(
+        inventory=lambda root: [
+            FakeTool("ffmpeg", "ffmpeg (rendering)", False, manual="brew install ffmpeg")
+        ],
+    )
+    # `from . import toolchain` reads the attribute off the already-imported package,
+    # so sys.modules is the wrong place to substitute it.
+    import forgecast.desktop as desktop_pkg
+
+    monkeypatch.setattr(desktop_pkg, "toolchain", fake)
+
+    (problem,) = bootstrap.install_toolchain(Path("/nowhere"))
+    assert "brew install ffmpeg" in problem
+
+
+def test_a_failed_download_does_not_stop_the_app_from_opening(monkeypatch):
+    """An app that will not open because a video encoder could not be fetched is worse
+    than an app that opens and says rendering is unavailable."""
+    from types import SimpleNamespace
+
+    def explode(root, report):
+        raise OSError("network unreachable")
+
+    fake = SimpleNamespace(
+        inventory=lambda root: [FakeTool("ffmpeg", "ffmpeg (rendering)", False)],
+        install_ffmpeg=explode,
+    )
+    # `from . import toolchain` reads the attribute off the already-imported package,
+    # so sys.modules is the wrong place to substitute it.
+    import forgecast.desktop as desktop_pkg
+
+    monkeypatch.setattr(desktop_pkg, "toolchain", fake)
+
+    (problem,) = bootstrap.install_toolchain(Path("/nowhere"))
+    assert "network unreachable" in problem
+
+
+def test_nothing_is_downloaded_when_everything_is_already_here(monkeypatch):
+    """The fast path: a normal launch must not touch the network at all."""
+    from types import SimpleNamespace
+
+    def refuse(*args, **kwargs):                       # pragma: no cover
+        raise AssertionError("a complete install tried to download something")
+
+    fake = SimpleNamespace(
+        inventory=lambda root: [FakeTool("ffmpeg", "ffmpeg", True),
+                                FakeTool("claude", "Claude Code CLI", True)],
+        install_ffmpeg=refuse, install_claude_cli=refuse, install_node=refuse,
+    )
+    # `from . import toolchain` reads the attribute off the already-imported package,
+    # so sys.modules is the wrong place to substitute it.
+    import forgecast.desktop as desktop_pkg
+
+    monkeypatch.setattr(desktop_pkg, "toolchain", fake)
+
+    assert bootstrap.install_toolchain(Path("/nowhere")) == []

@@ -283,6 +283,10 @@ def test_a_channel_with_no_runs_says_so_rather_than_zeroes(client, channel: Chan
     assert "nothing asked for yet" in body
     # A percentage off no runs would be a "0% finished" verdict on a fresh channel.
     assert "% of what it started" not in body
+    # And the spend tile's note is about a number that exists: "net of refunds" under a
+    # zero is an accounting rule for a channel that has never been asked for anything.
+    assert "nothing has cost anything yet" in body
+    assert "net of refunds" not in body
 
 
 def test_facts_are_not_taken_from_the_truncated_preview(
@@ -327,3 +331,113 @@ def test_the_runs_view_excludes_other_channels_runs(
     body = page(client.get(f"/c/{channel.id}/runs").text)
     assert "Mine to see" in body
     assert "Not on this hub" not in body
+
+
+# ------------------------------------------------------- the lane in the rail
+
+
+def rail(body: str) -> str:
+    """The shell around the page, which is where the Channels lane lives.
+
+    The mirror of `page` above, cut at the same marker: the lane renders on every page
+    in the app, so the assertions about it are about the half of the document the hub
+    did not write.
+    """
+    marker = 'aria-label="Breadcrumb"'
+    assert marker in body, "the hub rendered without its breadcrumb"
+    return body.split(marker, 1)[0]
+
+
+def test_the_lane_is_absent_until_there_is_a_channel(client, user: User):
+    """No channels, no lane — not a lane header with nothing under it.
+
+    The header is the only part that does not come from a loop, so this is the one
+    empty state the lane can get wrong, and it is on every page of a new account.
+    """
+    body = client.get("/").text
+    assert ">Channels</div>" not in body
+
+
+def test_the_lane_marks_the_channel_whose_hub_is_open(
+    client, session: Session, channel: Channel, user: User,
+):
+    """Exactly one entry is "here", and it is this channel's.
+
+    The rail also lights the format tab on a channel page, and that alone reads as
+    "you are in the long-form workspace" — an account-wide list of every channel,
+    which is the one place this page exists to not send you.
+    """
+    elsewhere = Channel(user_id=user.id, name="Other Channel", aspect_ratio="9:16")
+    session.add(elsewhere)
+    session.commit()
+
+    lane = rail(client.get(f"/c/{channel.id}").text)
+    assert f'class="chan here" href="/c/{channel.id}"' in lane
+    assert lane.count('aria-current="page"') == 1
+    assert f'href="/c/{elsewhere.id}"' in lane
+
+    # And nothing is marked on a page that is not a channel's.
+    assert 'aria-current="page"' not in client.get("/analytics").text
+
+
+@pytest.mark.parametrize(
+    "status,word",
+    [
+        (RunStatus.running, PRODUCING),
+        (RunStatus.awaiting_approval, WAITING),
+        (RunStatus.completed, IDLE),
+    ],
+)
+def test_the_lane_dot_and_the_page_word_are_one_fact(
+    client, session: Session, channel: Channel, status, word,
+):
+    """The dot is named after the word, so the two cannot be given different colours.
+
+    They were: the lane used the generic ok/warn pair, so a channel sitting at a gate
+    had an amber dot in the rail while the hub eighteen inches to the right printed the
+    same gate in violet, and a running one was green in the rail and mint on the page.
+    Two hues for one state is the app claiming two different things at once.
+    """
+    a_run(session, channel, status=status)
+
+    body = client.get(f"/c/{channel.id}").text
+    assert f'class="dot dot-{word}"' in rail(body)
+    assert f'class="state {word}"' in page(body)
+
+
+def test_the_lane_orders_channels_the_same_way_on_every_page(
+    client, session: Session, channel: Channel, user: User,
+):
+    """A fixed order, because after a day of use the lane is navigated by position.
+
+    The query behind it had no ORDER BY. On SQLite that happens to come back in
+    insertion order and on Postgres it is free not to — a sidebar whose entries move
+    between two pages of the same app.
+    """
+    for name in ("Zulu", "Alpha", "Mike"):
+        session.add(Channel(user_id=user.id, name=name))
+    session.commit()
+
+    lane = rail(client.get(f"/c/{channel.id}").text)
+    seen = [lane.index(name) for name in ("Test Channel", "Zulu", "Alpha", "Mike")]
+    assert seen == sorted(seen), "the lane is not in the order the channels were made"
+
+
+def test_a_channel_name_with_no_break_in_it_cannot_widen_the_page(
+    client, session: Session, user: User,
+):
+    """45 characters and nowhere to wrap, which is a real channel name.
+
+    At 430px that name is wider than the viewport in 24px type, and an `h1` that cannot
+    break does not overflow by itself — it widens `main`, and then every row under it
+    scrolls sideways. The rule that fixes it is CSS, so the only honest check is a
+    browser; what is pinned here is that the rule is still on the elements that carry
+    user input, because deleting it fails nothing else.
+    """
+    unbroken = Channel(user_id=user.id, name="AbandonedInfrastructureAndForgottenEngineering")
+    session.add(unbroken)
+    session.commit()
+
+    body = client.get(f"/c/{unbroken.id}").text
+    assert unbroken.name in page(body)
+    assert "overflow-wrap: anywhere" in body

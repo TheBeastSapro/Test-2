@@ -67,10 +67,18 @@ CATALOGUE: tuple[ConnectorSpec, ...] = (
         gives="niche finder, faceless-channel outliers, channel and video analytics, "
               "RPM and monetisation checks, swipe files, and your own YouTube "
               "analytics once NexLev is linked to it",
-        where="NexLev → Settings → MCP / integrations. Copy the server URL and token "
-              "issued for your workspace.",
+        # Prefilled, because being asked for a URL you have never been shown is being
+        # asked for something that does not exist from where you are standing — which is
+        # how this was reported. Observed from a real connection rather than published by
+        # NexLev, so it stays editable: if they move the endpoint, the box is the fix.
+        default_url="https://prod.dashboard.nexlev.io/api/claude-mcp",
+        where="The URL is already filled in. Leave the token empty unless NexLev issued "
+              "you one — this endpoint authorises through your NexLev account, and a "
+              "wrong token is worse than none.",
         docs="Once connected, ask for outliers in a niche and I will query NexLev "
-             "directly instead of asking you to paste numbers.",
+             "directly instead of asking you to paste numbers. A 401 here means the "
+             "connection reached NexLev and was not authorised — the account, not the "
+             "URL.",
     ),
     ConnectorSpec(
         key="google_drive",

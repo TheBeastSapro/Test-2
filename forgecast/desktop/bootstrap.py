@@ -274,12 +274,98 @@ def check_claude() -> tuple[bool, str]:
     )
 
 
+def _progress_printer(label: str):
+    """A one-line progress meter for a download, for the console the launcher owns.
+
+    Rewritten in place with `\\r` rather than a line per chunk. A hundred lines of
+    "downloading 3%" is not progress reporting, it is a wall of text that hides the
+    warning printed after it.
+    """
+    state = {"shown": -1}
+
+    def report(done: int, total: int) -> None:
+        if not total:
+            return
+        percent = min(100, int(done * 100 / total))
+        # Every 5% is enough to look alive without redrawing on every 8 KB chunk.
+        if percent >= state["shown"] + 5 or percent == 100:
+            state["shown"] = percent
+            end = "\n" if percent == 100 else ""
+            print(f"\r  {label}: {percent}%   ", end=end, flush=True)
+
+    return report
+
+
+def install_toolchain(root: Path) -> list[str]:
+    """Install the tools the app needs, now, before it opens. Returns what is still missing.
+
+    This used to only *check*, print a warning, and open the app anyway — so a first run
+    landed on a working chat with no rendering, or a rendering app with no chat, and the
+    fix was to find a page inside the app and click a button on it. That was reported,
+    twice, as the app asking to be installed after it had said it was installed. Clicking
+    the launcher is the operator saying "set this up"; making them then go and ask for the
+    rest of the setup is the launcher not doing its job.
+
+    Nothing here is fatal. A download that fails leaves the app usable minus one
+    capability, and the reason is printed with what would fix it — the alternative is an
+    app that will not open because a video encoder could not be fetched, which is worse
+    than an app that opens and says rendering is unavailable.
+    """
+    from . import toolchain
+
+    missing = [tool for tool in toolchain.inventory(root) if not tool.present]
+    if not missing:
+        return []
+
+    # Named before anything is downloaded, because the honest thing to show someone
+    # waiting is what they are waiting for.
+    say("installing what is missing: " + ", ".join(tool.label for tool in missing))
+
+    unresolved: list[str] = []
+    for tool in missing:
+        if tool.manual:
+            # ffmpeg on macOS and Linux, where a package manager owns it and dropping a
+            # private build in its place is not this installer's business.
+            unresolved.append(f"{tool.label} — install it with: {tool.manual}")
+            continue
+        report = _progress_printer(tool.label)
+        try:
+            if tool.key == "ffmpeg":
+                ok, detail = toolchain.install_ffmpeg(root, report)
+            elif tool.key == "node":
+                toolchain.install_node(root, report)
+                ok, detail = True, ""
+            elif tool.key == "claude":
+                # Node first: the CLI is installed with the bundled npm, and on a
+                # platform whose wheel carries no CLI there may be no npm yet.
+                if not toolchain.npm_exe(root).exists() and not shutil.which("npm"):
+                    toolchain.install_node(root, _progress_printer("Node.js"))
+                ok, detail = toolchain.install_claude_cli(root, report)
+            else:                                                  # pragma: no cover
+                continue
+        except Exception as exc:
+            # Deliberately broad. Every installer here reaches the network and the
+            # filesystem, and there is no failure among them worth refusing to open the
+            # app over. The reason is printed rather than swallowed.
+            ok, detail = False, f"{type(exc).__name__}: {exc}"
+        if not ok:
+            unresolved.append(f"{tool.label} — {detail or 'could not be installed'}")
+
+    return unresolved
+
+
 def prepare(root: Path, *, force_install: bool = False) -> Path:
     """Run every preparation step. Returns the interpreter the app should run under."""
     check_python()
     python = ensure_venv(root)
     install_dependencies(root, python, force=force_install)
     ensure_env_file(root)
+
+    for problem in install_toolchain(root):
+        say("could not install: " + problem)
+
+    # Asked again after installing, so what is reported is the state the app will
+    # actually start in rather than the state it was in when the launcher opened.
     for ok, warning in (check_ffmpeg(), check_claude()):
         if not ok:
             say("warning: " + warning.replace("\n", "\n  "))

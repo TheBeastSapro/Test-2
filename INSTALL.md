@@ -101,23 +101,19 @@ the status is in the sidebar on every page and in full under **Settings → Clau
 > account instead of the plan you already pay for. An empty value still counts as set.
 > The launcher checks for this before anything starts.
 
-### yt-dlp — for reading a channel from a link
+### yt-dlp — reading a channel from a link
 
-Optional, and the difference between pasting a link and pasting a spreadsheet. With it,
-**Research** reads a channel's uploads off its public page: no API key, no quota, no
-account. The launcher does not install it — it is a binary that wants updating often, and
-pinning that into everyone's first launch is a worse trade than a one-line install:
+**Nothing to do. The launcher installs it.** It is a base dependency, so pasting a channel
+link into **Research** works on a first launch: the uploads are read off the public page
+with no API key, no quota and no account.
 
-```bash
-./.venv/bin/pip install -e ".[research]"      # macOS / Linux
-.venv\Scripts\pip install -e ".[research]"    # Windows
-```
+It used to be an optional extra you installed by hand, and the result was that the app
+told you to run a pip command to finish an install that had already said it was finished.
+An installer that asks you to install something has not installed anything.
 
-`pip install yt-dlp` on its own does the same thing; the extra just names it.
-
-Without it, Research still scores a table you paste, and a `FORGECAST_YOUTUBE_API_KEY`
-still reads a channel from a link. What you lose is the case with neither — which is what
-a fresh install is, and the reason this is worth the one line.
+yt-dlp does go stale — it tracks a site that changes — so **Settings** lists it with its
+installed version and can upgrade it in place, the same as it does the Claude CLI. If
+research starts failing on links that used to work, that is the first thing to try.
 
 The public listing has no real publish dates on it, only labels like "2 months ago", so a
 date read this way is reconstructed and can be half a month out. Because an outlier is

@@ -147,6 +147,10 @@ def main(argv: list[str] | None = None) -> int:
     # bill an API account.
     from . import toolchain
 
+    # Before the first child is started, because the flag is applied at spawn time and
+    # a turn that has already begun cannot be un-popped.
+    toolchain.hide_child_consoles()
+
     activated = toolchain.activate(ROOT)
     if activated["api_key_removed"] == "yes":
         print("  ignoring ANTHROPIC_API_KEY for this session — the chat uses your "

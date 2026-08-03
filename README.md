@@ -72,13 +72,14 @@ trust it.
 ### Research takes no API key
 
 Paste a channel link into Research, or hand one to the agent, and its uploads are read
-off the public channel page with `yt-dlp` — no key, no quota, no account. It is an
-optional extra rather than a base dependency, because the desk still answers without it
-and because it is a binary that wants updating often:
+off the public channel page with `yt-dlp` — no key, no quota, no account. It is a base
+dependency, so every install has it and there is nothing to add.
 
-```bash
-.venv/bin/pip install -e ".[research]"     # or: .venv/bin/pip install yt-dlp
-```
+It was an optional extra, and that was a mistake worth naming: the consequence was that
+the agent answered the most obvious request in the app by telling you to run a pip
+command, which is an installer asking you to finish the installation. yt-dlp does want
+updating often — that is handled in Settings, where it is listed with its version and can
+be upgraded in place, the same as the Claude CLI.
 
 What that listing does not carry is publish dates — only labels like "2 months ago" — so
 a date read this way is reconstructed and can be half a month out. An outlier is views

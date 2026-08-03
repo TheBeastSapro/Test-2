@@ -80,8 +80,8 @@ Two consequences that catch people out, both encoded in the code:
   the Windows fix printed at `auth.py:204` is `setx … "" && set ANTHROPIC_API_KEY=`
   (two commands: one for the stored value, one for this shell).
 * **The desktop launcher removes it from its own process.** `toolchain.activate()` pops
-  it (`desktop/toolchain.py:418`) before anything spawns a child, and
-  `desktop/app.py:151-153` prints that it did. The operator's shell keeps the variable;
+  it (`desktop/toolchain.py:481`) before anything spawns a child, and
+  `desktop/app.py:155-157` prints that it did. The operator's shell keeps the variable;
   only the app ignores it. So a `check()` that reports shadowing under the desktop
   launcher means the variable was set *after* start-up, or the server was started some
   other way — `forgecast serve`, uvicorn directly, Docker — where nothing scrubbed it.
@@ -416,14 +416,20 @@ None of them is a prompt. Every one is arithmetic over public statistics, becaus
 asked whether 240k views is good for a channel answers with a confident number and no
 method behind it.
 
-### The optional dependency
+### The dependency, and why it stopped being optional
 
-`yt-dlp` is the `research` extra in `pyproject.toml`, not a base dependency:
-`pip install -e ".[research]"`, or `pip install yt-dlp`. Optional because the desk still
-answers without it — from a key, or from pasted rows — and because it is a binary that
-needs updating often, which is a bad thing to pin into every install. Neither install path
-adds it today: the launcher installs `-e .` (`desktop/bootstrap.py:143`) and the image
-installs `.[postgres]` (`Dockerfile:30`).
+`yt-dlp` is a base dependency (`pyproject.toml:40`), so every install path has it: the
+launcher installs `-e .` (`desktop/bootstrap.py:144`) and the image installs `.[postgres]`
+(`Dockerfile:30`), and both resolve the base list.
+
+It was the `research` extra, on the reasoning that the desk still answers without it and
+that a scraper wanting frequent updates is a bad thing to pin. The first half was true and
+the second is still true, but they were the wrong things to weigh. What actually happened
+was that the agent answered the most obvious request in the app — "here is a channel link"
+— by telling the operator to run `pip install yt-dlp`. An installer that asks the operator
+to finish the installation has not installed anything, and it was reported as exactly that.
+The update concern belongs in the toolchain page, which lists a version and can upgrade in
+place, not in a decision about whether the feature works on first launch.
 
 Absence is reported, not crashed on. `keyless.available()` (`research/keyless.py:87`)
 returns the fix — install it, or add a key — and the research page prints that line and

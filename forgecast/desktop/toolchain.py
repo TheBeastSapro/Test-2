@@ -105,6 +105,69 @@ def _no_window() -> dict:
     return {"creationflags": flag} if flag else {}
 
 
+_CONSOLE_FLAGS_HIDDEN = False
+
+# Flags that mean the caller has already decided about the console. Adding
+# CREATE_NO_WINDOW on top of any of them is either contradictory or ignored, so a
+# caller that said something explicit is left alone.
+_CONSOLE_DECIDED = (
+    getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
+    | getattr(subprocess, "DETACHED_PROCESS", 0)
+    | getattr(subprocess, "CREATE_NO_WINDOW", 0)
+)
+
+
+def hide_child_consoles() -> bool:
+    """Stop every child process opening a black console window on Windows.
+
+    ## The failure this prevents
+
+    A console application started by a windowed parent gets a console of its own, and
+    Windows raises it and gives it focus. This app starts several: the Claude CLI, once
+    per turn, and ffmpeg, once per render step. The operator's report was a black window
+    titled `claude` appearing over their work, repeatedly, while they were using the app —
+    and it is the same complaint they had made about another app and asked us not to
+    repeat.
+
+    ## Why this patches `Popen.__init__` rather than passing a flag
+
+    The flag is per-spawn, and the spawn that matters is not ours. `claude_agent_sdk`
+    calls `anyio.open_process(...)` with a fixed argument list and no hook for creation
+    flags (see `_internal/transport/subprocess_cli.py`), so there is nothing to pass.
+
+    Rebinding the name `subprocess.Popen` would not work either: asyncio's Windows
+    support defines `asyncio.windows_utils.Popen` as a subclass, captured at import time,
+    so it would keep inheriting from the original. Patching the *method* is what reaches
+    both — a subclass that does not override `__init__` gets the wrapped one.
+
+    ## What will break it
+
+    An SDK or CPython release that stops routing through `subprocess.Popen.__init__`.
+    That is why `tests/test_toolchain.py` asserts the wrapper is reached and that a
+    caller's own creation flags survive it, rather than only asserting the flag value.
+
+    Called only from the desktop launcher, never from a server deployment: patching the
+    standard library is a heavy thing to do to a process, and a hosted install has no
+    console to protect. Returns whether it did anything, and is safe to call twice.
+    """
+    global _CONSOLE_FLAGS_HIDDEN
+
+    quiet = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    if _CONSOLE_FLAGS_HIDDEN or os.name != "nt" or not quiet:
+        return False
+
+    original = subprocess.Popen.__init__
+
+    def __init__(self, *args, **kwargs):
+        if not kwargs.get("creationflags", 0) & _CONSOLE_DECIDED:
+            kwargs["creationflags"] = kwargs.get("creationflags", 0) | quiet
+        original(self, *args, **kwargs)
+
+    subprocess.Popen.__init__ = __init__
+    _CONSOLE_FLAGS_HIDDEN = True
+    return True
+
+
 def node_bin(root: Path) -> Path:
     return runtime_dir(root) / "node"
 

@@ -68,12 +68,16 @@ good for anything recent, local, or contested. Add a Tavily or Brave key when th
 topics need a general web index; both take precedence automatically.
 
 The outlier desk is a separate thing from that grounding, and it also needs no key: it
-reads a channel's uploads off the public page with `yt-dlp`. The image does not ship it,
-though — the Dockerfile installs `.[postgres]`, not `.[research]` — so in a container you
-either add `research` to that extra and rebuild, or set `FORGECAST_YOUTUBE_API_KEY`, or
-paste the rows into the desk, which scores them the same way. Dates recovered from the
-public page are reconstructed from labels like "2 months ago"; the scorer reports a range
-and marks the video unreliable where that error could change the verdict.
+reads a channel's uploads off the public page with `yt-dlp`, which is a base dependency, so
+the image has it without an extra. Dates recovered from the public page are reconstructed
+from labels like "2 months ago"; the scorer reports a range and marks the video unreliable
+where that error could change the verdict. A key is still worth setting if you have one —
+it returns measured timestamps, plus likes and comments — and the public page is then the
+fallback for a quota that ran out.
+
+One container-specific note: yt-dlp goes stale because it tracks a site that changes, and a
+container's copy is frozen at build time. Rebuild the image to update it; there is no
+in-place upgrade inside an immutable layer.
 
 ---
 

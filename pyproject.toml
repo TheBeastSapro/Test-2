@@ -25,15 +25,26 @@ dependencies = [
     # CLI itself is a Node install and the app reports its absence rather than
     # failing at the first message.
     "claude-agent-sdk>=0.2",
+    # Reads a channel's public numbers with no API key and no account, which is what
+    # makes pasting a channel link work on a fresh install.
+    #
+    # This was an optional extra, on the reasoning that it is a scraper that wants
+    # updating often and that pinning it into the base install is a liability. That
+    # reasoning was wrong about the thing that matters: the consequence was that the
+    # agent answered the most obvious request in the app with "install yt-dlp", which
+    # is the installer asking the operator to finish the installation. An install that
+    # does not install something is not an install.
+    #
+    # The update concern is real and is handled where it belongs — `desktop.toolchain`
+    # lists it with its version and can upgrade it in place, the same as the Claude CLI.
+    "yt-dlp>=2024.1",
 ]
 
 [project.optional-dependencies]
 postgres = ["psycopg[binary]>=3.1"]
-# Reading a channel's public numbers with no API key and no account. Optional because
-# the research desk still works without it — from a key, or from pasted rows — and
-# because it is a binary that wants updating often, which is a bad thing to pin into
-# the base install. `forgecast.research.keyless` reports its absence with the fix.
-research = ["yt-dlp>=2024.1"]
+# No `research` extra. yt-dlp is a base dependency: reading a channel from a link is
+# not an optional part of this app, and an extra meant the operator was told to run a
+# pip command to finish an install that had already claimed to finish.
 providers = [
     "openai>=1.30",
     "anthropic>=0.25",

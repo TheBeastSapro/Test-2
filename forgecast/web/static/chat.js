@@ -249,15 +249,70 @@ function paintThreads() {
       No chats yet.</div>`;
     return;
   }
+  // A div rather than a button, because the delete control is a button and a button
+  // inside a button is not valid markup — browsers recover from it by dropping one of
+  // them, and which one is up to the browser.
   list.innerHTML = THREADS.map(t => `
-    <button class="thread ${THREAD && t.id === THREAD.id ? 'on' : ''}" data-id="${t.id}">
+    <div class="thread ${THREAD && t.id === THREAD.id ? 'on' : ''}" data-id="${t.id}"
+         role="button" tabindex="0">
       <div class="t">${t.pinned ? '📌 ' : ''}${esc(t.title)}</div>
       <div class="p">${esc(t.preview || 'empty')}</div>
       <div class="when">${when(t.updated_at)}</div>
-    </button>`).join('');
-  $$('#thread-list .thread').forEach(button => {
-    button.onclick = () => openThread(+button.dataset.id);
+      <button class="thread-x" data-drop="${t.id}" title="Delete this chat"
+              aria-label="Delete ${esc(t.title)}">×</button>
+    </div>`).join('');
+  $$('#thread-list .thread').forEach(row => {
+    row.onclick = () => openThread(+row.dataset.id);
+    // Enter and Space, because the row stopped being a real button above and a list you
+    // cannot reach from the keyboard is a list some people cannot use at all.
+    row.onkeydown = (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openThread(+row.dataset.id);
+      }
+    };
   });
+  $$('#thread-list .thread-x').forEach(button => {
+    button.onclick = (event) => {
+      // Without this the click also opens the thread being deleted, which then renders
+      // a chat that no longer exists.
+      event.stopPropagation();
+      dropThread(+button.dataset.drop);
+    };
+  });
+}
+
+async function dropThread(id) {
+  const doomed = THREADS.find(t => t.id === id);
+  // Confirmed because it cannot be undone — the messages are the record and there is no
+  // archive behind this. Named in the question, since the list is a wall of similar rows.
+  if (!confirm(`Delete "${doomed ? doomed.title : 'this chat'}"? This cannot be undone.`)) return;
+
+  const running = RUNNING.get(id);
+  if (running) {
+    toast('That chat is mid-turn. Let it finish, or stop it, before deleting.');
+    return;
+  }
+  try {
+    // Third argument, not second: the second is a JSON body, and passing an options
+    // object there would POST `{"method":"DELETE"}` to the thread instead.
+    await api(`/api/agent/threads/${id}`, undefined, 'DELETE');
+  } catch (error) {
+    toast('Could not delete: ' + String(error.message || error));
+    return;
+  }
+  THREADS = THREADS.filter(t => t.id !== id);
+  if (THREAD && THREAD.id === id) {
+    // The open chat was the one deleted, so land somewhere real rather than on a
+    // transcript whose thread is gone.
+    THREAD = null;
+    localStorage.removeItem('forgecast.thread');
+    chat().innerHTML = '';
+    if (THREADS.length) await openThread(THREADS[0].id);
+    else await newThread();
+  } else {
+    paintThreads();
+  }
 }
 
 async function loadThreads() {
