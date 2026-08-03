@@ -136,6 +136,21 @@ async function takeFiles(files) {
   $('#chat-input').focus();
 }
 
+/* A clipboard bitmap arrives with no name, or with the same "image.png" every
+   time, which would make every screenshot overwrite the last in the attachment
+   tray. Anything copied as a real file keeps the name it already has. */
+const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif',
+              'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/wav': 'wav',
+              'audio/x-wav': 'wav', 'audio/flac': 'flac', 'audio/mp4': 'm4a',
+              'audio/ogg': 'ogg', 'text/plain': 'txt', 'application/pdf': 'pdf' };
+let pasteSeq = 0;
+function named(f) {
+  if (f.name && f.name !== 'image.png') return f;
+  const ext = EXT[f.type] || (f.type.split('/')[1] || 'bin').replace(/[^a-z0-9]/gi, '');
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  return new File([f], `pasted-${stamp}-${++pasteSeq}.${ext}`, { type: f.type });
+}
+
 /* ── attachments for Claude ─────────────────────────────────────────── */
 let ATTACHED = [];
 const fileURL = a => '/api/assistant/file?path=' + encodeURIComponent(a.path);
@@ -475,16 +490,15 @@ $('#btn-send').onclick = send;
   const grow = () => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 220) + 'px'; };
   el.addEventListener('input', grow);
 
-  // Ctrl+V with a screenshot on the clipboard. Windows' Snipping Tool puts an
-  // image there and nothing on disk, so a file dialog cannot reach it — the
-  // only way in is the paste event.
+  // Ctrl+V for anything on the clipboard — a screenshot, an mp3 copied in
+  // Explorer, a text file, several at once. Windows' Snipping Tool puts an
+  // image on the clipboard and nothing on disk, so a file dialog cannot reach
+  // it at all; the paste event is the only way in.
   el.addEventListener('paste', e => {
     const files = [...(e.clipboardData?.files || [])];
     if (!files.length) return;              // plain text pastes normally
     e.preventDefault();
-    takeFiles(files.map((f, i) => f.name && f.name !== 'image.png' ? f
-      : new File([f], `pasted-${Date.now()}-${i}.${(f.type.split('/')[1] || 'png')}`,
-                 { type: f.type })));
+    takeFiles(files.map(named));
   });
   el.addEventListener('keydown', e => {
     // Enter sends, Shift+Enter breaks the line — and a pasted script arrives
