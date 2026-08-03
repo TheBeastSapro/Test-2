@@ -42,6 +42,7 @@ Nothing here touches the database or the network.
 from __future__ import annotations
 
 import importlib
+import importlib.metadata
 import importlib.util
 import json
 import logging
@@ -403,13 +404,32 @@ def _installed(name: str) -> bool:
         return False
 
 
-def _version(module) -> str:
-    return str(getattr(module, "__version__", "") or "installed")
+def _package_version(module_name: str, distribution: str) -> str | None:
+    """The installed version of a package, still without importing it.
+
+    Importing chatterbox-tts pulls torch in behind it, which is the several-second cost
+    this module exists to avoid on a machine that only wants to draw a status line. The
+    version comes from the installed metadata instead.
+    """
+    if not _installed(module_name):
+        return None
+    try:
+        return importlib.metadata.version(distribution)
+    except importlib.metadata.PackageNotFoundError:
+        # Importable but not installed as a distribution — a source checkout on the
+        # path. Present is the useful answer; the version is decoration.
+        return "installed"
 
 
 def _probe_runtime() -> Runtime:
-    """Ask the machine what it has. The one place that imports the heavy packages."""
+    """Ask the machine what it has. The only place that imports torch."""
     runtime = Runtime()
+
+    # Probed before torch, and independently of it. An environment with chatterbox-tts
+    # and no torch is a real half-finished install, and reporting "chatterbox-tts
+    # missing" there sends the operator to install what they already have.
+    runtime.chatterbox = _package_version(CHATTERBOX_MODULE, "chatterbox-tts")
+    runtime.whisper = _package_version(WHISPER_MODULE, "faster-whisper")
 
     if not _installed("torch"):
         return runtime
@@ -417,18 +437,18 @@ def _probe_runtime() -> Runtime:
     try:
         torch = importlib.import_module("torch")
     except ImportError as exc:
-        # Present on disk but not importable — a broken install, reported as broken
-        # rather than absent so the fix is "repair", not "install".
+        # find_spec found it, so this is a broken install rather than an absent one:
+        # a dependency of torch itself is missing.
         runtime.torch_error = str(exc)
         return runtime
     except Exception as exc:
-        # torch raises OSError, not ImportError, when it cannot load its own CUDA
-        # libraries. Calling that "not installed" sends the operator to install the
-        # thing they already have.
+        # The common real failure, and it is not an ImportError: torch raises OSError
+        # when it cannot load its own CUDA libraries. Left uncaught it would take down
+        # whatever asked for a status line.
         runtime.torch_error = f"{type(exc).__name__}: {exc}"
         return runtime
 
-    runtime.torch = _version(torch)
+    runtime.torch = str(getattr(torch, "__version__", "") or "installed")
     try:
         runtime.cuda = bool(torch.cuda.is_available())
         if runtime.cuda:
@@ -438,19 +458,6 @@ def _probe_runtime() -> Runtime:
         # not a crash worth propagating to a status page.
         log.debug("cuda probe failed: %s", exc)
         runtime.cuda = False
-
-    for attribute, module_name in (
-        ("chatterbox", CHATTERBOX_MODULE),
-        ("whisper", WHISPER_MODULE),
-    ):
-        if not _installed(module_name):
-            continue
-        try:
-            module = importlib.import_module(module_name)
-        except Exception as exc:
-            log.debug("%s present but not importable: %s", module_name, exc)
-            continue
-        setattr(runtime, attribute, _version(module))
 
     return runtime
 

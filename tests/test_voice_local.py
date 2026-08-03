@@ -132,6 +132,15 @@ def write_stubs(root: Path, *, torch: bool = True, chatterbox: bool = True) -> P
     if chatterbox:
         (root / "chatterbox").mkdir(exist_ok=True)
         (root / "chatterbox" / "__init__.py").write_text(CHATTERBOX_STUB, encoding="utf-8")
+        # Real distribution metadata, because the probe reads the version from here
+        # rather than importing the package. A stub without it would exercise only the
+        # fallback path.
+        dist = root / "chatterbox_tts-0.1.2.dist-info"
+        dist.mkdir(exist_ok=True)
+        (dist / "METADATA").write_text(
+            "Metadata-Version: 2.1\nName: chatterbox-tts\nVersion: 0.1.2\n",
+            encoding="utf-8",
+        )
     return root
 
 
@@ -152,9 +161,12 @@ def stub_pipeline(tmp_path, monkeypatch):
             monkeypatch.setenv("FORGECAST_STUB_TORCH_BROKEN", "1")
         importlib.invalidate_caches()
 
+    before = set(sys.modules)
     yield install
 
-    for name in list(sys.modules):
+    # Only what this fixture caused to be imported. Evicting a module the process
+    # already had would make this fixture the reason some later test fails.
+    for name in set(sys.modules) - before:
         if name == "torch" or name.startswith(("torch.", "chatterbox")):
             del sys.modules[name]
     importlib.invalidate_caches()
@@ -329,11 +341,25 @@ def test_describe_on_a_complete_install_lists_versions(good_clip, stub_pipeline)
     assert report["available"] is True
     assert report["device"] == "cuda"
     assert "torch 2.4.1+stub" in report["installed"]
-    assert "chatterbox-tts 0.1.2+stub" in report["installed"]
+    assert "chatterbox-tts 0.1.2" in report["installed"]
     assert any("RTX 4090" in line for line in report["installed"])
     # Still unverified, however healthy the machine looks.
     assert report["vendor_calls_verified"] is False
     assert json.dumps(report)                       # renderable straight into a panel
+
+
+def test_a_half_finished_install_reports_both_halves(good_clip, stub_pipeline):
+    """chatterbox-tts present, torch absent: the earlier version of this hid the first.
+
+    The probe used to give up as soon as torch was missing, so a machine that had
+    chatterbox-tts installed was told to install it.
+    """
+    stub_pipeline(torch=False, chatterbox=True)
+    report = LocalVoice(good_clip).describe()
+
+    assert report["code"] == CODE_TORCH_MISSING
+    assert "chatterbox-tts 0.1.2" in report["installed"]
+    assert not any("chatterbox" in line for line in report["missing"])
 
 
 def test_describe_reports_a_bad_reference_without_raising(tmp_path, stub_pipeline):

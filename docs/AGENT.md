@@ -23,8 +23,8 @@ There is a second `forgecast/auth.py`, and it is unrelated — passwords, JWTs a
 
 The load-bearing rule is `studio.py:1-16`: an operation exists in exactly one place, and
 both the chat and the buttons reach it there. `Studio.status()` is what the agent gets
-from `studio_status` (`tools.py:80`) *and* what the right-hand panel gets from
-`GET /api/agent/status` (`routes_agent.py:324`). `tests/test_agent.py:218` asserts the
+from `studio_status` (`tools.py:200`) *and* what the right-hand panel gets from
+`GET /api/agent/status` (`routes_agent.py:324`). `tests/test_agent.py:228` asserts the
 two cannot disagree; if they could, the panel and the transcript would describe the same
 install differently in the same window.
 
@@ -52,13 +52,13 @@ browser flow they already use. `auth.py:1-29` is the full statement of intent.
 
 Conflating 3 and 4 was a real bug in the app this pattern comes from: "signed in with
 your subscription" sat above a chat answering *Not logged in*, because CLI **present**
-had been treated as CLI **signed in** (`auth.py:24-28`). They are separate reads now:
+had been treated as CLI **signed in** (`auth.py:25-28`). They are separate reads now:
 `find_cli()` (`auth.py:114`) for presence, `_credentials()` (`auth.py:150`) for the
 sign-in. `_credentials` reads `~/.claude/.credentials.json` (falling back to
 `~/.claude.json`) off disk rather than probing with a request — sending a prompt to find
 out whether a prompt would work spends tokens on every page load.
 
-The self-consistency this buys is asserted at `tests/test_agent.py:156`: a report may
+The self-consistency this buys is asserted at `tests/test_agent.py:166`: a report may
 never be `ok` *and* offer the sign-in button. If you extend `AuthStatus`, keep that
 invariant — a green chip above a sign-in prompt is the failure mode the whole module
 exists to prevent, and `tools/smoke.py` checks it against a built install too.
@@ -97,7 +97,7 @@ Two more Windows-only facts worth knowing before you debug a report you think is
   because reporting it as connected produces the worst possible failure — setup goes
   green, the chip says connected, the first message dies. `shim_only()` (`auth.py:137`)
   exists so that case gets the native installer (`WINDOWS_NATIVE_HINT`, `auth.py:47`)
-  rather than the npm line that produced the shim. `tests/test_agent.py:580` pins this,
+  rather than the npm line that produced the shim. `tests/test_agent.py:590` pins this,
   including the assertion that the fix does **not** mention `npm install -g`.
 * The `claude-agent-sdk` wheel bundles a native binary and the SDK resolves it before
   PATH, so most installs need nothing at all. `_bundled_cli()` (`auth.py:77`) finds it by
@@ -113,12 +113,12 @@ would mean nothing happens and the button looks broken.
 
 ## The tool set
 
-`tools.build_server()` (`tools.py:71`) wraps `Studio` methods as an in-process MCP server
-named `forgecast` (`tools.py:39`), created with `create_sdk_mcp_server` at `tools.py:253`.
+`tools.build_server()` (`tools.py:76`) wraps `Studio` methods as an in-process MCP server
+named `forgecast` (`tools.py:41`), created with `create_sdk_mcp_server` at `tools.py:259`.
 The studio object is passed in rather than constructed there so the tools and the pages
 share one — a second copy drifts inside a single conversation.
 
-Three lists, and the difference between them is the whole policy (`tools.py:41-54`):
+Three lists, and the difference between them is the whole policy (`tools.py:43-59`):
 
 ```python
 _READ_ONLY = (
@@ -133,14 +133,14 @@ ALLOWED = [f"mcp__{SERVER_NAME}__{name}" for name in (*_READ_ONLY, *_WRITES)]
 ALL_TOOLS = [*_READ_ONLY, *_WRITES, "decide_gate"]
 ```
 
-`ALLOWED` is handed to the SDK as `allowed_tools` (`assistant.py:168`) — the set the
+`ALLOWED` is handed to the SDK as `allowed_tools` (`assistant.py:181`) — the set the
 agent may call without stopping to ask. `ALL_TOOLS` is every tool the server actually
 serves. The gap between them is exactly one name.
 
 ### Why `decide_gate` is deliberately not pre-allowed
 
-`decide_gate` is registered and callable (`tools.py:156`, dispatching to
-`Studio.decide_gate` at `studio.py:499`) but absent from `ALLOWED`, so calling it stops
+`decide_gate` is registered and callable (`tools.py:161`, dispatching to
+`Studio.decide_gate` at `studio.py:501`) but absent from `ALLOWED`, so calling it stops
 and asks the operator.
 
 The reason is not that approving a gate is risky in the abstract. It is that **approving
@@ -148,12 +148,12 @@ is the moment a run is allowed to spend.** A run pauses at a gate; the stage beh
 costs real credits and real machine time; releasing it is the decision the operator is
 being asked to make. Every other tool in the set is read-only or re-runnable, including
 `start_run` — which takes a credit hold and then stops at the first gate rather than
-running to completion (`tools.py:142-147`), which is why it *is* pre-allowed.
+running to completion (`tools.py:147-152`), which is why it *is* pre-allowed.
 
-The system prompt says the same thing in prose (`assistant.py:99-105`): *"'It looked
+The system prompt says the same thing in prose (`assistant.py:112-118`): *"'It looked
 fine so I approved it' is the single worst thing you can do in this app."* Belt and
 braces on purpose — the prompt is a request and the allow-list is a mechanism, and only
-one of them is enforced. `tests/test_agent.py:333` asserts both halves: `decide_gate` out
+one of them is enforced. `tests/test_agent.py:343` asserts both halves: `decide_gate` out
 of `ALLOWED`, present in `ALL_TOOLS`, and `start_run` still in `ALLOWED`.
 
 Also deliberately not tools at all (`tools.py:18-30`): deleting a channel, deleting a
@@ -162,20 +162,20 @@ buttons.
 
 Two smaller conventions in this file, both easy to break by accident:
 
-* `_text()` (`tools.py:57`) sets `is_error: True` when the payload carries an `error`
+* `_text()` (`tools.py:62`) sets `is_error: True` when the payload carries an `error`
   key. Without it a returned `{"error": ...}` reads to the model as a *successful* call
   whose result happens to mention a problem, and it carries on regardless. `Studio`
   returns errors as dicts rather than raising (`studio.py:13-15`), so this is the only
   thing marking them as failures.
 * Tool descriptions are the API. They are what the model reads to decide whether to call
   something, so they name what is measured and what the caveats are, in the imperative.
-  Compare `study_youtube_channel` (`tools.py:96`) with what a docstring would have said.
+  Compare `study_youtube_channel` (`tools.py:101`) with what a docstring would have said.
 
 ### The sandbox
 
-`build_options()` (`assistant.py:140`) confines the agent: `cwd` is the app root,
+`build_options()` (`assistant.py:153`) confines the agent: `cwd` is the app root,
 `add_dirs=[]`, and `sandbox.enabled` with `allowUnsandboxedCommands: False`
-(`assistant.py:164-183`). `cwd` alone is not confinement — it says where a shell command
+(`assistant.py:178-189`). `cwd` alone is not confinement — it says where a shell command
 starts, not where it can go.
 
 `autoAllowBashIfSandboxed: True` looks like a loosening and is the opposite: the sandbox
@@ -183,7 +183,7 @@ is the boundary, and prompting a second time for a guarantee already enforced tr
 people to click through prompts.
 
 Network stays on because research is half the job; `allow_web=False` narrows it to
-managed domains *and* disallows `WebFetch`/`WebSearch` (`assistant.py:177-180`).
+managed domains *and* disallows `WebFetch`/`WebSearch` (`assistant.py:190-193`).
 
 `permission_mode` is chosen per turn from prefs at `routes_agent.py:456`: `"default"`
 (every file edit prompts) when `confirm_edits` is set, `"acceptEdits"` when it is not.
@@ -194,21 +194,21 @@ stated at `prefs.py:25-27`.
 
 ## A turn, and how a conversation is resumed
 
-`assistant.run()` (`assistant.py:219`) is an async generator yielding
+`assistant.run()` (`assistant.py:232`) is an async generator yielding
 `{"type": "text"|"thinking"|"tool"|"tool_result"|"session"|"result"|"error", ...}`.
 `routes_agent.chat()` (`routes_agent.py:338`) re-emits each event as one line of
 newline-delimited JSON.
 
-NDJSON rather than SSE, deliberately (`routes_agent.py:3-7`): the client is `fetch` in
+NDJSON rather than SSE, deliberately (`routes_agent.py:3-6`): the client is `fetch` in
 the same window so SSE's framing buys nothing, and NDJSON survives a proxy that
 helpfully buffers `text/event-stream`.
 
-The first thing `run()` does is `auth.check()` (`assistant.py:242`) and yield an error
+The first thing `run()` does is `auth.check()` (`assistant.py:255`) and yield an error
 event if it fails — the refusal is honest and costs nothing.
 
 Resumption is one string. Each `Conversation` row stores the CLI's own session id
 (`models.py:356`); `chat()` reads it as `resume` (`routes_agent.py:384`) and passes it
-into `build_options`, which forwards it to the SDK (`assistant.py:160-161`). A fresh
+into `build_options`, which forwards it to the SDK (`assistant.py:172-173`). A fresh
 `query` per message — the obvious implementation — produces an agent with amnesia that
 re-reads the same state every turn and still contradicts itself (`assistant.py:15-20`).
 
@@ -217,7 +217,7 @@ re-reads the same state every turn and still contradicts itself (`assistant.py:1
 This is the part to understand before changing anything in `chat()`.
 
 `run()` emits a `session` event as soon as it sees a session id on an `AssistantMessage`,
-not at the end of the turn (`assistant.py:252-259`). The route writes it immediately, in
+not at the end of the turn (`assistant.py:264-272`). The route writes it immediately, in
 its own database session, in `_remember_session()` (`routes_agent.py:422-440`).
 
 The comment there names the bug, and it is worth quoting because the symptom does not
@@ -232,14 +232,14 @@ look like a bug at all:
 There were two separate failures here and both had to be fixed:
 
 1. **The write happened too late.** Fixed by emitting and persisting early
-   (`assistant.py:252-259`, `routes_agent.py:495-498`).
+   (`assistant.py:264-272`, `routes_agent.py:495-498`).
 2. **The end-of-turn save was skipped entirely on disconnect.** `_save()` is called from
    a `finally`, not from a statement after the loop (`routes_agent.py:509-524`). Closing
    the window mid-turn makes Starlette close the response generator, which raises
    `GeneratorExit` at the paused `yield` — and `GeneratorExit` and `CancelledError` are
    `BaseException`, so `except Exception` never sees them and anything after the loop
    never runs. A turn here can run for minutes, which makes a mid-turn reload the normal
-   case rather than the unlucky one. `tests/test_agent.py:425` reproduces it by reading
+   case rather than the unlucky one. `tests/test_agent.py:435` reproduces it by reading
    one line and walking away.
 
 Two rules fall out of that, and breaking either reintroduces the bug:
@@ -250,8 +250,8 @@ Two rules fall out of that, and breaking either reintroduces the bug:
   conversation silently fails to save. It swallows and logs.
 * **`assistant.run()` must never `yield` from a `finally`.** Yielding while unwinding
   raises "async generator ignored GeneratorExit", which aborts teardown of the CLI
-  subprocess. `assistant.py:298-301` says so where the `finally` would have gone, and
-  `tests/test_agent.py:560` asserts it against the AST of the function — the failure only
+  subprocess. `assistant.py:310-314` says so where the `finally` would have gone, and
+  `tests/test_agent.py:570` asserts it against the AST of the function — the failure only
   shows up when a generator is closed early, which is the hardest case to notice.
 
 ### Dead sessions
@@ -261,13 +261,13 @@ cleared, the app was copied to another machine, storage was reset. Without handl
 thread is bricked — every later message resumes the same dead id and fails identically.
 
 The SDK raises a generic `ProcessError` for this, so there is nothing typed to catch.
-`_looks_like_a_dead_session()` (`assistant.py:314`) matches substrings
-(`_DEAD_SESSION_SIGNS`, `assistant.py:308`) and sets `resume_failed` on the error event.
+`_looks_like_a_dead_session()` (`assistant.py:327`) matches substrings
+(`_DEAD_SESSION_SIGNS`, `assistant.py:321`) and sets `resume_failed` on the error event.
 `chat()` retries **once**, from scratch: clears the stored id via `_forget_session()`,
 drops the partial text and tool calls, and streams a `notice` event saying it started
 fresh (`routes_agent.py:465-479`). Guessing wrong here means either a bricked thread or a
 silent retry that hides a real failure, which is why the retry is capped at one and
-announced. `tests/test_agent.py:467` asserts the attempt sequence
+announced. `tests/test_agent.py:477` asserts the attempt sequence
 `[None, "brand-new", None]`.
 
 ### One turn per thread
@@ -295,7 +295,7 @@ injected into the prompt as a file listing at `routes_agent.py:379-381`.
 `safe_name()` (`routes_agent.py:234`) exists because the extension is what everything
 downstream reads, and a clipboard paste arrives with no filename and only a MIME type. It
 derives one, so a pasted screenshot is an image the agent opens rather than an opaque
-blob. `tests/test_agent.py:521` covers the cases, including that a de-duplicated `.env`
+blob. `tests/test_agent.py:531` covers the cases, including that a de-duplicated `.env`
 does not become `-1` with no extension.
 
 ---
@@ -318,19 +318,19 @@ They are configured in separate places for that reason, and `GET /api/connectors
 that sentence as a `note` (`routes_agent.py:543`).
 
 How they reach the agent: `build_options` merges `connectors.active_servers()` into the
-same `mcp_servers` dict as the app's own server (`assistant.py:151-152`). `active()`
+same `mcp_servers` dict as the app's own server (`assistant.py:164-165`). `active()`
 (`connectors.py:200`) returns only entries that are both enabled and have a URL, and
 `as_mcp()` (`connectors.py:106`) shapes each one — `{"type": "http"|"sse", "url": …,
 "headers": {"Authorization": "Bearer …"}}`. A bearer header, never a query parameter;
-`tests/test_agent.py:241` pins that.
+`tests/test_agent.py:251` pins that.
 
 Things that will bite you:
 
-* **The catalogue asks for a URL rather than shipping one** (`connectors.py:16-22`,
+* **The catalogue asks for a URL rather than shipping one** (`connectors.py:16-21`,
   `CATALOGUE` at `connectors.py:63`). Several of these endpoints are issued per
   workspace. Guessing one produces an app that silently fails to connect and blames the
   network, so every `ConnectorSpec` carries a `where` field saying which page of which
-  service to copy it from. `tests/test_agent.py:230` asserts `where` is non-empty.
+  service to copy it from. `tests/test_agent.py:240` asserts `where` is non-empty.
 * **Storage is a file, not a table** (`connectors.py:127-135`,
   `storage/connectors.json`). The agent's MCP servers have to be resolved before a
   request exists, from a worker thread, at CLI start-up. Reaching for a request-scoped
@@ -356,6 +356,82 @@ string finds that. 401/403 gets its own message; a non-JSON body is treated as a
 streaming server answering in SSE, which is a perfectly good sign of life.
 `GET /api/connectors/mcp-config` (`routes_agent.py:618`) shows what the agent will
 actually be handed, header values redacted, so a mistake is visible.
+
+---
+
+## Research reads a channel with no key
+
+`research_channel` (`studio.py:639`) and `study_youtube_channel` (`studio.py:308`) both
+start from a link, because a link is what is in the operator's clipboard. Neither needs a
+YouTube Data API key.
+
+That was not always true, and the old behaviour is worth stating because it is the failure
+this path exists to remove: the most obvious thing anyone can do here — paste a channel —
+answered *"no key configured, paste the numbers instead"*, on every fresh install. A
+feature that sends you to the Google console before it will do anything reads as broken,
+and it was reported as exactly that. `tests/test_research_keyless.py:342` pins the
+behaviour that replaced it.
+
+Both methods call one function, `sources.read_channel` (`research/sources.py:354`), so the
+choice of source is made in one place instead of separately in each caller:
+
+* **a key in Settings** → the YouTube Data API (`research/sources.py:273`). Preferred when
+  it is there: measured timestamps, plus like and comment counts.
+* **no key** → the channel's public uploads listing, read with `yt-dlp`
+  (`research/keyless.py:126`). No key, no quota, no account.
+* **the API failing** → the same keyless read. Not a hedge: a quota exhausted at lunchtime
+  is the ordinary way this breaks, and the numbers are still sitting on the public page.
+  When both fail the error names both, API first, because that is the one the operator
+  configured and can therefore act on (`research/sources.py:377-386`).
+
+`read_channel` returns the parsed videos *and* a note naming the source, and every caller
+passes that note on as `via` — `studio.py:360` and `studio.py:677` for the two tools,
+`routes_research.py:176` for the desk. The caveat belongs in what the operator reads, not
+in a log line, which is also why the tool description states it (`tools.py:195`) rather
+than leaving the model to assume a number is measured.
+
+### The dates are reconstructed, and the scorer decides what that costs
+
+A flat playlist listing has no publish dates at all. `youtubetab:approximate_date`
+(`research/keyless.py:143`) produces one anyway, worked back from the relative label the
+page shows — "2 months ago" — so it can be about half a month out. The fixture in
+`tests/test_research_keyless.py:34` is the evidence rather than an illustration: three of
+its six real entries carry an identical timestamp, because all three said "2 months ago".
+
+An outlier is views divided by age, so an age that is fifteen days wrong reports a
+multiple wrong in exact proportion — under 2% on a two-year-old video, around 17% on a
+three-month-old one, and 3.0x is the threshold this app uses. That is why the reader only
+records the fact (`date_is_approximate`, `research/outliers.py:99`) and the arithmetic
+decides what it costs, per video: `approximate_date_span` (`research/outliers.py:201`)
+brackets the multiple using `APPROXIMATE_DATE_ERROR_DAYS` (`research/outliers.py:80`), and
+if half a month of error is enough to drop a video below the threshold it was included at,
+it comes back unreliable with the range it could really be in
+(`research/outliers.py:301-321`). `Outlier.as_dict()` (`research/outliers.py:165`) carries
+`multiple_low`, `multiple_high`, `date_is_approximate` and `engagement_known` so a UI can
+print a range, or "not known", instead of a point number nobody measured.
+
+That is the fifth of the scorer's corrections; the first four — age, format, sample size,
+youth — are at `research/outliers.py:17-36` and the fifth at `research/outliers.py:38-49`.
+None of them is a prompt. Every one is arithmetic over public statistics, because a model
+asked whether 240k views is good for a channel answers with a confident number and no
+method behind it.
+
+### The optional dependency
+
+`yt-dlp` is the `research` extra in `pyproject.toml`, not a base dependency:
+`pip install -e ".[research]"`, or `pip install yt-dlp`. Optional because the desk still
+answers without it — from a key, or from pasted rows — and because it is a binary that
+needs updating often, which is a bad thing to pin into every install. Neither install path
+adds it today: the launcher installs `-e .` (`desktop/bootstrap.py:143`) and the image
+installs `.[postgres]` (`Dockerfile:30`).
+
+Absence is reported, not crashed on. `keyless.available()` (`research/keyless.py:87`)
+returns the fix — install it, or add a key — and the research page prints that line and
+disables its fetch box (`routes_research.py:76-103`). The box was gated on the *key*
+before, which switched fetching off on installs that could in fact fetch; the same slot
+now carries the approximate-date caveat when a keyless read is possible.
+`tests/test_agent.py:131` covers the only case that genuinely cannot read a channel: no
+key *and* no binary.
 
 ---
 
@@ -413,7 +489,7 @@ also tells you what exists is one round trip instead of two.
 
 ### 2. The MCP wrapper, in `tools.build_server()`
 
-Inside `build_server`, beside the other channel tools (`tools.py:87-129`). The
+Inside `build_server`, beside the other channel tools (`tools.py:92-134`). The
 description is what the model reads to decide whether to call it, so it says what comes
 back and when to use it:
 
@@ -435,7 +511,7 @@ existing wrapper does the same.
 
 ### 3. Register it in the server
 
-`create_sdk_mcp_server`'s `tools=[…]` list at `tools.py:253` is explicit — a tool the
+`create_sdk_mcp_server`'s `tools=[…]` list at `tools.py:259` is explicit — a tool the
 decorator created but the list omits is silently absent, which presents as a model that
 "forgot" a tool it was told about. Add `channel_memory` to that list.
 
@@ -452,8 +528,8 @@ _READ_ONLY = (
 
 Put it in `_READ_ONLY` if it only reads. Put it in `_WRITES` if it changes something that
 can be changed back or produced again. **Put it in neither if calling it spends money,
-deletes something, or releases a gate** — `ALL_TOOLS` (`tools.py:54`) lists it so the
-server serves it, `ALLOWED` (`tools.py:52`) omits it so the agent has to ask, and that
+deletes something, or releases a gate** — `ALL_TOOLS` (`tools.py:59`) lists it so the
+server serves it, `ALLOWED` (`tools.py:57`) omits it so the agent has to ask, and that
 gap is the whole safety model. `channel_memory` reads rows, so `_READ_ONLY`.
 
 If the tool is one the agent should treat differently — always call it first, never call
@@ -500,8 +576,8 @@ one that forgets is a cross-account read no test will catch unless the test look
 The agent loop itself needs the CLI and a subscription, which CI does not have
 (`tests/test_agent.py:1-7`). What is asserted is everything up to and including the point
 where the loop would start, plus the honest refusal when it cannot — and the two bugs that
-only appear on early generator close are asserted structurally instead: `test_agent.py:425`
-by abandoning a stream, `test_agent.py:560` by walking the AST of `assistant.run`.
+only appear on early generator close are asserted structurally instead: `test_agent.py:435`
+by abandoning a stream, `test_agent.py:570` by walking the AST of `assistant.run`.
 
 For a built install, `tools/smoke.py` runs the same checks against a real server: the app
 starts, `/healthz` answers, the chat page renders, `/api/setup/state` reports the

@@ -32,6 +32,9 @@ CSS = WEB / "static" / "app.css"
 BASE = WEB / "base.html"
 TEMPLATES = sorted(WEB.glob("*.html"))
 PAGES = [path for path in TEMPLATES if path != BASE]
+# chat.js sets colours from tokens too, and a token it names is as dead as one a
+# template names. Nothing else in static/ is checked here.
+STYLED = TEMPLATES + sorted(WEB.glob("static/*.js"))
 
 
 def _line(text: str, index: int) -> int:
@@ -75,9 +78,9 @@ def test_every_custom_property_a_template_uses_is_defined():
     """
     defined = _defined_tokens()
     offenders: list[str] = []
-    for path in TEMPLATES:
+    for path in STYLED:
         offenders += _undefined_token_uses(path.name, path.read_text(), defined)
-    _report(offenders, "templates use custom properties app.css does not define:")
+    _report(offenders, "the UI uses custom properties app.css does not define:")
 
 
 def test_the_token_scan_catches_the_token_that_was_actually_removed():

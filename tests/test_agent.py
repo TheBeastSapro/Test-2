@@ -626,7 +626,7 @@ def test_the_cli_the_sdk_will_actually_run_is_the_one_we_report(monkeypatch):
     assert "npm install -g" not in joined
 
 
-def test_every_line_reference_in_the_agent_docs_still_resolves():
+def test_every_line_reference_in_the_agent_docs_points_at_what_it_names():
     """Documentation that cites line numbers rots the moment code moves.
 
     `docs/AGENT.md` is built out of `file:line` citations because the non-obvious
@@ -635,12 +635,51 @@ def test_every_line_reference_in_the_agent_docs_still_resolves():
     document quietly wrong — and a maintainer who opens two stale references stops
     trusting the rest of it.
 
-    Only the file and the line's existence are checked. Asserting on the *content* of a
-    line would make every reformat a test failure, which is how a guard like this gets
-    deleted.
+    Existence is not enough of a check. A line that still exists but has drifted onto
+    an unrelated statement is the *normal* outcome of an edit above it, and it passes
+    any test that only counts lines. So every citation has to land on something:
+
+    * The cited line is not blank and not a bare bracket — the two things drift lands
+      on most often. A range may end on a closing bracket, because a range quoting a
+      call ends where the call does, but it may not end on a blank line.
+    * Where the citation sits immediately after a backticked name — `_text()`
+      (`tools.py:62`), which is the shape this document uses almost everywhere — that
+      name has to appear within two lines of the citation, or name a function or class
+      the cited line sits inside. Two lines because a citation to a decorated function
+      points at the decorator; inside-the-function because some citations point at one
+      statement within a named function rather than at its `def`.
+    * A citation into a test file has to land on a definition. In this document a test
+      reference always means "this is the test that pins it", so a line inside a test
+      body is drift by definition.
+
+    Only names that are unambiguous are used: a lone identifier in backticks, with an
+    optional `()` or `module.` around it. `os.environ.get(...) is not None` and
+    `GET /api/agent/status` carry nothing extractable, and a rule that guessed at them
+    would start failing on prose — which is how a guard like this gets deleted.
+
+    What it deliberately does not catch:
+
+    * Drift of one or two lines, and drift within the function the sentence names. The
+      reference still puts the reader in front of the right thing.
+    * A test citation that drifts onto a *different* test's `def`.
+    * Ranges whose sentence names nothing — both ends are only checked for being real,
+      non-blank lines. Roughly half the citations here are of that kind.
+    * Whether the sentence's claim about the code is true. That needs a reader.
     """
+    import keyword
     import re
     from pathlib import Path
+
+    citation = re.compile(
+        r"`?(?P<file>[A-Za-z_][\w./]*\.(?:py|md)):(?P<start>\d+)(?:-(?P<end>\d+))?")
+    # Immediately after: at most 24 characters and no second backtick between the name
+    # and the number, so "`_text()` (`tools.py:62`)" is a claim about `_text` and a name
+    # three clauses back is left alone.
+    named = re.compile(r"`(?P<name>[A-Za-z_][\w.]*(?:\(\))?)`[^`]{0,24}\Z", re.S)
+    header = re.compile(r"^(?P<indent>\s*)(?:async\s+)?(?:def|class)\s+(?P<name>\w+)")
+    closer = re.compile(r"^[)\]},:;]+$")
+    definition = re.compile(r"(?:async\s+)?(?:def|class)\s+|[A-Z_][A-Z0-9_]*\s*[:=]")
+    slack = 2
 
     root = Path(__file__).resolve().parent.parent
     doc = root / "docs" / "AGENT.md"
@@ -653,27 +692,83 @@ def test_every_line_reference_in_the_agent_docs_still_resolves():
     search_roots = [root / "forgecast" / "agent", root / "forgecast" / "api",
                     root / "forgecast", root / "tests", root]
 
-    problems: list[str] = []
-    seen = 0
-    for name, line in re.findall(r"`?([A-Za-z_][\w./]*\.(?:py|md)):(\d+)", text):
-        seen += 1
-        # Tried as written against each root first, so a partial path like
-        # `desktop/bootstrap.py` resolves, then by basename for the bare form.
-        target = None
+    def cited_file(name: str) -> Path | None:
+        """As written against each root first, so `desktop/bootstrap.py` resolves,
+        then by basename for the bare form."""
         for base in search_roots:
             for candidate in (base / name, base / Path(name).name):
                 if candidate.is_file():
-                    target = candidate
-                    break
-            if target is not None:
-                break
+                    return candidate
+        return None
+
+    def name_before(index: int) -> str:
+        """The identifier this citation is attached to, empty if it is attached to prose."""
+        found = named.search(text[:index])
+        if not found:
+            return ""
+        # `Outlier.as_dict()` is a claim about `as_dict`; a keyword like `finally` and a
+        # two-letter name are not worth searching for.
+        bare = found.group("name").rstrip("()").rsplit(".", 1)[-1]
+        if len(bare) < 3 or not bare.isidentifier() or keyword.iskeyword(bare):
+            return ""
+        return bare
+
+    def enclosing(body: list[str], number: int) -> set[str]:
+        """The functions and classes the cited line is inside, by indentation."""
+        depth = len(body[number - 1]) - len(body[number - 1].lstrip())
+        names = set()
+        for above in reversed(body[:number - 1]):
+            found = header.match(above)
+            if found and len(found.group("indent")) < depth:
+                names.add(found.group("name"))
+                depth = len(found.group("indent"))
+        return names
+
+    problems: list[str] = []
+    seen = attached = 0
+    for found in citation.finditer(text):
+        seen += 1
+        where = f"{found.group('file')}:{found.group('start')}"
+        target = cited_file(found.group("file"))
         if target is None:
-            problems.append(f"{name}:{line} — no such file")
+            problems.append(f"{where} — no such file")
             continue
-        total = len(target.read_text(encoding="utf-8").splitlines())
-        if int(line) > total:
-            problems.append(f"{name}:{line} — past the end of {target.name} "
-                            f"({total} lines)")
+
+        body = target.read_text(encoding="utf-8").splitlines()
+        start = int(found.group("start"))
+        end = int(found.group("end") or start)
+        if max(start, end) > len(body):
+            problems.append(f"{where} — past the end of {target.name} "
+                            f"({len(body)} lines)")
+            continue
+        if end < start:
+            problems.append(f"{where}-{end} — backwards range")
+            continue
+
+        first, last = body[start - 1].strip(), body[end - 1].strip()
+        if not first:
+            problems.append(f"{where} — a blank line")
+        elif closer.match(first):
+            problems.append(f"{where} — {first!r}, which is the end of something rather "
+                            f"than the start of it")
+        if end != start and not last:
+            problems.append(f"{where}-{end} — the range ends on a blank line")
+        if target.name.startswith("test_") and end == start \
+                and not definition.match(first):
+            problems.append(f"{where} — {first[:48]!r}, not the def of the test it is "
+                            f"supposed to name")
+
+        wanted = name_before(found.start())
+        if not wanted:
+            continue
+        attached += 1
+        window = body[max(0, start - 1 - slack):end + slack]
+        if not any(wanted in line for line in window) \
+                and wanted not in enclosing(body, start):
+            problems.append(f"{where} — the sentence calls this `{wanted}`, which is "
+                            f"not within {slack} lines of it or around it")
 
     assert seen > 20, f"only {seen} citations found; the parser is probably wrong"
+    assert attached > 40, (f"only {attached} of {seen} citations were checked against a "
+                           "name; the name-matching half of this test has stopped firing")
     assert not problems, "stale references in docs/AGENT.md:\n  " + "\n  ".join(problems)
