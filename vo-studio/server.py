@@ -926,6 +926,16 @@ def set_assistant_prefs(payload: dict):
             "confirm_calls": SETTINGS.app.confirm_calls}
 
 
+@app.post("/api/assistant/reset")
+async def assistant_reset(payload: dict = None):
+    """Start a fresh conversation. The session is what carries the script and
+    the takes from one turn to the next, so dropping it is a real action, not
+    a cosmetic clear."""
+    from vostudio.assistant import reset_session
+    await reset_session()
+    return {"ok": True}
+
+
 @app.post("/api/assistant")
 async def assistant(payload: dict):
     """

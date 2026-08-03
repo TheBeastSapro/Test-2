@@ -242,16 +242,49 @@ def build_options(app_root: Path, permission_mode: str = "default",
     )
 
 
+# ONE CONVERSATION, NOT A SERIES OF STRANGERS
+#
+# Every turn used to call query(), which starts a fresh session. So the script
+# pasted in one message was gone by the next, and the agent -- correctly, for
+# what it could see -- answered "I do not have the script in front of me". That
+# read as a stupid model. It was a backend throwing the conversation away after
+# every message.
+#
+# ClaudeSDKClient holds the session open across turns, the way the CLI does.
+_SESSION: dict = {"client": None, "key": None}
+_LOCK = None
+
+
+def _lock():
+    """Created lazily: an asyncio.Lock built at import binds to whichever loop
+    happens to exist then, which is not the one uvicorn ends up running."""
+    global _LOCK
+    import asyncio
+    if _LOCK is None:
+        _LOCK = asyncio.Lock()
+    return _LOCK
+
+
+async def reset_session() -> None:
+    """Drop the conversation. New topic, or a session that has gone wrong."""
+    client = _SESSION.get("client")
+    _SESSION.update(client=None, key=None)
+    if client is not None:
+        try:
+            await client.disconnect()
+        except Exception:
+            pass
+
+
 async def run(prompt: str, app_root: Path, **kwargs):
     """
-    One turn, as a stream of events.
+    One turn, as a stream of events, inside a conversation that persists.
 
-    Yields {"type": "text"|"tool"|"error", ...}. Streaming rather than
-    returning at the end because a turn can now RENDER something -- tens of
-    minutes of GPU -- and a UI that shows nothing until it finishes is
-    indistinguishable from one that has hung.
+    Yields {"type": "text"|"tool"|"error", ...}. Streaming because a turn can
+    now RENDER something -- tens of minutes of GPU -- and a UI that shows
+    nothing until it finishes is indistinguishable from one that has hung.
     """
-    from claude_agent_sdk import (query, AssistantMessage, TextBlock,
+    from claude_agent_sdk import (ClaudeSDKClient, AssistantMessage, TextBlock,
                                   ToolUseBlock, CLINotFoundError)
 
     status = check_auth()
@@ -259,24 +292,46 @@ async def run(prompt: str, app_root: Path, **kwargs):
         yield {"type": "error", "text": status.detail}
         return
 
-    try:
-        async for message in query(prompt=prompt,
-                                   options=build_options(app_root, **kwargs)):
-            if not isinstance(message, AssistantMessage):
-                continue
-            for block in message.content:
-                if isinstance(block, TextBlock):
-                    yield {"type": "text", "text": block.text}
-                elif isinstance(block, ToolUseBlock):
-                    # Named so the transcript shows the work, not just the
-                    # answer: "rendering a take" while it happens.
-                    yield {"type": "tool", "name": getattr(block, "name", "tool"),
-                           "input": getattr(block, "input", {}) or {}}
-    except CLINotFoundError:
-        yield {"type": "error", "text":
-               "Claude Code CLI not found. Install it and sign in."}
-    except Exception as exc:                                  # pragma: no cover
-        yield {"type": "error", "text": f"{type(exc).__name__}: {exc}"}
+    # Turns are serialised. Two in flight would interleave on one session and
+    # neither would make sense.
+    async with _lock():
+        # Model or permission mode changing means a new session: they are set
+        # when the client connects, and pretending otherwise would silently
+        # keep answering on the old model.
+        key = (kwargs.get("model"), kwargs.get("permission_mode"))
+        if _SESSION["client"] is None or _SESSION["key"] != key:
+            await reset_session()
+            try:
+                client = ClaudeSDKClient(options=build_options(app_root, **kwargs))
+                await client.connect()
+            except CLINotFoundError:
+                yield {"type": "error", "text":
+                       "Claude Code CLI not found. Install it and sign in."}
+                return
+            except Exception as exc:
+                yield {"type": "error", "text": f"{type(exc).__name__}: {exc}"}
+                return
+            _SESSION.update(client=client, key=key)
+
+        client = _SESSION["client"]
+        try:
+            await client.query(prompt)
+            async for message in client.receive_response():
+                if not isinstance(message, AssistantMessage):
+                    continue
+                for block in message.content:
+                    if isinstance(block, TextBlock):
+                        yield {"type": "text", "text": block.text}
+                    elif isinstance(block, ToolUseBlock):
+                        # Named so the transcript shows the work, not just the
+                        # answer: "rendering a take" while it happens.
+                        yield {"type": "tool", "name": getattr(block, "name", "tool"),
+                               "input": getattr(block, "input", {}) or {}}
+        except Exception as exc:                              # pragma: no cover
+            # A broken session stays broken; drop it so the next turn is clean
+            # rather than failing the same way forever.
+            await reset_session()
+            yield {"type": "error", "text": f"{type(exc).__name__}: {exc}"}
 
 
 async def ask(prompt: str, app_root: Path, on_text=print, **kwargs):

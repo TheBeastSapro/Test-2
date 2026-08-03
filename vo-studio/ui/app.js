@@ -197,6 +197,9 @@ const TOOL_SAYS = {
 };
 
 async function send() {
+  // Turns are serialised on the server; sending into a running one would just
+  // queue a second turn behind it with no sign that it had happened.
+  if (BUSY) return toast('Still working on the last one');
   const input = $('#chat-input'), text = input.value.trim();
   if (!text && !ATTACHED.length) return;
   input.value = ''; input.style.height = 'auto';
@@ -212,7 +215,11 @@ async function send() {
   await stream(text, files);
 }
 
+let BUSY = false;
+
 async function stream(text, files = []) {
+  BUSY = true;
+  $('#btn-send').disabled = true;
   const bubble = say('<span class="msg-wait">…</span>');
   let body = '', started = false;
   // A tool that renders gets its own progress line, because that is the one
@@ -264,6 +271,8 @@ async function stream(text, files = []) {
   }
   if (live) live.remove();
   if (!body.trim()) bubble.innerHTML = '<span class="msg-wait">(no reply)</span>';
+  BUSY = false;
+  $('#btn-send').disabled = false;
 
   // Whatever it just did is now the truth about the voice — repaint the panel
   // from the server rather than guessing from the conversation.
@@ -367,6 +376,12 @@ function paintAuth(a) {
 const refreshAuth = () => api('/api/auth').then(paintAuth).catch(() => {});
 $('#btn-login').onclick = async () => toast((await api('/api/auth/login', {})).message);
 $('#btn-recheck').onclick = () => refreshAuth().then(() => toast('Checked'));
+$('#btn-new').onclick = async () => {
+  await api('/api/assistant/reset', {}).catch(() => {});
+  chat().innerHTML = '<div class="empty" id="chat-empty">New conversation. ' +
+    'The voice and its settings are unchanged — only the transcript is gone.</div>';
+  toast('Fresh conversation');
+};
 
 api('/api/assistant/prefs').then(p => {
   $('#model-pick').innerHTML = p.models.map(m =>
@@ -459,6 +474,18 @@ $('#btn-send').onclick = send;
 (function wireComposer(el) {
   const grow = () => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 220) + 'px'; };
   el.addEventListener('input', grow);
+
+  // Ctrl+V with a screenshot on the clipboard. Windows' Snipping Tool puts an
+  // image there and nothing on disk, so a file dialog cannot reach it — the
+  // only way in is the paste event.
+  el.addEventListener('paste', e => {
+    const files = [...(e.clipboardData?.files || [])];
+    if (!files.length) return;              // plain text pastes normally
+    e.preventDefault();
+    takeFiles(files.map((f, i) => f.name && f.name !== 'image.png' ? f
+      : new File([f], `pasted-${Date.now()}-${i}.${(f.type.split('/')[1] || 'png')}`,
+                 { type: f.type })));
+  });
   el.addEventListener('keydown', e => {
     // Enter sends, Shift+Enter breaks the line — and a pasted script arrives
     // through paste, not keystrokes, so this never eats one.
