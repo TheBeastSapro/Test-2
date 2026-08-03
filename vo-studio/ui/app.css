@@ -23,7 +23,16 @@
    by dashboard standards, because that is most of what reads as expensive.
    ═══════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap');
+/* NO WEB FONT. This used to @import Inter from Google Fonts, which is a
+   network request in an app whose whole point is that it runs on one machine
+   with nothing installed and nothing phoned home. On a laptop with no
+   connection it stalled the first paint and then fell back anyway — the
+   fallback was always what Sapro was actually reading.
+
+   So the fallback IS the typeface now, and it is chosen rather than inherited:
+   Segoe UI Variable Text is the Windows 11 UI face, and it is a better fit for
+   a dark, dense workspace than Inter at these sizes. A locally installed Inter
+   still wins if there is one. */
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -58,8 +67,8 @@
   --r:    12px;
   --r-sm: 9px;
   --ease: cubic-bezier(.32,.72,0,1);
-  --font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --mono: 'JetBrains Mono', 'Cascadia Mono', ui-monospace, Consolas, monospace;
+  --font: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', 'Cascadia Mono', 'Cascadia Code', ui-monospace, Consolas, monospace;
 }
 
 html, body {
@@ -87,7 +96,7 @@ html, body {
 .brand { display: inline-flex; align-items: center; gap: 10px; padding: 4px 10px 22px; }
 .brand span { font-size: 15px; font-weight: 580; letter-spacing: -.018em; }
 
-.nav { display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
 .nav-label {
   margin: 20px 0 7px; padding: 0 10px;
   font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
@@ -108,6 +117,74 @@ html, body {
 
 .side-foot { padding-top: 14px; border-top: 1px solid var(--line); }
 .side-foot .hw { width: 100%; justify-content: center; }
+
+/* ── conversations ──────────────────────────────────────────────────
+   The list takes the space the nav used to claim, so it is what grows when
+   the window does — the two doors above it are a fixed two lines and were
+   never going to need the room. */
+.new-convo {
+  margin: 18px 0 8px; justify-content: flex-start; gap: 9px;
+  color: var(--muted); background: none; border-style: dashed;
+}
+.new-convo:hover { color: var(--text); border-color: var(--accent-line); background: var(--accent-dim); }
+.new-convo i { width: 15px; height: 15px; flex: none; }
+
+.convos {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 1px;
+  margin: 0 -4px; padding: 0 4px 6px;
+}
+.convo {
+  display: flex; align-items: stretch; border-radius: var(--r-sm);
+  transition: background .16s var(--ease);
+}
+.convo:hover, .convo.menu-open { background: var(--raise); }
+.convo.is-active { background: var(--raise-2); }
+
+.convo-open {
+  flex: 1; min-width: 0; display: block; text-align: left;
+  background: none; border: 0; cursor: pointer;
+  padding: 7px 2px 7px 10px; font: inherit; color: var(--muted);
+}
+.convo.is-active .convo-open { color: var(--text); }
+.convo-title {
+  display: block; font-size: 13.5px; line-height: 1.35;
+  /* One line, clipped. A title that wraps to three lines turns the rail into
+     a wall of text and you stop being able to find anything in it. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.convo-when { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; }
+
+.convo-more {
+  flex: none; width: 30px; background: none; border: 0; cursor: pointer;
+  color: var(--faint); border-radius: var(--r-sm);
+  /* Hidden until the row is pointed at or focused. Three dots on every row at
+     rest is visual noise on the thing you are trying to read. */
+  opacity: 0; transition: opacity .14s var(--ease), color .14s var(--ease);
+}
+/* :focus, not :focus-visible — a button you have tabbed to has to be on screen
+   whether or not the browser decided the focus was "visible". At opacity 0 the
+   focus ring is drawn around nothing. */
+.convo:hover .convo-more, .convo-more:focus,
+.convo.menu-open .convo-more { opacity: 1; }
+.convo-more:hover { color: var(--text); }
+.convo-more i { width: 15px; height: 15px; display: block; margin: 0 auto; }
+
+.convo-menu {
+  position: fixed; z-index: 60; min-width: 156px; padding: 5px;
+  background: var(--raise-2); border: 1px solid var(--line-lit);
+  border-radius: var(--r-sm); box-shadow: 0 14px 34px rgba(0,0,0,.55);
+}
+.convo-menu button {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  background: none; border: 0; border-radius: 6px; cursor: pointer;
+  padding: 8px 9px; font: inherit; font-size: 13.5px; text-align: left;
+  color: var(--muted);
+}
+.convo-menu button i { width: 15px; height: 15px; flex: none; }
+.convo-menu button:hover { background: var(--raise-3); color: var(--red); }
+
+.convos-empty { padding: 10px; font-size: 12.5px; color: var(--faint); line-height: 1.5; }
 
 .logo-mark {
   width: 26px; height: 26px; border-radius: 8px; background: var(--grad);
@@ -245,8 +322,18 @@ select { cursor: pointer; }
 .list b { color: var(--text); font-weight: 550; }
 
 .empty {
-  color: var(--faint); font-size: 14px; padding: 40px 0; text-align: center;
-  border: 1px dashed var(--line-lit); border-radius: var(--r-sm);
+  color: var(--muted); font-size: 14.5px; line-height: 1.75;
+  padding: 30px 0 0; border: 0; text-align: left; max-width: 60ch;
+}
+.empty b { color: var(--text); font-weight: 560; }
+.empty .empty-title {
+  display: block; color: var(--text); font-size: 17px; font-weight: 600;
+  letter-spacing: -.02em; margin-bottom: 10px;
+}
+.empty kbd {
+  font-family: var(--mono); font-size: 12px; color: var(--accent);
+  background: var(--accent-dim); border: 1px solid var(--accent-line);
+  border-radius: 5px; padding: 2px 7px;
 }
 
 /* ── upload ─────────────────────────────────────────────────────────── */
@@ -260,6 +347,36 @@ select { cursor: pointer; }
 .drop i { width: 26px; height: 26px; color: var(--muted); margin-bottom: 6px; }
 .drop b { font-size: 15.5px; font-weight: 560; }
 .drop span { font-size: 13.5px; color: var(--faint); }
+
+/* ── the transport ───────────────────────────────────────────────────
+   A stock <audio controls> is a white slab with someone else's menu on it.
+   This one is built from the app's own parts, and the waveform earns its
+   place: this whole studio is an argument about pauses, and a waveform
+   shows them before you press play. */
+.vo {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--raise-2); border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 10px 13px;
+  width: 100%; max-width: 480px;
+  transition: border-color .2s var(--ease);
+}
+.vo.is-playing { border-color: var(--accent-line); }
+.vo-play {
+  width: 32px; height: 32px; flex: none; border: 0; border-radius: 50%;
+  background: var(--accent); color: #04140d; cursor: pointer;
+  display: grid; place-items: center; padding-left: 1px;
+  transition: transform .12s var(--ease), filter .16s var(--ease);
+}
+.vo-play:hover { filter: brightness(1.08); }
+.vo-play:active { transform: scale(.94); }
+.vo-body { flex: 1; min-width: 0; }
+.vo-wave { display: block; width: 100%; height: 30px; cursor: pointer; touch-action: none; }
+.vo-meta {
+  display: flex; justify-content: space-between; gap: 10px; margin-top: 4px;
+  font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums;
+}
+.vo-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); }
+.vo-time { flex: none; }
 
 audio { width: 100%; height: 44px; margin-top: 14px; }
 
@@ -674,4 +791,37 @@ input[type=range]::-webkit-slider-runnable-track {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
-:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+/* ── the last mile ───────────────────────────────────────────────────
+   Scrollbars, dropdowns and focus rings are where an app stops being
+   yours and starts being the operating system's. */
+* { scrollbar-width: thin; scrollbar-color: var(--line-lit) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-lit); border-radius: 99px;
+  border: 3px solid var(--bg); background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--faint); background-clip: content-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* Native selects render with the OS chrome — a light dropdown arrow on a
+   dark app, different on every machine. */
+select, .mini-select {
+  appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 14px center, right 9px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+}
+.mini-select { background-position: right 10px center, right 5px center; padding-right: 22px; }
+select option { background: var(--raise-2); color: var(--text); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* Each turn arrives rather than appearing. 140 ms, once — enough to read as
+   deliberate, not enough to wait for. */
+.msg { animation: rise .14s var(--ease) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .msg { animation: none; } }

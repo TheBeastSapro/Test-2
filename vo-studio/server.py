@@ -33,7 +33,7 @@ from vostudio import config, winfix
 # hub has already cached its symlink-support answer is too late.
 winfix.apply()
 
-from vostudio import pipeline
+from vostudio import conversations, pipeline
 from vostudio.assistant import run as agent_run, check_auth, start_login
 from vostudio.voice_profile import VoiceProfile, apply_feedback
 
@@ -1041,12 +1041,71 @@ def set_assistant_prefs(payload: dict):
 
 @app.post("/api/assistant/reset")
 async def assistant_reset(payload: dict = None):
-    """Start a fresh conversation. The session is what carries the script and
-    the takes from one turn to the next, so dropping it is a real action, not
-    a cosmetic clear."""
+    """Kept for the old shape of the app: start a fresh conversation.
+
+    Now the same thing the sidebar's New conversation button does, so a stale
+    page cannot end up dropping the session without a file to show for it."""
+    return await conversation_new()
+
+
+# ─────────────────────────────────────────────────────────── conversations
+# A LIST IN THE SIDEBAR, NOT A BUTTON IN A CORNER
+#
+# Every one of these returns the whole list and which one is open, because
+# every one of them changes both, and a second request to find out what just
+# happened is a race the sidebar would lose.
+
+def _convo_view() -> dict:
+    rec = conversations.active(ROOT)
+    return {"active": rec["id"], "items": conversations.summaries(ROOT)}
+
+
+@app.get("/api/conversations")
+def conversation_list():
+    return _convo_view()
+
+
+@app.get("/api/conversations/open")
+def conversation_open(id: str = ""):
+    """Switch to one and hand back its transcript to replay.
+
+    The agent session is NOT reconnected here — it is rebuilt on the next turn,
+    resuming the session id stored with the conversation. Doing it now would
+    spend a CLI start-up on a conversation you might only be glancing at.
+    """
+    rec = conversations.load(ROOT, id)
+    if rec is None:
+        return JSONResponse({"error": "That conversation is gone."}, 404)
+    conversations.set_active(ROOT, rec["id"])
+    return {**_convo_view(), "turns": rec.get("turns") or []}
+
+
+@app.post("/api/conversations/new")
+async def conversation_new(payload: dict = None):
     from vostudio.assistant import reset_session
-    await reset_session()
-    return {"ok": True}
+    await reset_session()               # the old session belongs to the old file
+    rec = conversations.create(ROOT)
+    return {**_convo_view(), "turns": [], "opened": rec["id"]}
+
+
+@app.post("/api/conversations/delete")
+async def conversation_delete(payload: dict):
+    """
+    Delete one, and land somewhere real.
+
+    Deleting the conversation you are IN cannot leave the app pointing at a
+    file that no longer exists, so this always returns the transcript of
+    whatever is open afterwards — the next most recent, or a fresh one.
+    """
+    cid = str((payload or {}).get("id") or "")
+    was_active = conversations.active_id(ROOT) == cid
+    if not conversations.delete(ROOT, cid):
+        return JSONResponse({"error": "That conversation is already gone."}, 404)
+    if was_active:
+        from vostudio.assistant import reset_session
+        await reset_session()
+    rec = conversations.active(ROOT)     # picks the next one, or makes one
+    return {**_convo_view(), "turns": rec.get("turns") or [], "opened": rec["id"]}
 
 
 @app.post("/api/assistant")
@@ -1057,6 +1116,10 @@ async def assistant(payload: dict):
     A turn can now render audio, which means it can take tens of minutes. A
     response that arrives only at the end is indistinguishable from a hang, so
     text and tool calls go out as they happen.
+
+    It is also written down as it happens. The transcript is the conversation —
+    if it only existed in the page, closing the window would lose the script,
+    the takes and the notes about the read.
     """
     files = []
     for raw in payload.get("files") or []:
@@ -1068,22 +1131,74 @@ async def assistant(payload: dict):
         except (ValueError, OSError):
             continue
 
-    message = payload.get("message", "")
+    typed = payload.get("message", "")
+    message = typed
     if files:
         listing = "\n".join(f"  {p}  — {_describe(p)['note']}" for p in files)
         message = (f"Sapro attached these files to this message:\n{listing}\n\n"
-                   f"{message}")
+                   f"{typed}")
 
     mode = "default" if SETTINGS.app.confirm_calls else "acceptEdits"
 
+    convo = conversations.active(ROOT)
+    cid = convo["id"]
+    conversations.add_turn(ROOT, cid, {
+        "role": "me", "text": typed,
+        # Names and kinds, not paths: the transcript is replayed in a page, and
+        # a detached attachment is deleted from disk, so a link to one would
+        # be a broken image in every reopened conversation.
+        "files": [{"name": p.name, "kind": _describe(p)["kind"]} for p in files],
+    })
+
     async def stream():
+        said: list[str] = []
+        takes: list[dict] = []
         try:
-            async for event in agent_run(message, ROOT, permission_mode=mode,
+            async for event in agent_run(message, ROOT, conversation=cid,
+                                         resume=convo.get("session_id"),
+                                         permission_mode=mode,
                                          model=SETTINGS.app.assistant_model,
                                          studio=STUDIO):
+                if event.get("type") == "session":
+                    conversations.set_session(ROOT, cid, event["id"])
+                    continue            # the page has no use for it
+                if event.get("type") == "forget_session":
+                    # The stored id would not resume. Dropped so the next turn
+                    # does not try it again and fail the same way.
+                    conversations.set_session(ROOT, cid, None)
+                    continue
+                if event.get("type") == "text":
+                    said.append(event.get("text", ""))
+                elif event.get("type") == "result":
+                    took = _take_from(event.get("text", ""))
+                    if took:
+                        takes.append(took)
+                elif event.get("type") == "error":
+                    said.append(event.get("text", ""))
                 yield json.dumps(event) + "\n"
         except Exception as exc:
+            said.append(friendly(exc))
             yield json.dumps({"type": "error", "text": friendly(exc)}) + "\n"
+        conversations.add_turn(ROOT, cid, {
+            "role": "ai", "text": "".join(said), "takes": takes})
         yield json.dumps({"type": "done"}) + "\n"
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")
+
+
+_TAKE_FILE = re.compile(r"take-\d+\.wav$")
+
+
+def _take_from(text: str) -> dict | None:
+    """A tool result that rendered audio, or nothing.
+
+    The same test the page makes, made here too, because the transcript has to
+    replay the player and the page is not around to be asked later.
+    """
+    try:
+        j = json.loads(text)
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(j, dict) or not _TAKE_FILE.search(str(j.get("file") or "")):
+        return None
+    return {"name": profile_name(), "file": j["file"], "seconds": j.get("seconds")}

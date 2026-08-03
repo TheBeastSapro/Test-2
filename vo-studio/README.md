@@ -62,11 +62,28 @@ surface this needs:
 | Ask before acting | `permission_mode`, `can_use_tool` callback |
 | Block specific tools | `allowed_tools` / `disallowed_tools` |
 | Cap spend | `max_budget_usd` |
+| Reopen a saved conversation | `resume` — the session id, stored per conversation |
 
 `permission_mode` accepts `default`, `acceptEdits`, `plan`, `bypassPermissions`,
 `dontAsk`, `auto`. **This app will ship on `default`** — every edit prompts. An agent
 with unattended write access to the pipeline that generates the channel's audio is not
 something to enable by default, and `bypassPermissions` should stay off.
+
+### Conversations are files
+
+The left rail lists them; the three-dot menu on a row deletes one. Each is a JSON
+file under `conversations/`, holding the text, the names of anything attached, the
+file name of any take that was rendered — and the CLI's session id, which is handed
+back as `resume` when the conversation is reopened. Without that the transcript
+would redraw on screen while the model had no memory of it.
+
+Not the audio: that already lives under `voices/<profile>/takes/` with its own
+numbering, and a second copy would be a second thing to keep in step. A take whose
+file has since been deleted replays as a player that will not load, which is the
+truth about it.
+
+Deleting is not reversible and says so before it happens. Voices, settings and
+rendered audio are untouched by it.
 
 ### Subscription login, not an API key
 

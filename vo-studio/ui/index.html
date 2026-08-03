@@ -18,6 +18,12 @@
     <button class="nav-item" data-view="settings"><i data-i="settings"></i>Settings</button>
   </nav>
 
+  <!-- Conversations live here, not in a card on the right. A transcript holds
+       the script, the takes and every note about the read — it is the work,
+       so it gets the column the work is navigated from. -->
+  <button class="btn btn-sm new-convo" id="btn-new"><i data-i="plus"></i>New conversation</button>
+  <div class="convos" id="convos" role="list" aria-label="Conversations"></div>
+
   <div class="side-foot">
     <span class="hw" id="hw"><span class="dot dot-idle"></span><span id="hw-text">checking…</span></span>
   </div>
@@ -61,7 +67,6 @@
               No reference yet — drop an audio clip into the chat.
             </div>
             <div id="ref-set" hidden>
-              <audio controls id="ref-audio"></audio>
               <p class="hint" id="ref-name"></p>
             </div>
           </div>
@@ -86,7 +91,6 @@
 
         <div class="card" id="auth-card-wrap">
           <h3>Claude</h3>
-          <button class="btn btn-sm w-full" id="btn-new" style="margin-bottom:14px">New conversation</button>
           <p class="sub" id="auth-card" style="margin:0">Checking your sign-in…</p>
           <div id="auth-actions" class="auth-actions" hidden>
             <button class="btn btn-sm btn-primary" id="btn-login">Sign in</button>

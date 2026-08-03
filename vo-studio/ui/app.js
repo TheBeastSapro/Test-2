@@ -22,13 +22,18 @@ const ICONS = {
   image:'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M8.5 9.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
   wave:'M3 12h2l2-7 3 16 3-11 2 5h6',
   file:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6',
-  chev:'M9 18l6-6-6-6',
+  chev:'M9 18l6-6-6-6', plus:'M12 5v14M5 12h14',
+  dots:'M12 6.6h.01M12 12h.01M12 17.4h.01',
+  trash:'M4 6h16M9 6V4h6v2M7 6l1 14h8l1-14',
 };
 function drawIcons(root = document) {
   $$('i[data-i]', root).forEach(el => {
     const d = ICONS[el.dataset.i]; if (!d) return;
+    // data-w overrides the stroke. The three-dot menu glyph is drawn as three
+    // zero-length round-capped strokes, so its weight IS its dot size — at the
+    // shared 1.8 it is a barely visible speck.
     el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+      stroke-width="${el.dataset.w || 1.8}" stroke-linecap="round" stroke-linejoin="round"
       width="100%" height="100%"><path d="${d}"/></svg>`;
   });
 }
@@ -71,6 +76,7 @@ function say(html, cls = 'ai') {
   el.innerHTML = html;
   c.append(el);
   drawIcons(el);
+  upgradePlayers(el);
   c.scrollTop = c.scrollHeight;
   return el;
 }
@@ -117,6 +123,145 @@ function startClock(el, label) {
   return { stop: () => { clearInterval(id); return (performance.now() - t0) / 1000; } };
 }
 
+
+/* ── the transport ───────────────────────────────────────────────────
+   THE one thing in here that is not a default.
+
+   Every piece of audio used to be a stock <audio controls>: a white slab
+   with a three-dot menu in a near-black window, and the loudest "assembled
+   from parts" signal in the app. It was also useless for the work. This
+   studio exists to argue about PAUSES — comma beats, chapter gaps, the
+   133 ms orphan that survived six repairs — and a waveform shows those
+   before you press play. You can see the shape of a read and compare two
+   takes with your eyes while your ears catch up.
+
+   Decoded once per file and cached; a failed decode falls back to a plain
+   progress line rather than to Chrome's. */
+const PEAKS = new Map();
+const AC = () => (window.__ac ||= new (window.AudioContext || window.webkitAudioContext)());
+
+async function peaks(src, buckets = 420) {
+  if (PEAKS.has(src)) return PEAKS.get(src);
+  const job = (async () => {
+    const r = await fetch(src);
+    // A 404 hands back an HTML error page, which decodeAudioData reports as
+    // EncodingError — the same message a genuinely corrupt file gives. Checked
+    // here so a replayed take whose audio has been deleted says so instead of
+    // looking like a broken decoder.
+    if (!r.ok) throw new Error(`${r.status} for ${src}`);
+    const buf = await AC().decodeAudioData(await r.arrayBuffer());
+    const raw = buf.getChannelData(0);
+    const step = Math.max(1, Math.floor(raw.length / buckets));
+    const out = new Float32Array(buckets);
+    for (let b = 0; b < buckets; b++) {
+      let peak = 0;
+      const start = b * step, end = Math.min(raw.length, start + step);
+      for (let i = start; i < end; i++) { const v = Math.abs(raw[i]); if (v > peak) peak = v; }
+      out[b] = peak;
+    }
+    // Normalised to the loudest bucket: a quiet take should still be legible,
+    // and absolute level is what the LUFS reading is for.
+    const max = Math.max(...out) || 1;
+    return { data: out.map(v => v / max), duration: buf.duration };
+  })();
+  // The PROMISE is cached, so a file is decoded once however many players show
+  // it. A rejection is dropped rather than kept: a take that 404'd while it was
+  // still being written would otherwise never draw a waveform again.
+  job.catch(() => PEAKS.delete(src));
+  PEAKS.set(src, job);
+  return job;
+}
+
+const clock = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+
+function makePlayer(src, label = '') {
+  const el = document.createElement('div');
+  el.className = 'vo';
+  el.innerHTML = `
+    <button class="vo-play" aria-label="Play"><svg viewBox="0 0 24 24" width="15" height="15"
+      fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+    <div class="vo-body">
+      <canvas class="vo-wave" aria-hidden="true"></canvas>
+      <div class="vo-meta"><span class="vo-label">${esc(label)}</span><span class="vo-time">--:--</span></div>
+    </div>`;
+  const audio = new Audio(src);
+  audio.preload = 'metadata';
+  const btn = el.querySelector('.vo-play');
+  const cv = el.querySelector('.vo-wave');
+  const time = el.querySelector('.vo-time');
+  const ctx = cv.getContext('2d');
+  let shape = null, dur = 0;
+
+  const css = getComputedStyle(document.documentElement);
+  const ACCENT = css.getPropertyValue('--accent').trim() || '#34d399';
+  const REST = css.getPropertyValue('--line-lit').trim() || '#2a322e';
+
+  function draw() {
+    const w = cv.clientWidth, h = cv.clientHeight, dpr = devicePixelRatio || 1;
+    if (!w || !h) return;
+    cv.width = w * dpr; cv.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const played = dur ? audio.currentTime / dur : 0;
+    const n = shape ? shape.length : 90;
+    const gap = 1, bar = Math.max(1, w / n - gap);
+    for (let i = 0; i < n; i++) {
+      const x = i * (bar + gap);
+      // No waveform yet (or decode failed): a flat rule, not a fake one.
+      const v = shape ? shape[i] : 0.12;
+      const barH = Math.max(2, v * (h - 2));
+      ctx.fillStyle = (x / w) <= played ? ACCENT : REST;
+      ctx.fillRect(x, (h - barH) / 2, bar, barH);
+    }
+  }
+
+  const tick = () => {
+    time.textContent = dur ? `${clock(audio.currentTime)} / ${clock(dur)}` : '--:--';
+    draw();
+  };
+
+  btn.onclick = () => {
+    if (audio.paused) { document.querySelectorAll('audio').forEach(a => a !== audio && a.pause()); audio.play(); }
+    else audio.pause();
+  };
+  const icon = playing => {
+    btn.innerHTML = playing
+      ? `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>`;
+    btn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  };
+  audio.onplay = () => { icon(true); el.classList.add('is-playing'); requestAnimationFrame(function f() {
+    if (!audio.paused) { tick(); requestAnimationFrame(f); } }); };
+  audio.onpause = () => { icon(false); el.classList.remove('is-playing'); tick(); };
+  audio.onended = () => { audio.currentTime = 0; tick(); };
+  audio.onloadedmetadata = () => { if (isFinite(audio.duration)) { dur = audio.duration; tick(); } };
+
+  const seek = e => {
+    if (!dur) return;
+    const r = cv.getBoundingClientRect();
+    audio.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * dur;
+    tick();
+  };
+  cv.onpointerdown = e => { cv.setPointerCapture(e.pointerId); seek(e); };
+  cv.onpointermove = e => { if (cv.hasPointerCapture(e.pointerId)) seek(e); };
+
+  peaks(src).then(p => { shape = p.data; if (!dur) dur = p.duration; tick(); })
+            .catch(() => tick());
+  new ResizeObserver(draw).observe(cv);
+  tick();
+  return el;
+}
+
+/* Replace any <audio> the app still writes as markup. One place to change,
+   and nothing can accidentally ship a stock player. */
+function upgradePlayers(root) {
+  root.querySelectorAll('audio[controls]').forEach(a => {
+    const src = a.getAttribute('src');
+    if (!src) return;
+    a.replaceWith(makePlayer(src, a.dataset.label || ''));
+  });
+}
+
 /* ── voice reference ────────────────────────────────────────────────── */
 let VOICE = { loaded: false };
 
@@ -128,7 +273,12 @@ function paintVoice(v) {
   // Only re-stamped when the clip actually changed — otherwise every turn
   // reloaded it and killed whatever you were listening to.
   const want = '/api/voice/audio?t=' + (v.name || '') + (v.duration || '');
-  if ($('#ref-audio').getAttribute('src') !== want) $('#ref-audio').src = want;
+  const ref = $('#ref-set');
+  if (ref.dataset.src !== want) {
+    ref.dataset.src = want;
+    ref.querySelector('.vo')?.remove();
+    ref.prepend(makePlayer(want, 'reference'));
+  }
   $('#ref-name').textContent =
     `${v.name}${v.duration ? ` · ${v.duration}s` : ''}${v.peak != null ? ` · peak ${v.peak} dBFS` : ''}`;
 }
@@ -325,8 +475,9 @@ async function stream(text, files = []) {
             el.className = 'took-audio';
             el.innerHTML =
               `<audio controls src="/api/lab/audio?name=${encodeURIComponent($('#prof').value)}` +
-              `&file=${encodeURIComponent(take.file)}"></audio>` +
+              `&file=${encodeURIComponent(take.file)}" data-label="${esc(take.file)}"></audio>` +
               (take.seconds ? `<div class="took">${esc(take.seconds)}s on the GPU</div>` : '');
+            upgradePlayers(el);
             bubble.append(el);
             block();
             wrote = true;
@@ -351,6 +502,9 @@ async function stream(text, files = []) {
   // Whatever it just did is now the truth about the voice — repaint the panel
   // from the server rather than guessing from the conversation.
   refreshPanel();
+  // And the rail: this turn just named an untitled conversation and moved it
+  // to the top of the list.
+  api('/api/conversations').then(paintConvos).catch(() => {});
 }
 
 function refreshPanel() {
@@ -363,8 +517,156 @@ function refreshPanel() {
     // Rebuilt only when it is a DIFFERENT take. Rebuilding every turn stopped
     // playback dead and rewound to 0:00 the moment you sent a message.
     if (box.firstElementChild?.getAttribute('src') === src) return;
-    box.innerHTML = `<audio controls src="${src}"></audio>`;
+    box.innerHTML = `<audio controls src="${src}" data-label="${esc(j.file)}"></audio>`;
+    upgradePlayers(box);
   }).catch(() => {});
+}
+
+/* ── conversations ───────────────────────────────────────────────────
+   A LIST, NOT A BUTTON.
+
+   "New conversation" used to be one button in the Claude card, and pressing
+   it threw the transcript away with nothing to go back to. The transcript is
+   where the script is, and the takes, and every note about the read — so they
+   are files now, listed in the left rail, and each one can be deleted from
+   its own menu.
+
+   The server owns which one is open and what is in it. Nothing here caches a
+   transcript: every list, open and delete comes back with the same shape and
+   this repaints from it. */
+const CONVOS = { active: null, items: [] };
+
+const ago = t => {
+  const s = Date.now() / 1000 - (t || 0);
+  if (s < 90) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+  if (s < 172800) return 'yesterday';
+  return new Date((t || 0) * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+function paintConvos(view) {
+  if (view) { CONVOS.active = view.active; CONVOS.items = view.items || []; }
+  const box = $('#convos');
+  if (!CONVOS.items.length) {
+    box.innerHTML = '<div class="convos-empty">Nothing saved yet. What you say here is kept.</div>';
+    return;
+  }
+  box.innerHTML = CONVOS.items.map(c => `
+    <div class="convo${c.id === CONVOS.active ? ' is-active' : ''}" data-id="${esc(c.id)}" role="listitem">
+      <button class="convo-open" title="${esc(c.title)}">
+        <span class="convo-title">${esc(c.title)}</span>
+        <span class="convo-when">${esc(ago(c.updated))}${c.turns ? ` · ${c.turns} message${c.turns === 1 ? '' : 's'}` : ''}</span>
+      </button>
+      <button class="convo-more" aria-label="More for ${esc(c.title)}" aria-haspopup="menu">
+        <i data-i="dots" data-w="3.2"></i></button>
+    </div>`).join('');
+  drawIcons(box);
+  $$('.convo', box).forEach(row => {
+    const id = row.dataset.id;
+    $('.convo-open', row).onclick = () => openConvo(id);
+    $('.convo-more', row).onclick = e => { e.stopPropagation(); showMenu(row, id); };
+  });
+}
+
+/* One menu at a time, positioned against the button rather than nested inside
+   a row that clips its own overflow. */
+let MENU = null;
+function closeMenu() {
+  MENU?.remove(); MENU = null;
+  $$('.convo.menu-open').forEach(r => r.classList.remove('menu-open'));
+}
+function showMenu(row, id) {
+  const open = row.classList.contains('menu-open');
+  closeMenu();
+  if (open) return;                       // clicking the dots again closes it
+  row.classList.add('menu-open');
+  MENU = document.createElement('div');
+  MENU.className = 'convo-menu';
+  MENU.setAttribute('role', 'menu');
+  MENU.innerHTML = `<button role="menuitem"><i data-i="trash"></i>Delete conversation</button>`;
+  document.body.append(MENU);
+  drawIcons(MENU);
+  const r = row.getBoundingClientRect();
+  MENU.style.left = `${Math.round(r.right - 8)}px`;
+  // Flipped up near the bottom of the window rather than hanging off it.
+  const below = window.innerHeight - r.bottom;
+  MENU.style.top = below > MENU.offsetHeight + 12
+    ? `${Math.round(r.bottom + 4)}px`
+    : `${Math.round(r.top - MENU.offsetHeight - 4)}px`;
+  MENU.querySelector('button').onclick = () => { closeMenu(); deleteConvo(id); };
+  MENU.querySelector('button').focus();
+}
+document.addEventListener('pointerdown', e => {
+  if (MENU && !MENU.contains(e.target) && !e.target.closest('.convo-more')) closeMenu();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+window.addEventListener('resize', closeMenu);
+
+/* Deleting takes the transcript with it — and if it was the one you were in,
+   the agent's session too. Asked once, because there is no undo: the file is
+   removed, not flagged. */
+async function deleteConvo(id) {
+  const it = CONVOS.items.find(c => c.id === id);
+  if (!confirm(`Delete “${it ? it.title : 'this conversation'}”?\n\n` +
+               'The transcript is gone for good. Voices, settings and rendered ' +
+               'audio are not touched.')) return;
+  try {
+    const view = await api('/api/conversations/delete', { id });
+    paintConvos(view);
+    if (view.opened) replay(view.turns);
+    toast('Conversation deleted');
+  } catch (e) { toast(String(e)); }
+}
+
+async function newConvo() {
+  if (BUSY) return toast('Still working on the last one — that turn belongs to this conversation');
+  try {
+    const view = await api('/api/conversations/new', {});
+    paintConvos(view);
+    replay([]);
+    $('#chat-input').focus();
+  } catch (e) { toast(String(e)); }
+}
+$('#btn-new').onclick = newConvo;
+
+async function openConvo(id) {
+  if (id === CONVOS.active) return;
+  if (BUSY) return toast('Still working on the last one');
+  try {
+    const view = await api('/api/conversations/open?id=' + encodeURIComponent(id));
+    paintConvos(view);
+    replay(view.turns);
+  } catch (e) { toast(String(e)); }
+}
+
+/* Redraw a saved transcript.
+
+   What was written down is the text, the names of anything attached, and the
+   file name of any take. Not the audio itself — that lives under projects/
+   with its own numbering, and a second copy would be a second thing to keep
+   in step. A take whose file has since been deleted replays as a player that
+   will not load, which is the truth about it. */
+function replay(turns) {
+  const c = chat();
+  c.innerHTML = '';
+  for (const t of turns || []) {
+    if (t.role === 'me') {
+      const chips = (t.files || []).map(f =>
+        `<span class="att-sent">${esc(f.name)}</span>`).join('');
+      say((chips ? `<div class="att-row">${chips}</div>` : '') + asText(t.text || ''), 'me');
+    } else {
+      const players = (t.takes || []).map(k =>
+        `<div class="took-audio"><audio controls src="/api/lab/audio?name=` +
+        `${encodeURIComponent(k.name)}&file=${encodeURIComponent(k.file)}" ` +
+        `data-label="${esc(k.file)}"></audio>` +
+        (k.seconds ? `<div class="took">${esc(k.seconds)}s on the GPU</div>` : '') +
+        `</div>`).join('');
+      if ((t.text || '').trim() || players) say(asText(t.text || '') + players);
+    }
+  }
+  if (!c.firstElementChild) showEmpty();
+  c.scrollTop = c.scrollHeight;
 }
 
 /* ── takes ──────────────────────────────────────────────────────────── */
@@ -384,8 +686,9 @@ async function renderTake() {
       slot.innerHTML =
         (j.note ? `<div class="msg-bad">${esc(j.note)}</div>` : '') +
         `<audio controls src="/api/lab/audio?name=${encodeURIComponent($('#prof').value)}` +
-        `&file=${encodeURIComponent(j.audio || '')}"></audio>` +
+        `&file=${encodeURIComponent(j.audio || '')}" data-label="${esc(j.audio || 'take')}"></audio>` +
         `<div class="took">${(j.seconds ?? took).toFixed(1)}s on the GPU</div>`;
+      upgradePlayers(slot);
     }
   } catch (e) { clock.stop(); slot.innerHTML = `<span class="msg-bad">${esc(e)}</span>`; }
   finally { clock.stop(); }
@@ -459,12 +762,6 @@ function paintAuth(a) {
 const refreshAuth = () => api('/api/auth').then(paintAuth).catch(() => {});
 $('#btn-login').onclick = async () => toast((await api('/api/auth/login', {})).message);
 $('#btn-recheck').onclick = () => refreshAuth().then(() => toast('Checked'));
-$('#btn-new').onclick = async () => {
-  await api('/api/assistant/reset', {}).catch(() => {});
-  chat().innerHTML = '<div class="empty" id="chat-empty">New conversation. ' +
-    'The voice and its settings are unchanged — only the transcript is gone.</div>';
-  toast('Fresh conversation');
-};
 
 api('/api/assistant/prefs').then(p => {
   $('#model-pick').innerHTML = p.models.map(m =>
@@ -583,22 +880,41 @@ api('/api/hardware').then(h => {
   $('#hw .dot').className = 'dot ' + (h.gpu ? 'dot-ok' : 'dot-warn');
 }).catch(() => { $('#hw-text').textContent = 'backend unreachable'; });
 
+/* An empty screen is an instruction, not a status line. Drawn from whatever
+   the voice panel currently knows, so it says the right thing whether you have
+   just opened the app or just deleted the conversation you were in. */
+function showEmpty() {
+  chat().innerHTML = `<div class="empty" id="chat-empty">${
+    VOICE.loaded
+      ? `<span class="empty-title">Voice loaded — ${esc(VOICE.name)}</span>` +
+        `Paste a script and you will see what it becomes — sections, chapter headers, ` +
+        `how long it runs, how long it takes — before anything renders.<br><br>` +
+        `Or say <kbd>render a take</kbd> to hear where the voice is sitting right now.`
+      : `<span class="empty-title">Start with a voice</span>` +
+        `Drop an audio clip anywhere in this panel and it becomes the voice everything ` +
+        `is read in. The best reference is a cut of a voiceover you already delivered: ` +
+        `<b>8 to 12 seconds</b> of continuous speech, no music, no long pauses.<br><br>` +
+        `Then paste your script.`}</div>`;
+}
+
 drawIcons();
 loadProfile();
 refreshAuth();
 
 refreshPanel();
-api('/api/voice/status').then(v => {
-  paintVoice(v);
-  const box = $('#chat-empty');
-  if (!box) return;
-  box.innerHTML = v.loaded
-    ? `Voice is <b>${esc(v.name)}</b>. Paste a script and I will tell you what it ` +
-      `becomes before rendering it — or press <b>Render a take</b> to hear where the voice is.`
-    : `Drop an audio clip anywhere in here and it becomes the voice. 8–12 seconds ` +
-      `of continuous speech, no music. Then paste a script.`;
-}).catch(e => {
-  const box = $('#chat-empty');
-  if (box) box.innerHTML = `The backend is not answering (${esc(e)}). ` +
-    `Close the app and open it again — if it keeps happening, runtime\\last-run.log has the reason.`;
-});
+// The voice first, because the empty state is written from it — then whatever
+// conversation was open when the app was last closed, replayed into the panel.
+api('/api/voice/status')
+  .then(paintVoice)
+  .catch(() => {})
+  .then(() => api('/api/conversations'))
+  .then(view => {
+    paintConvos(view);
+    return api('/api/conversations/open?id=' + encodeURIComponent(view.active));
+  })
+  .then(view => { paintConvos(view); replay(view.turns); })
+  .catch(e => {
+    const box = $('#chat-empty');
+    if (box) box.innerHTML = `The backend is not answering (${esc(e)}). ` +
+      `Close the app and open it again — if it keeps happening, runtime\\last-run.log has the reason.`;
+  });

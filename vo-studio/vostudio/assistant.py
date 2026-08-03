@@ -149,7 +149,7 @@ def start_login() -> tuple[bool, str]:
 
 def build_options(app_root: Path, permission_mode: str = "default",
                   allow_network: bool = False, budget_usd: float | None = 5.0,
-                  model: str | None = None, studio=None):
+                  model: str | None = None, studio=None, resume: str | None = None):
     """
     Confine the agent to this app, on disk and on the network.
 
@@ -176,6 +176,13 @@ def build_options(app_root: Path, permission_mode: str = "default",
     # Only passed when set. An empty model= would override the CLI's own default
     # with nothing, which is a worse outcome than not asking.
     extra = {"model": model} if model else {}
+
+    # Reopening a saved conversation. The transcript on screen is replayed from
+    # a file, but the AGENT's memory of it is the CLI's session -- without this
+    # the chat would show a script it had just been given and the model would
+    # have no idea what you were referring to.
+    if resume:
+        extra["resume"] = resume
 
     # The studio itself, as tools. Without these Claude can only talk ABOUT the
     # pipeline; with them it runs it -- loads the reference, renders takes,
@@ -307,17 +314,23 @@ async def reset_session() -> None:
             pass
 
 
-async def run(prompt: str, app_root: Path, **kwargs):
+async def run(prompt: str, app_root: Path, conversation: str | None = None, **kwargs):
     """
     One turn, as a stream of events, inside a conversation that persists.
 
-    Yields {"type": "text"|"tool"|"error", ...}. Streaming because a turn can
-    now RENDER something -- tens of minutes of GPU -- and a UI that shows
-    nothing until it finishes is indistinguishable from one that has hung.
+    Yields {"type": "text"|"tool"|"result"|"session"|"error", ...}. Streaming
+    because a turn can now RENDER something -- tens of minutes of GPU -- and a
+    UI that shows nothing until it finishes is indistinguishable from one that
+    has hung.
+
+    `conversation` is the id of the conversation this turn belongs to. It is
+    part of the session key, so switching conversations in the sidebar really
+    does switch what the agent is talking about; the caller passes resume= to
+    hand the CLI back the session that conversation was using.
     """
     from claude_agent_sdk import (ClaudeSDKClient, AssistantMessage, UserMessage,
                                   TextBlock, ToolUseBlock, ToolResultBlock,
-                                  CLINotFoundError)
+                                  ResultMessage, CLINotFoundError)
 
     status = check_auth()
     if not status.ok:
@@ -327,10 +340,12 @@ async def run(prompt: str, app_root: Path, **kwargs):
     # Turns are serialised. Two in flight would interleave on one session and
     # neither would make sense.
     async with _lock():
-        # Model or permission mode changing means a new session: they are set
-        # when the client connects, and pretending otherwise would silently
-        # keep answering on the old model.
-        key = (kwargs.get("model"), kwargs.get("permission_mode"))
+        # Model, permission mode or CONVERSATION changing means a new session:
+        # they are set when the client connects, and pretending otherwise would
+        # silently keep answering on the old model — or, worse, answer in the
+        # conversation you just switched away from.
+        key = (kwargs.get("model"), kwargs.get("permission_mode"), conversation)
+        resumed = bool(kwargs.get("resume"))
         if _SESSION["client"] is None or _SESSION["key"] != key:
             await reset_session()
             try:
@@ -341,8 +356,25 @@ async def run(prompt: str, app_root: Path, **kwargs):
                        "Claude Code CLI not found. Install it and sign in."}
                 return
             except Exception as exc:
-                yield {"type": "error", "text": f"{type(exc).__name__}: {exc}"}
-                return
+                # A stored session id the CLI no longer has -- its history was
+                # cleared, or the app folder moved. Without this the
+                # conversation is dead for good: every turn resumes the same
+                # missing session and fails the same way. Started fresh
+                # instead, and the caller is told to forget the id.
+                if not resumed:
+                    yield {"type": "error", "text": f"{type(exc).__name__}: {exc}"}
+                    return
+                yield {"type": "forget_session"}
+                try:
+                    client = ClaudeSDKClient(options=build_options(
+                        app_root, **{**kwargs, "resume": None}))
+                    await client.connect()
+                except Exception as exc2:
+                    yield {"type": "error", "text": f"{type(exc2).__name__}: {exc2}"}
+                    return
+                yield {"type": "text", "text":
+                       "(This conversation's earlier context could not be reloaded, "
+                       "so I am starting from what is on screen.)\n\n"}
             _SESSION.update(client=client, key=key)
 
         client = _SESSION["client"]
@@ -358,6 +390,15 @@ async def run(prompt: str, app_root: Path, **kwargs):
                     for block in (message.content if isinstance(message.content, list) else []):
                         if isinstance(block, ToolResultBlock):
                             yield {"type": "result", "text": _result_text(block)}
+                    continue
+                # The CLI's own id for this session. Stored against the
+                # conversation so reopening it can resume rather than start
+                # over. It is reported at the END of a turn, which is why this
+                # is the last thing recorded and not the first.
+                if isinstance(message, ResultMessage):
+                    sid = getattr(message, "session_id", None)
+                    if sid:
+                        yield {"type": "session", "id": sid}
                     continue
                 if not isinstance(message, AssistantMessage):
                     continue
