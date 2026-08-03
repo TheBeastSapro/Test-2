@@ -114,7 +114,7 @@ would mean nothing happens and the button looks broken.
 ## The tool set
 
 `tools.build_server()` (`tools.py:76`) wraps `Studio` methods as an in-process MCP server
-named `forgecast` (`tools.py:41`), created with `create_sdk_mcp_server` at `tools.py:259`.
+named `forgecast` (`tools.py:41`), created with `create_sdk_mcp_server` at `tools.py:282`.
 The studio object is passed in rather than constructed there so the tools and the pages
 share one — a second copy drifts inside a single conversation.
 
@@ -140,7 +140,7 @@ serves. The gap between them is exactly one name.
 ### Why `decide_gate` is deliberately not pre-allowed
 
 `decide_gate` is registered and callable (`tools.py:161`, dispatching to
-`Studio.decide_gate` at `studio.py:501`) but absent from `ALLOWED`, so calling it stops
+`Studio.decide_gate` at `studio.py:513`) but absent from `ALLOWED`, so calling it stops
 and asks the operator.
 
 The reason is not that approving a gate is risky in the abstract. It is that **approving
@@ -207,7 +207,7 @@ The first thing `run()` does is `auth.check()` (`assistant.py:255`) and yield an
 event if it fails — the refusal is honest and costs nothing.
 
 Resumption is one string. Each `Conversation` row stores the CLI's own session id
-(`models.py:356`); `chat()` reads it as `resume` (`routes_agent.py:384`) and passes it
+(`models.py:356`); `chat()` reads it as `resume` (`routes_agent.py:425`) and passes it
 into `build_options`, which forwards it to the SDK (`assistant.py:172-173`). A fresh
 `query` per message — the obvious implementation — produces an agent with amnesia that
 re-reads the same state every turn and still contradicts itself (`assistant.py:15-20`).
@@ -218,7 +218,7 @@ This is the part to understand before changing anything in `chat()`.
 
 `run()` emits a `session` event as soon as it sees a session id on an `AssistantMessage`,
 not at the end of the turn (`assistant.py:264-272`). The route writes it immediately, in
-its own database session, in `_remember_session()` (`routes_agent.py:422-440`).
+its own database session, in `_remember_session()` (`routes_agent.py:473-480`).
 
 The comment there names the bug, and it is worth quoting because the symptom does not
 look like a bug at all:
@@ -245,7 +245,7 @@ There were two separate failures here and both had to be fixed:
 Two rules fall out of that, and breaking either reintroduces the bug:
 
 * **`_save()` must not raise.** It runs during unwinding. It builds its own
-  `SessionLocal()` (`routes_agent.py:396`) because the request's session was closed when
+  `SessionLocal()` (`routes_agent.py:443`) because the request's session was closed when
   the response started streaming, and writing through a closed session is how a whole
   conversation silently fails to save. It swallows and logs.
 * **`assistant.run()` must never `yield` from a `finally`.** Yielding while unwinding
@@ -273,7 +273,7 @@ announced. `tests/test_agent.py:477` asserts the attempt sequence
 ### One turn per thread
 
 `_IN_FLIGHT` (`routes_agent.py:51`) is a plain in-process set of conversation ids; a
-second POST gets 409 (`routes_agent.py:364-369`). The browser's own guard is per page, so
+second POST gets 409 (`routes_agent.py:367-371`). The browser's own guard is per page, so
 two desktop windows — or a tab left open from earlier — sail past it, both turns resume
 the same session id, and the last to finish writes its session over the other's. A set
 rather than a row lock because the thing being serialised is a CLI subprocess owned by
@@ -286,13 +286,13 @@ Uploads land in `APP_ROOT/attachments` (`routes_agent.py:58-67`) — inside the 
 purpose, because a file dropped anywhere else is a path the agent is not allowed to open
 and the attachment looks like it worked and then quietly fails at the `Read`.
 
-`describe()` (`routes_agent.py:214`) classifies by extension and returns a `note` that
+`describe()` (`routes_agent.py:255`) classifies by extension and returns a `note` that
 tells the agent what it can *honestly* do: an image it can open, audio it **cannot**
 listen to and must measure with ffprobe, video it cannot watch. Said plainly because a
 model that cannot hear will otherwise describe how something sounds anyway. The notes are
 injected into the prompt as a file listing at `routes_agent.py:379-381`.
 
-`safe_name()` (`routes_agent.py:234`) exists because the extension is what everything
+`safe_name()` (`routes_agent.py:275`) exists because the extension is what everything
 downstream reads, and a clipboard paste arrives with no filename and only a MIME type. It
 derives one, so a pasted screenshot is an image the agent opens rather than an opaque
 blob. `tests/test_agent.py:531` covers the cases, including that a de-duplicated `.env`
@@ -315,7 +315,7 @@ There are two kinds and the distinction is load-bearing (`connectors.py:75`):
 `active()` used to return every connected entry, so an API-only service was configured as
 an MCP endpoint speaking a protocol it has never spoken. That fails as a 401 — identical
 to a rejected token — so the operator re-pastes a credential that was never wrong. It now
-filters on `kind == "mcp"`, and `api_credentials()` (`connectors.py:257`) is how the
+filters on `kind == "mcp"`, and `api_credentials()` (`connectors.py:335`) is how the
 provider adapter for a service asks for its own. Pinned by
 `tests/test_agent.py:780`.
 
@@ -327,39 +327,39 @@ Keep this distinct from a provider key, because they fail differently:
   the agent should say so.
 
 They are configured in separate places for that reason, and `GET /api/connectors` returns
-that sentence as a `note` (`routes_agent.py:543`).
+that sentence as a `note` (`routes_agent.py:595`).
 
 How they reach the agent: `build_options` merges `connectors.active_servers()` into the
 same `mcp_servers` dict as the app's own server (`assistant.py:164-165`). `active()`
-(`connectors.py:246`) returns only entries that are both enabled and have a URL, and
-`as_mcp()` (`connectors.py:146`) shapes each one — `{"type": "http"|"sse", "url": …,
+(`connectors.py:320`) returns only entries that are both enabled and have a URL, and
+`as_mcp()` (`connectors.py:215`) shapes each one — `{"type": "http"|"sse", "url": …,
 "headers": {"Authorization": "Bearer …"}}`. A bearer header, never a query parameter;
 `tests/test_agent.py:251` pins that.
 
 Things that will bite you:
 
 * **The catalogue asks for a URL rather than shipping one** (`connectors.py:28-33`,
-  `CATALOGUE` at `connectors.py:86`). Several of these endpoints are issued per
+  `CATALOGUE` at `connectors.py:100`). Several of these endpoints are issued per
   workspace. Guessing one produces an app that silently fails to connect and blames the
   network, so every `ConnectorSpec` carries a `where` field saying which page of which
   service to copy it from. `tests/test_agent.py:240` asserts `where` is non-empty.
-* **Storage is a file, not a table** (`connectors.py:133-140`,
+* **Storage is a file, not a table** (`connectors.py:179-186`,
   `storage/connectors.json`). The agent's MCP servers have to be resolved before a
   request exists, from a worker thread, at CLI start-up. Reaching for a request-scoped
   database session there is how a config load ends up holding a connection it should not
   have.
 * **Tokens are encrypted with the `.env` envelope key.** `Store.save()` calls
-  `crypto.encrypt` (`connectors.py:218`); `load()` catches a decrypt failure, logs it and
+  `crypto.encrypt` (`connectors.py:292`); `load()` catches a decrypt failure, logs it and
   attaches a note telling the operator to paste it again rather than crashing the page
-  (`connectors.py:206-210`). This is why `.env` must not be copied between installs. URLs
+  (`connectors.py:276-280`). This is why `.env` must not be copied between installs. URLs
   are stored in the clear so a misconfiguration is readable.
-* **A blank token on save means "leave it alone"** (`connectors.py:230-232`). The page
+* **A blank token on save means "leave it alone"** (`connectors.py:304-306`). The page
   shows a mask, so an unedited field submits empty; treating that as "clear it" would
   wipe a working token on any unrelated edit.
-* **`active_servers()` never raises** (`connectors.py:291`). A broken connectors file
+* **`active_servers()` never raises** (`connectors.py:378`). A broken connectors file
   degrades to an agent with fewer tools, not a chat that will not start.
 * **`listing()` includes configured keys that are not in the catalogue**
-  (`connectors.py:279-281`), or they would be invisible and unremovable.
+  (`connectors.py:366-368`), or they would be invisible and unremovable.
 
 `POST /api/connectors/{key}/test` (`routes_agent.py:569`) sends a real MCP `initialize`
 to the configured endpoint. Deliberately a request and not a URL-shape check: the failure
@@ -373,7 +373,7 @@ actually be handed, header values redacted, so a mistake is visible.
 
 ## Research reads a channel with no key
 
-`research_channel` (`studio.py:639`) and `study_youtube_channel` (`studio.py:308`) both
+`research_channel` (`studio.py:651`) and `study_youtube_channel` (`studio.py:320`) both
 start from a link, because a link is what is in the operator's clipboard. Neither needs a
 YouTube Data API key.
 
@@ -397,7 +397,7 @@ choice of source is made in one place instead of separately in each caller:
   configured and can therefore act on (`research/sources.py:377-386`).
 
 `read_channel` returns the parsed videos *and* a note naming the source, and every caller
-passes that note on as `via` — `studio.py:360` and `studio.py:677` for the two tools,
+passes that note on as `via` — `studio.py:372` and `studio.py:677` for the two tools,
 `routes_research.py:176` for the desk. The caveat belongs in what the operator reads, not
 in a log line, which is also why the tool description states it (`tools.py:195`) rather
 than leaving the model to assume a number is measured.
@@ -463,7 +463,7 @@ what a channel has learned, so it cannot tell you why a script came out the way 
 ### 1. The operation, in `studio.py`
 
 It goes here and only here, so the chat and any future panel cannot disagree. Match the
-house shape of `list_channels` (`studio.py:243`): open a session from the factory,
+house shape of `list_channels` (`studio.py:255`): open a session from the factory,
 resolve the user, **scope every query to that user**, return a dict of numbers, return
 `{"error": …}` rather than raising.
 
@@ -499,7 +499,7 @@ resolve the user, **scope every query to that user**, return a dict of numbers, 
             }
 ```
 
-`self._channel()` (`studio.py:129`) is why the tool can take a name or an id — the agent
+`self._channel()` (`studio.py:141`) is why the tool can take a name or an id — the agent
 has the name from the conversation and the id nowhere, and requiring the id would mean a
 `list_channels` call before every operation. Returning the real channel names alongside
 the error is the pattern from `start_run` (`tests/test_agent.py:99`): a failed lookup that
@@ -529,7 +529,7 @@ existing wrapper does the same.
 
 ### 3. Register it in the server
 
-`create_sdk_mcp_server`'s `tools=[…]` list at `tools.py:259` is explicit — a tool the
+`create_sdk_mcp_server`'s `tools=[…]` list at `tools.py:282` is explicit — a tool the
 decorator created but the list omits is silently absent, which presents as a model that
 "forgot" a tool it was told about. Add `channel_memory` to that list.
 

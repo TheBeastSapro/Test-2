@@ -114,6 +114,12 @@ EXCLUDE = (
     "*.sqlite3",
     "*.sqlite-*",
     "storage",  # renders and uploads: gigabytes of someone else's output
+    # The cloud-backup staging tree: a git working copy of one install's scripts, briefs
+    # and run records, sitting beside `storage/` rather than inside it. It is one
+    # machine's work by definition, and it contains a `.git` directory whose `config` and
+    # `FETCH_HEAD` name the operator's own private repository.
+    ".forgecast-cloud",
+    ".forgecast-restore",
     "attachments",  # chat attachments; they live in the app root because the agent is
     # sandboxed to it, so they sit next to the source while developing
     "runtime",  # the downloaded toolchain: Node, the Claude CLI, ffmpeg. Machine-specific

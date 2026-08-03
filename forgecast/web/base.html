@@ -17,6 +17,16 @@
    one that reports nothing. #}
 <style>
   .side .chan { border-bottom: 0; }
+  /* Every dot in the rail, not only the channels': the Claude chip in the foot is a rail
+     element too, and `/runs/{id}/preview` styles a bare `.dot` for its own stage marker —
+     which repainted "checking Claude…" grey on that one page while every other page
+     showed the same unconnected account in amber. */
+  .side .dot { width: 7px; height: 7px; border-radius: 50%;
+               display: inline-block; flex: none; }
+  .side .dot-ok   { background: var(--ok);   box-shadow: 0 0 0 3px rgba(74, 222, 128, .14); }
+  .side .dot-warn { background: var(--warn); box-shadow: 0 0 0 3px rgba(251, 191, 36, .14); }
+  .side .dot-bad  { background: var(--err);  box-shadow: 0 0 0 3px rgba(248, 113, 113, .14); }
+  .side .dot-idle { background: var(--faint); box-shadow: none; }
   /* Unknown word, visible dot: an unstyled 7px square reads as a rendering failure. */
   .side .chan .dot { background: var(--faint); box-shadow: none; }
   /* Mint is producing and violet is a gate everywhere else in the app — `.status.running`,
@@ -29,8 +39,15 @@
                              box-shadow: 0 0 0 3px rgba(196, 181, 253, .14); }
   /* Which channel you are inside. The format tab above stays lit because that is still
      the section, so this is the quieter mark of the two rather than a second accent
-     competing with it. */
-  .side .chan.here { background: var(--raise-2); color: var(--text); font-weight: 550; }
+     competing with it: a flush rule against the rail's edge, where the lit tab is an
+     inset filled block, so the two read as different kinds of mark rather than as two
+     brightnesses of the same one.
+
+     The rule is also the whole difference from hover, which is `--raise-2` as well — so
+     without it the entry under the cursor was indistinguishable from the channel you
+     were actually in, and on a four-channel rail that is two answers to "where am I". */
+  .side .chan.here { background: var(--raise-2); color: var(--text); font-weight: 550;
+                     box-shadow: inset 2px 0 0 var(--accent); }
 </style>
 {% block head %}{% endblock %}
 </head>

@@ -49,6 +49,25 @@ class Settings(BaseSettings):
     owner_email: str = ""
     owner_password: str = ""
 
+    # ------------------------------------------------------------- cloud backup
+    # Off, and the default has to be the restrictive one for the same reason
+    # `allow_signup` does: an install that never asked for cloud backup must never open a
+    # connection to GitHub, and "nobody remembered to turn it off" is not an acceptable
+    # way for an operator's scripts to end up on someone else's service.
+    #
+    # This is the *seed* for a fresh install. The operator's own decision is recorded in
+    # `storage/cloud.json` by `forgecast.cloud.config`, because a feature you enable by
+    # editing `.env` is a feature that asks the operator to do exactly the thing this app
+    # exists to avoid. Once that file exists, it wins.
+    cloud_sync: bool = False
+
+    # The OAuth app client ID used for the GitHub device flow. Not a secret — device flow
+    # sends no client secret at all, which is the property that makes it the right choice
+    # for an app that ships as a zip: the only GitHub credential in the archive is a
+    # public identifier. Empty means this build has no app registered, and the feature
+    # says so rather than showing a code that cannot work.
+    github_client_id: str = ""
+
     # "mock" never touches the network and never spends money.
     provider_mode: Literal["mock", "live"] = "mock"
 

@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 from forgecast import credits as billing
 from forgecast.api.main import create_app
 from forgecast.api.routes_channel import (
+    HUB_RUNS,
     IDLE,
     PRODUCING,
     WAITING,
@@ -307,7 +308,7 @@ def test_facts_are_not_taken_from_the_truncated_preview(
     assert facts["credits_spent"] == 11
 
     body = page(client.get(f"/c/{channel.id}").text)
-    assert "3 older run(s)" in body
+    assert "3 older runs" in body
 
 
 # --------------------------------------------------------------- the runs view
@@ -421,6 +422,54 @@ def test_the_lane_orders_channels_the_same_way_on_every_page(
     lane = rail(client.get(f"/c/{channel.id}").text)
     seen = [lane.index(name) for name in ("Test Channel", "Zulu", "Alpha", "Mike")]
     assert seen == sorted(seen), "the lane is not in the order the channels were made"
+
+
+def test_the_lane_dot_palette_is_scoped_to_the_rail(client, channel: Channel):
+    """A page's own bare `.dot` must not be able to repaint a dot in the sidebar.
+
+    `/runs/{id}/preview` styles a bare `.dot` for its player's stage marker, and its
+    `{% block head %}` lands after app.css — so on that one page the Claude chip in the
+    rail's foot came out grey while every other page in the app showed the same
+    unconnected account in amber. The channel dots were already defended; the foot was
+    not, and both are the rail reporting a live fact.
+    """
+    body = client.get(f"/c/{channel.id}").text
+    for word in ("ok", "warn", "bad", "idle"):
+        assert f".side .dot-{word}" in body, f"the rail's {word} dot is undefended"
+
+
+def test_the_here_mark_is_not_the_hover_mark(client, channel: Channel):
+    """Being in a channel and hovering one must not look the same.
+
+    `.chan:hover` is `--raise-2`, and `.chan.here` was `--raise-2` and nothing else — so
+    the entry under the cursor was indistinguishable from the channel you were actually
+    in, and a four-channel rail gave two answers to "where am I". The rule that separates
+    them is CSS, so what is pinned here is that the mark hover does not have is still on
+    the element; the browser check is what proved it reads.
+    """
+    body = client.get(f"/c/{channel.id}").text
+    assert "inset 2px 0 0 var(--accent)" in body
+
+
+@pytest.mark.parametrize("dead,expected", [(1, "1 run died on"), (2, "2 runs died on")])
+def test_the_dead_run_line_is_written_out_rather_than_run_s(
+    client, session: Session, channel: Channel, dead, expected,
+):
+    """"run(s)" is a note a writer left themselves, on the one line read after a failure."""
+    for _ in range(dead):
+        a_run(session, channel, status=RunStatus.failed)
+
+    body = page(client.get(f"/c/{channel.id}").text)
+    assert expected in body
+    assert "run(s)" not in body
+
+
+def test_one_older_run_is_not_pluralised_either(client, session: Session, channel: Channel):
+    for index in range(HUB_RUNS + 1):
+        a_run(session, channel, topic=f"Run {index}")
+
+    body = page(client.get(f"/c/{channel.id}").text)
+    assert ">1 older run</a>" in body
 
 
 def test_a_channel_name_with_no_break_in_it_cannot_widen_the_page(

@@ -115,6 +115,11 @@ code, .mono { font-family: var(--mono); font-size: 12.5px; }
   padding: 8px 10px; border-radius: var(--radius-sm);
   color: var(--text-2); font-size: 13.5px; text-decoration: none;
   transition: background .12s ease, color .12s ease;
+  /* Under 900px the rail is a scrolling row and the flex items are free to shrink, so
+     "Long-form" broke across two lines while every other tab stayed on one — one tab
+     twice as tall as its neighbours, on every page. The row scrolls sideways by design;
+     it does not need the two saved pixels. */
+  white-space: nowrap;
 }
 .side nav a:hover { background: var(--raise-2); color: var(--text); text-decoration: none; }
 .side nav a.on { background: var(--accent-dim); color: var(--accent); font-weight: 550; }

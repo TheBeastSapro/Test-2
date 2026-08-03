@@ -23,6 +23,13 @@ dist/
 *.sqlite3
 storage/
 
+# Cloud-backup staging and restore trees. A git working copy of one install's work,
+# living beside storage/ rather than inside it — see docs/CLOUD.md for why it cannot be
+# inside. Committing it into the Forgecast source repo would put an operator's scripts in
+# the app's own history, and a nested .git directory into a tracked tree.
+.forgecast-cloud/
+.forgecast-restore/
+
 # Private keys, certificates and credential drops, by the names tools hand out. None of
 # these belong in the repo, so the pattern is here rather than a review catching it.
 *.pem

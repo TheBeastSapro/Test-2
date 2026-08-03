@@ -145,9 +145,12 @@
   </div>
 </div>
 
+{# Spelled out rather than "run(s)". A parenthesised plural is a note the writer left
+   for themselves, and this line is read at the moment something has just gone wrong. #}
 {% if facts.failed %}
-  <p class="hubsub">{{ facts.failed }} run(s) died on this channel — the stage each one
-    died at is on <a href="/analytics">Analytics</a>.</p>
+  <p class="hubsub">{{ facts.failed }} {{ 'run' if facts.failed == 1 else 'runs' }} died on
+    this channel — the stage {{ 'it' if facts.failed == 1 else 'each one' }} died at is on
+    <a href="/analytics">Analytics</a>.</p>
 {% endif %}
 
 <h2>{% if view == 'runs' %}Every run{% else %}Latest runs{% endif %}</h2>
@@ -171,7 +174,8 @@
     </table>
   </div>
   {% if view == 'hub' and more_runs %}
-    <p class="hubsub"><a href="/c/{{ channel.id }}/runs">{{ more_runs }} older run(s)</a></p>
+    <p class="hubsub">
+      <a href="/c/{{ channel.id }}/runs">{{ more_runs }} older run{{ '' if more_runs == 1 else 's' }}</a></p>
   {% endif %}
 {% else %}
   <div class="card">

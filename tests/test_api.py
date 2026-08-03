@@ -192,13 +192,43 @@ def test_run_is_created_with_a_full_graph_and_a_hold(client: TestClient):
 
 
 def test_run_beyond_balance_returns_402(client: TestClient):
+    """A run costing more than the account holds is refused, and says so.
+
+    The balance is drained rather than the video made absurdly long. Asking for a
+    3600-second video used to exceed the signup grant on its own, and stopped doing so
+    when the shots reserve was corrected — it had been over-reserving by an order of
+    magnitude, and once the reserve tracked the real spend a longer target no longer
+    priced itself out. That made the test pass for a reason that had nothing to do with
+    what it is checking. Emptying the account tests the refusal itself, and cannot come
+    untrue the next time an estimate changes.
+    """
+    from sqlalchemy import select
+
+    from forgecast import credits
+    from forgecast.db import SessionLocal
+    from forgecast.models import LedgerKind, User
+
     token = register(client, "broke@example.com")
     channel_id = make_channel(client, token)
+
+    with SessionLocal() as session:
+        user_id = session.execute(
+            select(User).where(User.email == "broke@example.com")
+        ).scalar_one().id
+        # The ledger's own primitive, which takes a signed delta. `grant` runs its
+        # amount through `abs()`, so a negative passed there credits rather than debits —
+        # which is how draining an account quietly doubled it the first time.
+        credits._append(session, user_id=user_id, kind=LedgerKind.spend,
+                        delta=-credits.balance(session, user_id),
+                        note="drained so the refusal itself is what gets tested")
+        session.commit()
+        assert credits.balance(session, user_id) == 0
+
     response = client.post(
         "/api/runs",
         headers=auth(token),
-        json={"channel_id": channel_id, "topic": "way too long",
-              "pipeline": "faceless_longform", "options": {"target_seconds": 3600}},
+        json={"channel_id": channel_id, "topic": "anything at all",
+              "pipeline": "faceless_longform"},
     )
     assert response.status_code == 402
     assert response.json()["detail"]["error"] == "insufficient_credits"
