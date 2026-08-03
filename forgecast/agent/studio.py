@@ -327,23 +327,24 @@ class Studio:
                              "measure.", "link": link.as_dict()}
 
         settings = get_settings()
-        if not settings.youtube_api_key:
-            handle = link.value or reference.strip()
+        target = link.value or reference.strip()
+        try:
+            parsed, via = sources.read_channel(
+                target, api_key=settings.youtube_api_key, limit=int(limit)
+            )
+        except sources.ResearchError as exc:
+            # Not an error, because setting a channel up does not depend on measuring
+            # one: the numbers are a shortcut past four questions, and losing the
+            # shortcut means asking the questions rather than refusing to continue.
             return {
                 "measured": False,
                 "link": link.as_dict(),
-                "suggested_name": handle.lstrip("@").replace("-", " ").title(),
-                "note": "No YouTube Data API key, so I cannot read that channel's "
-                        "numbers. I can still create the channel — tell me the niche "
-                        "and whether it is long-form or Shorts, or add the key in "
-                        "Settings and I will measure it instead of asking.",
+                "suggested_name": target.lstrip("@").replace("-", " ").title(),
+                "why_not": str(exc),
+                "note": "I could not read that channel's numbers. I can still create "
+                        "the channel — tell me the niche and whether it is long-form "
+                        "or Shorts.",
             }
-
-        try:
-            parsed = sources.from_youtube_api(link.value or reference.strip(),
-                                              settings.youtube_api_key, limit=int(limit))
-        except sources.ResearchError as exc:
-            return {"error": str(exc), "link": link.as_dict()}
         if not parsed.videos:
             return {"error": "That channel has no readable uploads.",
                     "link": link.as_dict()}
@@ -356,6 +357,7 @@ class Studio:
 
         return {
             "measured": True,
+            "via": via,
             "link": link.as_dict(),
             "name": videos[0].channel or link.value,
             "subscribers": videos[0].channel_subscribers,
@@ -641,6 +643,9 @@ class Studio:
         which meant leaving the app, exporting statistics from somewhere else and
         pasting them back — so nobody used it. A channel URL, a @handle or a video
         link is what you actually have in your clipboard.
+
+        No API key is needed: without one the public page is read directly, and dates
+        that had to be reconstructed are marked rather than presented as measured.
         """
         from ..research import sources
 
@@ -655,24 +660,22 @@ class Studio:
                     "link": link.as_dict()}
 
         settings = get_settings()
-        if not settings.youtube_api_key:
+        target = link.value or reference.strip()
+        try:
+            parsed, via = sources.read_channel(
+                target, api_key=settings.youtube_api_key, limit=int(limit)
+            )
+        except sources.ResearchError as exc:
             return {
-                "error": "No YouTube Data API key is set, so I cannot fetch the "
-                         "numbers for that link.",
+                "error": str(exc),
                 "link": link.as_dict(),
-                "fix": "Settings → YouTube Data API key. It is free: enable YouTube "
-                       "Data API v3 at console.cloud.google.com and paste the key.",
                 "alternative": "Or paste the rows yourself and I will score them "
                                "with score_videos.",
             }
-        target = link.value or reference.strip()
-        try:
-            parsed = sources.from_youtube_api(target, settings.youtube_api_key,
-                                              limit=int(limit))
-        except sources.ResearchError as exc:
-            return {"error": str(exc), "link": link.as_dict()}
 
-        return self._score(parsed, source=target)
+        scored = self._score(parsed, source=target)
+        scored["via"] = via
+        return scored
 
     def score_videos(self, text: str, *, limit: int = 12) -> dict:
         """Turn pasted statistics into outliers: what genuinely beat its own cohort."""
@@ -773,3 +776,91 @@ class Studio:
             files = sorted(p.name for p in path.rglob("*") if p.is_file())[:40]
             return {"path": str(path), "files": files, "count": len(files)}
         return {"path": str(base)}
+
+    # -------------------------------------------------------------------- skills
+
+    # Skills are files under the installation's storage directory, like learned styles
+    # and connector settings: they are this studio's craft rather than one login's, so
+    # there is no per-account row to filter here. See `forgecast/skills.py`.
+
+    def list_skills(self) -> dict:
+        """Every skill, with the line that decides whether to load it — and no bodies.
+
+        The bodies are left out on purpose. The three shipped starters alone are about
+        nine thousand characters, so a listing that carried them would spend a whole
+        tool result on documents that mostly turn out not to apply, and a tool that
+        floods the transcript is a tool the agent learns to stop calling. `when_to_use`
+        is the entire basis for the decision and `words` says whether loading one costs
+        a paragraph or a page.
+        """
+        from .. import skills as library
+
+        try:
+            rows = library.available()
+        except OSError as exc:
+            return {"error": f"Could not read the skills folder: {exc}"}
+
+        return {
+            "count": len(rows),
+            "skills": [{"slug": row["slug"], "name": row["name"],
+                        # A skill saved without one still has to be judgeable, so the
+                        # first line of prose stands in rather than an empty string.
+                        "when_to_use": row["when_to_use"] or row["summary"],
+                        "words": row["words"]} for row in rows],
+            "folder": str(library.directory().resolve()),
+            "next": "load_skill on every slug whose when_to_use covers the task, then "
+                    "name the skill you followed." if rows else
+                    "Nothing written yet. The Skills page is where they are added.",
+        }
+
+    def load_skill(self, slug: str) -> dict:
+        """One skill in full, ready to be followed.
+
+        A slug that names nothing comes back as an error carrying the slugs that do
+        exist. Raising instead would put a stack trace in a log nobody opens, and the
+        agent's only sensible next move — asking for the right one — needs the
+        alternatives in this same result rather than in a second call.
+        """
+        from .. import skills as library
+
+        wanted = (slug or "").strip()
+        if not wanted:
+            return self._no_skill("Name the skill to load — a slug from list_skills.")
+        try:
+            skill = library.get(wanted)
+        except KeyError:
+            return self._no_skill(f"No skill called {wanted!r}.")
+        except (ValueError, OSError) as exc:
+            return self._no_skill(f"Could not load {wanted!r}: {exc}")
+
+        return {
+            "slug": skill.slug,
+            "name": skill.name,
+            "when_to_use": skill.when_to_use,
+            "words": len(skill.body.split()),
+            "updated_at": skill.updated_at,
+            "body": skill.body,
+            "follow": "Follow this for the rest of the task and say in your reply that "
+                      "you followed it — a document loaded silently cannot be checked "
+                      "against what you produced.",
+        }
+
+    def _no_skill(self, reason: str) -> dict:
+        """A refusal that names the slugs that do exist, inside the sentence.
+
+        The MCP wrapper sends `error` as the whole tool result and drops the rest of
+        the dict, so alternatives kept in a sibling key are alternatives the agent
+        never sees — and asking for a real slug is its only sensible next move.
+        """
+        known = self._skill_slugs()
+        return {"error": f"{reason} These exist: {', '.join(known) or 'none yet'}.",
+                "skills": known}
+
+    @staticmethod
+    def _skill_slugs() -> list[str]:
+        from .. import skills as library
+
+        try:
+            return [row["slug"] for row in library.available()]
+        except OSError:                                               # pragma: no cover
+            return []

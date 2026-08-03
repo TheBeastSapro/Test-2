@@ -48,17 +48,16 @@
     <div>
       <label for="channel">Fetch a channel</label>
       <input id="channel" placeholder="@handle, channel URL, or UC… id"
-             {% if not has_youtube_key %}disabled{% endif %}>
-      {% if not has_youtube_key %}
+             {% if not can_fetch %}disabled{% endif %}>
+      {% if not can_fetch %}
         <p class="muted" style="font-size:12.5px;margin:6px 0 0">
-          No YouTube Data API key yet, so fetching is off. Add one in
-          <a href="/settings#providers">Settings</a> — it is free — or paste the
-          numbers below.
+          {{ fetch_note }} Or paste the numbers below — they score the same way.
         </p>
       {% else %}
         <p class="muted" style="font-size:12.5px;margin:6px 0 0">
           A link works here too, and a link pasted into the box below is read as a
           channel rather than as a failed table.
+          {% if fetch_note %}<br>{{ fetch_note }}{% endif %}
         </p>
       {% endif %}
     </div>
@@ -135,6 +134,13 @@ $("score").addEventListener("click", async () => {
 function render(payload) {
   const parts = [];
 
+  // Where the numbers came from, before any of them. A multiple computed from
+  // reconstructed dates and one computed from measured timestamps look identical in a
+  // table, so the difference has to be stated rather than left to be inferred.
+  if (payload.via) {
+    parts.push(`<p class="muted" style="margin:0 0 14px;font-size:13px">${esc(payload.via)}</p>`);
+  }
+
   // Baselines first. The multiple below means nothing without the number it is a
   // multiple *of*, and how many videos that number was computed from.
   parts.push('<h2 style="margin-top:0">Baseline</h2><div class="base-strip">');
@@ -177,10 +183,16 @@ function render(payload) {
           ${(item.notes || []).map((n) => `<div class="muted" style="font-size:12px">— ${esc(n)}</div>`).join("")}
         </td>
         <td><span class="multiple">${item.multiple.toFixed(1)}×</span>
-            <span class="band ${item.band}">${item.band}</span></td>
+            <span class="band ${item.band}">${item.band}</span>
+            ${item.date_is_approximate && (item.multiple_high - item.multiple_low) > 0.05
+              ? `<div class="muted" style="font-size:11px;margin-top:2px">could be
+                 ${item.multiple_low.toFixed(1)}–${item.multiple_high.toFixed(1)}×</div>`
+              : ""}</td>
         <td>${Math.round(item.views_per_day).toLocaleString()}</td>
         <td>${item.age_days.toFixed(0)}d</td>
-        <td>${(item.engagement_rate * 100).toFixed(1)}%</td>
+        <td>${item.engagement_known === false
+              ? '<span class="muted" title="this source carries no like or comment counts">—</span>'
+              : (item.engagement_rate * 100).toFixed(1) + "%"}</td>
         <td><div class="rowactions">
           <button class="ghost" onclick='ideas(${index}, ${JSON.stringify(item.title)}, ${item.multiple}, ${JSON.stringify(item.band)})'>Ideas</button>
         </div></td>
@@ -189,8 +201,9 @@ function render(payload) {
     });
     parts.push("</tbody></table></div>");
     if (s.unreliable) {
-      parts.push(`<p class="muted" style="font-size:13px">${s.unreliable} of these come
-        from a cohort too small for the median to mean much.</p>`);
+      parts.push(`<p class="muted" style="font-size:13px">${s.unreliable} of these are
+        marked unreliable; the note on the row says why — either a cohort too small for
+        the median to mean much, or a publish date that had to be guessed.</p>`);
     }
   }
 

@@ -34,6 +34,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from . import skills_tools
+
 # Namespaced by the server they come from. This is the list the agent may call
 # without stopping to ask, and it is deliberately not "everything".
 SERVER_NAME = "forgecast"
@@ -42,6 +44,9 @@ _READ_ONLY = (
     "studio_status", "list_channels", "study_youtube_channel", "list_runs",
     "run_status", "preview_run", "list_styles", "score_videos", "research_channel",
     "run_files", "cast_voice", "voice_catalogue",
+    # Reading the operator's own instruction documents. See skills_tools.py for why
+    # they are read-only and why their descriptions are as long as they are.
+    *skills_tools.READ_ONLY,
 )
 _WRITES = ("create_channel", "update_channel", "start_run", "apply_style",
            "blend_styles", "cancel_run")
@@ -190,7 +195,8 @@ def build_server(studio):
     @tool("research_channel",
           "Mine a YouTube channel for outliers from a link or @handle: which of its "
           "uploads beat their own cohort, by how much, and how reliable each number "
-          "is. Needs a YouTube Data API key.",
+          "is. No API key needed — it reads the public page when there is no key, and "
+          "marks any video whose publish date had to be guessed.",
           {"url": str, "limit": int})
     async def research_channel(args):
         return _text(studio.research_channel(args.get("url") or "",
@@ -198,8 +204,8 @@ def build_server(studio):
 
     @tool("score_videos",
           "Score statistics the user pasted — a table or a JSON array — into ranked "
-          "outliers. Use this when there is no API key or the numbers came from "
-          "somewhere else.",
+          "outliers. Use this when the numbers came from somewhere else, or when "
+          "research_channel could not read the channel.",
           {"text": str})
     async def score_videos(args):
         return _text(studio.score_videos(args.get("text") or ""))
@@ -255,5 +261,6 @@ def build_server(studio):
         tools=[studio_status, list_channels, study_youtube_channel, create_channel,
                update_channel, list_runs, start_run, run_status, decide_gate,
                cancel_run, preview_run, run_files, research_channel, score_videos,
-               cast_voice, voice_catalogue, list_styles, apply_style, blend_styles],
+               cast_voice, voice_catalogue, list_styles, apply_style, blend_styles,
+               *skills_tools.build(studio)],
     )

@@ -72,6 +72,12 @@ def research_page(request: Request, session: Session = Depends(get_session)) -> 
         select(Channel).where(Channel.user_id == user.id).order_by(Channel.id)
     ).scalars().all()
     settings = get_settings()
+
+    # Fetching needs *a* way to read a channel, and a key is only one of them. Gating
+    # the box on the key alone disabled it on every install that could in fact fetch.
+    from ..research import keyless
+
+    keyless_ready, keyless_fix = keyless.available()
     return TEMPLATES.TemplateResponse(
         request,
         "research.html",
@@ -79,6 +85,12 @@ def research_page(request: Request, session: Session = Depends(get_session)) -> 
             **shell(session, user, "research"),
             "channels": channels,
             "has_youtube_key": bool(settings.youtube_api_key),
+            "can_fetch": bool(settings.youtube_api_key) or keyless_ready,
+            "fetch_note": (
+                "" if settings.youtube_api_key
+                else keyless.SOURCE_NOTE if keyless_ready
+                else keyless_fix
+            ),
         },
     )
 
@@ -113,16 +125,14 @@ def score(
                        "has no cohort.",
             )
 
+    via = ""
     if channel_ref:
-        if not settings.youtube_api_key:
-            raise HTTPException(
-                status_code=400,
-                detail="no YouTube API key configured — paste the numbers instead, "
-                       "or set FORGECAST_YOUTUBE_API_KEY",
-            )
+        # No key required: `read_channel` uses one when it is configured and reads the
+        # public page when it is not. This used to be a 400 telling the operator to go
+        # and get an API key, which is the wall that made the desk read as broken.
         try:
-            parsed = sources.from_youtube_api(
-                channel_ref, settings.youtube_api_key, limit=payload.limit
+            parsed, via = sources.read_channel(
+                channel_ref, api_key=settings.youtube_api_key, limit=payload.limit
             )
         except sources.ResearchError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
@@ -137,7 +147,7 @@ def score(
     if not parsed.videos:
         return JSONResponse({
             "count": 0, "outliers": [], "baselines": {}, "summary": summarise([]),
-            "skipped": parsed.skipped,
+            "skipped": parsed.skipped, "via": via,
             "note": "nothing scoreable — each row needs at least a title, a view count "
                     "and a publish date",
         })
@@ -153,6 +163,7 @@ def score(
         "baselines": {name: base.as_dict() for name, base in bases.items()},
         "summary": summarise(found),
         "skipped": parsed.skipped[:20],
+        "via": via,
     })
 
 

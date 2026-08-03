@@ -29,6 +29,11 @@ dependencies = [
 
 [project.optional-dependencies]
 postgres = ["psycopg[binary]>=3.1"]
+# Reading a channel's public numbers with no API key and no account. Optional because
+# the research desk still works without it — from a key, or from pasted rows — and
+# because it is a binary that wants updating often, which is a bad thing to pin into
+# the base install. `forgecast.research.keyless` reports its absence with the fix.
+research = ["yt-dlp>=2024.1"]
 providers = [
     "openai>=1.30",
     "anthropic>=0.25",

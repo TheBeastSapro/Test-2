@@ -31,12 +31,15 @@ with a third key does not lose it on the next save.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
 from .config import get_settings
+
+log = logging.getLogger("forgecast.skills")
 
 FOLDER_NAME = "skills"
 
@@ -48,6 +51,17 @@ MAX_SLUG_CHARS = 60
 _KEY_LINE = re.compile(r"^([A-Za-z][A-Za-z0-9_-]*)\s*:\s*(.*)$")
 _FENCE = "---"
 
+# Windows resolves these as devices in every directory and whatever the extension, so
+# `nul.md` there is not a file: the write is swallowed and every later read hands back an
+# empty document, which for a skill means its prose is gone and the page still lists it.
+# A whitelist on the characters cannot catch this, because every character is legal.
+_DEVICE_NAMES = frozenset(
+    {"con", "prn", "aux", "nul"}
+    | {f"com{digit}" for digit in "0123456789"}
+    | {f"lpt{digit}" for digit in "0123456789"}
+)
+_DEVICE_SUFFIX = "-skill"
+
 
 def slugify(name: str) -> str:
     """A filesystem-safe key from a human name, or "" when nothing survives.
@@ -57,12 +71,19 @@ def slugify(name: str) -> str:
     disposes of separators, `..`, leading dots, colons, and the reserved characters on
     Windows in one rule instead of five that each have to be remembered.
 
+    A name that lands on a Windows device name is suffixed rather than refused, because
+    "Aux" and "Con" are legitimate titles and nobody should have to learn which two dozen
+    words their filesystem has taken. The suffix is idempotent — `nul-skill` is not
+    itself reserved — which matters because every read and delete slugifies again, and a
+    rule that grew a suffix per pass would stop finding the file it wrote.
+
     Empty is returned rather than a default like "skill", because a caller that has no
     name should be told so — silently filing an unnamed skill under a generic slug is
     how the second unnamed skill overwrites the first.
     """
     cleaned = re.sub(r"[^a-z0-9]+", "-", str(name).strip().lower()).strip("-")
-    return cleaned[:MAX_SLUG_CHARS].strip("-")
+    cleaned = cleaned[:MAX_SLUG_CHARS].strip("-")
+    return f"{cleaned}{_DEVICE_SUFFIX}" if cleaned in _DEVICE_NAMES else cleaned
 
 
 @dataclass
@@ -222,6 +243,19 @@ def available(base: Path | str | None = None) -> list[dict]:
     return rows
 
 
+def exists(slug: str, base: Path | str | None = None) -> bool:
+    """Whether a slug already names a stored skill.
+
+    Separate from `get` so a caller deciding whether it is about to overwrite someone
+    else's document does not have to read and parse it, and so a name that cannot be a
+    slug at all answers False instead of raising — there is nothing there to protect.
+    """
+    try:
+        return _path(slug, base).exists()
+    except ValueError:
+        return False
+
+
 def get(slug: str, base: Path | str | None = None) -> Skill:
     """One skill by slug. `KeyError` names the ones that do exist.
 
@@ -255,6 +289,38 @@ def save(slug: str, name: str, when_to_use: str, body: str,
     path.write_text(skill.document(), encoding="utf-8")
     skill.updated_at = _stamp(path)
     return skill
+
+
+def refile(previous: str, name: str, when_to_use: str, body: str,
+           base: Path | str | None = None) -> Skill:
+    """An editor's save: the file follows the name, and the old file is removed.
+
+    `previous` is the slug the editor loaded, `""` for a new document. Two things make
+    this worth being an operation of its own rather than the caller's two calls.
+
+    The old file has to go, or the library holds two documents claiming to be the same
+    instruction and the agent — which loads every skill whose `when_to_use` matches —
+    follows both, including the half that was edited out.
+
+    And many titles share one filename: "Hook writing", "hook_writing", "Hook: writing!"
+    and any two names agreeing on their first sixty characters all slugify alike. Landing
+    on a document that was not the one being edited would overwrite that skill's prose
+    and then delete the one being edited — two documents lost to one save. Which is why
+    the check cannot live in the page: only a caller that says which file it loaded can
+    tell an intended replacement from a collision, so this refuses on behalf of every
+    caller that ever gets added.
+    """
+    target = slugify(name)
+    before = slugify(previous)
+    if target and target != before and exists(target, base):
+        # Short: the page puts this in a banner through a query string it clips.
+        raise ValueError(f"{target}.md is already another skill; rename this one")
+
+    stored = save(target, name, when_to_use, body, base)
+    if before and before != stored.slug:
+        delete(before, base)
+        log.info("skill %s renamed to %s", before, stored.slug)
+    return stored
 
 
 def delete(slug: str, base: Path | str | None = None) -> bool:

@@ -9,6 +9,11 @@ dist/
 .env
 *.db
 *.db-journal
+# SQLite writes these two beside the database and they hold page data, so a commit
+# that catches them commits rows. `*.db` did not cover them and two of them landed
+# in a commit before anyone noticed.
+*.db-shm
+*.db-wal
 storage/
 .pytest_cache/
 .ruff_cache/

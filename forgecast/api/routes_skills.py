@@ -93,21 +93,23 @@ def save_skill(
 ) -> RedirectResponse:
     """Create or replace one skill.
 
-    The file follows the name, so a renamed skill is re-filed and the old file is
-    removed. Leaving it behind would put two documents in the library claiming to be the
-    same instruction, and the agent — which loads every skill whose `when_to_use`
-    matches — would then follow both, including the half of the pair that was edited out.
+    `slug` is the document the editor loaded, and `refile` needs it to tell a rename from
+    a collision: two different titles routinely land on one filename, and a save that
+    overwrote the wrong document would also delete the right one. A refusal comes back as
+    the banner rather than a 400, because the operator is on a page and a status code is
+    not something a form post shows them.
     """
     try:
-        target = skills.slugify(name)
-        stored = skills.save(target, name, when_to_use, body)
+        stored = skills.refile(slug, name, when_to_use, body)
     except ValueError as exc:
-        return RedirectResponse(f"/skills-library?error={_query(str(exc))}", 303)
-
-    previous = skills.slugify(slug)
-    if previous and previous != stored.slug:
-        skills.delete(previous)
-        log.info("skill %s renamed to %s", previous, stored.slug)
+        # Logged as well as shown: a refusal here means an editor's work did not land,
+        # and the banner is gone the moment the operator clicks anything else.
+        log.info("skill save refused for name %r: %s", name[:80], exc)
+        # `selected` puts the document that was in the way on screen, which is the only
+        # thing that makes a name collision explicable rather than a mystery.
+        return RedirectResponse(
+            f"/skills-library?selected={skills.slugify(name)}&error={_query(str(exc))}",
+            303)
 
     return RedirectResponse(
         f"/skills-library?selected={stored.slug}&saved={_query(stored.name)}", 303)

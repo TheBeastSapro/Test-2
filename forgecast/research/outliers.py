@@ -34,10 +34,24 @@ with a number.
 **4. Youth.** A video published yesterday has a views-per-day figure dominated by the
 initial notification push. Its score will be spectacular and meaningless. Videos below
 a minimum age are excluded from both the baseline and the results.
+
+## The fifth correction, for dates that were never measured
+
+Some sources do not give a publish date at all, only a label like "2 months ago", and a
+date reconstructed from that can be out by half a month either way. Because the whole
+score is views divided by age, an age that is out by 15 days reports a multiple that is
+out in exact proportion — badly for a recent video, imperceptibly for an old one.
+
+So a video carrying an approximate date is scored anyway and then checked: if half a
+month of error is enough to drop its multiple below the threshold it was included at,
+the number is reported with the range it could actually be in, and marked unreliable.
+That is a per-video test rather than an age cutoff, because it is the arithmetic that
+decides whether the error matters, and for a two-year-old video it never does.
 """
 
 from __future__ import annotations
 
+import math
 import statistics
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -59,6 +73,12 @@ SOFT_OUTLIER = 3.0
 CLEAR_OUTLIER = 5.0
 STRONG_OUTLIER = 10.0
 
+# How far out a publish date can be when it was reconstructed from a relative label
+# rather than measured. Months are the coarsest label a listing shows — "2 months ago"
+# covers a 30-day window — so half a month is the worst case, and it is the only input
+# the uncertainty below is computed from.
+APPROXIMATE_DATE_ERROR_DAYS = 15.0
+
 
 @dataclass
 class VideoStat:
@@ -73,6 +93,10 @@ class VideoStat:
     channel_subscribers: int = 0
     likes: int = 0
     comments: int = 0
+    # True when `published_at` was reconstructed from a relative label rather than
+    # measured. A fact about where the row came from, not a judgement about whether it
+    # matters — `find_outliers` decides that per video, from the arithmetic.
+    date_is_approximate: bool = False
 
     @property
     def cohort(self) -> str:
@@ -133,6 +157,10 @@ class Outlier:
     engagement_rate: float = 0.0
     reliable: bool = True
     notes: list[str] = field(default_factory=list)
+    # Equal to `multiple` unless the publish date was approximate, in which case they
+    # bracket where it could really be. A UI can print a range instead of a point.
+    multiple_low: float = 0.0
+    multiple_high: float = 0.0
 
     def as_dict(self) -> dict:
         return {
@@ -144,12 +172,46 @@ class Outlier:
             "age_days": round(self.age_days, 1),
             "views_per_day": round(self.views_per_day, 1),
             "multiple": round(self.multiple, 2),
+            "multiple_low": round(self.multiple_low or self.multiple, 2),
+            "multiple_high": round(self.multiple_high or self.multiple, 2),
+            "date_is_approximate": self.video.date_is_approximate,
             "band": self.band,
             "engagement_rate": round(self.engagement_rate, 4),
+            # A source that carries no like or comment counts computes 0.0, which in a
+            # table is indistinguishable from a video nobody engaged with. The flag
+            # lets the UI print "not known" instead of a number that was never read.
+            "engagement_known": bool(self.video.likes or self.video.comments),
             "reliable": self.reliable,
             "baseline": self.baseline.as_dict(),
             "notes": self.notes,
         }
+
+
+def _widest(low: float, high: float) -> tuple[str, str]:
+    """A range printed so that rounding never contradicts the sentence around it.
+
+    2.97 rounded to one decimal is 3.0, and "anywhere from 3.0x to 4.9x — it may not
+    clear 3x at all" reads like a mistake even though the arithmetic is right. Rounding
+    the ends outwards keeps the printed interval a superset of the real one, so the
+    words and the numbers always agree.
+    """
+    return f"{math.floor(low * 10) / 10:.1f}", f"{math.ceil(high * 10) / 10:.1f}"
+
+
+def approximate_date_span(multiple: float, age_days: float) -> tuple[float, float]:
+    """The range a multiple could actually be in, if the publish date is a guess.
+
+    views-per-day is views over age, so the multiple is inversely proportional to the
+    age and nothing else has to be modelled: an age reported 15 days too low reports a
+    rate — and therefore a multiple — too high by exactly `age / (age - 15)`.
+
+    Both ends are clamped at one day, the same clamp `views_per_day` applies, so a
+    two-week-old video does not come back with an upper bound of infinity.
+    """
+    span = max(age_days, 1.0)
+    older = max(age_days + APPROXIMATE_DATE_ERROR_DAYS, 1.0)
+    younger = max(age_days - APPROXIMATE_DATE_ERROR_DAYS, 1.0)
+    return multiple * span / older, multiple * span / younger
 
 
 def band_for(multiple: float) -> str:
@@ -232,8 +294,32 @@ def find_outliers(
             continue
 
         notes: list[str] = []
+        reliable = base.reliable
         if not base.reliable:
             notes.append(base.note)
+
+        low, high = multiple, multiple
+        if video.date_is_approximate:
+            low, high = approximate_date_span(multiple, age)
+            shown_low, shown_high = _widest(low, high)
+            if low < threshold:
+                # The verdict this list exists to deliver is "this beat its cohort".
+                # If half a month of error can take that away, saying so with the range
+                # is the honest report; printing 3.1x alone is a number that looks
+                # measured and is not.
+                reliable = False
+                notes.append(
+                    f"the publish date is a guess from a relative label, so this is "
+                    f"anywhere from {shown_low}x to {shown_high}x — it may not clear "
+                    f"{threshold:g}x at all"
+                )
+            elif band_for(low) != band_for(high):
+                notes.append(
+                    f"the publish date is a guess from a relative label: still an "
+                    f"outlier, but between {shown_low}x and {shown_high}x, so the band "
+                    f"could be either side of the line"
+                )
+
         if video.channel_subscribers and video.views > video.channel_subscribers * 20:
             # Worth flagging rather than scoring: views far beyond the subscriber base
             # mean the reach came from recommendation, not from the existing audience.
@@ -247,7 +333,8 @@ def find_outliers(
         found.append(Outlier(
             video=video, multiple=multiple, baseline=base, age_days=age,
             views_per_day=rate, band=band_for(multiple),
-            engagement_rate=engagement, reliable=base.reliable, notes=notes,
+            engagement_rate=engagement, reliable=reliable, notes=notes,
+            multiple_low=low, multiple_high=high,
         ))
 
     found.sort(key=lambda item: item.multiple, reverse=True)

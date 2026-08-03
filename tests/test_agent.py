@@ -128,10 +128,20 @@ def test_score_videos_ranks_a_real_table(user):
     assert scored["strongest"]["multiple"] > 5
 
 
-def test_research_without_a_key_says_so_and_offers_the_alternative(user):
+def test_research_with_no_way_to_fetch_names_every_way_out(user, monkeypatch):
+    """No key *and* no yt-dlp is the only case that still cannot read a channel.
+
+    A missing key on its own no longer stops anything — see
+    tests/test_research_keyless.py, where the public page is read instead.
+    """
+    from forgecast.research import keyless
+
+    monkeypatch.setattr(keyless, "_executable", lambda: None)
     out = Studio(user_id=user.id).research_channel("https://youtube.com/@someone")
+
     assert "error" in out
-    assert "YouTube Data API key" in out["error"]
+    assert "pip install yt-dlp" in out["error"]
+    assert "Settings" in out["error"]
     assert "paste" in out["alternative"]
 
 

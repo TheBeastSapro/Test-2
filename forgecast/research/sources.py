@@ -11,12 +11,16 @@ tool is most useful — sitting in front of a competitor's channel page, wanting
 whether the video doing well is doing *unusually* well. Waiting on a quota'd API for a
 question you can answer from a table on screen is friction with no payoff.
 
-So there are three inputs, and none of them is privileged:
+So there are four inputs, and none of them is privileged:
 
 * **paste** — a table copied from anywhere, or JSON from another tool;
 * **the YouTube Data API** — when a key is configured;
+* **the public channel page**, read with yt-dlp and no key at all — see `keyless`;
 * **an MCP research tool's output** — which arrives as JSON and goes through the same
   parser as a paste.
+
+`read_channel` picks between the middle two so callers do not each grow their own
+version of that decision.
 
 Everything converges on `VideoStat` and is scored by the same code, so a number the
 operator pasted and a number fetched from the API are treated identically. There is no
@@ -345,3 +349,38 @@ def from_youtube_api(channel: str, api_key: str, *, limit: int = 50) -> ParseRes
         stat, reason = _row_to_stat(row, now=None)
         (result.videos.append(stat) if stat else result.skipped.append(reason))
     return result
+
+
+def read_channel(reference: str, *, api_key: str = "",
+                 limit: int = 50) -> tuple[ParseResult, str]:
+    """A channel's uploads from whichever source can answer, and which one that was.
+
+    The API first when a key is configured, because it returns measured timestamps and
+    likes and comments; `keyless` otherwise. The fallback also covers a *failing* API,
+    which is not a hedge — a quota that ran out mid-afternoon is the ordinary way this
+    breaks, and the numbers are still sitting on the public page.
+
+    Callers get the note back rather than having to know which path ran, because the
+    caveat belongs in what the operator reads, not in a log line.
+    """
+    from . import keyless
+
+    api_failure = ""
+    if api_key:
+        try:
+            return (from_youtube_api(reference, api_key, limit=limit),
+                    "read with the YouTube Data API key from Settings")
+        except ResearchError as exc:
+            api_failure = str(exc)
+            log.info("youtube api failed for %s, trying yt-dlp: %s", reference, exc)
+
+    try:
+        return keyless.channel_uploads(reference, limit=limit), keyless.SOURCE_NOTE
+    except keyless.KeylessError as exc:
+        if api_failure:
+            # The API error is the primary one: it is what the operator configured, so
+            # its failure is the thing they can act on. The fallback's failure is
+            # appended so it does not look like it was never tried.
+            raise ResearchError(f"{api_failure}\nyt-dlp could not read it "
+                                f"either: {exc}") from exc
+        raise ResearchError(str(exc)) from exc

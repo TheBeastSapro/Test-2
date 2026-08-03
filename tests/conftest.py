@@ -52,6 +52,29 @@ from forgecast.models import Base, Channel, User  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
+def no_real_yt_dlp(monkeypatch):
+    """Nothing in the suite is allowed to actually read youtube.com.
+
+    `research.keyless` shells out to yt-dlp, and on a machine that has it installed
+    every test touching `research_channel` would quietly make a real network request —
+    slow, rate-limited, and answering differently next week. Tests that want the
+    subprocess substitute their own `_run`; this makes forgetting to loud rather than
+    slow. The real path is exercised by hand and its output is pinned as a fixture in
+    test_research_keyless.py.
+    """
+    from forgecast.research import keyless
+
+    def refuse(command):                                          # pragma: no cover
+        raise AssertionError(
+            "a test tried to run yt-dlp for real: "
+            + " ".join(command[-2:])
+            + "\nPatch forgecast.research.keyless._run instead."
+        )
+
+    monkeypatch.setattr(keyless, "_run", refuse)
+
+
+@pytest.fixture(autouse=True)
 def fresh_database():
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
