@@ -10,6 +10,7 @@ level at a time — is asserted too, but it is the smaller half.
 
 from __future__ import annotations
 
+import contextlib
 import shutil
 from pathlib import Path
 
@@ -441,3 +442,52 @@ def test_a_directory_is_not_offered_as_a_file(client, run_folder):
     assert client.get("/api/files/list",
                       params={"path": f"runs/{run.id}/nothing-here"}
                       ).status_code == 404
+
+
+# ------------------------------------------------------- the part that must not fail
+
+
+def test_nothing_reaches_outside_the_storage_directory(client, tmp_path, monkeypatch):
+    """Every path on this page arrives from the browser.
+
+    This is the one surface in the app where a mistake reads someone's `.env`, which
+    sits exactly one directory above storage in a real install. Symlinks matter as much
+    as `..`: `resolve()` follows them, so a check done before resolving passes and then
+    opens the target anyway.
+    """
+    from forgecast.api import routes_files
+
+    storage = tmp_path / "storage"
+    storage.mkdir()
+    (storage / "innocent.txt").write_text("inside\n", encoding="utf-8")
+
+    secret = tmp_path / "secret.txt"
+    secret.write_text("FORGECAST_ENCRYPTION_KEY=do-not-leak\n", encoding="utf-8")
+    # Windows refuses symlinks without the privilege; the `..` cases below still run.
+    with contextlib.suppress(OSError):
+        (storage / "escape").symlink_to(secret)
+
+    monkeypatch.setattr(routes_files, "storage_root", lambda: storage.resolve())
+
+    attacks = [
+        "../secret.txt",
+        "../../etc/passwd",
+        "....//....//secret.txt",
+        str(secret),                         # absolute
+        "/etc/passwd",
+        "%2e%2e%2fsecret.txt",
+        "..\\secret.txt",
+        "innocent.txt/../../secret.txt",
+        "escape",                            # the symlink
+        "./escape",
+    ]
+    for route in ("/api/files/list", "/api/files/content"):
+        for attack in attacks:
+            body = client.get(route, params={"path": attack}).text
+            assert "do-not-leak" not in body, f"{route} leaked via {attack!r}"
+            assert "root:x:" not in body, f"{route} leaked /etc/passwd via {attack!r}"
+
+    # And the legitimate case still works, or the check above is just a broken feature.
+    listing = client.get("/api/files/list", params={"path": ""})
+    assert listing.status_code == 200
+    assert "innocent.txt" in listing.text

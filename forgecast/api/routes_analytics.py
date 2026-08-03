@@ -250,6 +250,7 @@ def channel_rows(session: Session, user: User, spend_by_run: dict[int, int]) -> 
         deaths = Counter(
             failed_stage.get(run.id, "unknown") for run in failed
         )
+        in_flight = len(mine) - len(completed) - len(failed) - len(cancelled)
         rows.append({
             "id": channel.id,
             "name": channel.name,
@@ -258,14 +259,20 @@ def channel_rows(session: Session, user: User, spend_by_run: dict[int, int]) -> 
             "completed": len(completed),
             "failed": len(failed),
             "cancelled": len(cancelled),
-            "in_flight": len(mine) - len(completed) - len(failed) - len(cancelled),
+            "in_flight": in_flight,
             "complete_pct": _bar(len(completed), len(mine)),
             # Which of the shared status colours the channel's tally earns. Decided
             # here rather than in the template so that "any failure at all" cannot
             # quietly become the rule: a channel with six finished videos and one dead
             # run is not a failing channel, and colouring it red says it is.
-            "health": ("failed" if failed and not completed
-                       else "completed" if completed and not failed
+            #
+            # Ordered by what is most worth knowing, which is why work in flight comes
+            # first. The mixed case has to be handled explicitly — falling through to
+            # "queued" labelled a channel with five finished videos and one dead run
+            # with a state it was not in, and greyed it out for having shipped.
+            "health": ("running" if in_flight
+                       else "completed" if completed
+                       else "failed" if failed
                        else "queued"),
             # Withheld rather than rounded below the sample floor. `enough` is what
             # the template branches on so the reason travels with the gap.

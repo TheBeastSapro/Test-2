@@ -34,12 +34,13 @@ QUEUED_AT = datetime(2026, 3, 1, 9, 0, 0)
 
 @pytest.fixture
 def client(user):
-    """The page mounted on its own app.
+    """The page mounted explicitly as well as by the app.
 
-    `create_app()` does not know about this router yet — registering it lives in
-    `main.py`, which belongs to someone else — so the test mounts it rather than
-    waiting on that edit. Including it twice once main.py has it is harmless: the
-    first matching route wins and both are this module's.
+    `main.py` already registers this router, and including it a second time is
+    harmless because the first matching route wins and both are this module's. It stays
+    because the alternative is a suite that goes green on a build where the page was
+    never mounted — the one failure these tests exist to catch and the one they would
+    be blind to.
     """
     app = create_app()
     app.include_router(analytics_router)
@@ -130,10 +131,12 @@ def test_per_channel_numbers_are_the_ones_worked_out_by_hand(session, user):
     assert row["deaths"] == [{"node_type": "render", "count": 2},
                              {"node_type": "voice", "count": 1}]
     assert row["complete_pct"] == pytest.approx(54.55, abs=0.01)
-    # Six finished videos and three dead runs is not a failing channel, and the neutral
-    # status colour is what says so. Red here would be a verdict the numbers do not
-    # support, on the screen someone checks before deciding to abandon a channel.
-    assert row["health"] == "queued"
+    # Six finished videos and three dead runs is not a failing channel: red here would
+    # be a verdict the numbers do not support, on the screen someone checks before
+    # deciding to abandon a channel. This fixture also has a run still going, and that
+    # outranks everything else because it is the one worth looking at.
+    assert row["in_flight"] == 1
+    assert row["health"] == "running"
 
 
 def test_a_median_of_two_runs_is_refused_rather_than_printed(session, user, client):
@@ -423,3 +426,48 @@ def test_the_page_sends_a_stranger_to_the_login(session):
         page = anonymous.get("/analytics", follow_redirects=False)
     assert page.status_code == 303
     assert page.headers["location"] == "/login?next=/analytics"
+
+
+def test_a_channel_that_has_shipped_is_not_greyed_out_for_one_death(session, user):
+    """The mixed case needs its own answer.
+
+    Five finished videos and one dead run used to fall through to "queued" — a state
+    the channel was not in — and the shared status colour for queued is grey, so a
+    channel that had shipped five videos looked dormant. Not red either: one death
+    beside five successes is not a failing channel, which is the whole reason the
+    fallback exists.
+    """
+    from datetime import UTC, datetime, timedelta
+
+    from forgecast.api.routes_analytics import channel_rows
+    from forgecast.models import Channel, Run, RunStatus
+
+    channel = Channel(user_id=user.id, name="Shipped", aspect_ratio="16:9")
+    session.add(channel)
+    session.flush()
+
+    start = datetime.now(UTC) - timedelta(days=1)
+    for index in range(5):
+        session.add(Run(channel_id=channel.id, user_id=user.id, topic=f"done {index}",
+                        pipeline="faceless_longform", status=RunStatus.completed,
+                        created_at=start,
+                        finished_at=start + timedelta(seconds=100 * (index + 1))))
+    session.add(Run(channel_id=channel.id, user_id=user.id, topic="died",
+                    pipeline="faceless_longform", status=RunStatus.failed,
+                    created_at=start, finished_at=start + timedelta(seconds=60)))
+    session.commit()
+
+    row = next(r for r in channel_rows(session, user, {}) if r["name"] == "Shipped")
+    assert (row["completed"], row["failed"], row["in_flight"]) == (5, 1, 0)
+    assert row["health"] == "completed"
+
+    # Work still going outranks both, because that is the one worth looking at.
+    session.add(Run(channel_id=channel.id, user_id=user.id, topic="running",
+                    pipeline="faceless_longform", status=RunStatus.running))
+    session.commit()
+    row = next(r for r in channel_rows(session, user, {}) if r["name"] == "Shipped")
+    assert row["health"] == "running"
+
+    # And exactly five finished is the sample floor, so the median is published.
+    assert row["enough"] is True
+    assert row["median_seconds"] == 300.0
