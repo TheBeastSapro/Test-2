@@ -603,6 +603,24 @@ SHIPPED_DOCS: tuple[tuple[str, str, str], ...] = (
         "for a locked-host talking-head channel and for ambient single-scene loops.",
         "storyboard.md",
     ),
+    (
+        "Sound designer",
+        "When a video and a separate mastered voiceover exist and the mix is next: "
+        "finding the beats in the picture rather than guessing them from the script, "
+        "fetching a palette, placing and levelling cues, ducking the bed, mastering, and "
+        "verifying the timing per tier before showing anything. Also for why a mix sounds "
+        "repetitive, cheap, or badly synced. The voiceover must be a separate stem — a "
+        "mixdown cannot be used, because the ducking and the bed level calibrate against "
+        "it.",
+        "sound-designer.md",
+    ),
+    (
+        "Sound design method",
+        "Before changing any sound-design number or rule: the measurements and the "
+        "failures behind each one. Load alongside the sound-designer skill when a "
+        "non-negotiable needs to be understood or overridden, not instead of it.",
+        "sound-designer-method.md",
+    ),
 )
 
 

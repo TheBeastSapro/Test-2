@@ -80,6 +80,10 @@ exclude = ["tests*", "tools*", "docs*", "remotion*", "migrations*"]
 # routes and no pages, and the failure is a Jinja TemplateNotFound on the first
 # request rather than anything visible at install time.
 "forgecast.web" = ["*.html", "static/*"]
+# The shipped skill documents. Without this a wheel install has the seeding code and none
+# of the documents, and the symptom is a Skills page listing nothing — which reads as a
+# product decision rather than as a missing package-data entry.
+"forgecast.skills" = ["data/*.md"]
 
 [tool.setuptools.exclude-package-data]
 # The `static/*` glob above is a wildcard over a directory in the working tree, so it

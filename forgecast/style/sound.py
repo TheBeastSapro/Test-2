@@ -278,7 +278,30 @@ def recommend(niche: str = "") -> SoundBrief:
 # Room tone under everything, at a level below conscious notice. This is the largest
 # single tell of amateur work: a cut into digital silence reads as a mistake, and the ear
 # hears the join even when the edit is clean. Broadcast never lets the floor go silent.
-AMBIENCE_DB = -34.0
+#
+# -42 dBFS RMS is the operator's own measured figure, and it replaced -34 here — which was
+# my guess and 8 dB too loud, i.e. an audible hiss rather than a floor. The `sound-designer`
+# skill is the authority on every number in this block; these are its measured-example
+# defaults and its own instruction is to re-measure them per channel with `measure_ref.py`
+# rather than inherit them.
+AMBIENCE_RMS_DBFS = -42.0
+
+# Non-vocal texture, distinct from the floor: wind, hum, distant traffic under a scene.
+TEXTURE_RMS_DBFS = -37.0
+
+# Where the bed sits relative to programme, measured on the *music stem* and not on the
+# finished master. Loud effects landing in the voice's gaps inflate a master reading, and
+# a loop calibrated on that pulls the music down until it is gone.
+BED_UNDER_VOICE_DB = -13.0
+
+# The sidechain amount, which is a different number from where the bed sits. Conflating
+# the two — as this module did — makes a bed that is either always too quiet or ducks so
+# hard it disappears on every word.
+DUCK_DB = -4.0
+
+# A palette file is normalised to this before placement, so per-cue levelling starts from
+# a known peak instead of from whatever the library shipped.
+PALETTE_PEAK_DBFS = -3.0
 
 # Where a voice lives. The bed is carved here rather than merely turned down, because
 # level alone leaves the two fighting for the same frequencies — the mix goes muddy at
@@ -305,6 +328,19 @@ DROPOUT_SECONDS = 2.5
 # More accents than this per minute stops being design and becomes clutter — every hit
 # devalues the last one.
 MAX_ACCENTS_PER_MINUTE = 6.0
+
+# Repetition, not density, is what "sounds cheap" actually means. One tick played 240
+# times is the failure; six well-chosen hits a minute is not. Density caps alone cannot
+# catch it, which is why these exist separately: a file may not return inside the cooldown,
+# a signature sound not inside the longer one, and nothing may be used more than this many
+# times across a whole video.
+FILE_COOLDOWN_SECONDS = 30.0
+SIGNATURE_COOLDOWN_SECONDS = 90.0
+MAX_USES_PER_FILE = 10
+
+# Music sections run about this long before the cue changes, so a bed is never one loop
+# for thirteen minutes.
+SECTION_SECONDS = 47.0
 
 
 @dataclass
@@ -334,7 +370,7 @@ class SoundPlan:
 
     cues: list[SoundCue] = field(default_factory=list)
     ambience: bool = True
-    ambience_db: float = AMBIENCE_DB
+    ambience_db: float = AMBIENCE_RMS_DBFS
     voice_carve_hz: tuple[float, float] = VOICE_BAND_HZ
     voice_carve_db: float = VOICE_CARVE_DB
     target_lufs: float = TARGET_LUFS
@@ -393,7 +429,7 @@ def design(
     # the video does would reintroduce exactly the join it exists to hide.
     # Unconditional, including when there is no music at all: a voice-only video is the
     # case that needs the floor most, because there is nothing else covering the joins.
-    cues.append(SoundCue(0.0, "ambience", "start", total, AMBIENCE_DB,
+    cues.append(SoundCue(0.0, "ambience", "start", total, AMBIENCE_RMS_DBFS,
                          "room tone under everything, so no cut lands in digital "
                          "silence — the join is audible even when the edit is clean"))
 
