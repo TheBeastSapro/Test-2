@@ -552,3 +552,57 @@ def test_the_signed_out_pages_render_with_no_user(session, user):
             env.get_template(name).render(context)
         except jinja2.UndefinedError as exc:
             pytest.fail(f"{name} cannot render for a visitor with no account: {exc}")
+
+
+# --------------------------------------------------------- the delete-chat control
+
+def _css() -> str:
+    from pathlib import Path
+
+    return (Path(__file__).resolve().parent.parent / "forgecast" / "web" / "static"
+            / "app.css").read_text(encoding="utf-8")
+
+
+def _block(css: str, selector: str) -> str:
+    """The declarations of one rule, by exact selector."""
+    import re
+
+    match = re.search(re.escape(selector) + r"\s*\{([^}]*)\}", css)
+    assert match, f"{selector} is not in app.css"
+    return match.group(1)
+
+
+def test_the_delete_chat_control_is_not_hidden():
+    """Reported as missing twice, and each time by a different attempt to be discreet.
+
+    First `opacity: 0` until the row was hovered — invisible unless you already knew where
+    it was. Then `opacity: .45` in `--muted`, which vanished against the accent background
+    of the *selected* row, which is the chat you most want to delete.
+
+    So this pins the outcome rather than the styling: the control may be restyled freely,
+    but it may not be made transparent again.
+    """
+    declarations = _block(_css(), ".thread-x")
+    assert "opacity" not in declarations, (
+        "the delete control must not be hidden with opacity — it has been reported "
+        "missing twice for exactly that reason")
+
+
+def test_it_stays_legible_on_the_selected_row():
+    """`.thread.on` fills the row with `--accent-dim`, so the foreground token that works
+    on the page background does not necessarily work here."""
+    css = _css()
+    assert ".thread.on .thread-x" in css, (
+        "the selected row paints an accent background; the control needs its own colour "
+        "there or it disappears on the one row that matters most")
+
+
+def test_the_control_is_a_real_button_outside_the_row_button():
+    """A `<button>` inside a `<button>` is invalid, and browsers drop one of the two —
+    which one is up to the browser. The row is a div with role=button for this reason."""
+    from pathlib import Path
+
+    script = (Path(__file__).resolve().parent.parent / "forgecast" / "web" / "static"
+              / "chat.js").read_text(encoding="utf-8")
+    assert 'class="thread ' in script and 'role="button"' in script
+    assert 'button class="thread-x"' in script

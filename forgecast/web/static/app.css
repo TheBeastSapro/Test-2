@@ -286,20 +286,26 @@ button.danger:hover { background: #1a1011; border-color: #6b2f2f; }
 .thread:hover { background: var(--raise-2); }
 .thread.on { background: var(--accent-dim); }
 .thread:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-/* Faint until the row is hovered, not invisible. It was `opacity: 0`, on the reasoning
-   that a column of × marks competes with the titles — which is true, and was still the
-   wrong trade: "I still cannot see the delete option" was reported by someone who had
-   the button under their cursor the whole time. A control nobody can find is a control
-   that does not exist, and hover is not a discovery mechanism.
-   0.45 is enough to read as a control and quiet enough not to shout. Keyboard focus
-   still brings it to full strength, as does hovering the row. */
+/* Always fully visible. This has now been reported as missing twice, and each attempt to
+   keep it discreet is what caused it.
+   First it was `opacity: 0` until the row was hovered — invisible unless you already knew
+   it was there. Then `opacity: .45` in `--muted`, which is legible on the dark row and
+   effectively gone on the *selected* one, because `.thread.on` paints an accent
+   background and a muted grey-green at 45% has almost no contrast against it. The
+   selected chat is the one you most want to delete, so the fix that looked adequate
+   failed in exactly the case that mattered.
+   So: no opacity trick, and a colour that contrasts on both backgrounds. A 20px glyph in
+   the corner does not compete with anything, which is what the hiding was for. */
 .thread-x {
   position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; padding: 0;
-  border: 0; border-radius: 5px; background: transparent; color: var(--muted);
-  font-size: 15px; line-height: 1; cursor: pointer; opacity: .45;
-  transition: opacity .12s;
+  border: 0; border-radius: 5px; background: transparent; color: var(--text-2);
+  font-size: 16px; line-height: 1; cursor: pointer;
+  transition: background .12s, color .12s;
 }
-.thread:hover .thread-x, .thread-x:focus-visible { opacity: 1; }
+/* On the accent-filled selected row, the brighter foreground token — `--text-2` is tuned
+   for the page background, not for this one. */
+.thread.on .thread-x { color: var(--text); }
+.thread-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .thread-x:hover { background: var(--raise-3); color: var(--err); }
 /* Room for the control so a long title does not run underneath it. */
 .thread .t { font-size: 13px; font-weight: 550; color: var(--text); padding-right: 20px;
