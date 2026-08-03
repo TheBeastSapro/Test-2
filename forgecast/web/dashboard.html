@@ -17,7 +17,32 @@
 
 <div class="grid two">
   <div class="card">
+    {# A link first, because a link is what you have.
+       Asking for name, niche, aspect and length up front is asking you to summarise
+       a channel that can be measured: its median upload length says long-form or
+       Shorts more reliably than a dropdown, and its titles say more about the niche
+       than a one-line description. The agent reads it, shows you what it measured,
+       and then creates the channel — so the form below is the fallback, not the
+       front door. #}
     <h2 style="margin-top:0">New channel</h2>
+    <form action="/" method="get" style="margin-bottom:6px">
+      <label for="model_on">Model it on a YouTube channel</label>
+      <div class="keyrow">
+        <input id="model_on" name="model_on" inputmode="url"
+               placeholder="https://youtube.com/@theirhandle">
+        <button class="primary" type="submit">Read it</button>
+      </div>
+      <input type="hidden" name="fmt" value="{{ format.slug }}">
+      <p class="muted" style="font-size:12.5px;margin:8px 0 0">
+        I read what they actually publish — upload length, recent titles, which videos
+        beat their own cohort — and set the channel up from that. You only tell me the
+        niche in your own words.
+      </p>
+    </form>
+
+    <details style="margin-top:18px">
+      <summary class="muted" style="cursor:pointer;font-size:13px">
+        or fill it in by hand</summary>
     <form method="post" action="/channels">
       <label for="name">Name</label>
       <input id="name" name="name" required placeholder="Deep Field">
@@ -49,6 +74,7 @@
       <input id="avatar_id" name="avatar_id">
       <div style="margin-top:16px"><button type="submit">Create channel</button></div>
     </form>
+    </details>
   </div>
 
   <div class="card">

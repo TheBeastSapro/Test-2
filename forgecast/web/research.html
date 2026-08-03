@@ -51,8 +51,14 @@
              {% if not has_youtube_key %}disabled{% endif %}>
       {% if not has_youtube_key %}
         <p class="muted" style="font-size:12.5px;margin:6px 0 0">
-          No YouTube Data API key configured. Set <code>FORGECAST_YOUTUBE_API_KEY</code>
-          in <code>.env</code> to fetch automatically — or just paste the numbers.
+          No YouTube Data API key yet, so fetching is off. Add one in
+          <a href="/settings#providers">Settings</a> — it is free — or paste the
+          numbers below.
+        </p>
+      {% else %}
+        <p class="muted" style="font-size:12.5px;margin:6px 0 0">
+          A link works here too, and a link pasted into the box below is read as a
+          channel rather than as a failed table.
         </p>
       {% endif %}
     </div>

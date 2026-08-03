@@ -239,13 +239,38 @@ def check_ffmpeg() -> tuple[bool, str]:
     )
 
 
+def check_claude() -> tuple[bool, str]:
+    """Report whether the agent can run, and what to do if not.
+
+    Two separate failures, deliberately reported apart. The CLI can be missing, or a
+    stray `ANTHROPIC_API_KEY` can be shadowing the subscription login — and that
+    second one is the expensive one, because nothing *breaks*: requests just quietly
+    bill an API account instead of the plan you already pay for. An empty value still
+    counts as set and still wins.
+    """
+    if os.environ.get("ANTHROPIC_API_KEY") is not None:
+        return False, (
+            "ANTHROPIC_API_KEY is set in this environment. It overrides your Claude "
+            "subscription, so the agent would bill an API account instead.\n"
+            + ("  setx ANTHROPIC_API_KEY \"\" && set ANTHROPIC_API_KEY="
+               if os.name == "nt" else "  unset ANTHROPIC_API_KEY")
+        )
+    if shutil.which("claude") or shutil.which("claude.cmd"):
+        return True, ""
+    return False, (
+        "The Claude Code CLI was not found, so the chat cannot run. Everything else "
+        "works.\n  npm install -g @anthropic-ai/claude-code\n"
+        "  then sign in with your Claude subscription — no API key."
+    )
+
+
 def prepare(root: Path, *, force_install: bool = False) -> Path:
     """Run every preparation step. Returns the interpreter the app should run under."""
     check_python()
     python = ensure_venv(root)
     install_dependencies(root, python, force=force_install)
     ensure_env_file(root)
-    ok, warning = check_ffmpeg()
-    if not ok:
-        say("warning: " + warning.replace("\n", "\n  "))
+    for ok, warning in (check_ffmpeg(), check_claude()):
+        if not ok:
+            say("warning: " + warning.replace("\n", "\n  "))
     return python

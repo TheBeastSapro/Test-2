@@ -146,6 +146,14 @@ def verify(archive: Path) -> None:
         f"{NAME}/forgecast/api/main.py",
         f"{NAME}/forgecast/desktop/bootstrap.py",
         f"{NAME}/forgecast/web/base.html",
+        # The chat and the surface it is drawn on. Shipping the routes without these
+        # produces an app that starts, serves an unstyled page and has no way in —
+        # which looks like a broken build rather than a missing file.
+        f"{NAME}/forgecast/web/chat.html",
+        f"{NAME}/forgecast/web/settings.html",
+        f"{NAME}/forgecast/web/static/app.css",
+        f"{NAME}/forgecast/web/static/chat.js",
+        f"{NAME}/forgecast/agent/assistant.py",
         f"{NAME}/migrations/env.py",
     ]
     with zipfile.ZipFile(archive) as zf:

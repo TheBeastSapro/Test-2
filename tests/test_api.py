@@ -350,7 +350,7 @@ def test_plans_expose_price_per_credit(client: TestClient):
 
 
 def test_web_pages_render(client: TestClient):
-    """The root lands on a format workspace, and both tabs render.
+    """The root is the chat, and both format workspaces still render.
 
     Asserted against the format's own label rather than a fixed word on the page:
     tying this to "Channels" is what broke it when the dashboard became per-format,
@@ -360,9 +360,11 @@ def test_web_pages_render(client: TestClient):
     assert client.get("/login").status_code == 200
 
     client.cookies.set("forgecast_session", token)
+    # The front door is the agent, not a table. The workspaces are a click away in
+    # the rail; they are where you look at what happened, not where work starts.
     landing = client.get("/", follow_redirects=False)
-    assert landing.status_code == 303
-    assert landing.headers["location"].startswith("/f/")
+    assert landing.status_code == 200
+    assert 'id="chat-input"' in landing.text
 
     for slug, label in (("longform", "Long-form"), ("shorts", "Shorts")):
         page = client.get(f"/f/{slug}")

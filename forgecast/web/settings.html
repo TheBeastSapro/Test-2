@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% block title %}Settings · Forgecast{% endblock %}
+
+{% block body %}
+<h1>Settings</h1>
+<p class="muted" style="margin-top:0;max-width:70ch">
+  Everything the app needs to reach the outside world, and — the half that is easy to
+  skip and expensive to miss — what it will actually use for each job.
+</p>
+
+{% if saved %}<div class="banner good" style="margin-top:16px">Saved · {{ saved.replace('+', ' ') }}</div>{% endif %}
+
+<div class="split" style="margin-top:26px">
+  <div class="split-nav">
+    <button class="on" data-panel="claude">Claude</button>
+    <button data-panel="connectors">Connectors</button>
+    <button data-panel="providers">Provider keys</button>
+    <button data-panel="capabilities">What will be used</button>
+    <button data-panel="instance">This machine</button>
+  </div>
+
+  <div class="split-body">
+
+    <!-- ═════════════════════════════════════════════════════════ CLAUDE -->
+    <section data-panel="claude" id="claude">
+      <div class="card">
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <div>
+            <h3 style="margin:0">
+              <span class="dot {{ 'dot-ok' if claude.ok else ('dot-bad' if claude.api_key_shadowing else 'dot-warn') }}"
+                    style="margin-right:8px"></span>{{ claude.headline }}
+            </h3>
+            {% if claude.account %}<div class="muted" style="font-size:12.5px">{{ claude.account }}</div>{% endif %}
+          </div>
+          {% if claude.ok %}<span class="pill local">connected</span>{% endif %}
+        </div>
+
+        <p class="muted" style="margin:14px 0 0;max-width:70ch">{{ claude.detail }}</p>
+
+        {% if claude.fixes %}
+          <pre style="margin-top:14px;background:var(--raise-2);border:1px solid var(--line);
+                      border-radius:8px;padding:13px;white-space:pre-wrap;font-size:12.5px">{{ claude.fixes | join('\n') }}</pre>
+        {% endif %}
+
+        <div class="row" style="margin-top:16px">
+          {% if claude.can_login %}
+            <button class="primary" onclick="claudeLogin()">Sign in</button>
+          {% endif %}
+          <button onclick="location.reload()">Check again</button>
+        </div>
+
+        <p class="muted" style="font-size:12.5px;margin:18px 0 0;max-width:70ch">
+          This is your Claude subscription, signed in through the Claude Code CLI —
+          the same <code>/login</code> browser flow you already use. There is no API
+          key here and you should not create one. If <code>ANTHROPIC_API_KEY</code> is
+          set anywhere in your environment it takes priority over the subscription and
+          silently bills an API account, which is why it is checked above.
+        </p>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════ CONNECTORS -->
+    <section data-panel="connectors" hidden>
+      <div class="card">
+        <h3 style="margin-top:0">Connectors</h3>
+        <p class="muted" style="max-width:70ch;font-size:13px">
+          A connector hands the agent another service's tools. Connect NexLev and it
+          can query the niche finder and pull outliers itself, in the same
+          conversation, instead of asking you to paste numbers.
+        </p>
+        <p class="muted" style="max-width:70ch;font-size:12.5px">
+          This is not the same as a provider key below. A provider key lets the
+          <em>pipeline</em> call a vendor; a connector lets the <em>agent</em> call
+          one. They fail separately, so they are configured separately.
+        </p>
+
+        {% for item in connectors %}
+          <div class="conn" data-key="{{ item.key }}">
+            <div class="conn-head">
+              <span class="dot {{ 'dot-ok' if item.connected and item.enabled else 'dot-idle' }}"></span>
+              <b>{{ item.label }}</b>
+              {% if item.connected %}
+                <span class="pill {{ 'local' if item.enabled else '' }}">{{ 'on' if item.enabled else 'off' }}</span>
+              {% endif %}
+              <span class="grow"></span>
+              {% if item.connected %}
+                <button class="btn-sm" onclick="testConnector('{{ item.key }}')">Test</button>
+                <button class="btn-sm danger" onclick="dropConnector('{{ item.key }}')">Remove</button>
+              {% endif %}
+            </div>
+            <p class="conn-gives">{{ item.gives }}</p>
+            <p class="conn-where">Where to find it: {{ item.where }}</p>
+            {% if item.docs %}<p class="conn-where">{{ item.docs }}</p>{% endif %}
+
+            <div class="conn-form">
+              <div>
+                <label for="url-{{ item.key }}">Server URL</label>
+                <input id="url-{{ item.key }}" value="{{ item.url }}"
+                       placeholder="https://…/mcp">
+              </div>
+              <div>
+                <label for="tok-{{ item.key }}">Token</label>
+                <input id="tok-{{ item.key }}" type="password"
+                       placeholder="{{ item.token or 'paste the token' }}">
+              </div>
+              <button class="primary" onclick="saveConnector('{{ item.key }}')">
+                {{ 'Update' if item.connected else 'Connect' }}</button>
+            </div>
+            <div class="muted" style="font-size:12.5px;margin-top:8px" id="test-{{ item.key }}">
+              {{ item.note }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════ PROVIDERS -->
+    <section data-panel="providers" hidden>
+      <div class="card">
+        <h3 style="margin-top:0">Provider keys</h3>
+        <p class="muted" style="font-size:13px;max-width:70ch">
+          Encrypted at rest with the key in <code>.env</code>, and used the moment they
+          are saved. Submitting an empty field disconnects that provider.
+        </p>
+
+        {% for field in providers %}
+          <form method="post" action="/settings/provider" class="setting">
+            <input type="hidden" name="provider" value="{{ field.key }}">
+            <div class="setting-top">
+              <span class="setting-name">
+                {% if field.masked %}<span class="dot dot-ok" style="margin-right:7px"></span>
+                {% elif field.from_env %}<span class="dot dot-warn" style="margin-right:7px"></span>
+                {% else %}<span class="dot dot-idle" style="margin-right:7px"></span>{% endif %}
+                {{ field.label }}
+              </span>
+              <span class="muted" style="font-size:12px">{{ field.where }}</span>
+            </div>
+            <div class="setting-why">Unlocks {{ field.unlocks }}.
+              {% if field.masked %}Currently <code>{{ field.masked }}</code>.
+              {% elif field.from_env %}Coming from <code>.env</code> for the whole install.{% endif %}
+            </div>
+            <div class="keyrow" style="margin-top:10px">
+              <input type="password" name="api_key" autocomplete="off"
+                     placeholder="{{ field.masked or field.hint or 'paste the key' }}">
+              <button class="primary">{{ 'Replace' if field.masked else 'Save' }}</button>
+            </div>
+          </form>
+        {% endfor %}
+
+        <h3 style="margin:26px 0 0">Installation keys</h3>
+        <p class="muted" style="font-size:13px">
+          These describe this machine rather than your account, so they are written to
+          <code>.env</code> and take effect immediately.
+        </p>
+        {% for field in env_fields %}
+          <form method="post" action="/settings/env" class="setting">
+            <input type="hidden" name="name" value="{{ field.key }}">
+            <div class="setting-top">
+              <span class="setting-name">
+                <span class="dot {{ 'dot-ok' if env_values.get(field.key) else 'dot-idle' }}"
+                      style="margin-right:7px"></span>{{ field.label }}
+              </span>
+              <span class="muted" style="font-size:12px">{{ field.where }}</span>
+            </div>
+            <div class="setting-why">Unlocks {{ field.unlocks }}.</div>
+            <div class="keyrow" style="margin-top:10px">
+              <input type="password" name="value" autocomplete="off"
+                     placeholder="{{ env_values.get(field.key) or 'paste the key' }}">
+              <button class="primary">Save</button>
+            </div>
+          </form>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════ CAPABILITIES -->
+    <section data-panel="capabilities" hidden>
+      <div class="card">
+        <h3 style="margin-top:0">What will actually be used</h3>
+        <p class="muted" style="font-size:13px;max-width:70ch">
+          Resolved through the real provider registry rather than inferred from which
+          keys exist — inference is how a report ends up disagreeing with the run.
+        </p>
+        <table style="margin-top:14px">
+          <thead><tr><th>Stage</th><th>Vendor</th><th>Why</th></tr></thead>
+          <tbody>
+            {% for row in capabilities %}
+              <tr>
+                <td>{{ row.capability }}</td>
+                <td>
+                  <span class="status {{ 'completed' if row.state == 'ready' else ('queued' if row.state == 'mock' else 'failed') }}">
+                    {{ row.vendor }}</span>
+                </td>
+                <td class="muted">{{ row.detail }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════ INSTANCE -->
+    <section data-panel="instance" hidden>
+      <div class="card">
+        <h3 style="margin-top:0">Mode</h3>
+        <form method="post" action="/settings/instance">
+          <p class="muted" style="font-size:13px;max-width:70ch">
+            {% if is_mock %}
+              <strong style="color:var(--warn)">Mock.</strong> No provider is called and
+              nothing is charged. Runs complete end to end with placeholder script,
+              voice and visuals, so the whole pipeline can be seen before it costs
+              anything.
+            {% else %}
+              <strong style="color:var(--ok)">Live.</strong> Real providers are called
+              and real credits are spent.
+            {% endif %}
+          </p>
+          <label for="provider_mode">Run providers in</label>
+          <select id="provider_mode" name="provider_mode" style="max-width:260px">
+            <option value="mock" {{ 'selected' if is_mock }}>Mock — nothing is charged</option>
+            <option value="live" {{ 'selected' if not is_mock }}>Live — real calls, real spend</option>
+          </select>
+          <div style="margin-top:14px"><button class="primary">Save mode</button></div>
+        </form>
+
+        <h3 style="margin:26px 0 0">Where your work lives</h3>
+        <div class="setting">
+          <div class="setting-top">
+            <span class="setting-name">Storage</span>
+            <code>{{ storage_dir }}</code>
+          </div>
+          <div class="setting-why">
+            Scripts, voice takes, stills and renders for every run, plus the learned
+            styles and connector settings. Copy this folder and
+            <code>forgecast.db</code> to move an install — but never
+            <code>.env</code>, which holds the key your stored credentials are
+            encrypted with.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  document.querySelectorAll('.split-nav button').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('.split-nav button').forEach(o => o.classList.toggle('on', o === tab));
+      document.querySelectorAll('.split-body section').forEach(
+        s => s.hidden = s.dataset.panel !== tab.dataset.panel);
+      history.replaceState(null, '', '#' + tab.dataset.panel);
+    };
+  });
+  if (location.hash) {
+    const tab = document.querySelector(`.split-nav button[data-panel="${location.hash.slice(1)}"]`);
+    if (tab) tab.click();
+  }
+
+  let toastTimer;
+  function toast(message) {
+    const box = $('#toast');
+    box.textContent = message;
+    box.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => box.classList.remove('show'), 3200);
+  }
+
+  async function claudeLogin() {
+    const r = await fetch('/api/agent/auth/login', {method: 'POST',
+      headers: {'Content-Type': 'application/json'}, body: '{}'});
+    toast((await r.json()).message);
+  }
+
+  async function saveConnector(key) {
+    const url = $(`#url-${key}`).value.trim();
+    const token = $(`#tok-${key}`).value;
+    if (!url) { toast('A connector needs its server URL.'); return; }
+    const r = await fetch('/api/connectors', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({key, url, token, enabled: true}),
+    });
+    if (!r.ok) { toast((await r.json()).detail || 'Could not save that.'); return; }
+    toast(`${key} saved — testing…`);
+    await testConnector(key);
+    setTimeout(() => location.reload(), 1400);
+  }
+
+  async function testConnector(key) {
+    const out = $(`#test-${key}`);
+    out.textContent = 'Reaching it…';
+    try {
+      const r = await fetch(`/api/connectors/${key}/test`, {method: 'POST'});
+      const j = await r.json();
+      out.innerHTML = (j.ok ? '✓ ' : '✕ ') + (j.detail || '');
+      out.style.color = j.ok ? 'var(--ok)' : 'var(--err)';
+    } catch (e) {
+      out.textContent = String(e);
+      out.style.color = 'var(--err)';
+    }
+  }
+
+  async function dropConnector(key) {
+    if (!confirm(`Disconnect ${key}? The agent loses its tools.`)) return;
+    await fetch(`/api/connectors/${key}`, {method: 'DELETE'});
+    location.reload();
+  }
+</script>
+{% endblock %}

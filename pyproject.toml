@@ -20,6 +20,11 @@ dependencies = [
     # Visual analysis runs on downscaled frames as arrays; everything in
     # forgecast/vision is numpy over ffmpeg output, with no other dependency.
     "numpy>=1.26",
+    # The agent. It drives the Claude Code CLI with your own subscription login —
+    # there is no API key involved, and this package is the Python half only. The
+    # CLI itself is a Node install and the app reports its absence rather than
+    # failing at the first message.
+    "claude-agent-sdk>=0.2",
 ]
 
 [project.optional-dependencies]
@@ -51,6 +56,10 @@ include = ["forgecast*"]
 # install has the code and not the geography, and the failure is a missing file at
 # render time rather than at install time.
 "forgecast.motion" = ["data/*.bin"]
+# The templates and the stylesheet. A non-editable install without these has the
+# routes and no pages, and the failure is a Jinja TemplateNotFound on the first
+# request rather than anything visible at install time.
+"forgecast.web" = ["*.html", "static/*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

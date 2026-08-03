@@ -93,7 +93,27 @@ def score(
         raise HTTPException(status_code=413, detail="that is a lot of text — paste fewer rows")
 
     settings = get_settings()
-    if payload.channel.strip():
+
+    # A pasted YouTube link is a channel reference, not a table of statistics.
+    # Treating it as one is how this desk came to answer "nothing scoreable" to the
+    # most natural thing a person can do here, which reads as the feature being
+    # broken rather than as the input being in the wrong box.
+    channel_ref = payload.channel.strip()
+    if not channel_ref and payload.pasted.strip():
+        from ..agent.studio import parse_link
+
+        link = parse_link(payload.pasted.strip())
+        if link.kind in ("channel", "handle"):
+            channel_ref = link.value
+        elif link.kind == "video":
+            raise HTTPException(
+                status_code=400,
+                detail="that is a single video — paste the channel it is on. An "
+                       "outlier is measured against its own cohort, and one video "
+                       "has no cohort.",
+            )
+
+    if channel_ref:
         if not settings.youtube_api_key:
             raise HTTPException(
                 status_code=400,
@@ -102,7 +122,7 @@ def score(
             )
         try:
             parsed = sources.from_youtube_api(
-                payload.channel, settings.youtube_api_key, limit=payload.limit
+                channel_ref, settings.youtube_api_key, limit=payload.limit
             )
         except sources.ResearchError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc

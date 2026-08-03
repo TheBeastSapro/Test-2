@@ -139,23 +139,39 @@ def logout() -> RedirectResponse:
 @router.get("/", response_class=HTMLResponse)
 def dashboard(
     request: Request,
+    model_on: str = "",
+    fmt: str = "",
     user: User | None = Depends(optional_user),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    """The bare root sends you to whichever format you were last working in.
+    """The app opens on the chat, because that is the way in.
 
-    Guessing from the most recent run rather than defaulting to long-form: someone who
-    only makes Shorts should not land on an empty long-form workspace every time they
-    open the app.
+    It used to open on a workspace of forms — a table of channels, a form to add one,
+    a form to start a run. That is where you go to *look* at what happened. It is not
+    where the work starts, because the work starts with something you can say in a
+    sentence and would have to translate into eight fields.
+
+    The format workspaces are still one click away at `/f/{slug}`, and the sidebar
+    remembers which one has your runs in it.
     """
     if user is None:
         return _redirect("/login")  # type: ignore[return-value]
 
-    latest = session.execute(
-        select(Run.pipeline).where(Run.user_id == user.id).order_by(Run.id.desc()).limit(1)
-    ).scalar_one_or_none()
-    slug = formats.format_of_pipeline(latest) if latest else formats.DEFAULT_FORMAT
-    return _redirect(f"/f/{slug}")  # type: ignore[return-value]
+    # A link handed over from the workspace's "model it on a channel" field. It opens
+    # a fresh thread and asks the question for you, so pasting a link is one action
+    # rather than "copy it, switch tab, paste it again, phrase the request".
+    opening = ""
+    if model_on.strip():
+        shape = formats.get(fmt) if fmt else formats.get(formats.DEFAULT_FORMAT)
+        opening = (
+            f"Set up a {shape.label.lower()} channel modelled on "
+            f"{model_on.strip()} — read what they actually publish first and show me "
+            f"what you measured before creating anything."
+        )
+
+    return TEMPLATES.TemplateResponse(
+        request, "chat.html", {**shell(session, user, "chat"), "opening": opening}
+    )
 
 
 @router.get("/f/{slug}", response_class=HTMLResponse)

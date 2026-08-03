@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Studio · Forgecast{% endblock %}
+{% block main_class %}flush{% endblock %}
+
+{# ONE SURFACE, AND IT IS CLAUDE.
+
+   The app used to open on a dashboard of forms: a page for channels, a page for
+   runs, a page for research. That works, and it is the wrong shape — it means
+   filling in a form that happens to be attached to an agent, translating what you
+   already know into eight fields before anything happens.
+
+   So this is the way in. You say what you want; the agent has the studio's
+   operations as tools and does it. The pages are still there, and they are now
+   where you go to LOOK at what happened rather than where you go to make it happen.
+
+   The panel on the right is not another screen. It is the state of the thing being
+   discussed, repainted from the server after every turn. #}
+
+{% block body %}
+{# An opening question handed over from the workspace. Passed through a data
+   attribute rather than interpolated into the script, so a channel name containing
+   a quote is data rather than syntax. #}
+<div class="studio" data-opening="{{ opening or '' }}">
+
+  <!-- ══════════════════════════════════════════════════════ the threads -->
+  <aside class="threads">
+    <div class="head">
+      <button class="primary w-full btn-sm" id="btn-new">＋ New chat</button>
+    </div>
+    <div class="list" id="thread-list">
+      <div class="muted" style="padding:10px 11px;font-size:12.5px">Loading…</div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════ the chat -->
+  <section class="chatcol" id="chatcol">
+    <div class="chat" id="chat">
+      <div class="empty" id="chat-empty">Starting up…</div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="attached" id="attached" hidden></div>
+      <div class="composer">
+        <textarea id="chat-input" rows="1"
+          placeholder="paste a YouTube channel to model, ask what is waiting on you, or say what to make next"></textarea>
+        <div class="composer-tools">
+          <button class="icon-btn" id="btn-attach" title="Attach a file, clip or screenshot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round"><path
+              d="M21.4 11.05 12.25 20.2a6 6 0 0 1-8.49-8.49l9.2-9.19a4 4 0 0 1 5.65 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <input type="file" id="attach-file" multiple hidden>
+          <span class="agent-tag">Claude agent</span>
+          <select id="model-pick" class="mini-select" title="Which model answers"></select>
+          <label class="mini-toggle" title="On: it asks before editing a file. Tool calls are unaffected.">
+            <input type="checkbox" id="confirm-edits" checked><span></span>Ask before edits
+          </label>
+          <span class="grow"></span>
+          <button class="send-btn" id="btn-send" title="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════ what is true -->
+  <aside class="statepane" id="statepane">
+    <div class="pane" id="pane-status">
+      <h3>This install</h3>
+      <div class="sub">Checking…</div>
+    </div>
+    <div class="pane" id="pane-waiting" hidden>
+      <h3>Waiting on you</h3>
+      <div id="waiting-body"></div>
+    </div>
+    <div class="pane" id="pane-claude">
+      <h3>Claude</h3>
+      <p class="sub" id="claude-detail">Checking your sign-in…</p>
+      <div class="row" id="claude-actions" hidden style="margin-top:10px">
+        <button class="primary btn-sm" id="btn-login">Sign in</button>
+        <button class="btn-sm" id="btn-recheck">Check again</button>
+      </div>
+    </div>
+  </aside>
+
+</div>
+<script src="/static/chat.js"></script>
+{% endblock %}

@@ -326,3 +326,67 @@ class LedgerEntry(Base):
     note: Mapped[str] = mapped_column(Text, default="")
     idempotency_key: Mapped[str | None] = mapped_column(String(128))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+# ----------------------------------------------------------------------- the chat
+
+
+class Conversation(Base):
+    """One chat thread with the agent.
+
+    Threads are rows rather than browser state for the reason Rookcast keeps a list
+    of them down the side: the work is long. Setting up a channel, mining a niche and
+    getting a run through its gates spans days, and a transcript that dies with the
+    window means re-explaining the channel every morning.
+
+    `session_id` is the Claude Code CLI's own id for this conversation. Storing it is
+    what lets the next turn resume rather than start over — without it the agent
+    re-reads the same state every message and still contradicts itself.
+    """
+
+    __tablename__ = "conversations"
+    __table_args__ = (Index("ix_conversation_user_updated", "user_id", "updated_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str] = mapped_column(String(200), default="New chat")
+    # Which workspace it belongs to: "longform", "shorts", or "" for neither.
+    format: Mapped[str] = mapped_column(String(16), default="")
+    channel_id: Mapped[int | None] = mapped_column(Integer)
+    session_id: Mapped[str] = mapped_column(String(128), default="")
+    model: Mapped[str] = mapped_column(String(64), default="")
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+    messages: Mapped[list[ChatMessage]] = relationship(
+        back_populates="conversation", cascade="all, delete-orphan",
+        order_by="ChatMessage.id",
+    )
+
+
+class ChatMessage(Base):
+    """One turn in a thread, stored as it was shown.
+
+    Tool calls are kept alongside the text, not discarded. Re-opening a thread and
+    seeing only the prose loses the part that says what the agent actually *did* —
+    which channel it read, which run it started — and that is the part worth
+    scrolling back for.
+    """
+
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE"), index=True
+    )
+    role: Mapped[str] = mapped_column(String(16))          # "user" | "assistant"
+    text: Mapped[str] = mapped_column(Text, default="")
+    # [{"name": "study_youtube_channel", "input": {...}}, ...]
+    tool_calls: Mapped[list] = mapped_column(JSON, default=list)
+    attachments: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    conversation: Mapped[Conversation] = relationship(back_populates="messages")

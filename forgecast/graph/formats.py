@@ -57,7 +57,7 @@ FORMATS: dict[str, Format] = {
     LONGFORM: Format(
         slug=LONGFORM,
         label="Long-form",
-        icon="▭",
+        icon="▬",
         pipeline="faceless_longform",
         aspect_ratio="16:9",
         default_seconds=480,
@@ -68,7 +68,7 @@ FORMATS: dict[str, Format] = {
     SHORTS: Format(
         slug=SHORTS,
         label="Shorts",
-        icon="▯",
+        icon="▮",
         pipeline="faceless_shorts",
         aspect_ratio="9:16",
         default_seconds=45,

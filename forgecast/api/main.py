@@ -3,9 +3,11 @@ from __future__ import annotations
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .. import nodes  # noqa: F401 - registers node handlers
 from ..config import get_settings
@@ -14,9 +16,12 @@ from ..providers import ProviderError
 from . import runner
 from .local import router as local_router
 from .media import router as media_router
+from .routes_agent import connector_router
+from .routes_agent import router as agent_router
 from .routes_api import router as api_router
 from .routes_preview import router as preview_router
 from .routes_research import router as research_router
+from .routes_settings import router as settings_router
 from .routes_styles import router as styles_router
 from .routes_web import router as web_router
 
@@ -51,6 +56,11 @@ def create_app() -> FastAPI:
     app.include_router(preview_router)
     app.include_router(research_router)
     app.include_router(styles_router)
+    # The chat and everything behind it. Registered before the web routes' catch-alls
+    # so `/api/agent/...` is never matched by a page route's path converter.
+    app.include_router(agent_router)
+    app.include_router(connector_router)
+    app.include_router(settings_router)
     # Artifacts are served through signed, expiring, per-user URLs rather than a
     # static mount of the storage directory. See `api.media` — a plain mount hands
     # every run's video to anyone who can guess a path.
@@ -59,6 +69,15 @@ def create_app() -> FastAPI:
     # when `local_mode` is off, so that whether a route exists does not depend on the
     # order in which settings were loaded.
     app.include_router(local_router)
+
+    # The stylesheet and the chat's script. A real mount rather than a route per file:
+    # these are the only static assets, they are part of the package, and they must
+    # keep working from a zip unpacked anywhere — hence a path resolved from this
+    # module rather than from the working directory.
+    static_dir = Path(__file__).resolve().parent.parent / "web" / "static"
+    static_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
     settings.storage_dir.mkdir(parents=True, exist_ok=True)
 
     @app.exception_handler(ProviderError)

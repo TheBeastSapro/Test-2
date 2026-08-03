@@ -1,0 +1,483 @@
+"""The chat, its threads, and everything the composer needs.
+
+Streaming is newline-delimited JSON rather than SSE. A turn here can read fifty
+videos or start a render, so text and tool calls have to go out as they happen — but
+SSE's framing buys nothing when the client is `fetch` in the same window, and NDJSON
+survives a proxy that helpfully buffers `text/event-stream`.
+
+Every write is scoped to the signed-in account. Threads are not shared and there is
+no route that lists someone else's.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from ..agent import assistant, auth, connectors, prefs, tools
+from ..agent.studio import Studio
+from ..auth import current_user
+from ..config import get_settings
+from ..db import SessionLocal, get_session
+from ..models import ChatMessage, Conversation, User
+
+log = logging.getLogger("forgecast.api.agent")
+
+router = APIRouter(prefix="/api/agent", tags=["agent"], include_in_schema=False)
+
+# A first message longer than this is a pasted script, and a pasted script belongs in
+# a run rather than in a chat turn. Refused with a reason rather than truncated.
+MAX_MESSAGE_CHARS = 60_000
+MAX_ATTACH_BYTES = 512 * 1024 * 1024
+
+IMAGE_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+AUDIO_EXT = {".wav", ".mp3", ".flac", ".m4a", ".aac", ".ogg", ".opus"}
+VIDEO_EXT = {".mp4", ".mov", ".mkv", ".webm", ".avi"}
+
+
+def attach_dir() -> Path:
+    """Inside the app root on purpose.
+
+    The agent is sandboxed to that folder, so a file dropped anywhere else is a path
+    it is not allowed to open — the attachment would look like it worked and then
+    quietly fail at the Read.
+    """
+    path = assistant.APP_ROOT / "attachments"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _studio(user: User) -> Studio:
+    return Studio(SessionLocal, user_id=user.id)
+
+
+# --------------------------------------------------------------------------- auth
+
+
+@router.get("/auth")
+def agent_auth(_user: User = Depends(current_user)) -> dict:
+    return auth.check().as_dict()
+
+
+@router.post("/auth/login")
+def agent_login(_user: User = Depends(current_user)) -> dict:
+    ok, message = auth.start_login()
+    return {"ok": ok, "message": message}
+
+
+# -------------------------------------------------------------------------- prefs
+
+
+@router.get("/prefs")
+def get_prefs(_user: User = Depends(current_user)) -> dict:
+    return {**prefs.load().as_dict(), "models": assistant.MODELS}
+
+
+@router.post("/prefs")
+def set_prefs(payload: dict, _user: User = Depends(current_user)) -> dict:
+    known = {model["id"] for model in assistant.MODELS}
+    model = payload.get("model")
+    if model is not None and model not in known:
+        raise HTTPException(status_code=400, detail=f"unknown model {model!r}")
+    updated = prefs.update(
+        model=model,
+        confirm_edits=payload.get("confirm_edits"),
+        allow_web=payload.get("allow_web"),
+    )
+    return updated.as_dict()
+
+
+# ------------------------------------------------------------------------ threads
+
+
+def _thread_row(thread: Conversation, preview: str = "") -> dict:
+    return {"id": thread.id, "title": thread.title, "format": thread.format,
+            "channel_id": thread.channel_id, "pinned": thread.pinned,
+            "model": thread.model, "resumable": bool(thread.session_id),
+            "updated_at": thread.updated_at.isoformat() if thread.updated_at else "",
+            "preview": preview}
+
+
+def _owned(session: Session, thread_id: int, user: User) -> Conversation:
+    thread = session.get(Conversation, int(thread_id))
+    if thread is None or thread.user_id != user.id:
+        raise HTTPException(status_code=404, detail="no such conversation")
+    return thread
+
+
+@router.get("/threads")
+def list_threads(
+    fmt: str = "", limit: int = 50,
+    user: User = Depends(current_user), session: Session = Depends(get_session),
+) -> dict:
+    stmt = select(Conversation).where(Conversation.user_id == user.id)
+    if fmt:
+        stmt = stmt.where(Conversation.format == fmt)
+    rows = session.execute(
+        stmt.order_by(Conversation.pinned.desc(), Conversation.updated_at.desc())
+        .limit(max(1, min(int(limit), 200)))
+    ).scalars().all()
+
+    out = []
+    for thread in rows:
+        last = session.execute(
+            select(ChatMessage.text).where(ChatMessage.conversation_id == thread.id)
+            .order_by(ChatMessage.id.desc()).limit(1)
+        ).scalar_one_or_none()
+        out.append(_thread_row(thread, (last or "").strip().replace("\n", " ")[:110]))
+    return {"threads": out}
+
+
+@router.post("/threads")
+def new_thread(
+    payload: dict | None = None,
+    user: User = Depends(current_user), session: Session = Depends(get_session),
+) -> dict:
+    payload = payload or {}
+    thread = Conversation(
+        user_id=user.id,
+        title=(payload.get("title") or "New chat")[:200],
+        format=(payload.get("format") or "")[:16],
+        channel_id=payload.get("channel_id"),
+        model=prefs.load().model,
+    )
+    session.add(thread)
+    session.commit()
+    return _thread_row(thread)
+
+
+@router.get("/threads/{thread_id}")
+def read_thread(
+    thread_id: int,
+    user: User = Depends(current_user), session: Session = Depends(get_session),
+) -> dict:
+    thread = _owned(session, thread_id, user)
+    return {
+        **_thread_row(thread),
+        "messages": [
+            {"role": m.role, "text": m.text, "tools": m.tool_calls or [],
+             "attachments": m.attachments or [],
+             "at": m.created_at.isoformat() if m.created_at else ""}
+            for m in thread.messages
+        ],
+    }
+
+
+@router.patch("/threads/{thread_id}")
+def edit_thread(
+    thread_id: int, payload: dict,
+    user: User = Depends(current_user), session: Session = Depends(get_session),
+) -> dict:
+    thread = _owned(session, thread_id, user)
+    if "title" in payload:
+        thread.title = (payload["title"] or "Untitled")[:200]
+    if "pinned" in payload:
+        thread.pinned = bool(payload["pinned"])
+    if "format" in payload:
+        thread.format = (payload["format"] or "")[:16]
+    session.commit()
+    return _thread_row(thread)
+
+
+@router.delete("/threads/{thread_id}", status_code=204)
+def drop_thread(
+    thread_id: int,
+    user: User = Depends(current_user), session: Session = Depends(get_session),
+) -> None:
+    session.delete(_owned(session, thread_id, user))
+    session.commit()
+
+
+# -------------------------------------------------------------------- attachments
+
+
+def describe(path: Path) -> dict:
+    """What this file is, and what the agent can honestly do with it."""
+    ext = path.suffix.lower()
+    if ext in IMAGE_EXT:
+        return {"kind": "image",
+                "note": "an image — open it with the Read tool, you can see it"}
+    if ext in AUDIO_EXT:
+        return {"kind": "audio",
+                # Said plainly, because a model that cannot hear will otherwise
+                # describe how something sounds anyway.
+                "note": "audio — you CANNOT listen to it. Measure it with ffprobe or "
+                        "the analysis in forgecast/vision rather than describing it"}
+    if ext in VIDEO_EXT:
+        return {"kind": "video",
+                "note": "a video — you cannot watch it. Measure it: "
+                        "`forgecast-vision learn-style` reads cut rhythm, grade, "
+                        "captions and motion out of it"}
+    return {"kind": "file", "note": "a file — read it with the Read tool"}
+
+
+@router.post("/attach")
+async def attach(file: UploadFile = File(...), _user: User = Depends(current_user)):
+    raw = Path(file.filename or "file").name
+    safe = "".join(c for c in raw if c.isalnum() or c in " .-_()").strip() or "file"
+    dest = attach_dir() / safe
+    index = 1
+    while dest.exists():                     # never clobber an earlier attachment
+        dest = attach_dir() / f"{Path(safe).stem}-{index}{Path(safe).suffix}"
+        index += 1
+
+    total = 0
+    try:
+        with open(dest, "wb") as out:
+            # Chunked rather than `await file.read()`, which materialises the whole
+            # upload in memory — a 1 GB reference clip would cost 1 GB of RAM.
+            while chunk := await file.read(1 << 20):
+                total += len(chunk)
+                if total > MAX_ATTACH_BYTES:
+                    out.close()
+                    dest.unlink(missing_ok=True)
+                    return JSONResponse(
+                        {"error": f"{raw} is over the "
+                                  f"{MAX_ATTACH_BYTES / 1024 ** 3:.1f} GB limit"}, 413)
+                out.write(chunk)
+    except OSError as exc:
+        dest.unlink(missing_ok=True)
+        return JSONResponse({"error": f"could not save that: {exc}"}, 500)
+
+    return {"name": dest.name, "path": str(dest), "size": total, **describe(dest)}
+
+
+@router.get("/file")
+def serve_attachment(path: str, _user: User = Depends(current_user)):
+    """Serve an attachment back so the chat can show it rather than name it."""
+    try:
+        resolved = Path(path).resolve()
+        resolved.relative_to(attach_dir().resolve())
+        if resolved.is_file():
+            return FileResponse(resolved)
+    except (ValueError, OSError):
+        pass
+    return JSONResponse({}, 404)
+
+
+@router.post("/detach")
+def detach(payload: dict, _user: User = Depends(current_user)) -> dict:
+    """Removing a chip deletes the file — attachments are context, not a library."""
+    try:
+        resolved = Path(payload.get("path", "")).resolve()
+        resolved.relative_to(attach_dir().resolve())
+        resolved.unlink(missing_ok=True)
+    except (ValueError, OSError):
+        pass
+    return {"ok": True}
+
+
+# --------------------------------------------------------------------------- turn
+
+
+@router.get("/status")
+def studio_status(user: User = Depends(current_user)) -> dict:
+    """What the right-hand panel shows: the same report the agent gets."""
+    return _studio(user).status()
+
+
+def _title_from(text: str) -> str:
+    """A thread's name from its first message, cut at a word."""
+    flat = " ".join((text or "").split())
+    if len(flat) <= 48:
+        return flat or "New chat"
+    return flat[:48].rsplit(" ", 1)[0] + "…"
+
+
+@router.post("/threads/{thread_id}/chat")
+async def chat(
+    thread_id: int, payload: dict,
+    user: User = Depends(current_user), session: Session = Depends(get_session),
+):
+    thread = _owned(session, thread_id, user)
+    message = (payload.get("message") or "").strip()
+
+    files: list[Path] = []
+    for raw in payload.get("files") or []:
+        try:
+            resolved = Path(raw).resolve()
+            resolved.relative_to(attach_dir().resolve())
+            if resolved.is_file():
+                files.append(resolved)
+        except (ValueError, OSError):
+            continue
+
+    if not message and not files:
+        raise HTTPException(status_code=400, detail="nothing to send")
+    if len(message) > MAX_MESSAGE_CHARS:
+        raise HTTPException(
+            status_code=413,
+            detail="that is longer than a chat turn should carry — start a run with "
+                   "it as the topic, or attach it as a file")
+
+    attachments = [{"name": p.name, "path": str(p), **describe(p)} for p in files]
+    session.add(ChatMessage(conversation_id=thread.id, role="user", text=message,
+                            attachments=attachments))
+    if thread.title == "New chat" and message:
+        thread.title = _title_from(message)
+    session.commit()
+
+    prompt = message
+    if attachments:
+        listing = "\n".join(f"  {a['path']}  — {a['note']}" for a in attachments)
+        prompt = f"Files attached to this message:\n{listing}\n\n{message}"
+
+    settings = prefs.load()
+    resume = thread.session_id or None
+    thread_pk = thread.id
+    studio = _studio(user)
+
+    async def stream():
+        text_parts: list[str] = []
+        tool_calls: list[dict] = []
+        latest_session = resume or ""
+        try:
+            async for event in assistant.run(
+                prompt, studio=studio, resume=resume, model=settings.model,
+                permission_mode="default" if settings.confirm_edits else "acceptEdits",
+                allow_web=settings.allow_web, budget_usd=settings.budget_usd,
+            ):
+                kind = event.get("type")
+                if kind == "text":
+                    text_parts.append(event.get("text", ""))
+                elif kind == "tool":
+                    tool_calls.append({"name": str(event.get("name", "")).split("__")[-1],
+                                       "input": event.get("input") or {}})
+                elif kind in ("result", "session") and event.get("session_id"):
+                    latest_session = event["session_id"]
+                elif kind == "error":
+                    text_parts.append(event.get("text", ""))
+                yield json.dumps(event, default=str) + "\n"
+        except Exception as exc:                                  # pragma: no cover
+            log.exception("chat turn failed")
+            yield json.dumps({"type": "error",
+                              "text": f"{type(exc).__name__}: {exc}"}) + "\n"
+
+        # Persisted after the turn, in its own session: the request's session was
+        # closed when the response started streaming, and writing through a closed
+        # session is how a whole conversation silently fails to save.
+        try:
+            with SessionLocal() as store:
+                row = store.get(Conversation, thread_pk)
+                if row is not None:
+                    store.add(ChatMessage(
+                        conversation_id=row.id, role="assistant",
+                        text="".join(text_parts), tool_calls=tool_calls))
+                    if latest_session:
+                        row.session_id = latest_session
+                    row.model = settings.model
+                    store.commit()
+        except Exception:                                         # pragma: no cover
+            log.exception("could not save the assistant turn")
+
+        yield json.dumps({"type": "done"}) + "\n"
+
+    return StreamingResponse(stream(), media_type="application/x-ndjson")
+
+
+# --------------------------------------------------------------------- connectors
+
+
+connector_router = APIRouter(prefix="/api/connectors", tags=["connectors"],
+                             include_in_schema=False)
+
+
+@connector_router.get("")
+def list_connectors(_user: User = Depends(current_user)) -> dict:
+    store = connectors.Store.load()
+    return {"connectors": store.listing(),
+            "active": sorted(store.active().keys()),
+            "note": "A connector gives the agent that service's tools. It is not the "
+                    "same as a provider key, which lets the pipeline call a vendor."}
+
+
+@connector_router.post("")
+def save_connector(payload: dict, _user: User = Depends(current_user)) -> dict:
+    key = (payload.get("key") or "").strip()
+    if not key:
+        raise HTTPException(status_code=400, detail="which connector?")
+    url = (payload.get("url") or "").strip()
+    if url and not url.startswith(("http://", "https://")):
+        raise HTTPException(status_code=400,
+                            detail="that does not look like a server URL — it should "
+                                   "start with https://")
+    store = connectors.Store.load()
+    conn = store.set(key, url, payload.get("token") or "",
+                     enabled=bool(payload.get("enabled", True)))
+    log.info("connector %s %s", key, "configured" if conn.url else "cleared")
+    return conn.as_dict()
+
+
+@connector_router.delete("/{key}", status_code=204)
+def drop_connector(key: str, _user: User = Depends(current_user)) -> None:
+    connectors.Store.load().remove(key)
+
+
+@connector_router.post("/{key}/test")
+async def test_connector(key: str, _user: User = Depends(current_user)) -> dict:
+    """Ask the server who it is. A saved URL that has never been reached is a guess.
+
+    Deliberately a real request to the configured endpoint rather than a URL-shape
+    check: the failure this catches is a token that was pasted with a trailing space,
+    and no amount of validating the string finds that.
+    """
+    import httpx
+
+    store = connectors.Store.load()
+    conn = store.connections.get(key)
+    if conn is None or not conn.url:
+        raise HTTPException(status_code=404, detail=f"{key} is not configured")
+
+    config = conn.as_mcp()
+    body = {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+            "params": {"protocolVersion": "2025-06-18", "capabilities": {},
+                       "clientInfo": {"name": "forgecast", "version": "0.1.0"}}}
+    headers = {"Content-Type": "application/json",
+               "Accept": "application/json, text/event-stream",
+               **config.get("headers", {})}
+    try:
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+            response = await client.post(conn.url, json=body, headers=headers)
+    except httpx.HTTPError as exc:
+        return {"ok": False, "detail": f"could not reach it: {type(exc).__name__}: {exc}"}
+
+    if response.status_code in (401, 403):
+        return {"ok": False, "status": response.status_code,
+                "detail": "reached it, but the token was rejected. Check for a "
+                          "trailing space, and that the token is for this workspace."}
+    if response.status_code >= 400:
+        return {"ok": False, "status": response.status_code,
+                "detail": response.text[:200]}
+
+    name = ""
+    try:
+        payload = response.json()
+        name = ((payload.get("result") or {}).get("serverInfo") or {}).get("name", "")
+    except ValueError:
+        # A streaming transport answers initialize as an SSE frame, which is a
+        # perfectly good sign of life even though it is not JSON.
+        name = "(streaming server)"
+    return {"ok": True, "status": response.status_code, "server": name,
+            "detail": f"Connected to {name or 'the server'}. Its tools are available "
+                      f"in the next chat turn."}
+
+
+@connector_router.get("/mcp-config")
+def mcp_config(_user: User = Depends(current_user)) -> dict:
+    """What the agent will actually be handed. Shown so a mistake is visible."""
+    active = connectors.Store.load().active()
+    redacted = {}
+    for key, config in active.items():
+        clean = dict(config)
+        if clean.get("headers"):
+            clean["headers"] = {k: "••••" for k in clean["headers"]}
+        redacted[key] = clean
+    return {"servers": redacted,
+            "app_tools": f"mcp__{tools.SERVER_NAME}__*",
+            "storage": str(get_settings().storage_dir.resolve())}

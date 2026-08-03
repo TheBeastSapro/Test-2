@@ -91,6 +91,12 @@ def _banner(url: str, health: dict | None, env: dict[str, str], mode: str) -> No
     print(f"    provider mode {provider}"
           + ("   (nothing is called and nothing is charged)" if provider == "mock" else ""))
     print(f"    ffmpeg        {'found' if ffmpeg_ok else 'MISSING — rendering will fail'}")
+    # Printed here as well as shown in the app, because someone who launches from a
+    # terminal reads this before they look at the window.
+    from ..agent import auth as claude_auth
+
+    claude = claude_auth.check()
+    print(f"    claude        {'connected' if claude.ok else claude.headline.lower()}")
     print(f"    sign-in       {env.get('FORGECAST_OWNER_EMAIL', '?')} / "
           f"{env.get('FORGECAST_OWNER_PASSWORD', '(see .env)')}")
     print()
