@@ -56,7 +56,16 @@ router = APIRouter(include_in_schema=False)
 PROVIDER_FIELDS = [
     {"key": "anthropic", "label": "Anthropic (Claude)", "unlocks": "briefs, research, scripts, compliance",
      "hint": "sk-ant-…", "where": "console.anthropic.com"},
-    {"key": "openai", "label": "OpenAI", "unlocks": "an alternative to Claude for the same stages",
+    # Labelled against being mistaken for the ChatGPT agent, because it was. There are two
+    # OpenAI-shaped things in this app and only one of them wants a key: this row is the
+    # *pipeline* LLM, billed per token, used for briefs and scripts. The ChatGPT **agent**
+    # signs in to the subscription through the Codex CLI and needs nothing here — so
+    # someone looking for "where do I connect ChatGPT" found this box and pasted into it.
+    {"key": "openai", "label": "OpenAI API (not your ChatGPT subscription)",
+     "unlocks": "an alternative to Claude for briefs and scripts, billed per token. This "
+                "is NOT how you use a ChatGPT plan — for that, pick ChatGPT in the agent "
+                "picker at the bottom of the chat and press Sign in. Leave this empty "
+                "unless you want the paid API as well",
      "hint": "sk-…", "where": "platform.openai.com"},
     {"key": "elevenlabs", "label": "ElevenLabs", "unlocks": "narration, on the "
      "character allowance your subscription already includes",

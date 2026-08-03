@@ -109,13 +109,20 @@ CATALOGUE: tuple[ConnectorSpec, ...] = (
         # how this was reported. Observed from a real connection rather than published by
         # NexLev, so it stays editable: if they move the endpoint, the box is the fix.
         default_url="https://prod.dashboard.nexlev.io/api/claude-mcp",
-        where="The URL is already filled in. Leave the token empty unless NexLev issued "
-              "you one — this endpoint authorises through your NexLev account, and a "
-              "wrong token is worse than none.",
+        # The credential NexLev's own 401 asks for, quoted from it rather than guessed:
+        # "Provide either: 1) OAuth Bearer token, or 2) API key in Authorization header
+        # (Bearer nlv_...), x-api-key header, or api_key query parameter."
+        where="The URL is already filled in. The token is a NexLev API key and it starts "
+              "with `nlv_` — find it in your NexLev dashboard under API access. A session "
+              "cookie, a JWT or a password will be refused: NexLev issues several kinds "
+              "of credential and only the `nlv_` key works over this endpoint.",
         docs="Once connected, ask for outliers in a niche and I will query NexLev "
-             "directly instead of asking you to paste numbers. A 401 here means the "
-             "connection reached NexLev and was not authorised — the account, not the "
-             "URL.",
+             "directly instead of asking you to paste numbers. NexLev also accepts a "
+             "browser OAuth sign-in, which is what the claude.ai connector uses — this "
+             "page cannot open a browser flow, which is why it asks for the key instead. "
+             "A 401 here means the connection reached NexLev and the credential was not "
+             "the one it wanted; the reply quotes NexLev's own words for which kinds it "
+             "accepts.",
     ),
     ConnectorSpec(
         key="higgsfield",

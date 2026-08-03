@@ -94,6 +94,81 @@ def _node_asset() -> tuple[str, str]:
     return f"https://nodejs.org/dist/v{NODE_VERSION}/{name}.tar.xz", name
 
 
+def run_watched(command: list[str], *, on_line=None, tick=None, timeout: float = 900.0,
+                env: dict | None = None, cwd: str | None = None) -> tuple[int, str]:
+    """Run a child process without the caller's window freezing.
+
+    ## The failure this fixes
+
+    Reported: the setup window opened, showed its checklist, and then stopped responding —
+    Windows greys the title bar and adds "(Not Responding)" — so it looked hung and was
+    closed mid-install.
+
+    It was not hung. The window is drawn by pumping Tk between chunks of work, on the main
+    thread, because the install *is* the program and a worker thread touching Tk widgets
+    crashes on macOS. That works when the work arrives in chunks. It does not work for
+    `subprocess.run`, which blocks the one thread that can redraw for as long as the child
+    takes — and `npm install -g` takes minutes while printing almost nothing.
+
+    So the child runs here with its output on a pipe, read by a reader thread, while the
+    calling thread loops: poll the child, call `tick()`, sleep briefly. `tick` is the
+    window's redraw, so it happens about twelve times a second no matter how silent the
+    child is. The window stays alive; the work still owns the main thread.
+
+    ## Why the output is both streamed and returned
+
+    `on_line` gets each line as it arrives, which is what puts "fetching…" under the
+    progress bar instead of a bar that sits still for two minutes. The full text comes back
+    as well, because a failure has to be reportable after the fact — and a failure whose
+    output only ever went to a window that has since closed is a failure with no reason
+    attached, which is the bug this app has already had once.
+    """
+    import threading
+    import time
+
+    try:
+        process = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, errors="replace", bufsize=1, env=env, cwd=cwd, **_no_window(),
+        )
+    except OSError as exc:
+        return 1, f"{type(exc).__name__}: {exc}"
+
+    collected: list[str] = []
+
+    def drain() -> None:
+        # Its own thread because `readline` blocks, and blocking is the thing being
+        # avoided. Only appends and calls back; it never touches a widget.
+        assert process.stdout is not None
+        for line in process.stdout:
+            stripped = line.rstrip()
+            collected.append(stripped)
+            if on_line is not None and stripped:
+                on_line(stripped)
+
+    reader = threading.Thread(target=drain, name="forgecast-child-output", daemon=True)
+    reader.start()
+
+    deadline = time.monotonic() + timeout
+    while process.poll() is None:
+        if tick is not None:
+            tick()
+        if time.monotonic() > deadline:
+            process.kill()
+            collected.append(f"timed out after {int(timeout)}s")
+            break
+        # Twelve redraws a second: smooth enough that the window never reads as hung,
+        # infrequent enough to cost nothing measurable against a download.
+        time.sleep(0.08)
+
+    # Joined with a bound rather than indefinitely. The child has exited by here, so the
+    # pipe is closed and the reader returns — but a reader that somehow does not must not
+    # hold the install open forever.
+    reader.join(timeout=5.0)
+    return (process.returncode if process.returncode is not None else 1,
+            "\n".join(collected))
+
+
 def _no_window() -> dict:
     """Creation flags that keep a child process from opening a console.
 
@@ -386,7 +461,8 @@ def install_node(root: Path, on_progress=None) -> Path:
     return node_exe(root)
 
 
-def install_claude_cli(root: Path, on_progress=None) -> tuple[bool, str]:
+def install_claude_cli(root: Path, on_progress=None, *, on_note=None,
+                      on_tick=None) -> tuple[bool, str]:
     """The CLI into `runtime/node`, using that same Node's npm.
 
     `--prefix` rather than a real global install: this app's copy, in this app's
@@ -413,16 +489,15 @@ def install_claude_cli(root: Path, on_progress=None) -> tuple[bool, str]:
     # uninstall really is "delete the folder".
     env["npm_config_cache"] = str(runtime_dir(root) / "npm-cache")
 
-    try:
-        result = subprocess.run(
-            [str(npm), "install", "-g", CLI_PACKAGE, "--prefix", str(node_bin(root))],
-            capture_output=True, text=True, timeout=900, env=env, **_no_window(),
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return False, f"npm could not run: {type(exc).__name__}: {exc}"
+    # `run_watched`, not `subprocess.run`. This step takes minutes and prints almost
+    # nothing, and a blocking call holds the only thread that can redraw the setup window —
+    # which is why the window was reported as not responding. See `run_watched`.
+    code, output = run_watched(
+        [str(npm), "install", "-g", CLI_PACKAGE, "--prefix", str(node_bin(root))],
+        on_line=on_note, tick=on_tick, timeout=900, env=env)
 
-    if result.returncode != 0:
-        tail = (result.stderr or result.stdout or "").strip().splitlines()
+    if code != 0:
+        tail = output.strip().splitlines()
         return False, "npm failed:\n" + "\n".join(tail[-6:])
 
     if on_progress:

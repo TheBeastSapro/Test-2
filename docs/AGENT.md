@@ -80,7 +80,7 @@ Two consequences that catch people out, both encoded in the code:
   the Windows fix printed at `auth.py:204` is `setx … "" && set ANTHROPIC_API_KEY=`
   (two commands: one for the stored value, one for this shell).
 * **The desktop launcher removes it from its own process.** `toolchain.activate()` pops
-  it (`desktop/toolchain.py:481`) before anything spawns a child, and
+  it (`desktop/toolchain.py:549`) before anything spawns a child, and
   `desktop/app.py:155-157` prints that it did. The operator's shell keeps the variable;
   only the app ignores it. So a `check()` that reports shadowing under the desktop
   launcher means the variable was set *after* start-up, or the server was started some
@@ -218,7 +218,7 @@ This is the part to understand before changing anything in `chat()`.
 
 `run()` emits a `session` event as soon as it sees a session id on an `AssistantMessage`,
 not at the end of the turn (`assistant.py:264-272`). The route writes it immediately, in
-its own database session, in `_remember_session()` (`routes_agent.py:473-480`).
+its own database session, in `_remember_session()` (`routes_agent.py:474-481`).
 
 The comment there names the bug, and it is worth quoting because the symptom does not
 look like a bug at all:
@@ -273,7 +273,7 @@ announced. `tests/test_agent.py:477` asserts the attempt sequence
 ### One turn per thread
 
 `_IN_FLIGHT` (`routes_agent.py:51`) is a plain in-process set of conversation ids; a
-second POST gets 409 (`routes_agent.py:367-371`). The browser's own guard is per page, so
+second POST gets 409 (`routes_agent.py:406-410`). The browser's own guard is per page, so
 two desktop windows — or a tab left open from earlier — sail past it, both turns resume
 the same session id, and the last to finish writes its session over the other's. A set
 rather than a row lock because the thing being serialised is a CLI subprocess owned by
@@ -282,17 +282,17 @@ crashed turn does not leave a thread permanently refusing to talk.
 
 ### Attachments
 
-Uploads land in `APP_ROOT/attachments` (`routes_agent.py:58-67`) — inside the sandbox on
+Uploads land in `APP_ROOT/attachments` (`routes_agent.py:59-68`) — inside the sandbox on
 purpose, because a file dropped anywhere else is a path the agent is not allowed to open
 and the attachment looks like it worked and then quietly fails at the `Read`.
 
-`describe()` (`routes_agent.py:255`) classifies by extension and returns a `note` that
+`describe()` (`routes_agent.py:256`) classifies by extension and returns a `note` that
 tells the agent what it can *honestly* do: an image it can open, audio it **cannot**
 listen to and must measure with ffprobe, video it cannot watch. Said plainly because a
 model that cannot hear will otherwise describe how something sounds anyway. The notes are
-injected into the prompt as a file listing at `routes_agent.py:379-381`.
+injected into the prompt as a file listing at `routes_agent.py:421-423`.
 
-`safe_name()` (`routes_agent.py:275`) exists because the extension is what everything
+`safe_name()` (`routes_agent.py:276`) exists because the extension is what everything
 downstream reads, and a clipboard paste arrives with no filename and only a MIME type. It
 derives one, so a pasted screenshot is an image the agent opens rather than an opaque
 blob. `tests/test_agent.py:531` covers the cases, including that a de-duplicated `.env`
@@ -315,7 +315,7 @@ There are two kinds and the distinction is load-bearing (`connectors.py:75`):
 `active()` used to return every connected entry, so an API-only service was configured as
 an MCP endpoint speaking a protocol it has never spoken. That fails as a 401 — identical
 to a rejected token — so the operator re-pastes a credential that was never wrong. It now
-filters on `kind == "mcp"`, and `api_credentials()` (`connectors.py:340`) is how the
+filters on `kind == "mcp"`, and `api_credentials()` (`connectors.py:347`) is how the
 provider adapter for a service asks for its own. Pinned by
 `tests/test_agent.py:780`.
 
@@ -331,8 +331,8 @@ that sentence as a `note` (`routes_agent.py:595`).
 
 How they reach the agent: `build_options` merges `connectors.active_servers()` into the
 same `mcp_servers` dict as the app's own server (`assistant.py:164-165`). `active()`
-(`connectors.py:325`) returns only entries that are both enabled and have a URL, and
-`as_mcp()` (`connectors.py:220`) shapes each one — `{"type": "http"|"sse", "url": …,
+(`connectors.py:332`) returns only entries that are both enabled and have a URL, and
+`as_mcp()` (`connectors.py:227`) shapes each one — `{"type": "http"|"sse", "url": …,
 "headers": {"Authorization": "Bearer …"}}`. A bearer header, never a query parameter;
 `tests/test_agent.py:251` pins that.
 
@@ -356,7 +356,7 @@ Things that will bite you:
 * **A blank token on save means "leave it alone"** (`connectors.py:304-306`). The page
   shows a mask, so an unedited field submits empty; treating that as "clear it" would
   wipe a working token on any unrelated edit.
-* **`active_servers()` never raises** (`connectors.py:383`). A broken connectors file
+* **`active_servers()` never raises** (`connectors.py:390`). A broken connectors file
   degrades to an agent with fewer tools, not a chat that will not start.
 * **`listing()` includes configured keys that are not in the catalogue**
   (`connectors.py:366-368`), or they would be invisible and unremovable.

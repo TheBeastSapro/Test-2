@@ -764,6 +764,15 @@ function paintAuth(a) {
 }
 
 const refreshAuth = () => api('/api/agent/auth').then(paintAuth).catch(() => {});
+
+/* Published on `window` because the engine picker lives in an inline script in
+   chat.html, outside this module's closure. It was already calling
+   `typeof refreshAuth === 'function'` before repainting — which is always false from
+   there, so the call silently did nothing and the panel kept showing the *previous*
+   agent's sign-in state under the new agent's heading. Reported: the ChatGPT panel said
+   "Claude can run this studio" and "max subscription" while listing ChatGPT's limits.
+   A guard that can never pass is worse than no guard: it reads as handled. */
+window.forgecastRefreshAuth = refreshAuth;
 const refreshPanel = () => api('/api/agent/status').then(paintStatus).catch(() => {});
 
 /* The empty state. One obvious first move, then three concrete starting points —

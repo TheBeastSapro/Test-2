@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import mimetypes
+import re
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -648,8 +649,7 @@ async def test_connector(key: str, _user: User = Depends(current_user)) -> dict:
 
     if response.status_code in (401, 403):
         return {"ok": False, "status": response.status_code,
-                "detail": "reached it, but the token was rejected. Check for a "
-                          "trailing space, and that the token is for this workspace."}
+                "detail": _why_unauthorised(response, bool(conn.token))}
     if response.status_code >= 400:
         return {"ok": False, "status": response.status_code,
                 "detail": response.text[:200]}
@@ -665,6 +665,60 @@ async def test_connector(key: str, _user: User = Depends(current_user)) -> dict:
     return {"ok": True, "status": response.status_code, "server": name,
             "detail": f"Connected to {name or 'the server'}. Its tools are available "
                       f"in the next chat turn."}
+
+
+def _why_unauthorised(response, had_token: bool) -> str:
+    """A 401 from an MCP server, as the server's own explanation rather than ours.
+
+    The generic sentence this replaces — "the token was rejected, check for a trailing
+    space" — was wrong about the common case and said nothing useful about any of them.
+    These servers are specific and they answer in two places:
+
+    * **`WWW-Authenticate`** carries the OAuth challenge, per RFC 9728, including a
+      `resource_metadata` URL. Its presence means the server accepts a *browser sign-in*,
+      which this page cannot perform — so a rejected paste is not a paste to fix, it is
+      the wrong mechanism, and saying "check for a trailing space" sends someone to keep
+      re-pasting a credential that was never going to work.
+    * **`error_description`** in the body often names the exact credential wanted. NexLev's
+      says its API keys begin `nlv_`, which is the difference between a fix and a guess.
+
+    Both are relayed verbatim. A server that says what it wants should not have its words
+    replaced with a paraphrase of what we assumed it wanted.
+    """
+    challenge = response.headers.get("WWW-Authenticate", "")
+
+    described = ""
+    try:
+        payload = response.json()
+        if isinstance(payload, dict):
+            described = str(payload.get("error_description")
+                            or payload.get("detail")
+                            or payload.get("message") or "").strip()
+    except ValueError:
+        described = ""
+    if not described:
+        # The header carries the same field when the body does not.
+        match = re.search(r'error_description="([^"]+)"', challenge)
+        described = match.group(1) if match else ""
+
+    lines = [f"reached it, and it refused ({response.status_code})."]
+    if described:
+        lines.append(f"It says: {described}")
+
+    oauth = "resource_metadata=" in challenge or "Bearer realm" in challenge
+    if oauth and not had_token:
+        lines.append(
+            "That is an OAuth challenge, which means a browser sign-in rather than a "
+            "pasted key. This page cannot open one. Either paste an API key if this "
+            "service issues them, or connect it through the CLI: "
+            "`claude mcp add --transport http --scope user <name> <url>` and complete the "
+            "sign-in it opens — the agent runs through that CLI and inherits the session.")
+    elif had_token:
+        lines.append(
+            "A token was sent and was not accepted. Check it is the kind of credential "
+            "named above — services issue several and only one works here — and that it "
+            "was copied without a trailing space.")
+    return "\n".join(lines)
 
 
 @connector_router.get("/mcp-config")

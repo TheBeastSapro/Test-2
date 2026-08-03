@@ -94,6 +94,17 @@ class SetupWindow:
             bar["mode"] = "indeterminate"
         self._pump()
 
+    def tick(self) -> None:
+        """Redraw, with nothing to report.
+
+        Public because a long child process — `npm install -g` is minutes and nearly
+        silent — has to be able to keep this window alive without pretending to have news.
+        Without it the window is redrawn only when something is printed, and a step that
+        prints nothing for two minutes is a window Windows marks "(Not Responding)". That
+        was reported: the checklist appeared, then froze, and it was closed mid-install.
+        """
+        self._pump()
+
     def note(self, line: str) -> None:
         """The installer's own last line, under the bar.
 
@@ -157,6 +168,7 @@ class _Silent:
 
     def begin(self, step: str) -> None: ...
     def progress(self, done: int, total: int) -> None: ...
+    def tick(self) -> None: ...
     def note(self, line: str) -> None: ...
     def finish(self, step: str, *, ok: bool = True) -> None: ...
     def done(self, message: str) -> None: ...

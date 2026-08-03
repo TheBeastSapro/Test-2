@@ -197,7 +197,10 @@
     // The sign-in state is per agent, so the panel has to be re-asked. Switching to a
     // backend that is not installed must say so here and now — not on the first
     // message, when the reply is where the explanation lands.
-    if (typeof refreshAuth === 'function') refreshAuth();
+    // `window.forgecastRefreshAuth`, not a bare `refreshAuth`: this script is not inside
+    // chat.js's module closure, so the old `typeof refreshAuth === 'function'` guard was
+    // always false and the repaint never happened.
+    if (window.forgecastRefreshAuth) window.forgecastRefreshAuth();
     const chosen = ENGINES.find(e => e.key === key);
     if (chosen && typeof toast === 'function') toast(`${chosen.label} is answering now`);
   };
