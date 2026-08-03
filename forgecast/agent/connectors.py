@@ -104,6 +104,38 @@ CATALOGUE: tuple[ConnectorSpec, ...] = (
              "URL.",
     ),
     ConnectorSpec(
+        key="higgsfield",
+        label="Higgsfield",
+        gives="generating stills and B-roll clips from a prompt or a reference image "
+              "across 30+ image and video models, training a reusable character "
+              "identity so a series looks like one series, and reading back what it "
+              "has already generated",
+        # Higgsfield publishes one hosted endpoint for every account rather than
+        # issuing one per workspace, so this is prefilled rather than asked for:
+        # https://higgsfield.ai/mcp names it and `claude mcp add` uses the same URL.
+        default_url="https://mcp.higgsfield.ai/mcp",
+        where="The URL is already filled in — Higgsfield publishes one endpoint for "
+              "everybody. Leave the token empty: this server has no API key to paste, "
+              "it authorises by signing you in to higgsfield.ai in a browser, and that "
+              "sign-in cannot happen from this page. To grant it, run "
+              "`claude mcp add --transport http --scope user higgsfield "
+              "https://mcp.higgsfield.ai/mcp` in a terminal and complete the sign-in "
+              "it opens; the agent runs through that same CLI, so it inherits the "
+              "session.",
+        # Said here because the failure is otherwise unreadable. `Test` on this entry
+        # answers 401 with a `WWW-Authenticate: Bearer` challenge until the browser
+        # sign-in has been done — the same 401 a rejected token gives, which is the
+        # exact confusion this module exists to stop. Naming it means the operator
+        # goes and signs in instead of hunting for a key that Higgsfield never issues.
+        docs="Once you are signed in, ask for a shot and I can generate the still or "
+             "the clip on Higgsfield instead of routing it to fal.ai. A 401 on Test "
+             "here does not mean a bad token — it means the browser sign-in above has "
+             "not been completed, because this endpoint issues no key to paste. "
+             "Higgsfield also has a separate REST API with real API keys "
+             "(cloud.higgsfield.ai); that is a different mechanism and nothing in the "
+             "render pipeline uses it yet.",
+    ),
+    ConnectorSpec(
         key="google_drive",
         label="Google Drive",
         gives="reading scripts, briefs and shot lists you keep in Drive",
@@ -273,7 +305,13 @@ class Store:
             rows.append(conn.as_dict() if conn else {
                 "key": spec.key, "label": spec.label, "gives": spec.gives,
                 "kind": spec.kind,
-                "where": spec.where, "docs": spec.docs, "url": "", "token": "",
+                "where": spec.where, "docs": spec.docs,
+                # `default_url` was carried on the spec and never read, so a row that
+                # says "the URL is already filled in" arrived with an empty box — the
+                # copy and the page disagreed, and the operator went looking for an
+                # endpoint the app already knew. An unconfigured row starts from the
+                # published default; a configured one keeps whatever was saved.
+                "url": spec.default_url, "token": "",
                 "connected": False, "enabled": False, "note": "",
             })
         # Anything configured that is not in the catalogue still belongs on the page;

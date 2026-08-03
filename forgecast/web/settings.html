@@ -75,7 +75,7 @@
         </p>
 
         {% for item in connectors %}
-          <div class="conn" data-key="{{ item.key }}">
+          <div class="conn" data-key="{{ item.key }}" data-kind="{{ item.kind }}">
             <div class="conn-head">
               <span class="dot {{ 'dot-ok' if item.connected and item.enabled else 'dot-idle' }}"></span>
               <b>{{ item.label }}</b>
@@ -83,8 +83,13 @@
                 <span class="pill {{ 'local' if item.enabled else '' }}">{{ 'on' if item.enabled else 'off' }}</span>
               {% endif %}
               <span class="grow"></span>
-              {% if item.connected %}
+              {# Test speaks MCP at a URL. An `api` connector has neither, so the
+                 button could only ever report it as broken — which is a lie about a
+                 credential that may be perfectly good. #}
+              {% if item.connected and item.kind != 'api' %}
                 <button class="btn-sm" onclick="testConnector('{{ item.key }}')">Test</button>
+              {% endif %}
+              {% if item.connected %}
                 <button class="btn-sm danger" onclick="dropConnector('{{ item.key }}')">Remove</button>
               {% endif %}
             </div>
@@ -93,15 +98,23 @@
             {% if item.docs %}<p class="conn-where">{{ item.docs }}</p>{% endif %}
 
             <div class="conn-form">
+              {# An `api` connector has no server URL in existence. Asking for one
+                 anyway is how a credential, a dashboard link or a guessed endpoint
+                 gets pasted into the URL box — and the page then stored it, reported
+                 the service as connected, and there was nothing to reach. So the box
+                 only exists for the kind of connector that actually has an address. #}
+              {% if item.kind != 'api' %}
+                <div>
+                  <label for="url-{{ item.key }}">Server URL</label>
+                  <input id="url-{{ item.key }}" value="{{ item.url }}"
+                         placeholder="https://…/mcp">
+                </div>
+              {% endif %}
               <div>
-                <label for="url-{{ item.key }}">Server URL</label>
-                <input id="url-{{ item.key }}" value="{{ item.url }}"
-                       placeholder="https://…/mcp">
-              </div>
-              <div>
-                <label for="tok-{{ item.key }}">Token</label>
+                <label for="tok-{{ item.key }}">
+                  {{ 'API key' if item.kind == 'api' else 'Token' }}</label>
                 <input id="tok-{{ item.key }}" type="password"
-                       placeholder="{{ item.token or 'paste the token' }}">
+                       placeholder="{{ item.token or ('paste the API key' if item.kind == 'api' else 'paste the token') }}">
               </div>
               <button class="primary" onclick="saveConnector('{{ item.key }}')">
                 {{ 'Update' if item.connected else 'Connect' }}</button>
@@ -273,16 +286,32 @@
   }
 
   async function saveConnector(key) {
-    const url = $(`#url-${key}`).value.trim();
+    const row = document.querySelector(`.conn[data-key="${key}"]`);
+    const isApi = row && row.dataset.kind === 'api';
+    // No URL box is rendered for an `api` connector, so reading one blindly threw and
+    // the button did nothing at all. Demanding a URL was the same bug one step later:
+    // it made every API-only service permanently unsavable through this page.
+    const urlBox = $(`#url-${key}`);
+    const url = urlBox ? urlBox.value.trim() : '';
     const token = $(`#tok-${key}`).value;
-    if (!url) { toast('A connector needs its server URL.'); return; }
+    if (!isApi && !url) { toast('A connector needs its server URL.'); return; }
+    if (isApi && !token && !row.querySelector('.dot-ok')) {
+      toast('This one takes an API key rather than a server URL.'); return;
+    }
     const r = await fetch('/api/connectors', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({key, url, token, enabled: true}),
     });
     if (!r.ok) { toast((await r.json()).detail || 'Could not save that.'); return; }
-    toast(`${key} saved — testing…`);
-    await testConnector(key);
+    // Only an MCP connector can be tested — there is no endpoint to reach for the
+    // other kind, and reporting a fresh credential as unreachable invites the
+    // operator to replace something that was never wrong.
+    if (isApi) {
+      toast(`${key} saved.`);
+    } else {
+      toast(`${key} saved — testing…`);
+      await testConnector(key);
+    }
     setTimeout(() => location.reload(), 1400);
   }
 
