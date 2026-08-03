@@ -45,12 +45,19 @@ ROOT = Path(__file__).resolve().parent.parent
 NAME = "Forgecast"
 
 # Everything a person needs to run the app, and nothing else.
+# Shipped only in a cross-platform build. The operator running this is on Windows and
+# asked for a Windows-only archive; the shell launcher is the one file that is dead
+# weight there, and `verify` refuses to check for what was deliberately left out.
+POSIX_FILES = ["Forgecast.command"]
+
 INCLUDE_FILES = [
     "launcher.py",
     # The windowless Windows entry point, and the console one behind it. Both ship: the
     # .vbs is what to double-click, the .bat is what to run when you want to watch.
     "Forgecast.vbs",
     "Forgecast.bat",
+    # The macOS/Linux launcher. Listed here so a cross-platform build ships it, and
+    # named in POSIX_FILES above so a Windows build can drop it.
     "Forgecast.command",
     "pyproject.toml",
     "alembic.ini",
@@ -272,7 +279,7 @@ def check(members: list[str]) -> None:
         )
 
 
-def build(out_dir: Path) -> Path:
+def build(out_dir: Path, *, windows_only: bool = False) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     version = "0.1.0"
     try:
@@ -285,9 +292,15 @@ def build(out_dir: Path) -> Path:
         pass
 
     picked = files_to_ship()
+    if windows_only:
+        # Nothing else changes. The Python underneath is the same on every platform, and
+        # saying otherwise would be a claim this build does not make — what is left out
+        # is one shell launcher that a Windows machine cannot use.
+        dropped = {f"{NAME}/{name}" for name in POSIX_FILES}
+        picked = [(path, member) for path, member in picked if member not in dropped]
     check([member for _, member in picked])
 
-    archive = out_dir / f"{NAME}-{version}.zip"
+    archive = out_dir / f"{NAME}-{version}{'-windows' if windows_only else ''}.zip"
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for path, member in picked:
             info = zipfile.ZipInfo(member)
@@ -309,13 +322,13 @@ def build(out_dir: Path) -> Path:
     return archive
 
 
-def verify(archive: Path) -> None:
+def verify(archive: Path, *, windows_only: bool = False) -> None:
     """Open the archive and confirm the things a first run depends on are in it."""
     required = [
         f"{NAME}/launcher.py",
         f"{NAME}/Forgecast.vbs",
         f"{NAME}/Forgecast.bat",
-        f"{NAME}/Forgecast.command",
+        *([] if windows_only else [f"{NAME}/Forgecast.command"]),
         f"{NAME}/pyproject.toml",
         f"{NAME}/INSTALL.md",
         f"{NAME}/forgecast/api/main.py",
@@ -354,13 +367,16 @@ def verify(archive: Path) -> None:
     # Assert the two things that only break on someone else's machine, where there is
     # nobody to notice and no way to guess the cause from the symptom.
     with zipfile.ZipFile(archive) as zf:
-        for name in (f"{NAME}/Forgecast.command", f"{NAME}/launcher.py"):
+        for name in ([f"{NAME}/launcher.py"] if windows_only
+                     else [f"{NAME}/Forgecast.command", f"{NAME}/launcher.py"]):
             info = zf.getinfo(name)
             mode = (info.external_attr >> 16) & 0o777
             if info.create_system != 3 or not mode & 0o100:
                 raise SystemExit(
                     f"{name} would arrive without its executable bit "
                     f"(create_system={info.create_system}, mode={mode:o})")
+        if windows_only:
+            return
         launcher = zf.read(f"{NAME}/Forgecast.command")
         if b"\r\n" in launcher.split(b"\n", 1)[0] + b"\n":
             raise SystemExit("Forgecast.command has CRLF line endings; its shebang "
@@ -378,14 +394,21 @@ def verify(archive: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default="dist", help="output directory (default dist/)")
+    parser.add_argument("--windows", action="store_true",
+                        help="leave out the macOS/Linux launcher")
     args = parser.parse_args()
 
-    print("Packaging Forgecast")
-    archive = build(ROOT / args.out if not Path(args.out).is_absolute() else Path(args.out))
-    verify(archive)
+    print("Packaging Forgecast" + (" for Windows" if args.windows else ""))
+    archive = build(ROOT / args.out if not Path(args.out).is_absolute() else Path(args.out),
+                    windows_only=args.windows)
+    verify(archive, windows_only=args.windows)
     print("\n  Send this file. The person who gets it unzips it and double-clicks")
-    print(f"  {NAME}.vbs (Windows) or {NAME}.command (macOS/Linux).")
-    print(f"  {NAME}.bat is the same thing with a console, for when something is wrong.")
+    if args.windows:
+        print(f"  {NAME}.vbs. {NAME}.bat is the same thing with a console, for when")
+        print("  something is wrong and you want to watch it happen.")
+    else:
+        print(f"  {NAME}.vbs (Windows) or {NAME}.command (macOS/Linux).")
+        print(f"  {NAME}.bat is the same thing with a console, for when something is wrong.")
     return 0
 
 

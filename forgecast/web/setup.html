@@ -145,10 +145,17 @@
           // sweeps rather than pretending to know.
           if (event.total > 0) {
             bar.classList.remove('sweep');
+            // Scaled against this tool's own weight, not against everything still to
+            // do. The old form multiplied the current download's fraction by ALL the
+            // remaining weight, so each tool swept the bar to the end by itself and the
+            // next one reset it to its floor — 98% four times in one fresh-Windows run,
+            // and a worst jump backwards of 43.6 points. A progress bar that goes
+            // backwards is read as the install restarting.
             const within = event.bytes / event.total;
-            const overall = (event.weight_done + within * (event.weight_total - event.weight_done)) /
+            const step = event.weight_step || 0;
+            const overall = (event.weight_done + within * step) /
                             Math.max(1, event.weight_total);
-            fill.style.width = Math.min(98, overall * 100).toFixed(1) + '%';
+            fill.style.width = Math.min(99, overall * 100).toFixed(1) + '%';
             $('#pct').textContent = `${mb(event.bytes)} of ${mb(event.total)}`;
           } else {
             bar.classList.add('sweep');
@@ -156,7 +163,10 @@
           }
         } else if (event.type === 'done') {
           bar.classList.remove('sweep');
-          fill.style.width = '100%';
+          // Full only when it actually finished. A wholly failed run used to end on a
+          // complete bar above the words "Not quite", which is the bar contradicting
+          // the sentence directly under it.
+          if (event.ok) fill.style.width = '100%';
           $('#pct').textContent = '';
           $('#step').textContent = event.ok ? 'Done.' : 'Finished with problems.';
           $('#head').textContent = event.ok ? 'Ready' : 'Not quite';

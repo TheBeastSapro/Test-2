@@ -59,7 +59,14 @@ READABLE: tuple[str, ...] = (".md", ".markdown", ".txt")
 # Characters of the operator's own documents injected per style, per prompt. Roughly six
 # thousand tokens — large enough for a real method, small enough that it is a fixed cost
 # per run rather than an open one.
-BUDGET_CHARS = 24_000
+# Raised from 24,000 after measuring what it did to the case this feature exists for.
+# Sixteen documents shared 24,000 characters equally — about 1,478 each, roughly 250
+# words — while the prompt told the model those documents "are the authority for this
+# channel" and handed it the house method, uncapped, at about 11,700 characters beside
+# them. The authority arrived as an abstract of itself. 120,000 is roughly 30,000
+# tokens: large for a prompt and small against the context every backend here runs,
+# and it is spent once per node rather than per turn.
+BUDGET_CHARS = 120_000
 
 # A folder with more documents than this is not a scripting style, it is a directory the
 # operator pointed at by mistake — a Downloads folder, a notes vault, a repository. Read

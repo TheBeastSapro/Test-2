@@ -478,6 +478,12 @@ def install_toolchain(root: Path) -> list[str]:
             continue
         report = _progress_printer(tool.label, step=step,
                                    window=window if gui else None)
+        # `on_note` and `on_tick` are keyword-only and default to None, so omitting them
+        # was silent: `run_watched`'s `if tick is not None` never fired and nothing
+        # pumped Tk for the whole of `npm install -g`. That is the exact
+        # "(Not Responding)" freeze `run_watched` and `SetupWindow.tick` were written to
+        # fix, and adding the Codex step doubled the frozen interval. Measured at zero
+        # redraws where about twenty-four were due.
         try:
             if tool.key == "ffmpeg":
                 ok, detail = toolchain.install_ffmpeg(root, report)
@@ -490,14 +496,16 @@ def install_toolchain(root: Path) -> list[str]:
                 if not toolchain.npm_exe(root).exists() and not shutil.which("npm"):
                     toolchain.install_node(root, _progress_printer(
                         "Node.js", step=step, window=window if gui else None))
-                ok, detail = toolchain.install_claude_cli(root, report)
+                ok, detail = toolchain.install_claude_cli(
+                    root, report, on_note=window.note, on_tick=window.tick)
             elif tool.key == "codex":
                 # Node first for the same reason, and here on every platform: npm is the
                 # only way this CLI arrives, so without it the step can only fail.
                 if not toolchain.npm_exe(root).exists() and not shutil.which("npm"):
                     toolchain.install_node(root, _progress_printer(
                         "Node.js", step=step, window=window if gui else None))
-                ok, detail = toolchain.install_codex_cli(root, report)
+                ok, detail = toolchain.install_codex_cli(
+                    root, report, on_note=window.note, on_tick=window.tick)
             else:                                                  # pragma: no cover
                 continue
         except Exception as exc:

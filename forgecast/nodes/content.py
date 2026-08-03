@@ -25,7 +25,8 @@ Return JSON with exactly these keys:
   hook            string, the first spoken sentence of the video
   promise         string, what the viewer will know by the end
   target_duration_seconds  integer, echo the requested duration
-  beats           array of 4-12 objects: {name, purpose, summary}
+  beats           array of objects: {name, purpose, summary} — as many as the
+                  cadence below asks for
   keywords        array of 4-8 search terms
 
 Beats must be a real outline: each one advances the argument. Do not write
@@ -94,6 +95,12 @@ async def brief_node(ctx: NodeContext) -> NodeResult:
     # research block is: an instruction the model may treat as context is one it drops
     # the moment the output gets long.
     instructions = (
+        # The beat count comes from the cadence rather than from a literal in
+        # BRIEF_INSTRUCTIONS. The two used to disagree for every video over about five
+        # minutes — the instructions asked for "4-12" and the block appended two lines
+        # later said "about 19 of them", and 900s asked for 36. `method.py`'s own
+        # docstring names that failure: two instructions that disagree are resolved by
+        # ignoring both.
         f"{BRIEF_INSTRUCTIONS}\n\n"
         f"{scripting_block(ctx, seconds, only=scripting.STRUCTURE_IDS)}"
     )

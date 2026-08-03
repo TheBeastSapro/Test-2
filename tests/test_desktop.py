@@ -344,11 +344,25 @@ def test_the_launcher_installs_what_is_missing_rather_than_warning_about_it(monk
     from types import SimpleNamespace
 
     called: list[str] = []
+    pumped: dict = {}
+
+    def fake_claude(root, report, *, on_note=None, on_tick=None):
+        called.append("claude")
+        # Recorded, not ignored. These two are keyword-only and default to None, so the
+        # launcher omitting them was silent — `run_watched`'s `if tick is not None`
+        # simply never fired, and nothing pumped Tk for the whole of `npm install -g`.
+        # The window froze for the entire install, which is the "(Not Responding)"
+        # failure `run_watched` and `SetupWindow.tick` exist to prevent. A stub that
+        # would not accept them is what let it ship.
+        pumped["note"] = on_note
+        pumped["tick"] = on_tick
+        return True, "ok"
+
     fake = SimpleNamespace(
         inventory=lambda root: [FakeTool("ffmpeg", "ffmpeg (rendering)", False),
                                 FakeTool("claude", "Claude Code CLI", False)],
         install_ffmpeg=lambda root, report: (called.append("ffmpeg"), (True, "ok"))[1],
-        install_claude_cli=lambda root, report: (called.append("claude"), (True, "ok"))[1],
+        install_claude_cli=fake_claude,
         install_node=lambda root, report: called.append("node"),
         npm_exe=lambda root: Path("/nonexistent/npm"),
     )
@@ -364,6 +378,10 @@ def test_the_launcher_installs_what_is_missing_rather_than_warning_about_it(monk
     assert unresolved == []
     assert "ffmpeg" in called
     assert "claude" in called
+    # The window has to be given something to redraw with, or it freezes for the whole
+    # npm install and Windows marks it not responding.
+    assert callable(pumped["note"]), "the launcher passed no on_note"
+    assert callable(pumped["tick"]), "the launcher passed no on_tick"
 
 
 def test_a_tool_the_installer_cannot_fetch_is_named_with_the_command_that_would(monkeypatch):

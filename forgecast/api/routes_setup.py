@@ -55,7 +55,13 @@ router = APIRouter(include_in_schema=False)
 # written by the worker thread, and one plain mapping is easier to reason about than
 # an object with methods that could be called from either.
 JOB: dict = {"running": False, "log": [], "done": False, "ok": False,
-             "step": "", "bytes": 0, "total": 0, "weight_done": 0, "weight_total": 1}
+             "step": "", "bytes": 0, "total": 0, "weight_done": 0, "weight_total": 1,
+             # The weight of the tool being installed right now. Sent so the page can
+             # scale the current download against *its own* share of the run. Without
+             # it the bar had only "everything still to do" to scale against, so every
+             # tool drove it to the end on its own and the next one reset it — measured
+             # at 98% four times in one run, worst jump backwards 98.0% → 54.4%.
+             "weight_step": 0}
 LOCK = threading.Lock()
 
 
@@ -96,11 +102,26 @@ def setup_state() -> dict:
     return state()
 
 
+def _begin_job() -> None:
+    """Clear the previous run, synchronously, before any stream can look.
+
+    This used to happen on the worker, after `toolchain.missing(root)` — a disk probe
+    measured at 317 ms cold. `install()` set `running=True`, started the thread and
+    returned, and the stream polled inside that gap: it saw the *previous* run's
+    `done=True`, replayed that run's log lines, and reported its `ok` while the real
+    install was still going. Pressing Install a second time — which is what the page's
+    own "Try again" leads to — therefore answered instantly with the last run's verdict.
+    Measured 5/5: a stream closed in 0.015 s against a 1.5 s install, reporting failure
+    for a run that went on to succeed.
+    """
+    JOB.update(done=False, ok=False, log=[], step="", bytes=0, total=0,
+               weight_done=0, weight_total=1, weight_step=0)
+
+
 def _install_everything(root: Path) -> None:
     """Run the installs in order, updating JOB as it goes. Worker thread."""
     wanted = toolchain.missing(root)
-    JOB.update(weight_total=max(1, sum(t.weight for t in wanted)), weight_done=0,
-               done=False, ok=False, log=[], step="", bytes=0, total=0)
+    JOB.update(weight_total=max(1, sum(t.weight for t in wanted)))
 
     def note(line: str) -> None:
         log.info("setup: %s", line)
@@ -110,41 +131,38 @@ def _install_everything(root: Path) -> None:
         JOB["bytes"] = got
         JOB["total"] = total
 
+    def ensure_node() -> None:
+        """Node, with its own failure named as Node's.
+
+        It used to be called bare inside the Claude and Codex branches, so a dropped
+        connection during the download raised straight past every remaining tool into
+        the outer handler — the whole log was two lines ending `Failed: URLError: …`,
+        naming neither Node nor the tool that wanted it. That is the same abandonment
+        the per-tool reporting below was added to prevent; only the `return` path had
+        been fixed, not the `raise` path.
+        """
+        if toolchain.node_exe(root).exists() or toolchain.npm_exe(root).exists():
+            return
+        try:
+            toolchain.install_node(root, progress)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Node.js could not be downloaded ({type(exc).__name__}: {exc}), and "
+                f"it is the only way this CLI installs") from exc
+
     try:
         for tool in wanted:
-            JOB.update(step=tool.label, bytes=0, total=0)
+            JOB.update(step=tool.label, bytes=0, total=0,
+                       weight_step=tool.weight)
             note(f"Installing {tool.label}…")
 
-            if tool.key == "node":
-                toolchain.install_node(root, progress)
-                note(f"Node ready at {toolchain.node_exe(root)}")
-            elif tool.key == "claude":
-                # Node has to exist first. On a fresh machine both are missing and
-                # `missing()` returns them in that order, but a re-run where only the
-                # CLI is missing must not assume Node is the bundled one.
-                if not toolchain.node_exe(root).exists() and not toolchain.npm_exe(root).exists():
-                    toolchain.install_node(root, progress)
-                ok, detail = toolchain.install_claude_cli(root, progress, on_note=note)
-                note(f"Claude Code CLI ready at {detail}" if ok
-                     else f"Claude Code CLI failed — {detail}")
-                # No longer a `return` on failure, and that mattered more than it looked.
-                # Abandoning the job here left every later tool untried and unmentioned —
-                # ffmpeg, and now the Codex CLI — so the page finished saying they were
-                # missing with nothing beside them to say why. Each tool reports its own
-                # outcome and the run continues; the verdict comes from what is still
-                # missing at the end, which is the same answer either way.
-            elif tool.key == "codex":
-                # Same order and the same caution about a re-run. Unlike Claude there is
-                # no bundled build and no vendor installer on any platform, so npm is the
-                # only route and Node has to be here for it.
-                if not toolchain.node_exe(root).exists() and not toolchain.npm_exe(root).exists():
-                    toolchain.install_node(root, progress)
-                ok, detail = toolchain.install_codex_cli(root, progress, on_note=note)
-                note(f"Codex CLI ready at {detail}" if ok
-                     else f"Codex CLI failed — {detail}")
-            elif tool.key == "ffmpeg":
-                ok, detail = toolchain.install_ffmpeg(root, progress)
-                note(f"ffmpeg ready at {detail}" if ok else f"ffmpeg failed — {detail}")
+            try:
+                _install_one(tool, root, note, progress, ensure_node)
+            except Exception as exc:
+                # Per tool, so one failure costs one tool rather than the rest of the
+                # run. The verdict at the end re-probes the disk either way.
+                log.exception("setup step failed: %s", tool.label)
+                note(f"{tool.label} failed — {type(exc).__name__}: {exc}")
 
             JOB["weight_done"] = JOB["weight_done"] + tool.weight
 
@@ -161,6 +179,47 @@ def _install_everything(root: Path) -> None:
         JOB["running"] = False
 
 
+def _install_one(tool, root: Path, note, progress, ensure_node) -> None:
+    """One tool, start to finish. Raises on failure so the caller can name it.
+
+    Raising rather than returning `(ok, detail)` is the point: every failure here now
+    reaches exactly one handler, which logs it against the tool that produced it and
+    lets the run carry on. The previous shape had two ways to fail — a returned `False`
+    that was reported, and a raised exception that abandoned every remaining tool with a
+    message naming none of them.
+    """
+    if tool.key == "node":
+        toolchain.install_node(root, progress)
+        # Verified rather than announced. `install_node` returns its expected path
+        # whether or not anything is there and does not raise on a wrong unpack layout,
+        # so "Node ready at …" was a sentence that could be false.
+        landed = toolchain.node_exe(root)
+        if not landed.exists():
+            raise RuntimeError(f"the download finished but no Node appeared at {landed}")
+        note(f"Node ready at {landed}")
+
+    elif tool.key == "claude":
+        ensure_node()
+        ok, detail = toolchain.install_claude_cli(
+            root, progress, on_note=note)
+        if not ok:
+            raise RuntimeError(detail or "the Claude Code CLI could not be installed")
+        note(f"Claude Code CLI ready at {detail}")
+
+    elif tool.key == "codex":
+        ensure_node()
+        ok, detail = toolchain.install_codex_cli(root, progress, on_note=note)
+        if not ok:
+            raise RuntimeError(detail or "the Codex CLI could not be installed")
+        note(f"Codex CLI ready at {detail}")
+
+    elif tool.key == "ffmpeg":
+        ok, detail = toolchain.install_ffmpeg(root, progress)
+        if not ok:
+            raise RuntimeError(detail or "ffmpeg could not be installed")
+        note(f"ffmpeg ready at {detail}")
+
+
 @router.post("/api/setup/install")
 async def install(_request: Request):
     root = app_root()
@@ -168,6 +227,9 @@ async def install(_request: Request):
     with LOCK:
         already = JOB["running"]
         if not already:
+            # Cleared here, under the lock, before the thread exists and therefore
+            # before any stream can read it. See `_begin_job`.
+            _begin_job()
             JOB["running"] = True
             threading.Thread(target=_install_everything, args=(root,),
                              daemon=True, name="forgecast-setup").start()
@@ -186,6 +248,7 @@ async def install(_request: Request):
                 "type": "progress", "step": JOB["step"],
                 "bytes": JOB["bytes"], "total": JOB["total"],
                 "weight_done": JOB["weight_done"], "weight_total": JOB["weight_total"],
+                "weight_step": JOB["weight_step"],
             }) + "\n"
             if JOB["done"] and sent >= len(JOB["log"]):
                 break

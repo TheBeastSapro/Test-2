@@ -333,6 +333,34 @@ class Tool:
                 "where": self.where, "manual": self.manual}
 
 
+def claude_where(root: Path) -> str:
+    """Where a *runnable* Claude Code CLI is, or "" when there is none.
+
+    The sibling of `codex_where`, and it should have existed from the start. Without it
+    `install_claude_cli` verified its own work with `cli_exe(root).exists()` — a file
+    check, which passes for the `claude.cmd` npm writes on Windows. `auth.find_cli()`
+    refuses that shim, because the SDK will not spawn a batch script. So the installer
+    returned success naming a file that the rest of the app treats as absent: one run
+    logging both "Claude Code CLI ready at …claude.cmd" and "Still missing: Claude Code
+    CLI", with a Try again button that could never succeed.
+
+    The disk probe is the fallback for the launcher's pre-virtualenv run, where the
+    agent package cannot be imported. It can only say whether *something* is there,
+    which is enough to decide whether to download; the real check runs later.
+    """
+    try:
+        from ..agent import auth as claude_auth
+    except ImportError:                                             # pragma: no cover
+        claude_auth = None
+
+    if claude_auth is not None:
+        found = claude_auth.find_cli()
+        return str(found) if found else ""
+
+    candidate = cli_exe(root)
+    return str(candidate) if candidate.exists() else ""
+
+
 def codex_where(root: Path) -> str:
     """Where a *runnable* Codex CLI is on this machine, or "" when there is none.
 
@@ -606,20 +634,27 @@ def install_claude_cli(root: Path, on_progress=None, *, on_note=None,
     if on_progress:
         on_progress(WEIGHT_CLI * 1_000_000, WEIGHT_CLI * 1_000_000)
 
-    if not cli_exe(root).exists():
-        # npm reported success and the shim is not where this platform puts it. On Windows
-        # this is the known case — the npm shim is refused there — so instead of reporting
-        # a dead end, the official installer is tried, which is what a person would do
-        # next anyway.
+    # Verified through the module that actually runs it, not through a file existing.
+    # `cli_exe(root).exists()` passes for the `claude.cmd` npm writes on Windows, and
+    # `auth.find_cli()` refuses that shim — the SDK will not spawn a batch script. So a
+    # successful npm install reported `(True, "...claude.cmd")` while the same run's
+    # verdict said the CLI was still missing, and "Try again" was a loop with no exit.
+    # `install_codex_cli` was written to check through `codex_where`; this one was not
+    # brought up to that standard until it had shipped the contradiction.
+    if not claude_where(root):
+        # On Windows this is the known case — npm writes a shim the SDK refuses — so
+        # instead of reporting a dead end, the official installer is tried, which is
+        # what a person would do next anyway.
         if os.name == "nt":
             ok, detail = _install_claude_windows(on_note=on_note, on_tick=on_tick)
             if ok:
                 return ok, detail
-            return False, (f"npm succeeded but no CLI appeared at {cli_exe(root)}, and "
-                           f"the official installer also failed:\n{detail}")
-        return False, (f"npm succeeded but no CLI appeared at {cli_exe(root)}. "
-                       f"Look in {node_bin(root)}.")
-    return True, str(cli_exe(root))
+            return False, (f"npm succeeded but no CLI this app can run appeared at "
+                           f"{cli_exe(root)}, and the official installer also "
+                           f"failed:\n{detail}")
+        return False, (f"npm succeeded but no CLI this app can run appeared at "
+                       f"{cli_exe(root)}. Look in {node_bin(root)}.")
+    return True, claude_where(root)
 
 
 # Anthropic's own Windows installer. Named as a constant so there is one place to change
