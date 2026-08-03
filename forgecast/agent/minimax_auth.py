@@ -165,7 +165,7 @@ def login_state(cli: str = "") -> LoginState:
     if not cli:
         return LoginState()
 
-    code, output = _run([cli, "auth", "status", "--output", "json"])
+    _code, output = _run([cli, "auth", "status", "--output", "json"])
     try:
         payload = json.loads(output[output.index("{"):output.rindex("}") + 1])
     except (ValueError, json.JSONDecodeError):

@@ -127,7 +127,31 @@ def directory(base: Path | str | None = None) -> Path | None:
     """
     raw = base if base is not None else getattr(get_settings(), "scripting_dir", "")
     text = str(raw or "").strip()
-    return Path(text).expanduser() if text else None
+    if not text:
+        return None
+    try:
+        folder = Path(text).expanduser()
+    except RuntimeError:
+        # `~someone-who-does-not-exist/docs` — a path from another machine, pasted into
+        # the Settings box. `expanduser` raises rather than returning the input, and it
+        # propagated through every caller: the channel page 500s and every run dies at
+        # the brief node, after `create_run` has already taken the credit hold.
+        return None
+    return folder
+
+
+def _is_dir(folder: Path) -> bool:
+    """`folder.is_dir()`, without the two errors it does not swallow.
+
+    `Path.is_dir()` absorbs "not there" but re-raises EACCES and ENAMETOOLONG. So a
+    folder under a directory the app cannot search — macOS Documents without Full Disk
+    Access is the ordinary way to get one — took down every entry point in this module,
+    all of which promise to degrade to the house method instead of raising.
+    """
+    try:
+        return folder.is_dir()
+    except OSError:
+        return False
 
 
 def status(base: Path | str | None = None) -> dict:
@@ -144,7 +168,7 @@ def status(base: Path | str | None = None) -> dict:
                 "note": "No scripting folder is set. Point FORGECAST_SCRIPTING_DIR at a "
                         "folder of your own documents and they appear here as styles."}
     shown = str(folder)
-    if not folder.is_dir():
+    if not _is_dir(folder):
         return {"configured": True, "exists": False, "path": shown,
                 "note": f"{shown} does not exist yet. Create it and put a folder of "
                         f"{', '.join(READABLE)} documents inside — one folder per style."}
@@ -187,18 +211,32 @@ def _documents(folder: Path, *, recursive: bool) -> tuple[list[Document], list[s
     # file manager — a library whose documents arrive in filesystem order reads as a
     # different method every time the folder is touched.
     candidates = folder.rglob("*") if recursive else folder.iterdir()
-    paths = sorted(
+    everything = sorted(
         (path for path in candidates
          if path.is_file() and not path.name.startswith(".")),
         key=lambda path: str(path).lower(),
     )
+
+    # Split before capping, and that order is the fix rather than a tidy-up. The cap
+    # used to run over the raw listing, so a library that also holds the images and PDFs
+    # its documents shipped with could lose every readable file: forty `asset-*.png`
+    # sort ahead of sixteen `method-*.md`, the cap took the first forty, and the style
+    # loaded zero documents while the prompt still announced it by name.
+    #
+    # The unreadable ones are still *named* — that is the other half, and the half a
+    # naive fix drops. Someone with sixteen purchased documents needs to be told that
+    # three of them are PDFs; silently skipping them is how a style quietly becomes the
+    # house method wearing its name.
+    paths = [path for path in everything if path.suffix.lower() in READABLE]
+    unreadable = [path for path in everything if path.suffix.lower() not in READABLE]
+
     if len(paths) > MAX_DOCUMENTS:
         warnings.append(
-            f"{len(paths)} files in {folder.name}; only the first {MAX_DOCUMENTS} in "
-            f"name order were considered")
+            f"{len(paths)} readable files in {folder.name}; only the first "
+            f"{MAX_DOCUMENTS} in name order were considered")
         paths = paths[:MAX_DOCUMENTS]
 
-    for path in paths:
+    for path in paths + unreadable:
         text, warning = _read(path)
         if warning:
             warnings.append(warning)

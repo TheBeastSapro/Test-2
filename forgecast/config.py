@@ -34,7 +34,17 @@ class Settings(BaseSettings):
     # The folder name is repeated rather than imported: `scripting.library` imports this
     # module, so importing it back would be a cycle. `tests/test_scripting.py` asserts
     # the two agree, which is what stops one of them being renamed alone.
-    scripting_dir: Path = Path.home() / "Forgecast" / "scripting-library"
+    #
+    # `Documents/`, not `~/Forgecast/`. The packaged archive's top-level directory is
+    # `Forgecast/` and INSTALL.md says to unzip it anywhere you can write — so an
+    # install unpacked in the home directory made this default a *child of the app
+    # folder*: inside the agent's sandbox, inside what a hand-made zip of the app
+    # folder contains, and inside the tree the packager walks. The guard test did not
+    # catch it because it compared against the development checkout rather than against
+    # a real install root. `library.directory()` refuses the folder outright if it still
+    # resolves inside the app, which is the check that does not depend on a default
+    # being chosen well.
+    scripting_dir: Path = Path.home() / "Documents" / "Forgecast" / "scripting-library"
 
     access_token_ttl_minutes: int = 60 * 24 * 7
 

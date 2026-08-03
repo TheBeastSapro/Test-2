@@ -14,6 +14,7 @@
   <div class="split-nav">
     <button class="on" data-panel="agent">AI agent</button>
     <button data-panel="connectors">Connectors</button>
+    <button data-panel="cloud">Cloud backup</button>
     <button data-panel="providers">Provider keys</button>
     <button data-panel="capabilities">What will be used</button>
     <button data-panel="instance">This machine</button>
@@ -156,6 +157,69 @@
               {{ item.note }}</div>
           </div>
         {% endfor %}
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ CLOUD -->
+    {# `forgecast/cloud/` has been complete since it was written — snapshot, git
+       transport, restore, device flow, all round-tripped against a real repository on
+       every test run — and had no page. So from inside the app it was indistinguishable
+       from a feature that did not exist, and was reported as missing. #}
+    <section data-panel="cloud" hidden>
+      <div class="card">
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <div>
+            <h3 style="margin:0"><span class="dot dot-idle" id="cloud-dot"
+                  style="margin-right:8px"></span><span id="cloud-headline">Checking…</span></h3>
+            <div class="muted" style="font-size:12.5px" id="cloud-where"></div>
+          </div>
+          <label class="mini-toggle" title="Off means this install never opens a socket to GitHub.">
+            <input type="checkbox" id="cloud-on"><span></span>On
+          </label>
+        </div>
+
+        <p class="muted" style="margin:14px 0 0;max-width:70ch;font-size:13px">
+          Mirrors your work into a <strong>private</strong> GitHub repository so it
+          survives this machine. Scripts, briefs, shot lists, captions, learned styles
+          and channel memory go. <strong>Renders do not</strong> — GitHub refuses files
+          over 100&nbsp;MB and git keeps every version for ever, so a repository
+          collecting finished videos becomes unpushable within weeks and cannot be
+          shrunk again without breaking every other machine's copy. The video is made
+          again from the work; the work is the part that took thinking.
+        </p>
+
+        <div class="row" style="margin-top:16px">
+          <button class="primary" id="cloud-connect">Connect GitHub</button>
+          <button id="cloud-plan">What would be sent</button>
+          <button id="cloud-now">Back up now</button>
+        </div>
+
+        {# The device flow: GitHub shows a box, you type the code. Chosen over a web
+           redirect on one decisive fact — the token exchange sends no client secret, so
+           a zip can carry the client ID safely. A redirect flow would need a secret in
+           the archive, which hands every operator the key to every other operator's app. #}
+        <div id="cloud-code" hidden
+             style="margin-top:14px;background:var(--raise-2);border:1px solid var(--line);
+                    border-radius:8px;padding:14px">
+          <div style="font-size:13px" id="cloud-code-say"></div>
+          <div class="mono" id="cloud-code-value"
+               style="font-size:22px;letter-spacing:.16em;margin-top:8px"></div>
+          <a id="cloud-code-link" target="_blank" rel="noopener"
+             style="font-size:12.5px">Open GitHub to enter it →</a>
+        </div>
+
+        <div class="muted" id="cloud-say" style="font-size:12.5px;margin-top:14px"></div>
+
+        <div class="setting" style="margin-top:6px">
+          <div class="setting-top"><span class="setting-name">Repository</span></div>
+          <div class="setting-why">Private, always. This holds your scripts and your
+            channel memory, and a public default would be a disclosure caused by a
+            checkbox nobody read.</div>
+          <div class="keyrow" style="margin-top:10px">
+            <input id="cloud-repo" placeholder="forgecast-backup" autocomplete="off">
+            <button class="primary" id="cloud-repo-save">Create / use</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -407,6 +471,93 @@
     }
     setTimeout(() => location.reload(), 1400);
   }
+
+  /* ── cloud backup ────────────────────────────────────────────────────────
+     The device flow is polled from here rather than waited on at the server: a
+     request that blocks for the fifteen minutes a code stays valid holds a worker
+     for the whole time, dies to any proxy's read timeout, and tells the operator
+     nothing while it hangs. */
+  let cloudPoll = null;
+
+  function paintCloud(s) {
+    const on = !!s.active;
+    $('#cloud-dot').className = 'dot ' + (on ? 'dot-ok' : (s.enabled ? 'dot-warn' : 'dot-idle'));
+    $('#cloud-headline').textContent = on ? 'Backing up to GitHub'
+      : (s.authorised ? 'Connected, but no repository chosen yet'
+      : (s.enabled ? 'On, but not connected to GitHub' : 'Off'));
+    $('#cloud-where').textContent = s.repository
+      ? `${s.owner || ''}/${s.repository}` + (s.last_pushed_at ? ` · last backed up ${s.last_pushed_at}` : ' · never backed up')
+      : '';
+    $('#cloud-on').checked = !!s.enabled;
+    if (s.repository) $('#cloud-repo').value = s.repository;
+    if (!s.git_available) {
+      $('#cloud-say').textContent = 'git is not installed on this machine, so nothing '
+        + 'can be pushed or restored. Install git and press Check again.';
+    }
+  }
+
+  const loadCloud = () => fetch('/api/cloud', {headers: {Accept: 'application/json'}})
+    .then(r => r.json()).then(paintCloud).catch(() => {});
+
+  $('#cloud-on').onchange = async event => {
+    await fetch('/api/cloud/enable', {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({enabled: event.target.checked})});
+    loadCloud();
+  };
+
+  $('#cloud-connect').onclick = async () => {
+    const r = await fetch('/api/cloud/device', {method: 'POST'});
+    const j = await r.json();
+    if (!j.ok) { $('#cloud-say').textContent = j.sentence || j.detail || 'Could not start.'; return; }
+    $('#cloud-code').hidden = false;
+    $('#cloud-code-say').textContent = j.sentence;
+    $('#cloud-code-value').textContent = j.user_code;
+    $('#cloud-code-link').href = j.verification_uri;
+    clearInterval(cloudPoll);
+    // The interval GitHub asks for. Polling faster than it says earns a slow_down and
+    // then a longer wait than if we had simply obeyed it.
+    cloudPoll = setInterval(async () => {
+      const p = await (await fetch('/api/cloud/device/poll', {method: 'POST'})).json();
+      if (p.pending) return;
+      clearInterval(cloudPoll);
+      $('#cloud-code').hidden = true;
+      $('#cloud-say').textContent = p.ok
+        ? `Connected as ${p.account || 'your account'}. Now choose a repository.`
+        : (p.sentence || 'That did not complete.');
+      loadCloud();
+    }, Math.max(5, j.interval || 5) * 1000);
+  };
+
+  $('#cloud-repo-save').onclick = async () => {
+    const name = $('#cloud-repo').value.trim();
+    if (!name) { toast('Give the repository a name.'); return; }
+    const r = await fetch('/api/cloud/repository', {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({repository: name, create: true})});
+    const j = await r.json();
+    $('#cloud-say').textContent = j.ok ? `Using ${j.owner}/${j.repository}.`
+                                       : (j.sentence || j.detail || 'Could not set that.');
+    loadCloud();
+  };
+
+  $('#cloud-plan').onclick = async () => {
+    $('#cloud-say').textContent = 'Working out what would be sent…';
+    const j = await (await fetch('/api/cloud/plan')).json();
+    $('#cloud-say').textContent = j.ok
+      ? `${j.files} files, ${(j.total_bytes / 1048576).toFixed(1)} MB would be sent. `
+        + `${j.excluded_count} left behind — renders, the database and anything secret.`
+      : (j.sentence || 'Could not read the storage folder.');
+  };
+
+  $('#cloud-now').onclick = async () => {
+    $('#cloud-say').textContent = 'Backing up…';
+    const j = await (await fetch('/api/cloud/backup', {method: 'POST'})).json();
+    $('#cloud-say').textContent = j.ok ? j.sentence : (j.sentence || 'Backup failed.');
+    loadCloud();
+  };
+
+  loadCloud();
 
   async function signinConnector(key) {
     // The URL from the box, not from storage. Editing the endpoint and then pressing

@@ -162,6 +162,18 @@ EXCLUDE = (
 )
 
 
+# Directories that ship as code and must therefore contain no prose. `EXCLUDE` is
+# matched per path *component*, which cannot express "a markdown file under this
+# folder" — and that gap shipped: an audit dropped `forgecast/scripting/16-hooks.md`
+# into a tree and the packager collected it and passed its own check. `forgecast/` is
+# an include tree with no extension allowlist, and `forgecast/scripting/` is exactly
+# where somebody puts their documents when they decide to keep them "with the scripting
+# code". The extension is the signal, not the folder name: this package is Python and
+# its method is Python strings, so a document here is never this project's work.
+CODE_ONLY_TREES = ("forgecast/scripting",)
+PROSE_SUFFIXES = (".md", ".markdown", ".txt", ".pdf", ".docx", ".rtf", ".doc", ".epub")
+
+
 def excluded(path: str | Path) -> str | None:
     """The pattern that excludes `path`, or `None` if nothing does.
 
@@ -169,7 +181,17 @@ def excluded(path: str | Path) -> str | None:
     directories exclude their whole subtree. Matching is case-insensitive on every
     platform — a check that lets `.ENV` through on Linux is not a check.
     """
-    for part in PurePosixPath(str(path).replace("\\", "/")).parts:
+    posix = PurePosixPath(str(path).replace("\\", "/"))
+    lowered_path = str(posix).lower()
+    for tree in CODE_ONLY_TREES:
+        # `in` rather than `startswith`, because `check()` is handed archive members
+        # prefixed with the distribution name (`Forgecast/forgecast/scripting/…`) while
+        # `files_to_ship` works with repo-relative paths. A rule that only held for one
+        # of the two would pass the build and fail the operator.
+        if tree in lowered_path and posix.suffix.lower() in PROSE_SUFFIXES:
+            return f"{tree}/*{posix.suffix.lower()}"
+
+    for part in posix.parts:
         lowered = part.lower()
         for pattern in EXCLUDE:
             if fnmatch.fnmatchcase(lowered, pattern):

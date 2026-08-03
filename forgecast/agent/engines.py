@@ -35,7 +35,7 @@ picks it expecting one and gets the other.
 
 Its sign-in did not go away with it: `minimax_auth` is now what the voice side uses to
 tell a subscription sign-in from an API key, because for narration that difference is
-which account gets billed. See `forgecast/voice/minimax_session.py`.
+which account gets billed. See `forgecast/providers/minimax_cli.py`.
 
 A stored `engine: "minimax"` from an older build resolves to Claude here rather than
 erroring — see `resolve()`, which has always been the behaviour for an unknown key.
@@ -138,19 +138,46 @@ def catalogue() -> list[dict]:
     return [engine.as_dict() for engine in ENGINES]
 
 
+def model_for(settings: prefs.Prefs, engine: Engine) -> str:
+    """The stored model for this engine, or its default if the stored one is not its own.
+
+    `prefs.set_model_for` routes everything that is not ChatGPT into one field, which
+    Claude also reads — so an install that had MiniMax selected before it was removed
+    still holds `MiniMax-M3` in Claude's slot. `resolve()` degrades the *engine*
+    correctly, and the model came along with it: every turn then handed a MiniMax model
+    id to the Claude CLI and came back as an error, while the composer showed
+    `claude-sonnet-5` because its `<select>` had no option to match.
+
+    Validated here rather than in `prefs`, because this is the module that knows which
+    models belong to whom and `prefs` deliberately does not import it.
+    """
+    stored = settings.model_for(engine.key)
+    if stored in {entry["id"] for entry in engine.models}:
+        return stored
+    return engine.default_model
+
+
 def auth_check(key: str | None = None) -> dict:
     """"Is it connected", for whichever agent is selected.
 
     Both report the same field names on purpose — see `codex_auth.CodexStatus` — so the
     chat has one auth panel rather than one per vendor.
     """
-    engine = resolve(key)
+    # `current()` and not `resolve(key)` when nothing was asked for. `resolve(None)`
+    # falls back to Claude, so every caller that omitted `engine` — the chat's own
+    # sign-in check on page load, the sidebar chip, the setup card's buttons — was
+    # asking about Claude while ChatGPT was the selected backend. The chat then hid its
+    # "not installed" banner because *Claude* was fine, which is the exact failure the
+    # banner exists to prevent.
+    engine = resolve(key) if key else current()
     report = (codex_auth if engine.key == CHATGPT else auth).check().as_dict()
     return {**report, "engine": engine.key, "engine_label": engine.label}
 
 
 def start_login(key: str | None = None) -> tuple[bool, str]:
-    engine = resolve(key)
+    # Same reason as `auth_check`: a Sign in button on a ChatGPT card that opened a
+    # Claude login is a button that signs you in to the wrong vendor.
+    engine = resolve(key) if key else current()
     if engine.key == CHATGPT:
         return codex_auth.start_login()
     return auth.start_login()
@@ -164,7 +191,7 @@ def run(prompt: str, *, studio, settings: prefs.Prefs | None = None,
     """
     settings = settings or prefs.load()
     chosen = resolve(engine or settings.engine)
-    model = kwargs.pop("model", None) or settings.model_for(chosen.key)
+    model = kwargs.pop("model", None) or model_for(settings, chosen)
     # Which account's studio the tools act on. Claude's tools are in this process and
     # already hold the right `studio`; Codex's run in a subprocess that has to be told.
     # Passing it to both would reach `ClaudeAgentOptions` as an unknown keyword.

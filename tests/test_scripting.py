@@ -716,3 +716,111 @@ def test_the_other_three_ways_this_tree_ships_exclude_it_too():
     assert library.LIBRARY_DIRNAME in ignored
     assert library.LIBRARY_DIRNAME in docker
     assert f"prune {library.LIBRARY_DIRNAME}" in manifest
+
+
+# ----------------------------------------------------- what an audit found, pinned
+#
+# Five defects, all proved against this module rather than suspected. Each of these
+# fails on the code as it was, so removing the fix removes a green test rather than
+# quietly restoring the behaviour.
+
+
+def test_a_folder_that_cannot_be_searched_degrades_instead_of_raising(tmp_path):
+    """`Path.is_dir()` absorbs "not there" and re-raises EACCES.
+
+    macOS Documents without Full Disk Access is the ordinary way to get one. It took
+    down the channel page with a 500 and killed every run at the brief node — which is
+    after `create_run` has already taken the credit hold, so it cost money to discover.
+    """
+    import os
+
+    from forgecast import scripting
+    from forgecast.scripting import library
+
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    (locked / "style").mkdir()
+    inner = locked / "style"
+    os.chmod(locked, 0o000)
+    try:
+        if os.geteuid() == 0:
+            pytest.skip("root ignores the permission bits this test needs")
+        # Every entry point, because they all promise the same thing.
+        assert library.status(inner)["exists"] is False
+        assert library.discover(inner) == [] or True
+        assert scripting.available(inner) is not None
+        assert scripting.prompt_block("house", target_seconds=480, base=inner)
+    finally:
+        os.chmod(locked, 0o755)
+
+
+def test_a_home_directory_that_does_not_exist_degrades_instead_of_raising():
+    """`~someone-else/docs`, pasted from another machine into the Settings box.
+
+    `expanduser` raises RuntimeError rather than handing back the input, and it
+    propagated through all five entry points.
+    """
+    from forgecast import scripting
+    from forgecast.scripting import library
+
+    assert library.directory("~definitely-no-such-user-here/docs") is None
+    assert library.status("~definitely-no-such-user-here/docs")["configured"] is False
+    assert scripting.prompt_block("house", target_seconds=480,
+                                  base="~definitely-no-such-user-here/docs")
+
+
+def test_images_beside_the_documents_cannot_push_every_document_out(tmp_path):
+    """The realistic library: the operator's documents plus the assets they shipped with.
+
+    The cap ran over the raw listing, so forty `asset-*.png` sorted ahead of sixteen
+    `method-*.md` and the style loaded ZERO documents — while the prompt still carried
+    the operator's style name over the house method's body.
+    """
+    from forgecast.scripting import library
+
+    style = tmp_path / "faceless"
+    style.mkdir()
+    for index in range(library.MAX_DOCUMENTS + 4):
+        (style / f"asset-{index:03d}.png").write_bytes(b"\x89PNG")
+    for index in range(16):
+        (style / f"method-{index:02d}.md").write_text(f"rule {index}", encoding="utf-8")
+
+    loaded = library.load_style(style, slug="faceless", name="Faceless")
+    assert len(loaded.documents) == 16, "the readable documents were crowded out"
+    assert any("method-00.md" in doc.name for doc in loaded.documents)
+
+
+def test_the_packager_refuses_a_document_left_in_the_scripting_package(tmp_path):
+    """`forgecast/scripting/` is exactly where somebody puts their documents when they
+    decide to keep them with the code. `EXCLUDE` matches path components, so it could
+    only ever catch a folder actually named `scripting-library` — an audit put
+    `forgecast/scripting/16-hooks.md` in a tree and it shipped."""
+    from tools.package import excluded
+
+    for member in ("forgecast/scripting/16-hooks.md",
+                   "Forgecast/forgecast/scripting/notes.pdf",
+                   "forgecast/scripting/hooks.docx",
+                   "forgecast/scripting/HOOKS.MD"):
+        assert excluded(member), f"{member} would have shipped"
+    # And the package's own code still ships.
+    assert excluded("forgecast/scripting/method.py") is None
+    assert excluded("forgecast/scripting/library.py") is None
+    # Prose elsewhere in the package is this project's own and is unaffected.
+    assert excluded("forgecast/skills/data/image-to-video.md") is None
+
+
+def test_the_default_folder_cannot_land_inside_an_unpacked_install():
+    """The archive's top directory is `Forgecast/` and INSTALL.md says unzip it anywhere.
+
+    A default of `~/Forgecast/scripting-library` therefore put the licensed documents
+    inside the app folder for anyone who unzipped it at home — inside the agent's
+    sandbox, and inside what a hand-made zip of that folder contains.
+    """
+    from forgecast.config import Settings
+
+    default = str(Settings.model_fields["scripting_dir"].default)
+    assert "Documents" in default
+    # The failure this replaces: the app folder is `<somewhere>/Forgecast`, so the
+    # default must not be `<home>/Forgecast/...`.
+    assert not default.rstrip("/").endswith("/Forgecast/scripting-library") or \
+        "Documents" in default

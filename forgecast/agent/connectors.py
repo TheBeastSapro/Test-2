@@ -40,22 +40,28 @@ asking its user to finish connecting it, which is the same failure the toolchain
 module exists to remove. It was reported as exactly that: the browser sign-in should
 work here the way it works for a connector you add yourself.
 
-`start_browser_signin()` does it. It runs `claude mcp add --transport … --scope user`
-in a visible terminal; the CLI opens the browser, completes OAuth and stores the grant
-under the user scope. The agent runs through that same CLI, so it inherits the session
-with nothing further to configure — which is *why* this works and why there is no
-token to store afterwards. `cli_servers()` reads back what the CLI holds, so a
-connector authorised this way is reported as connected instead of looking untouched.
+`start_browser_signin()` opens a terminal running `claude mcp add --transport …
+--scope user`, which registers the server in the CLI's own user scope. The agent runs
+through that same CLI, so it inherits the entry with nothing to paste back here.
+
+**It does not open a browser, and this paragraph said it did.** That was written from
+the shape of the feature rather than from running it. `claude mcp add` returns
+immediately having only *registered* the server; authorisation happens later, on first
+connect, inside an interactive `claude` session — the CLI prints "Pending approval (run
+`claude` to approve)". So the operator was told to finish in a browser that never
+appeared, beside a row the page had already marked green. The message now says to run
+`claude` in that window and approve it there, which is what actually authorises it.
 
 Three consequences worth knowing before changing any of it:
 
+* **Registered is not connected.** `cli_servers()` reads the *status* as well as the
+  name for exactly this reason — see `_NOT_CONNECTED`.
 * **A browser-authorised connector has no token in `connectors.json`, and that is
   correct.** Reporting it as unconfigured because this file has no row for it is how
   the operator is sent to paste a credential the service never issued.
-* **The terminal is visible on purpose.** See `terminal.open_terminal`.
-* **It needs the Claude CLI**, because the grant lives in that CLI's user scope. On the
-  ChatGPT backend the same connector has to be reached with a token, and the page says
-  so rather than showing a button that would silently grant the wrong agent.
+* **The key and the URL are validated before they become a command.** See `_SAFE_KEY`
+  and `_usable_endpoint`, and `terminal`'s docstring for the injection that made both
+  necessary.
 
 ## Why the URL is asked for rather than hard-coded
 
@@ -77,6 +83,7 @@ from __future__ import annotations
 import contextlib
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -144,9 +151,9 @@ CATALOGUE: tuple[ConnectorSpec, ...] = (
         # The credential NexLev's own 401 asks for, quoted from it rather than guessed:
         # "Provide either: 1) OAuth Bearer token, or 2) API key in Authorization header
         # (Bearer nlv_...), x-api-key header, or api_key query parameter."
-        where="The URL is already filled in, so press Sign in and finish in the browser "
-              "— that is the OAuth flow NexLev's own claude.ai connector uses, and it "
-              "leaves nothing to paste back here. If you would rather use a key, it is "
+        where="The URL is already filled in. Press Sign in: a terminal registers it with "
+              "the CLI the agent runs through, and you approve it there when `claude` "
+              "asks. If you would rather use a key, it is "
               "a NexLev API key starting with `nlv_`, from your dashboard under API "
               "access. A session cookie, a JWT or a password will be refused: NexLev "
               "issues several kinds of credential and only the `nlv_` key works over "
@@ -172,9 +179,9 @@ CATALOGUE: tuple[ConnectorSpec, ...] = (
         default_url="https://mcp.higgsfield.ai/mcp",
         where="The URL is already filled in — Higgsfield publishes one endpoint for "
               "everybody. Leave the token empty: this server has no API key to paste. "
-              "Press Sign in and finish in the browser; the grant is stored by the "
-              "Claude CLI that the agent runs through, so it inherits the session and "
-              "there is nothing to bring back here.",
+              "Press Sign in — a terminal registers it with the Claude CLI the agent "
+              "runs through — then run `claude` in that window and approve it when it "
+              "asks. That approval is the sign-in; there is nothing to bring back here.",
         # Said here because the failure is otherwise unreadable. `Test` on this entry
         # answers 401 with a `WWW-Authenticate: Bearer` challenge until the browser
         # sign-in has been done — the same 401 a rejected token gives, which is the
@@ -489,51 +496,121 @@ def cli_servers() -> set[str]:
         return set()
 
     # Matched on the leading name rather than on the whole line. The list prints
-    # `name: url (status)` today, and a parser keyed to that exact shape turns a
-    # cosmetic CLI change into "nothing is connected" on a machine where everything is.
+    # `name: url (transport) - <status>` today, and a parser keyed to that exact shape
+    # turns a cosmetic CLI change into "nothing is connected" on a machine where
+    # everything is.
+    #
+    # The status half is read too, and this is the part that was missing. `claude mcp
+    # add` writes the entry *immediately*, before anything has been authorised, so a
+    # name alone means only "registered". An operator who pressed Sign in and then
+    # closed the window got a permanent green "signed in" pill over a connector that
+    # would answer 401 — which is precisely the confusion the Higgsfield entry's own
+    # documentation warns about. Registered is not connected, and only the second one
+    # is worth a green dot.
     found: set[str] = set()
     for line in (done.stdout or "").splitlines():
-        head = line.strip().split(":", 1)[0].strip()
-        if head and " " not in head:
-            found.add(head.lower())
+        stripped = line.strip()
+        head = stripped.split(":", 1)[0].strip()
+        if not head or " " in head:
+            continue
+        if any(sign in stripped.lower() for sign in _NOT_CONNECTED):
+            continue
+        found.add(head.lower())
     return found
 
 
+# What a connector key may be before it is allowed near an argv or a CSS selector.
+# A whitelist, because this value is interpolated into three different grammars — a
+# command line, a `querySelector`, and an `onclick` attribute — and a blacklist would
+# have to be right for all three. A key beginning with `-` is the specific case that
+# matters here: in `claude mcp add … <key> <url>` it is parsed as an option, so `key`
+# of `--transport` swallows the two arguments after it.
+_SAFE_KEY = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+
+# Words `claude mcp list` uses for an entry that exists but cannot be talked to. Matched
+# as substrings rather than parsed, because this output is not an API — but the failure
+# of matching too loosely is a missing green dot, and the failure of matching too
+# narrowly is a green dot over a broken connector. The first is the safe direction.
+_NOT_CONNECTED = ("pending approval", "failed to connect", "needs authentication",
+                  "not connected", "disconnected", "✗", "⏸")
+
+
+def _usable_endpoint(url: str) -> str:
+    """The URL if it is safe to put in a command, otherwise "".
+
+    `save_connector` already refuses anything that is not `http(s)://`, and this is the
+    same rule applied where the value becomes a command argument rather than a stored
+    string. The character check is not redundant with `terminal`'s script file: that
+    file is the boundary, this is the input, and a URL containing a quote or a newline
+    is not a URL anybody meant to type.
+    """
+    candidate = (url or "").strip()
+    if not candidate.startswith(("http://", "https://")):
+        return ""
+    if any(ch in candidate for ch in '"\'\\\n\r\t`$;|&<>'):
+        return ""
+    return candidate
+
+
 def start_browser_signin(key: str, url: str = "") -> tuple[bool, str]:
-    """Authorise one MCP connector in the browser, through the Claude CLI.
+    """Register one MCP connector with the Claude CLI, and say what happens next.
 
     Returns (opened, message). The message is shown verbatim, so it says what to do
     next rather than reporting an internal state.
+
+    **This does not itself open a browser, and an earlier version of this docstring
+    said it did.** `claude mcp add` registers the server and returns immediately;
+    the authorisation happens on first connect, inside an interactive `claude`
+    session, which is why the terminal it opens runs `claude` afterwards and why the
+    message tells the operator to approve it there. Claiming a browser flow that never
+    appeared left the operator watching for a window that was not coming, next to a
+    connector the page had already marked green.
     """
     from . import auth, terminal
 
+    if not _SAFE_KEY.match((key or "").strip().lower()):
+        return False, ("That is not a usable connector name. Use letters, digits, "
+                       "hyphens or underscores.")
+    key = key.strip().lower()
+
     spec = BY_KEY.get(key)
-    if spec is not None and not spec.supports_mcp:
+    if spec is None:
+        # An unknown key used to be accepted and registered with the CLI under whatever
+        # name arrived, pointing at whatever URL arrived — one authenticated request
+        # adding an arbitrary MCP server that every later turn would inherit.
+        return False, (f"{key!r} is not a connector this build knows about. Add it from "
+                       "the catalogue, or save it here first and then sign in.")
+    if not spec.supports_mcp:
         return False, (f"{spec.label} has no MCP server to sign in to — it is a REST "
                        "API, and it takes a key rather than a browser sign-in.")
 
-    endpoint = (url or "").strip() or (spec.default_url if spec else "")
-    if not endpoint:
+    raw = (url or "").strip()
+    if not raw:
         stored = Store.load().connections.get(key)
-        endpoint = stored.url if stored else ""
-    if not endpoint:
+        raw = (stored.url if stored else "") or spec.default_url
+    endpoint = _usable_endpoint(raw)
+    if not raw:
         return False, ("Fill in the server URL first — the sign-in has to be pointed at "
                        "an endpoint, and this connector does not publish a single one.")
+    if not endpoint:
+        return False, ("That server URL is not one this can sign in to. It has to start "
+                       "with https:// and contain no quotes or shell characters.")
 
     cli = auth.find_cli()
     if not cli:
-        return False, ("The browser sign-in runs through the Claude Code CLI, which was "
-                       f"not found. Install it: {auth.INSTALL_HINT}")
+        return False, ("This runs through the Claude Code CLI, which was not found. "
+                       f"Install it: {auth.INSTALL_HINT}")
 
-    transport = spec.transport if spec else "http"
-    argv = [cli, "mcp", "add", "--transport", transport, "--scope", "user",
-            key, endpoint]
-    label = spec.label if spec else key
+    # `mcp add` registers it; `claude` is what actually authorises it, on first connect.
+    # Both in one terminal, in that order, so the operator finishes the job in the window
+    # the button opened rather than being told to go and start a session themselves.
+    script = [cli, "mcp", "add", "--transport", spec.transport, "--scope", "user",
+              key, endpoint]
     return terminal.open_terminal(
-        argv,
-        done=(f"A terminal opened to sign in to {label}. Finish in the browser, close "
-              "the window, then press Test — the agent picks the grant up from the CLI, "
-              "so there is nothing to paste back here."),
-        manual=(f"No terminal emulator was found to open. Run this yourself to sign in "
-                f"to {label}, finish in the browser, then press Test:"),
+        script,
+        done=(f"A terminal opened and registered {spec.label}. It is not authorised "
+              "yet: run `claude` in that window and approve it when it asks — that is "
+              "where the sign-in happens. Then press Test here."),
+        manual=(f"No terminal emulator was found to open. Run this yourself to add "
+                f"{spec.label}, then run `claude` and approve it when it asks:"),
     )

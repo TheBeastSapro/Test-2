@@ -803,26 +803,61 @@ def test_a_name_clash_explains_itself_rather_than_retrying():
 # ------------------------------------------------------------------- the package surface
 
 
-def test_nothing_in_the_app_imports_cloud_while_it_is_off():
-    """The strongest available form of "the local path is untouched when it is off".
+def test_only_the_page_reaches_cloud_and_nothing_in_the_pipeline_does():
+    """"Off by default" enforced, now that the feature has a door.
 
-    Not a flag checked in twenty places — no call site at all. The day this feature is
-    wired into the pipeline this test changes deliberately, which is the point: it makes
-    the wiring a visible decision rather than a diff nobody noticed.
+    This test used to require *no* call site anywhere in the app, and its docstring
+    said the day the feature was wired in it would change deliberately — which is
+    what this is. The package was complete, tested and unreachable, so from inside the
+    application it was indistinguishable from a feature that did not exist, and it was
+    reported as missing.
+
+    What is still guaranteed is the part that mattered: an install that never turns it
+    on never opens a socket to GitHub. So exactly one module may reach it — the HTTP
+    end that draws the page — and everything that runs *without an operator pressing
+    something* still may not. A pipeline node, the graph engine, a provider or the
+    worker importing this would mean a render could push to GitHub, which is the
+    outcome the original rule existed to prevent.
     """
     import subprocess as sp
 
     root = Path(__file__).resolve().parents[1]
-    # Import statements only. A prose mention of the module in a comment is not a call
-    # site, and a test that cannot tell the difference is a test somebody deletes.
     found = sp.run(
         ["grep", "-rnE", "--include=*.py",
          r"^[[:space:]]*(from[[:space:]]+[.a-zA-Z_]*cloud|import[[:space:]]+.*cloud)",
          str(root / "forgecast")],
         capture_output=True, text=True,
     ).stdout.strip().splitlines()
-    outside = [line for line in found if "/forgecast/cloud/" not in line]
-    assert outside == [], f"cloud is imported by the app: {outside}"
+
+    # The package itself, the one module allowed to open the door, and the line that
+    # registers that module's router. `main.py` imports the *route* module, not the
+    # cloud package — it is the app assembling itself, and nothing it does reaches
+    # GitHub.
+    permitted = ("/forgecast/cloud/", "/forgecast/api/routes_cloud.py",
+                 "/forgecast/api/main.py")
+    outside = [line for line in found
+               if not any(allowed in line for allowed in permitted)]
+    assert outside == [], (
+        "cloud is reachable from somewhere that runs without the operator asking: "
+        f"{outside}")
+
+
+def test_every_way_in_refuses_before_it_can_reach_github():
+    """The other half of the guarantee, now that a call site exists.
+
+    An import is inert; what matters is that nothing touches the network on a fresh
+    install. `backup` and `restore` are the two that would, and both refuse on
+    configuration rather than on a failed request — so an install that never enabled
+    this never gets as far as a socket.
+    """
+    import forgecast.cloud as cloud
+    from forgecast.cloud.errors import NotAuthorised
+
+    assert cloud.enabled() is False
+    with pytest.raises(NotAuthorised):
+        cloud.backup()
+    with pytest.raises(NotAuthorised):
+        cloud.restore(Path("/tmp/forgecast-restore-should-not-happen"))
 
 
 def test_the_staging_tree_is_never_inside_storage():

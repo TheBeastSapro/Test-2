@@ -22,6 +22,7 @@ from .routes_agent import router as agent_router
 from .routes_analytics import router as analytics_router
 from .routes_api import router as api_router
 from .routes_channel import router as channel_router
+from .routes_cloud import router as cloud_router
 from .routes_files import router as files_router
 from .routes_preview import router as preview_router
 from .routes_research import router as research_router
@@ -89,6 +90,14 @@ def create_app() -> FastAPI:
     # when `local_mode` is off, so that whether a route exists does not depend on the
     # order in which settings were loaded.
     app.include_router(local_router)
+
+    # Cloud backup. The package under `forgecast/cloud/` has been complete and tested
+    # since it was written — manifest, snapshot, git transport, restore, device flow —
+    # and had no HTTP end at all, so from inside the application it was indistinguishable
+    # from a feature that did not exist. It was reported as missing. Registered
+    # unconditionally: every endpoint asks `cloud.enabled()` first, and an install that
+    # never turns it on still never opens a socket to GitHub.
+    app.include_router(cloud_router)
 
     # The stylesheet and the chat's script. A real mount rather than a route per file:
     # these are the only static assets, they are part of the package, and they must
