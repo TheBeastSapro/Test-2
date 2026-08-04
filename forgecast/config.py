@@ -129,6 +129,12 @@ class Settings(BaseSettings):
     # to the operator's own channel, this reads public statistics for research.
     youtube_api_key: str = ""
 
+    # Freesound, the middle tier of the sound-effect chain. Free, and the token meters
+    # rather than bills — the same category as the Pexels key in `providers.footage`, so
+    # it does not breach the rule that this app runs on subscriptions rather than on keys
+    # that can run up a balance. Absent, and the chain simply skips that tier.
+    freesound_api_key: str = ""
+
     # Research search providers. Tavily is preferred when both are present because it
     # returns extracted page content, saving a fetch per result.
     tavily_api_key: str = ""

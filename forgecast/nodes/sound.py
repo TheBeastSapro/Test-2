@@ -58,8 +58,10 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
+from ..config import get_settings
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..providers.base import MusicTrack, ProviderError
+from ..providers.sfx import SfxChain
 from ..render import RenderError
 from ..render import audio as mixing
 from ..style import SoundBrief, SoundPlan, brief_from, design, recommend
@@ -161,6 +163,30 @@ def brief_for(ctx: NodeContext) -> tuple[SoundBrief, str]:
         recommend(ctx.channel.niche),
         "the convention for this niche — no reference video has been analysed, so nothing "
         "here was measured",
+    )
+
+
+def sfx_chain_for(ctx: NodeContext, vendor: str) -> SfxChain:
+    """The run's sound-effect chain: subscription, then Freesound, then the web.
+
+    Built even when there is no music vendor, which is the point of it. Accents are
+    opt-out, so a channel that has chosen no music has still asked for effects — and
+    asking the music vendor for them meant that channel silently got none.
+
+    The web tier stays off unless this run explicitly asked, because it is the tier that
+    flags a run, and a flag that appears when nobody asked for it is a flag operators
+    learn to scroll past.
+    """
+    settings = get_settings()
+    style = ctx.channel.style_profile or {}
+    return SfxChain(
+        music_provider=None,  # attached in `sound_node` once the vendor resolves
+        freesound_key=str(getattr(settings, "freesound_api_key", "") or ""),
+        allow_web=bool(
+            ctx.options.get("named_sounds")
+            or style.get("named_sounds")
+            or ctx.params.get("named_sounds")
+        ),
     )
 
 
@@ -325,7 +351,10 @@ async def sound_node(ctx: NodeContext) -> NodeResult:
                        "audio, so there is nothing to sit a bed under")
 
     vendor = chosen_vendor(ctx)
-    if not vendor:
+    accents = plan.at_layer("accent") if wants_effects(ctx) else []
+    chain = sfx_chain_for(ctx, vendor)
+
+    if not vendor and not chain.tiers():
         # The consent gate. Not a degradation and not reported as one: a channel that has
         # not chosen a music vendor gets a video with no music, and the run says so
         # plainly rather than either fetching one or failing.
@@ -333,19 +362,29 @@ async def sound_node(ctx: NodeContext) -> NodeResult:
                        "no music vendor is set for this channel, so nothing was fetched. "
                        "Choose one on the channel to score its videos")
 
-    accents = plan.at_layer("accent") if wants_effects(ctx) else []
     if not brief.music_bed and not accents:
         return _silent(ctx, base,
                        "this channel's sound is voice and room — "
                        + (brief.reasons[0] if brief.reasons else "no bed was measured"))
 
-    try:
-        provider = ctx.registry.music(vendor)
-    except ProviderError as exc:
-        return _degraded(ctx, base, f"the {vendor} music vendor is not usable: {exc}")
+    provider = None
+    if vendor:
+        try:
+            provider = ctx.registry.music(vendor)
+        except ProviderError as exc:
+            if brief.music_bed:
+                return _degraded(ctx, base, f"the {vendor} music vendor is not usable: {exc}")
+            # Accents do not need a music vendor any more, so a broken one is not the end
+            # of the stage — it is the end of the *bed*. Failing the whole node here was
+            # the old behaviour and it threw away a perfectly renderable accent pass.
+            ctx.log(f"the {vendor} music vendor is not usable ({exc}); accents only",
+                    level="warning")
+
+    chain.music_provider = provider
+    base["sfx_tiers"] = chain.tiers()
 
     try:
-        return await _score(ctx, provider, brief, plan, base,
+        return await _score(ctx, provider, chain, brief, plan, base,
                             narration=narration, total=total, accents=accents)
     except (ProviderError, RenderError, OSError) as exc:
         # `_score` guards each half of the design itself, so reaching here means something
@@ -356,7 +395,7 @@ async def sound_node(ctx: NodeContext) -> NodeResult:
 
 
 async def _score(
-    ctx: NodeContext, provider, brief: SoundBrief, plan: SoundPlan, base: dict,
+    ctx: NodeContext, provider, chain, brief: SoundBrief, plan: SoundPlan, base: dict,
     *, narration: Path, total: float, accents: list,
 ) -> NodeResult:
     """Buy, level, duck and place.
@@ -390,7 +429,10 @@ async def _score(
     dropped = 0
     if accents:
         try:
-            mix, placed, dropped = await _lay_accents(ctx, provider, plan, accents, mix)
+            # The chain, not the music vendor. Accents are opt-out, so a channel with
+            # no music subscription has still asked for them — and routing them at the
+            # music vendor is why that channel silently got none.
+            mix, placed, dropped = await _lay_accents(ctx, chain, plan, accents, mix)
         except (ProviderError, RenderError, OSError) as exc:
             failures.append(str(exc))
             ctx.log(f"no accents: {exc}", level="warning")
