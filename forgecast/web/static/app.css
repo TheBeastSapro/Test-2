@@ -577,10 +577,10 @@ button.danger:hover { background: #1a1011; border-color: #6b2f2f; }
 ::-webkit-scrollbar-thumb:hover { background: #313937; }
 
 /* ═══════════════════════════════════════════════════ tool cards & studio ══
-   Added after the recordings of Rookcast, which get one thing right that a row
-   of chips does not: a tool call is a CARD, and the card holds what the tool
-   returned. The numbers are the part worth scrolling back to, and a claim you
-   cannot check against its source is a claim you have to take on trust. */
+   A tool call is a CARD, not a chip, and the card holds what the tool returned.
+   A row of chips says a tool ran; it does not say what came back, and the numbers
+   are the part worth scrolling back to. A claim you cannot check against its own
+   source is a claim you have to take on trust. */
 
 .crumbs {
   display: flex; align-items: center; gap: 10px;

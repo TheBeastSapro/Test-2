@@ -13,7 +13,7 @@ does not make a channel the thing you are inside.
 
 ## The shape it should be
 
-Rookcast scopes everything to a channel, and the operator's own screenshot is the
+Everything scopes to a channel, and the operator's own screenshot is the
 specification:
 
 ```

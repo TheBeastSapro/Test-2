@@ -82,9 +82,10 @@ class Link:
 def parse_link(text: str) -> Link:
     """Classify a pasted link without calling anything.
 
-    Rookcast's channel flow starts with a link, not a form, and this is the first
-    step of it: work out whether you were given a video or a channel before deciding
-    what to fetch.
+    Setting up a channel starts with a link rather than a form, because a link is
+    what is already in the operator's clipboard and a form asks them to retype what
+    it contains. This is the first step of that: work out whether you were given a
+    video or a channel before deciding what to fetch.
     """
     raw = (text or "").strip()
     match = _YOUTUBE.search(raw)

@@ -357,10 +357,10 @@ class LedgerEntry(Base):
 class Conversation(Base):
     """One chat thread with the agent.
 
-    Threads are rows rather than browser state for the reason Rookcast keeps a list
-    of them down the side: the work is long. Setting up a channel, mining a niche and
-    getting a run through its gates spans days, and a transcript that dies with the
-    window means re-explaining the channel every morning.
+    Threads are rows rather than browser state because the work is long. Setting up
+    a channel, mining a niche and getting a run through its gates spans days, and a
+    transcript that dies with the window means re-explaining the channel every
+    morning.
 
     `session_id` is the Claude Code CLI's own id for this conversation. Storing it is
     what lets the next turn resume rather than start over — without it the agent

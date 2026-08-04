@@ -336,3 +336,32 @@ def test_manifest_prunes_the_same_patterns_from_an_sdist():
         assert f"global-exclude {required}" in text, f"MANIFEST.in does not exclude {required}"
     for pruned in ("storage", "attachments", "runtime", "dist"):
         assert f"prune {pruned}" in text, f"MANIFEST.in does not prune {pruned}"
+
+
+def test_no_competitor_is_named_anywhere_that_ships():
+    """The operator asked for these references gone, and a zip is a thing you send.
+
+    They were design rationale rather than copied text — "X scopes its shell to a
+    channel, this is that" — but rationale naming a competitor still ships in every
+    archive, and `ARCHITECTURE.md` is in `INCLUDE_FILES`. The reasoning survived the
+    edit; the attribution did not.
+
+    Asserted over the built file list rather than the working tree, so a document added
+    later under a name nobody thought to check is still covered.
+    """
+    from tools.package import files_to_ship
+
+    named = ("rookcast", "faceless os", "facelessos")
+    offenders: list[str] = []
+    for path, member in files_to_ship():
+        if path.suffix.lower() not in (".py", ".md", ".html", ".css", ".js", ".txt"):
+            continue
+        try:
+            body = path.read_text(encoding="utf-8", errors="ignore").lower()
+        except OSError:                                               # pragma: no cover
+            continue
+        for word in named:
+            if word in body:
+                offenders.append(f"{member}: {word!r}")
+
+    assert not offenders, "a competitor is named in the archive:\n  " + "\n  ".join(offenders)

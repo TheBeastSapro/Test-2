@@ -9,8 +9,8 @@ channel", so "how is the space channel doing" has to be answered by reading an
 account-wide table with the other channel in it, and "what is waiting on me *here*"
 cannot be asked at all.
 
-Rookcast scopes its shell to a channel: a breadcrumb, the channel's name with a live
-status dot, and a nav inside that channel. This is that, at `/c/{id}`, and the numbers
+So the shell is scoped to a channel: a breadcrumb, the channel's name with a live
+status dot, and a nav inside that channel. That is what `/c/{id}` is, and the numbers
 on it are the four you act on — what this channel started, what it finished, what is
 sitting at a gate waiting for you, and what it has cost.
 

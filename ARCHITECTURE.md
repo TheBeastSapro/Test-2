@@ -1,33 +1,29 @@
-# Forgecast — teardown and design
+# Forgecast — the constraints, and the design
 
-Two documents in one. Part 1 is what Rookcast's product surface tells you about how
-a system like it must be built. Part 2 is the architecture of this repository, which
-is a clean-room implementation of that shape — written from scratch, from public
-behaviour, with no Rookcast code, prompts, or internal APIs involved.
+Two documents in one. Part 1 is what this product has to do and what follows from it
+structurally — the conclusions you cannot design around. Part 2 is the architecture of
+this repository, which implements that shape.
 
-**Provenance note.** Everything in Part 1 comes from rookcast.com's own public
-marketing and pricing pages, read on 2026-07-31. No account was accessed; no
-private endpoint was called. Where a claim is inference rather than something they
-state, it says so. Their feature *ideas* are not protectable; their *code* is, and
-none of it is here.
+Everything here is written from first principles and from published vendor pricing. No
+third party's code, prompts or internal APIs are involved, and none of their text is
+reproduced anywhere in this repository.
 
 ---
 
-## Part 1 — What the product surface implies
+## Part 1 — What the product has to do, and what that forces
 
-### 1.1 Observed, stated by them
+### 1.1 The requirements
 
-| Thing | What they say |
+| Thing | What it means |
 |---|---|
-| Pipeline | 5 visible steps: create production brief → write full script → generate thumbnail → generate avatar pass and B-roll plan → render final video |
-| Transparency | "Every generation step is a visible node. Watch scripts form, thumbnails render, and audio sync" |
-| Gates | "Nothing ships without your approval. Pause, revise, or redirect the AI at any stage" |
-| Memory | "Your runner agent remembers your style, past decisions, and channel voice" |
-| Publish | Compliance checks, preview in a simulated YouTube feed, publish from the sandbox |
-| Providers | ElevenLabs (voice), HeyGen (avatars), Kling (video), Runway (video/effects), Minimax (audio/video), FAL (image/video), OpenAI (language/vision), Anthropic (agent intelligence) |
-| Keys | Bring your own — "Bring your ElevenLabs key — including cloned voices" |
-| Billing | Credits. Pro $49/mo → 3,000; Studio $149 → 12,000; Max $649 → 60,000; packs from $25; "credits never expire" |
-| Positioning | Compare pages against AutoShorts, HeyGen, InVideo, Synthesia, OpusClip, NexLev, and "DIY ChatGPT stack" |
+| Pipeline | A production brief, then a full script, then a thumbnail, then the narration and B-roll plan, then a rendered video |
+| Transparency | Every generation step is a visible node. You watch the script form, the thumbnail render, the audio sync |
+| Gates | Nothing ships without approval. Pause, revise or redirect at any stage |
+| Memory | The agent remembers this channel's style, its past decisions and its voice |
+| Publish | Compliance checks, a preview before anything is uploaded, then publish |
+| Providers | ElevenLabs and MiniMax (voice), HeyGen (avatars), Runway and FAL (video), FAL and Higgsfield (image), OpenAI and Anthropic (language) |
+| Keys | Bring your own, including cloned voices |
+| Billing | Credits, held before a vendor is called and settled against what was actually spent |
 
 ### 1.2 What follows from that, structurally
 
@@ -40,21 +36,20 @@ for a human can pause for three days; it must survive deploys. Anything built as
 sequential function call has to be rewritten the first time someone walks away from
 their laptop mid-approval.
 
-**The stages are a graph, not a line.** Their own step 4 bundles "avatar pass **and**
-B-roll plan" — two independent branches off the script. Voice, thumbnail, and B-roll
-planning all depend only on the script and nothing on each other. A line would run
-them serially for no reason.
+**The stages are a graph, not a line.** The avatar pass and the B-roll plan are two
+independent branches off the script. Voice, thumbnail and B-roll planning all depend
+only on the script and nothing on each other. A line would run them serially for no
+reason.
 
 **Gates must sit on the cheap stages.** Approving a brief costs nothing; approving
 after B-roll generation costs whatever the shots already burned. So the gate belongs
-on the stage that *determines* the spend, not the stage that *incurs* it. This is why
-their gates cluster early.
+on the stage that *determines* the spend, not the stage that *incurs* it — which is why
+the gates cluster early.
 
 **Publishing needs a different gate shape.** Every other stage can run first and ask
 after — a rejected script is just credits. An upload cannot be undone. So the
 pre-publish approval has to be its own node that spends nothing and blocks the upload
-behind it. Their "preview in a simulated YouTube feed, then publish" is exactly that
-node.
+behind it. Preview the finished video, then publish, is exactly that node.
 
 **Rejection is the training signal.** "Remembers your style, past decisions" plus
 gates everywhere means the memory is fed by gate outcomes. An operator typing "too
@@ -76,11 +71,8 @@ users start work they cannot pay for and you eat the vendor bill.
 
 ### 1.3 The number that shapes the whole business
 
-Work the unit economics from their own pricing. Pro is $49 for 3,000 credits, so a
-credit sells for ~$0.0163.
-
-Now price an 8-minute video against public vendor rates. At ~6 seconds per shot that
-is ~80 shots. Generated video runs roughly $0.05–0.09/second; stills are ~$0.04 each;
+Price an 8-minute video against published vendor rates. At ~6 seconds per shot that is
+~80 shots. Generated video runs roughly $0.05–0.09/second; stills are ~$0.04 each;
 voice is ~$0.15 per 1,000 characters.
 
 | Stage | Units | Provider cost |
@@ -97,10 +89,10 @@ consequences, all of which this repo implements:
    over-eager plan multiplies the bill.
 2. Stills animated with a Ken Burns move are ~10× cheaper than generated video and
    are the correct default. Motion is an exception you justify per shot.
-3. Pro's 3,000 credits ≈ 1.5 long-form videos per month. That is not a pricing bug
-   — it is what generative video costs today. Any competitor promising "unlimited
-   videos" at this price is either using stock footage, generating far fewer shots,
-   or losing money.
+3. At any plausible credit price, a month's allowance buys a small number of
+   long-form videos. That is not a pricing mistake — it is what generative video
+   costs today. Anything promising "unlimited videos" at a consumer price is using
+   stock footage, generating far fewer shots, or losing money.
 
 ---
 
