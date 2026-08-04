@@ -52,7 +52,140 @@ def resolve_fps(fps: int | None = None) -> int:
     return min(SUPPORTED_FPS, key=lambda option: abs(option - wanted))
 
 
-def vcodec(fps: int | None = None) -> list[str]:
+# Encoders this pipeline knows how to drive, and what each is for.
+#
+# Everything here renders locally on the operator's own machine, so the whole cost of a
+# render is time — unlike every other stage, which is time *and* a vendor's bill. That
+# makes the encoder the one place where somebody's hardware can pay for itself.
+#
+#   cpu   libx264. The default, and the one that is always present. Quality per bit is
+#         still the best of the three and it needs nothing installed.
+#   nvidia h264_nvenc. Substantially faster on any NVIDIA card from the last several
+#         generations, including small ones — an RTX 3050 cannot generate a single frame
+#         of video but encodes one perfectly well, because encoding is a fixed-function
+#         block rather than the tensor cores.
+#   intel  h264_qsv. The same trade on Intel integrated graphics, which a laptop has
+#         whether or not it has anything else.
+#
+# The trade is real and is not hidden: at a matched quality target, NVENC and QSV produce
+# a slightly larger file than x264 for the same look, or a slightly worse look at the same
+# size. On an eight-minute 1080p render that is a trade most people would take and some
+# would not, which is why it is a setting rather than a default.
+ENCODERS: dict[str, dict] = {
+    "cpu": {
+        "label": "CPU (libx264)",
+        "codec": "libx264",
+        # Quality-targeted rather than bitrate-targeted, so a still scene costs few bits
+        # and a busy one costs more, which is what makes a long video look even.
+        "quality": ["-preset", "veryfast", "-crf", "20"],
+        "note": "Always available. Best quality per byte, and the slowest.",
+    },
+    "nvidia": {
+        "label": "NVIDIA GPU (NVENC)",
+        "codec": "h264_nvenc",
+        # `-cq` is NVENC's constant-quality control and is the analogue of `-crf`. `p4`
+        # is the middle preset; the fastest ones visibly smear motion, which on Ken Burns
+        # pushes and paper-collage steps is exactly where it would show.
+        "quality": ["-preset", "p4", "-rc", "vbr", "-cq", "23", "-b:v", "0"],
+        "note": "Much faster on any NVIDIA card. Slightly larger files for the same look.",
+    },
+    "intel": {
+        "label": "Intel GPU (Quick Sync)",
+        "codec": "h264_qsv",
+        "quality": ["-preset", "medium", "-global_quality", "23"],
+        "note": "Faster on Intel integrated graphics. Slightly larger files.",
+    },
+}
+
+DEFAULT_ENCODER = "cpu"
+
+
+def available_encoders() -> dict[str, bool]:
+    """Which of them this machine can actually run, proved by encoding a frame.
+
+    A trial encode rather than `ffmpeg -encoders`, and the difference is not academic.
+    That listing reports what the binary was *built* with, which on a great many builds
+    includes `h264_nvenc` on machines with no NVIDIA driver at all — the encoder is
+    listed, is selected, and then fails at the first clip with `Cannot load libcuda.so.1`.
+    Picking one that way loses a render minutes in, after a script, a voiceover and
+    eighty generated shots have already been paid for.
+
+    It is the same rule `toolchain.install_npm_package` follows about npm: the tool
+    saying it succeeded is not evidence that this machine can run what it produced. So
+    the question is asked in the only form that answers it — encode one frame of a
+    32x32 test pattern and see whether a file comes out.
+
+    Cached, because it shells out once per encoder and a render resolves this per clip.
+    """
+    global _ENCODER_CACHE
+    if _ENCODER_CACHE is not None:
+        return _ENCODER_CACHE
+
+    found: dict[str, bool] = {}
+    for key, spec in ENCODERS.items():
+        if spec["codec"] == "libx264":
+            # Always present, and probing it would mean a render on a machine with no
+            # working encoder at all reported nothing usable rather than the one thing
+            # that is.
+            found[key] = True
+            continue
+        found[key] = _encodes(spec)
+
+    _ENCODER_CACHE = found
+    return _ENCODER_CACHE
+
+
+def _encodes(spec: dict) -> bool:
+    """Can this encoder produce a frame here, right now.
+
+    Tiny and to the null muxer: 32x32 for one frame is a few milliseconds of work, and
+    writing nowhere means the probe cannot leave a file behind on a failure path.
+    """
+    try:
+        done = subprocess.run(
+            [FFMPEG, "-hide_banner", "-loglevel", "error",
+             "-f", "lavfi", "-i", "color=c=black:s=32x32:d=0.04",
+             "-c:v", spec["codec"], *spec["quality"],
+             "-frames:v", "1", "-f", "null", "-"],
+            capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):  # pragma: no cover
+        return False
+    # Both, because ffmpeg has been seen to exit 0 on an encoder that could not open —
+    # the failure lands on stderr and the exit code does not always follow it.
+    return done.returncode == 0 and "rror" not in (done.stderr or "")
+
+
+_ENCODER_CACHE: dict[str, bool] | None = None
+
+
+def resolve_encoder(name: str = "") -> str:
+    """The encoder to use, downgraded to CPU when the asked-for one is not present.
+
+    Downgraded rather than refused, and it is the same argument `render/backends.py`
+    makes about the motion renderer: a run that has already spent money must finish. An
+    encoder that is missing is a slower render, not a lost one.
+
+    Unlike that case, this downgrade is invisible in the output — the video looks the
+    same either way — so it does not need surfacing on a page. It is logged, which is
+    what somebody wondering why the render took twenty minutes will read.
+    """
+    wanted = (name or DEFAULT_ENCODER).strip().lower()
+    if wanted not in ENCODERS:
+        return DEFAULT_ENCODER
+    if available_encoders().get(wanted):
+        return wanted
+    if wanted != DEFAULT_ENCODER:
+        # "could not encode here", not "is not installed". The common case is an ffmpeg
+        # built with NVENC on a machine with no NVIDIA driver, where the encoder is
+        # present, is listed, and cannot open — so a message naming the build would send
+        # somebody to reinstall ffmpeg to fix a driver.
+        log.warning("%s could not encode on this machine, so the render is on the CPU. "
+                    "The encoder is usually present in the build and missing its driver.",
+                    ENCODERS[wanted]["label"])
+    return DEFAULT_ENCODER
+
+
+def vcodec(fps: int | None = None, encoder: str = "") -> list[str]:
     """Encoder settings for one rate.
 
     Every piece of a render has to come out of this same call. `concat_clips` stream-
@@ -60,8 +193,13 @@ def vcodec(fps: int | None = None) -> list[str]:
     copy of pieces at mixed frame rates produces a file whose timestamps drift against
     its audio, which shows up as lip-sync slipping later in a long video and nowhere near
     the code that caused it.
+
+    The same is true of the encoder, and more sharply: concatenating an NVENC piece and
+    an x264 piece by stream copy produces a file some players stutter on at the join.
+    Both have to be settled once, here.
     """
-    return ["-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+    spec = ENCODERS[resolve_encoder(encoder)]
+    return ["-c:v", spec["codec"], *spec["quality"], "-pix_fmt", "yuv420p",
             "-r", str(resolve_fps(fps))]
 
 
@@ -191,6 +329,7 @@ def make_color_clip(
     color: str = "0x101820",
     label: str = "",
     fps: int | None = None,
+    encoder: str = "",
 ) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     rate = resolve_fps(fps)
@@ -203,7 +342,7 @@ def make_color_clip(
             f"drawtext=text='{safe}':fontcolor=white@0.85:fontsize={max(height // 18, 16)}"
             f":x=(w-text_w)/2:y=(h-text_h)/2",
         ]
-    args += ["-t", f"{max(seconds, 0.1):.3f}", *vcodec(rate), "-an", str(out_path)]
+    args += ["-t", f"{max(seconds, 0.1):.3f}", *vcodec(rate, encoder), "-an", str(out_path)]
     run_ffmpeg(args, label="make_color_clip")
     return out_path
 
@@ -239,6 +378,7 @@ def still_to_clip(
     ken_burns: bool = True,
     punch_in: float = 1.0,
     fps: int | None = None,
+    encoder: str = "",
 ) -> Path:
     """Animate a still so a slideshow does not look like a slideshow.
 
@@ -280,7 +420,7 @@ def still_to_clip(
             # input at `duration` seconds of frames, and zoompan then multiplies every
             # one of them by d — hundreds of times more frames than the clip needs.
             "-t", f"{duration:.3f}",
-            *vcodec(rate),
+            *vcodec(rate, encoder),
             "-an",
             str(out_path),
         ],
@@ -299,6 +439,7 @@ def normalise_clip(
     punch_in: float = 1.0,
     seek: float = 0.0,
     fps: int | None = None,
+    encoder: str = "",
 ) -> Path:
     """Trim/pad a provider clip to the exact scene length and uniform codec.
 
@@ -325,7 +466,7 @@ def normalise_clip(
             "-t", f"{duration:.3f}",
             # If the source is short, hold its last frame rather than cutting early.
             "-vsync", "cfr",
-            *vcodec(rate),
+            *vcodec(rate, encoder),
             "-an",
             str(out_path),
         ],
@@ -338,7 +479,7 @@ def normalise_clip(
             [
                 "-i", str(out_path),
                 "-vf", f"tpad=stop_mode=clone:stop_duration={duration - actual:.3f}",
-                *vcodec(rate), "-an", str(padded),
+                *vcodec(rate, encoder), "-an", str(padded),
             ],
             label="pad_clip",
         )
@@ -381,7 +522,7 @@ def mux(video_path: Path, audio_path: Path, out_path: Path) -> Path:
 
 
 def overlay_video(base: Path, overlay: Path, out_path: Path, *, fps: int | None = None,
-                  scale: float = 0.28,
+                  encoder: str = "", scale: float = 0.28,
                   corner: str = "br") -> Path:
     """Picture-in-picture: drop the avatar pass onto the B-roll bed."""
     positions = {
@@ -399,7 +540,7 @@ def overlay_video(base: Path, overlay: Path, out_path: Path, *, fps: int | None 
             f"[1:v]scale=iw*{scale}:-2[pip];[0:v][pip]overlay={xy}:shortest=0[v]",
             "-map", "[v]",
             "-map", "0:a?",
-            *vcodec(resolve_fps(fps)),
+            *vcodec(resolve_fps(fps), encoder),
             "-c:a", "copy",
             str(out_path),
         ],
@@ -532,7 +673,7 @@ def _wrap(text: str, width: int) -> str:
 
 
 def burn_subtitles(video_path: Path, srt_path: Path, out_path: Path, *,
-                   fps: int | None = None) -> Path:
+                   fps: int | None = None, encoder: str = "") -> Path:
     style = (
         "FontSize=18,PrimaryColour=&H00FFFFFF,OutlineColour=&H90000000,"
         "BorderStyle=3,Outline=1,Shadow=0,MarginV=42"
@@ -541,7 +682,7 @@ def burn_subtitles(video_path: Path, srt_path: Path, out_path: Path, *,
         [
             "-i", str(video_path),
             "-vf", f"subtitles='{srt_path.resolve().as_posix()}':force_style='{style}'",
-            *vcodec(resolve_fps(fps)),
+            *vcodec(resolve_fps(fps), encoder),
             "-c:a", "copy",
             str(out_path),
         ],
@@ -556,6 +697,7 @@ def burn_subtitles(video_path: Path, srt_path: Path, out_path: Path, *,
 def _shot_clip(
     scene: Scene, cut, out_path: Path, *, width: int, height: int, subdivided: bool,
     fps: int | None = None,
+    encoder: str = "",
 ) -> Path:
     """One visual segment of a scene, from whichever plate the plan assigned it."""
     plate = scene.plate(getattr(cut, "plate_index", 0))
@@ -571,7 +713,7 @@ def _shot_clip(
         normalise_clip(
             plate, out_path, cut.seconds, width=width, height=height,
             punch_in=punch, seek=float(getattr(cut, "source_offset", 0.0) or 0.0),
-            fps=fps,
+            fps=fps, encoder=encoder,
         )
     else:
         still_to_clip(
@@ -581,7 +723,7 @@ def _shot_clip(
             # cut is detected at all. The cut carries the motion instead.
             ken_burns=not subdivided,
             punch_in=punch,
-            fps=fps,
+            fps=fps, encoder=encoder,
         )
     return out_path
 
@@ -589,6 +731,7 @@ def _shot_clip(
 def _build_scene_clip(
     scene: Scene, target: Path, cuts: list, *, workdir: Path, width: int, height: int,
     fps: int | None = None,
+    encoder: str = "",
 ) -> Path:
     """Build one scene's visual bed, as one clip or as several cut together."""
     if len(cuts) <= 1:
@@ -598,18 +741,18 @@ def _build_scene_clip(
         if only is not None and scene.plate(only.plate_index) is not None:
             return _shot_clip(
                 scene, only, target, width=width, height=height, subdivided=False,
-                fps=fps,
+                fps=fps, encoder=encoder,
             )
         if scene.visual_path and scene.visual_path.exists():
             if scene.is_video:
                 normalise_clip(
                     scene.visual_path, target, scene.seconds, width=width,
-                    height=height, fps=fps,
+                    height=height, fps=fps, encoder=encoder,
                 )
             else:
                 still_to_clip(
                     scene.visual_path, target, scene.seconds, width=width,
-                    height=height, fps=fps,
+                    height=height, fps=fps, encoder=encoder,
                 )
         else:
             make_color_clip(
@@ -622,7 +765,7 @@ def _build_scene_clip(
         _shot_clip(
             scene, cut,
             workdir / f"scene_{scene.index:03d}_shot_{cut.shot_index:03d}.mp4",
-            width=width, height=height, subdivided=True, fps=fps,
+            width=width, height=height, subdivided=True, fps=fps, encoder=encoder,
         )
         for cut in cuts
     ]
@@ -647,6 +790,7 @@ def assemble_video(
     loudness_target: str = "youtube",
     shot_cuts=None,
     fps: int | None = None,
+    encoder: str = "",
 ) -> Path:
     """Turn scenes + narration into one finished file.
 
@@ -683,7 +827,7 @@ def assemble_video(
         target = workdir / f"scene_{scene.index:03d}.mp4"
         _build_scene_clip(
             scene, target, cuts_by_scene.get(scene.index) or [],
-            workdir=workdir, width=width, height=height, fps=fps,
+            workdir=workdir, width=width, height=height, fps=fps, encoder=encoder,
         )
 
         item = plan_by_scene.get(scene.index)
@@ -698,7 +842,8 @@ def assemble_video(
     bed = concat_clips(clips, workdir / "bed.mp4")
 
     if avatar_path and avatar_path.exists():
-        bed = overlay_video(bed, avatar_path, workdir / "bed_pip.mp4", fps=fps)
+        bed = overlay_video(bed, avatar_path, workdir / "bed_pip.mp4", fps=fps,
+                            encoder=encoder)
 
     if narration_path and narration_path.exists():
         staged = mux(bed, narration_path, workdir / "with_audio.mp4")
@@ -711,7 +856,7 @@ def assemble_video(
         srt = write_srt(scenes, workdir / "captions.srt")
         if srt.stat().st_size > 0:
             staged = burn_subtitles(staged, srt, workdir / "with_captions.mp4",
-                                     fps=fps)
+                                     fps=fps, encoder=encoder)
 
     # Last, after every pass that could touch the audio. Voice providers disagree on
     # output level by more than 10 dB, so without this one video plays quiet and the

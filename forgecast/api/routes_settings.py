@@ -119,6 +119,19 @@ ENV_FIELDS = [
                 "of it and nothing from it is ever packaged",
      "where": "a folder on this machine, outside the Forgecast folder",
      "secret": False},
+    # Also a machine fact rather than an account one, and for a sharper reason than the
+    # folder above: a channel restored onto a second computer must not arrive asking for
+    # a GPU that computer does not have. `Channel` is what the cloud backup copies;
+    # `.env` is not.
+    {"key": "FORGECAST_VIDEO_ENCODER", "label": "Video encoder",
+     "unlocks": "hardware-accelerated rendering — cpu, nvidia or intel. An NVIDIA or "
+                "Intel GPU encodes far faster than the processor does, including small "
+                "cards that cannot generate video at all, because encoding is a "
+                "fixed-function block. Slightly larger files for the same picture. "
+                "Leave empty for the CPU; anything this machine cannot run falls back "
+                "to it rather than failing a paid render",
+     "where": "this machine — see /api/encoders for what it can actually do",
+     "secret": False},
 ]
 
 _SECRET_LINE = re.compile(r"^([A-Z0-9_]+)\s*=\s*(.*)$")
@@ -260,6 +273,41 @@ def settings_page(
             "connectors": connectors.Store.load().listing(),
         },
     )
+
+
+@router.get("/api/encoders", include_in_schema=False)
+def encoders(user: User = Depends(current_user)) -> dict:
+    """What this machine can actually encode with, proved rather than listed.
+
+    A separate endpoint from the settings page because the answer costs a subprocess per
+    encoder, and the page already refuses to spawn one during a render — a wedged probe
+    would hold up every other panel on it.
+
+    The distinction it reports is the one that matters and the one `ffmpeg -encoders`
+    gets wrong: a great many builds carry `h264_nvenc` on machines with no NVIDIA driver,
+    so the encoder is listed, is selectable, and fails at the first clip with
+    `Cannot load libcuda.so.1`. `available_encoders` settles it by encoding a frame.
+    """
+    from ..render.ffmpeg import (
+        DEFAULT_ENCODER,
+        ENCODERS,
+        available_encoders,
+        resolve_encoder,
+    )
+
+    can = available_encoders()
+    asked = str(get_settings().video_encoder or "")
+    return {
+        "chosen": asked or DEFAULT_ENCODER,
+        # Resolved, not echoed. An operator who set `nvidia` on a machine that cannot run
+        # it should read that the render is on the CPU, not that it is on the GPU.
+        "will_use": resolve_encoder(asked),
+        "encoders": [
+            {"key": key, "label": spec["label"], "note": spec["note"],
+             "available": bool(can.get(key))}
+            for key, spec in ENCODERS.items()
+        ],
+    }
 
 
 @router.post("/settings/provider")

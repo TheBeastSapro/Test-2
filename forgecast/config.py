@@ -46,6 +46,19 @@ class Settings(BaseSettings):
     # being chosen well.
     scripting_dir: Path = Path.home() / "Documents" / "Forgecast" / "scripting-library"
 
+    # Which encoder renders this machine's video. "cpu", "nvidia" or "intel"; empty
+    # means the app decides, which today means the CPU.
+    #
+    # A machine setting rather than a channel one, and the distinction is load-bearing:
+    # the GPU belongs to the computer, not to the channel. A channel carried to a second
+    # machine — or restored from a cloud backup onto one — must not arrive asking for an
+    # encoder that machine does not have, and `Channel` is exactly what the backup
+    # copies.
+    #
+    # An unavailable choice downgrades to the CPU rather than failing, so a wrong value
+    # here costs a slower render and never a lost one. See `render.ffmpeg.resolve_encoder`.
+    video_encoder: str = ""
+
     access_token_ttl_minutes: int = 60 * 24 * 7
 
     # Registration is closed by default. This is the one setting whose default has to

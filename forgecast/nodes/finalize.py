@@ -12,6 +12,7 @@ import asyncio
 import json
 from pathlib import Path
 
+from ..config import get_settings
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..providers import ProviderError
 from ..providers.youtube import publisher_for
@@ -148,6 +149,12 @@ async def render_node(ctx: NodeContext) -> NodeResult:
         # the render: `concat_clips` stream-copies, so pieces at mixed rates produce a
         # file whose timestamps drift against its audio.
         fps=int(ctx.params.get("fps") or getattr(ctx.channel, "video_fps", 0) or 0) or None,
+        # The machine's encoder, not the channel's. A GPU belongs to the computer, and
+        # `Channel` is what the cloud backup copies — a channel restored onto a second
+        # machine must not arrive asking for hardware that machine does not have.
+        # An unavailable choice downgrades to the CPU rather than failing a render that
+        # has already paid for a script, a voiceover and eighty shots.
+        encoder=str(ctx.params.get("encoder") or get_settings().video_encoder or ""),
         avatar_path=avatar_path,
         subtitles=bool(ctx.params.get("subtitles", True)),
         motion_preset=preset,
