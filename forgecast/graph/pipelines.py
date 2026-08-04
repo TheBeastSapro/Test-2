@@ -13,14 +13,9 @@ from __future__ import annotations
 
 from ..credits import PER_UNIT_COSTS
 from ..providers.media import HERO_TIER, STANDARD_TIER, model_for_tier, video_reserve_credits
-from ..render.cutting import (
-    estimate_plates,
-    hero_budget,
-    max_scenes,
-    plates_for,
-    video_budget,
-)
+from ..render.cutting import estimate_plates, max_scenes, plates_for
 from ..skills.gates import MAX_SETUPS
+from ..style.sourcing import budgets as style_budgets
 from .spec import NodeSpec, PipelineSpec
 
 WORDS_PER_SECOND = 2.6
@@ -38,7 +33,8 @@ STILL_CREDITS = PER_UNIT_COSTS["thumbnail"][1]
 
 
 def animation_reserve(
-    target_seconds: float, *, standard: str = "", hero: str = ""
+    target_seconds: float, *, standard: str = "", hero: str = "",
+    sourcing: dict | None = None,
 ) -> tuple[int, int]:
     """Credits to hold for `sample` and `shots` on this channel's chosen models.
 
@@ -70,8 +66,10 @@ def animation_reserve(
     worst_setups = 0
     for scenes in range(1, max_scenes(total) + 1):
         seconds = total / scenes
-        clips = min(video_budget(scenes), scenes)
-        heroes = min(clips, hero_budget(scenes))
+        # The same call `broll_plan_node` makes, so the hold and the spend read one
+        # measurement. A channel modelled on a cinematic reference animates most of its
+        # beats and must be held for most of its beats.
+        clips, heroes = style_budgets(sourcing, scenes)
         # An animated beat buys one plate and one clip; every other beat buys stills, and
         # a still is the cheap half of this. Maps buy one plate and no clip, so counting
         # every non-animated beat as stills is the dearer reading and the right one here.
@@ -92,7 +90,7 @@ def animation_reserve(
 
 def faceless_longform(
     *, target_seconds: int = 480, use_avatar: bool = False, publish: bool = True,
-    standard_model: str = "", hero_model: str = "",
+    standard_model: str = "", hero_model: str = "", sourcing: dict | None = None,
 ) -> PipelineSpec:
     words = int(target_seconds * WORDS_PER_SECOND)
     # The shots node buys *plates*, not shots: one image carries several shots at
@@ -102,7 +100,7 @@ def faceless_longform(
     # means the reserve now tracks the spend instead of guessing at it.
     shots = estimate_plates(target_seconds)
     sample_credits, shots_credits = animation_reserve(
-        target_seconds, standard=standard_model, hero=hero_model)
+        target_seconds, standard=standard_model, hero=hero_model, sourcing=sourcing)
 
     nodes: list[NodeSpec] = [
         NodeSpec(
@@ -302,13 +300,14 @@ def faceless_longform(
 
 
 def faceless_shorts(*, target_seconds: int = 45, publish: bool = True,
-                    standard_model: str = "", hero_model: str = "", **_) -> PipelineSpec:
+                    standard_model: str = "", hero_model: str = "",
+                    sourcing: dict | None = None, **_) -> PipelineSpec:
     words = int(target_seconds * WORDS_PER_SECOND)
     # A short is mostly floor rather than rate: its beats are too brief to want a second
     # plate, so the reserve is one per scene and the runtime term barely contributes.
     shots = estimate_plates(target_seconds)
     sample_credits, shots_credits = animation_reserve(
-        target_seconds, standard=standard_model, hero=hero_model)
+        target_seconds, standard=standard_model, hero=hero_model, sourcing=sourcing)
 
     nodes: list[NodeSpec] = [
         NodeSpec(

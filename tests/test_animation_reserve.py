@@ -203,11 +203,20 @@ def test_an_explicit_figure_beats_the_per_unit_table():
 
 def test_the_planner_and_the_ledger_read_one_animation_budget():
     """Two copies of "one beat in three" would be two answers to how much a run may spend,
-    and the one the money model held would be the wrong one."""
-    from forgecast.nodes import media as media_node
+    and the one the money model held would be the wrong one.
 
-    assert media_node.video_budget is video_budget
-    assert media_node.hero_budget is hero_budget
+    Both now go through `style.sourcing.budgets`, which reads the channel's measured
+    reference where there is one and falls back to `render.cutting` where there is not.
+    Asserting the identity of the function rather than the value, because the value is
+    no longer a constant — that is the whole change."""
+    from forgecast.graph import pipelines
+    from forgecast.nodes import media as media_node
+    from forgecast.style import sourcing as sourcing_module
+
+    assert media_node.sourcing.budgets is sourcing_module.budgets
+    assert pipelines.style_budgets is sourcing_module.budgets
+    # And with no profile, it is still the shipped pair.
+    assert sourcing_module.budgets(None, 12) == (video_budget(12), hero_budget(12))
 
 
 def test_the_gate_and_the_ledger_read_one_setup_ceiling():

@@ -204,6 +204,10 @@ def create_run(
         # spends about seven times what one on Veo 3.1 Lite does for the same script.
         standard_model=channel.video_model or "",
         hero_model=channel.video_model_hero or "",
+        # How the channel's reference sources pictures, which decides how many beats
+        # move — and therefore most of what the run costs. Absent on a channel with no
+        # learned style, which `style.sourcing.budgets` reads as "use the defaults".
+        sourcing=(channel.style_profile or {}).get("sourcing"),
     )
 
     run = Run(

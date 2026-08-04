@@ -112,6 +112,22 @@ class EditingStyle:
     # -- map ---------------------------------------------------------------------
     map_style: str = "documentary_dark"
 
+    # -- sourcing ------------------------------------------------------------------
+    # How this creator gets their pictures: what share of beats move, what a moving
+    # beat runs for, whether the frame is a flat card. Measured by `style.sourcing`
+    # from the same per-shot analysis every other field here comes from.
+    #
+    # It is on the style rather than on the channel because it is a property of the
+    # look, not of the account: learn a creator once, apply that style to three
+    # channels, and all three source pictures the way that creator does. Two channels
+    # modelled on one reference cannot drift apart, because there is one measurement.
+    #
+    # This is what replaced two constants — one beat in three may animate, one in four
+    # may take the premium endpoint. Both were reasonable guesses and both were wrong
+    # for most channels: a white-card explainer moves almost nothing, a cinematic
+    # channel moves nearly everything, and the guess was priced into every run.
+    sourcing: dict = field(default_factory=dict)
+
     # -- bookkeeping -------------------------------------------------------------
     # How much the references disagreed, per field, 0..1. A high number means this
     # creator has no consistent rule here and the median is not worth much.
@@ -208,6 +224,12 @@ class EditingStyle:
         profile["loudness_target"] = self.loudness_target
         if self.motion_preset:
             profile["motion_preset"] = self.motion_preset
+        if self.sourcing:
+            # How this look sources pictures, carried onto the channel so the planner and
+            # the ledger read the same measurement. Only written when there is one —
+            # a style learned before this existed, or from a reference too thin to
+            # measure, must not overwrite a channel's working numbers with an empty dict.
+            profile["sourcing"] = dict(self.sourcing)
         return profile
 
     def summary(self) -> str:
@@ -336,6 +358,7 @@ def learn(
         palette=_palette_of(profiles),
         music_bed=_majority(
             [bool(item.get("has_music") or item.get("music")) for item in audios], False),
+        sourcing=_sourcing_of(profiles),
         notes=list(notes or []),
     )
 
@@ -392,6 +415,35 @@ def _palette_of(profiles: list[dict]) -> list[dict]:
         if score > best_score:
             best, best_score = list(palette), score
     return best
+
+
+def _sourcing_of(profiles: list[dict]) -> dict:
+    """How this creator gets their pictures, pooled across the references.
+
+    Pooled at the *shot* level rather than averaged per reference, which is the same
+    reasoning `_palette_of` uses inverted. A palette is a set and averaging two sets
+    gives mud; an animation share is a proportion, and the honest proportion across
+    three references is the shots that moved over the shots that ran — not the mean of
+    three proportions, which weights a two-minute video the same as a twenty-minute one.
+
+    The colour reading comes from whichever reference was most confident about colour,
+    for the reason `_palette_of` gives: a flat white card and a graded photographic look
+    averaged together describe neither.
+    """
+    from .sourcing import measure
+
+    per_shot: list[dict] = []
+    colour: dict = {}
+    best_score = -1.0
+    for profile in profiles:
+        rows = profile.get("per_shot") or []
+        per_shot.extend(row for row in rows if isinstance(row, dict))
+        score = _confidence_score((profile.get("confidence") or {}).get("colour"))
+        if score > best_score and (profile.get("colour") or {}).get("palette"):
+            colour, best_score = dict(profile.get("colour") or {}), score
+    if not per_shot:
+        return {}
+    return measure(per_shot, colour=colour).as_dict()
 
 
 # -------------------------------------------------------------------- blending

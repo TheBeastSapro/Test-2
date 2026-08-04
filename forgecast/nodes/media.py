@@ -25,13 +25,8 @@ from ..providers.media import (
     video_usd,
 )
 from ..render import ffmpeg as ff
-from ..render.cutting import (
-    hero_budget,
-    plates_for,
-    shot_estimate,
-    spec_for,
-    video_budget,
-)
+from ..render.cutting import plates_for, shot_estimate, spec_for
+from ..style import sourcing
 from ._common import ask_json, dimensions, request_payload, tier_models
 
 THUMBNAIL_INSTRUCTIONS = """Design thumbnail concepts for this video.
@@ -389,11 +384,15 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
 
     # Every scene must end up with at least one plate, planned or inferred.
     shots: list[dict] = []
-    # Both caps come from `render.cutting`, which is also where the ledger reads them to
-    # size the reserve. Two copies of "one in three" would be two answers to how much a
-    # run may spend, and the one the money model held would be the wrong one.
-    animated_allowed = video_budget(len(scenes))
-    heroes_allowed = hero_budget(len(scenes))
+    # Measured off the channel's reference where there is one, and from `render.cutting`'s
+    # defaults where there is not — `sourcing.budgets` decides which, on one rule, so the
+    # ledger that reserves against these and this loop that spends them cannot disagree.
+    #
+    # This is what replaced "one beat in three may animate". A white-card explainer moves
+    # almost nothing and a cinematic channel moves nearly everything, so a third was
+    # wrong for both and every run paid for it.
+    animated_allowed, heroes_allowed = sourcing.budgets(
+        (ctx.channel.style_profile or {}).get("sourcing"), len(scenes))
     videos = 0
     heroes = 0
     planned_shots = 0
