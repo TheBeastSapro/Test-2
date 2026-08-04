@@ -169,12 +169,30 @@ def _owned(session: Session, thread_id: int, user: User) -> Conversation:
 
 @router.get("/threads")
 def list_threads(
-    fmt: str = "", limit: int = 50,
+    fmt: str = "", limit: int = 50, channel: int | None = None, unscoped: bool = False,
     user: User = Depends(current_user), session: Session = Depends(get_session),
 ) -> dict:
+    """This account's threads, optionally only the ones about one channel.
+
+    `channel` is what makes `Conversation.channel_id` a column anything reads. It was
+    written on every thread from the moment threads existed and queried by nothing, so
+    "which chats were about the space channel" had no answer — the value was recorded and
+    then thrown away on every read.
+
+    `unscoped` asks the opposite question: the threads belonging to no channel. That is a
+    real state rather than an absence — a thread can be about the account, or predate the
+    channel it would now belong to — and it needs its own filter because `channel=0` and
+    "channel not set" are different questions that a single nullable parameter cannot
+    distinguish. Without it those threads would be reachable from no channel view at all,
+    which is how a shell scoped to channels loses work rather than filing it.
+    """
     stmt = select(Conversation).where(Conversation.user_id == user.id)
     if fmt:
         stmt = stmt.where(Conversation.format == fmt)
+    if unscoped:
+        stmt = stmt.where(Conversation.channel_id.is_(None))
+    elif channel is not None:
+        stmt = stmt.where(Conversation.channel_id == int(channel))
     rows = session.execute(
         stmt.order_by(Conversation.pinned.desc(), Conversation.updated_at.desc())
         .limit(max(1, min(int(limit), 200)))

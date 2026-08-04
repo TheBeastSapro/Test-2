@@ -416,14 +416,30 @@ class Conversation(Base):
     """
 
     __tablename__ = "conversations"
-    __table_args__ = (Index("ix_conversation_user_updated", "user_id", "updated_at"),)
+    __table_args__ = (
+        Index("ix_conversation_user_updated", "user_id", "updated_at"),
+        # The index the per-channel CHATS list reads. Without it, opening a channel scans
+        # every thread the account has ever had to find the handful that belong to it.
+        Index("ix_conversation_channel_updated", "channel_id", "updated_at"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     title: Mapped[str] = mapped_column(String(200), default="New chat")
     # Which workspace it belongs to: "longform", "shorts", or "" for neither.
     format: Mapped[str] = mapped_column(String(16), default="")
-    channel_id: Mapped[int | None] = mapped_column(Integer)
+    # Which channel this thread is about. A bare `Integer` until now — no foreign key, no
+    # index, and nothing that read it — so every thread was account-wide in practice and
+    # the column recorded an intention rather than a fact.
+    #
+    # `SET NULL` rather than `CASCADE`, because a thread outlives the channel it discussed:
+    # cascading would delete days of transcript along with a channel somebody removed to
+    # tidy up. The cost is a real conflation — a thread that never had a channel and a
+    # thread whose channel was deleted both read as null — and it is accepted here because
+    # the alternative destroys work, while this one only loses a label.
+    channel_id: Mapped[int | None] = mapped_column(
+        ForeignKey("channels.id", ondelete="SET NULL"), nullable=True
+    )
     session_id: Mapped[str] = mapped_column(String(128), default="")
     model: Mapped[str] = mapped_column(String(64), default="")
     pinned: Mapped[bool] = mapped_column(Boolean, default=False)

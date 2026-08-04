@@ -44,11 +44,13 @@ specification:
 
 Three things follow from it that the current shape cannot express.
 
-**A chat is about a channel.** `Conversation.channel_id` already exists in `models.py` and
-nothing in the UI reads it, so every thread is an account-wide thread. The consequence is
-that the agent's memory of "this channel" is whatever the transcript happens to still
-contain, rather than something the app knows. Scoping the thread means the agent can be told
-which channel it is in before the operator types anything.
+**A chat is about a channel.** `Conversation.channel_id` existed in `models.py` from the
+moment threads did, and nothing read it — so the value was written on every thread and
+thrown away on every query, and every thread was account-wide in practice. That half is
+now done: the column is a real foreign key with an index, `GET /api/agent/threads` takes
+`channel` and `unscoped` filters, and migration `d9c31f7a5be2` carries it. The consequence
+this removes is that the agent's memory of "this channel" was whatever the transcript still
+contained, rather than something the app knew.
 
 **Skills, Files, Analytics and Activity are per-channel questions.** "What did the agent do"
 is only useful as "what did the agent do *on this channel*". Account-wide versions of these
@@ -64,12 +66,24 @@ should be stored as it deliberately.
 
 ## Order of work
 
-The database is the easy half and it is nearly done: `Conversation.channel_id` exists but is
-a bare `Integer` with no foreign key, no index, and no cascade. It needs to become a real
-relationship, with a migration, and a decision about what happens to the threads that predate
-it — they have no channel, and pretending they belong to the first one would silently attach
-months of unrelated work to it. A null channel means "not about a channel yet", which is a
-real state and should stay representable.
+**Done: the database and the read path.** `Conversation.channel_id` is now a foreign key
+to `channels.id` with `ON DELETE SET NULL` and an index on `(channel_id, updated_at)`,
+which is what the per-channel CHATS list orders by. `SET NULL` rather than `CASCADE`
+because a thread outlives the channel it discussed — cascading would delete days of
+transcript along with a channel somebody removed while tidying up. That trade has a real
+cost and it is accepted rather than hidden: a thread that never had a channel and a thread
+whose channel was deleted both read as null, so the app loses a label where the
+alternative loses the work.
+
+Nothing was backfilled. Threads predating this keep no channel, because attaching them to
+the first one would be a guess that reads as a fact — and on an account with two channels
+it would file months of unrelated work under whichever was created first. A null channel
+means "not about a channel yet", which the shell has to render anyway, so
+`GET /api/agent/threads?unscoped=true` asks for exactly those. Without that filter they
+would be reachable from no channel view at all, which is how a shell scoped to channels
+loses work rather than filing it.
+
+**Remaining: the shell itself.**
 
 The shell is the harder half, because `base.html` is one template shared by every page and
 every page supplies its context through `shell()` in `routes_web.py`. Changing the rail

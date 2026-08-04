@@ -1073,3 +1073,66 @@ def test_a_registered_but_unapproved_server_is_not_reported_as_signed_in(monkeyp
     assert "google_drive" in held
     assert "nexlev" not in held
     assert "higgsfield" not in held
+
+
+def test_a_thread_can_be_asked_for_by_channel(client, session, user):
+    """`Conversation.channel_id` was written on every thread from the moment threads
+    existed and queried by nothing, so 'which chats were about the space channel' had no
+    answer — the value was recorded and thrown away on every read."""
+    from forgecast.models import Channel
+
+    space = Channel(user_id=user.id, name="Space", niche="space")
+    ocean = Channel(user_id=user.id, name="Ocean", niche="ocean")
+    session.add_all([space, ocean])
+    session.commit()
+
+    made = client.post("/api/agent/threads", json={"channel_id": space.id}).json()
+    client.post("/api/agent/threads", json={"channel_id": ocean.id})
+    client.post("/api/agent/threads", json={})
+
+    scoped = client.get(f"/api/agent/threads?channel={space.id}").json()["threads"]
+    assert [t["id"] for t in scoped] == [made["id"]]
+    assert scoped[0]["channel_id"] == space.id
+
+
+def test_threads_belonging_to_no_channel_stay_reachable(client, session, user):
+    """A real state, not an absence: a thread can be about the account, or predate the
+    channel it would now belong to. Without its own filter it is reachable from no
+    channel view at all, which is how a shell scoped to channels loses work."""
+    from forgecast.models import Channel
+
+    space = Channel(user_id=user.id, name="Space", niche="space")
+    session.add(space)
+    session.commit()
+
+    client.post("/api/agent/threads", json={"channel_id": space.id})
+    loose = client.post("/api/agent/threads", json={}).json()
+
+    found = client.get("/api/agent/threads?unscoped=true").json()["threads"]
+    assert [t["id"] for t in found] == [loose["id"]]
+
+
+def test_deleting_a_channel_keeps_the_transcript_and_only_loses_the_label(session, user):
+    """`SET NULL` rather than `CASCADE`. A thread outlives the channel it discussed, and
+    cascading would delete days of transcript along with a channel somebody removed while
+    tidying up."""
+    from sqlalchemy import text
+
+    from forgecast.models import Channel, Conversation
+
+    channel = Channel(user_id=user.id, name="Space", niche="space")
+    session.add(channel)
+    session.commit()
+    thread = Conversation(user_id=user.id, title="About space", channel_id=channel.id)
+    session.add(thread)
+    session.commit()
+    thread_id = thread.id
+
+    session.execute(text("PRAGMA foreign_keys=ON"))
+    session.delete(channel)
+    session.commit()
+    session.expire_all()
+
+    survivor = session.get(Conversation, thread_id)
+    assert survivor is not None, "the transcript must outlive the channel"
+    assert survivor.channel_id is None
