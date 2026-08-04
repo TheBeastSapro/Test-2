@@ -23,6 +23,7 @@ from .routes_analytics import router as analytics_router
 from .routes_api import router as api_router
 from .routes_channel import router as channel_router
 from .routes_cloud import router as cloud_router
+from .routes_edit import router as edit_router
 from .routes_files import router as files_router
 from .routes_preview import router as preview_router
 from .routes_research import router as research_router
@@ -98,6 +99,14 @@ def create_app() -> FastAPI:
     # unconditionally: every endpoint asks `cloud.enabled()` first, and an install that
     # never turns it on still never opens a socket to GitHub.
     app.include_router(cloud_router)
+
+    # The other direction: a video somebody hands the app, rather than one it generates.
+    # `forgecast/ingest`, `forgecast/edit` and `forgecast/layers` were complete and
+    # tested and had no importer anywhere in the tree, so the whole "here is a video,
+    # edit it" direction existed on disk and nowhere else. Registered unconditionally:
+    # the heavy readers are an optional extra, and every endpoint reports what it cannot
+    # measure as something the app can install rather than failing.
+    app.include_router(edit_router)
 
     # The stylesheet and the chat's script. A real mount rather than a route per file:
     # these are the only static assets, they are part of the package, and they must

@@ -49,19 +49,37 @@ _READ_ONLY = (
     # in the pre-allowed set — a check the agent has to ask permission for is a check it
     # stops making, and then the script is written to the agent's defaults instead.
     "list_scripting_styles",
+    # Reading a video somebody handed the app, and the paper edits already written from
+    # one. All four measure or list; none of them cuts, writes an output or spends.
+    # `editing_tools` in particular has to be free to call — it is the question asked
+    # *before* a two-gigabyte upload, and a check the agent must ask permission for is a
+    # check it stops making.
+    "editing_tools", "read_video", "edit_plans",
+    # Which engine will actually draw the motion scenes, per channel. Reading it is how
+    # the agent can answer "why does this still look like ffmpeg" without changing
+    # anything.
+    "render_backends",
     # Reading the operator's own instruction documents. See skills_tools.py for why
     # they are read-only and why their descriptions are as long as they are.
     *skills_tools.READ_ONLY,
 )
 _WRITES = ("create_channel", "update_channel", "start_run", "apply_style",
-           "blend_styles", "cancel_run", "sync_voice_artists")  # all re-runnable
+           "blend_styles", "cancel_run", "sync_voice_artists",
+           # Each of these produces a file that can be produced again from the same
+           # input, and none of them spends credits or touches a run.
+           "plan_edit", "cut_subject", "set_motion_backend", "learn_style")
 
 # `decide_gate` is intentionally absent: approving a gate is the moment the run is
 # allowed to spend on the stage behind it, and that is the user's call, not a step
 # the agent gets to take because it seemed reasonable.
+#
+# `approve_edit` is absent for the same reason and it is the same gate in a different
+# place. A paper edit fixes every expensive decision that follows it, so accepting one
+# is the operator agreeing to the edit — an agent that approves its own plan has turned
+# the one cheap place to disagree with the machine into a formality.
 ALLOWED = [f"mcp__{SERVER_NAME}__{name}" for name in (*_READ_ONLY, *_WRITES)]
 
-ALL_TOOLS = [*_READ_ONLY, *_WRITES, "decide_gate"]
+ALL_TOOLS = [*_READ_ONLY, *_WRITES, "decide_gate", "approve_edit"]
 
 
 def _text(payload: Any) -> dict:
@@ -299,6 +317,123 @@ def build_server(studio):
             args.get("first") or "", args.get("second") or "",
             weight=float(args.get("weight") or 0.5), name=args.get("name") or ""))
 
+    @tool("learn_style",
+          "Learn an editing style from a creator's videos: measure cut rhythm, grade, "
+          "captions and motion out of the pixels and save it under a name, so it can "
+          "be applied to a channel. References are attached video files or links — "
+          "give several by the same creator rather than one, because a style is what "
+          "survives across their work. Slow: it decodes each video. Spends no credits "
+          "and calls no provider. Report the departures the upgrade pass made, because "
+          "those are where the result stops describing the reference.",
+          {"references": str, "name": str, "upgrade": bool, "max_seconds": int})
+    async def learn_style(args):
+        import asyncio
+
+        # Off the loop. It decodes video for minutes, and on the event loop that stalls
+        # every other request in the process — including the chat the operator is
+        # watching while it runs.
+        return _text(await asyncio.to_thread(
+            studio.learn_style, args.get("references") or "",
+            name=args.get("name") or "",
+            upgrade=bool(args.get("upgrade", True)),
+            max_seconds=int(args.get("max_seconds") or 0)))
+
+    # ------------------------------------------------------------ render backend
+
+    @tool("render_backends",
+          "Which engine draws motion graphics: ffmpeg (always present) or remotion "
+          "(real layout, needs the motion toolset). Reports which are installed here, "
+          "what each channel is set to, and what will ACTUALLY run — an unavailable "
+          "backend downgrades to ffmpeg at render time, so the stored setting and the "
+          "finished video can disagree. Read-only.", {})
+    async def render_backends(args):
+        return _text(studio.render_backends())
+
+    @tool("set_motion_backend",
+          "Choose the motion renderer for one channel: 'ffmpeg' or 'remotion'. Stored "
+          "on the channel, so every future run uses it. Say whether it will actually be "
+          "used — if the motion toolset is not installed the answer says so and renders "
+          "fall back to ffmpeg until it is.",
+          {"channel": str, "backend": str})
+    async def set_motion_backend(args):
+        return _text(studio.set_motion_backend(args.get("channel") or "",
+                                               args.get("backend") or ""))
+
+    # --------------------------------------------------------- supplied footage
+
+    @tool("editing_tools",
+          "What this machine can measure in a video somebody hands the app — shot "
+          "boundaries, silence, a word-timed transcript, subject cutouts — and what "
+          "would fix anything missing. Free and instant. Call it BEFORE asking for a "
+          "large upload, so a missing toolset is found now rather than twenty seconds "
+          "after a two-gigabyte file finishes copying.", {})
+    async def editing_tools(args):
+        return _text(studio.editing_tools())
+
+    @tool("read_video",
+          "Measure a supplied video: duration, frame size, frame rate, its existing "
+          "shot boundaries and cut rate, every silent stretch, and a word-timed "
+          "transcript. Measures only — it decides nothing and cuts nothing. Readings "
+          "that could not be taken come back named in `missing` rather than guessed "
+          "at. The path is one the chat's attachment upload returned.",
+          {"path": str, "want_transcript": bool, "want_shots": bool, "limit": int})
+    async def read_video(args):
+        import asyncio
+
+        return _text(await asyncio.to_thread(
+            studio.read_video, args.get("path") or "",
+            want_transcript=bool(args.get("want_transcript", True)),
+            want_shots=bool(args.get("want_shots", True)),
+            limit=int(args.get("limit") or 12)))
+
+    @tool("plan_edit",
+          "Write the paper edit for a supplied video: what comes out, where, and why, "
+          "grouped so it can be read in one pass. NOTHING IS CUT — this produces a plan "
+          "the operator reads and approves first, which is the whole point of having "
+          "one. Show them the markdown it returns and ask; do not approve it yourself.",
+          {"path": str, "drop_fillers": bool})
+    async def plan_edit(args):
+        import asyncio
+
+        return _text(await asyncio.to_thread(
+            studio.plan_edit, args.get("path") or "",
+            drop_fillers=bool(args.get("drop_fillers", True))))
+
+    @tool("edit_plans",
+          "The paper edits already written, or one of them in full with its markdown "
+          "and every decision. Read-only. Use it to bring back a plan from earlier in "
+          "the conversation instead of measuring the video again.",
+          {"plan_id": str, "limit": int})
+    async def edit_plans(args):
+        return _text(studio.edit_plans(args.get("plan_id") or "",
+                                       limit=int(args.get("limit") or 20)))
+
+    @tool("approve_edit",
+          "Accept or reject a paper edit. ONLY call this when the user has told you to "
+          "in this conversation — approving is them agreeing to the edit, and every "
+          "expensive decision downstream is fixed by it.",
+          {"plan_id": str, "approve": bool, "note": str})
+    async def approve_edit(args):
+        return _text(studio.approve_edit(args.get("plan_id") or "",
+                                         approve=bool(args.get("approve", True)),
+                                         note=args.get("note") or ""))
+
+    @tool("cut_subject",
+          "Lift the subject of a still onto its own layer with an alpha channel, and "
+          "optionally set a title BEHIND it so the subject's shoulder passes in front "
+          "of the words. A cutout with a visible fringe is refused and reported rather "
+          "than used — say so and fall back to the plain still, because a fringed matte "
+          "reads as cheaper than no matte at all.",
+          {"image": str, "text": str, "background": str, "out": str})
+    async def cut_subject(args):
+        import asyncio
+
+        return _text(await asyncio.to_thread(
+            studio.cut_subject, args.get("image") or "",
+            text=args.get("text") or "",
+            background=args.get("background") or None,
+            out=args.get("out") or ""))
+
     # Returned as a list as well as a server, because a backend that is not MCP needs the
     # same operations as function schemas. Introspecting the assembled server for them was
     # the first attempt and it is a dead end: `create_sdk_mcp_server` hands back an opaque
@@ -309,6 +444,9 @@ def build_server(studio):
              cancel_run, preview_run, run_files, research_channel, score_videos,
              cast_voice, voice_catalogue, voice_artists, sync_voice_artists,
              list_styles, apply_style, blend_styles, list_scripting_styles,
+             learn_style, render_backends, set_motion_backend,
+             editing_tools, read_video, plan_edit, edit_plans, approve_edit,
+             cut_subject,
              *skills_tools.build(studio)]
     server = create_sdk_mcp_server(name=SERVER_NAME, version="1.0.0", tools=built)
     _BUILT[id(server)] = built

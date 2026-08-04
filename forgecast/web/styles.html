@@ -38,6 +38,23 @@
   .swatches { display: flex; gap: 5px; margin-top: 6px; }
   .swatches i { width: 26px; height: 20px; border-radius: 4px;
                 border: 1px solid var(--line); }
+
+  /* Learning. The references list is the part that has to be legible: a run measures
+     each one in turn and names the one it is on, so a file that cannot be read is
+     attributable rather than being "it failed". */
+  .refs { list-style: none; padding: 0; margin: 8px 0 0; }
+  .refs li { display: flex; align-items: baseline; gap: 8px; padding: 5px 0;
+             border-bottom: 1px dashed var(--line); font-size: 12.5px;
+             overflow-wrap: anywhere; }
+  .refs li:last-child { border-bottom: 0; }
+  .refs .drop { margin-left: auto; color: var(--muted); background: none;
+                border: 0; cursor: pointer; font-size: 12px; padding: 0 2px; }
+  .refs .drop:hover { color: var(--err); }
+  .learnlog { background: var(--raise-2); border: 1px solid var(--line);
+              border-radius: 7px; padding: 10px; margin-top: 12px; font-size: 12.5px;
+              max-height: 190px; overflow-y: auto; overflow-wrap: anywhere;
+              color: var(--muted); }
+  .learnlog div { padding: 1px 0; }
 </style>
 {% endblock %}
 
@@ -50,25 +67,56 @@
   mix it with another, or improve on it.
 </p>
 
+{# Learning, in the app. This page could read, apply, mix, improve and delete styles and
+   could not make one: the only caller of `style.learn` in the tree was a command-line
+   tool, so an empty shelf printed two commands to paste into a terminal. That is the
+   homework this app removes everywhere else, and it left the whole vision package —
+   three thousand lines that measure a reference — with no way in from the application. #}
+<div class="card" id="learn">
+  <h2 style="margin:0 0 4px;text-transform:none;letter-spacing:0;font-size:19px;color:var(--text)">
+    Learn one from a creator</h2>
+  <p class="muted" style="margin:0 0 14px;font-size:13px">
+    Several videos by the same creator rather than one — a single video is an anecdote,
+    and a style is what survives across their work. Each is measured on its own, so one
+    file that cannot be read costs one reference instead of the attempt.
+  </p>
+
+  <label for="pick">Videos</label>
+  <input type="file" id="pick" multiple accept="video/*">
+  <p class="muted" style="font-size:12.5px;margin:6px 0 0">
+    Uploaded to this machine and measured here. Nothing is sent to a provider and no
+    credits are spent.
+  </p>
+
+  <label for="links" style="margin-top:14px">Or links, one per line</label>
+  <textarea id="links" rows="2"></textarea>
+
+  <ul class="refs" id="reflist"></ul>
+
+  <label for="stylename" style="margin-top:14px">Call it</label>
+  <input id="stylename">
+
+  <label style="margin-top:12px;display:flex;align-items:center;gap:8px;font-weight:400">
+    <input type="checkbox" id="upgrade" checked style="width:auto;margin:0">
+    Run the upgrade pass, and record every departure it makes
+  </label>
+
+  <div class="row" style="margin-top:14px;gap:10px;align-items:center">
+    <button id="learnbtn" class="primary" type="button">Learn</button>
+    <span class="muted" id="learnnote" style="font-size:12.5px"></span>
+  </div>
+
+  <div class="learnlog" id="learnlog" hidden></div>
+</div>
+
 {% if not styles %}
   <div class="card">
     <strong>Nothing learned yet.</strong>
-    <p class="muted">Point it at a few videos by the same creator — several rather than
-    one, because a single video is an anecdote and a style is what survives across
-    their work.</p>
-    {# The venv-relative path, not a bare `forgecast-vision`. The launcher installs
-       the project into .venv rather than onto PATH, so the bare name only works for
-       someone who has activated it — which a person who double-clicked the app has
-       not. Run these from the Forgecast folder. #}
-    <pre style="background:var(--raise-2);border:1px solid var(--line);border-radius:7px;padding:11px;overflow-x:auto;font-size:12.5px"># macOS / Linux
-./.venv/bin/forgecast-vision learn-style ep1.mp4 ep2.mp4 ep3.mp4 --name "Their Look"
-
-# Windows
-.venv\Scripts\forgecast-vision learn-style ep1.mp4 ep2.mp4 ep3.mp4 --name "Their Look"</pre>
-    <p class="muted" style="margin-bottom:0;font-size:13px">
-      It measures each one, takes the median of every field, and then runs an upgrade
-      pass — printing each departure it makes from the reference and why. Add
-      <code>--raw</code> to keep exactly what was measured instead.
+    <p class="muted" style="margin-bottom:0">
+      Measuring a reference takes a few minutes per video — it decodes the whole thing
+      to read cut rhythm, grade, captions and motion out of the pixels. What comes back
+      describes the reference, including where the reference is bad; the upgrade pass
+      above is the part that is allowed to disagree with it, and it says so line by line.
     </p>
   </div>
 {% else %}
@@ -243,5 +291,110 @@
   {% endif %}
 </div>
 {% endif %}
+
+<script>
+  /* Uploading goes through the chat composer's own endpoint. A second uploader here
+     would be a second size limit, a second sanitiser and a second folder to keep the
+     agent's sandbox in step with — and the agent can only open files inside the one
+     that endpoint writes to. */
+  const chosen = [];
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
+    c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  function drawRefs() {
+    const list = document.getElementById('reflist');
+    list.innerHTML = chosen.map((ref, index) =>
+      `<li><span>${esc(ref.name)}</span>`
+      + `<button class="drop" type="button" data-drop="${index}">Remove</button></li>`
+    ).join('');
+    list.querySelectorAll('[data-drop]').forEach(button => {
+      button.onclick = () => { chosen.splice(Number(button.dataset.drop), 1); drawRefs(); };
+    });
+  }
+
+  document.getElementById('pick').onchange = async event => {
+    const note = document.getElementById('learnnote');
+    for (const file of event.target.files) {
+      note.textContent = `Uploading ${file.name}…`;
+      const body = new FormData();
+      body.append('file', file);
+      try {
+        const answered = await fetch('/api/agent/attach', { method: 'POST', body });
+        const saved = await answered.json();
+        if (!answered.ok || saved.error) throw new Error(saved.error || 'upload failed');
+        chosen.push({ name: saved.name, path: saved.path });
+      } catch (error) {
+        note.textContent = `${file.name} — ${String(error.message || error)}`;
+        continue;
+      }
+      note.textContent = '';
+      drawRefs();
+    }
+    event.target.value = '';
+  };
+
+  function say(line) {
+    const box = document.getElementById('learnlog');
+    box.hidden = false;
+    const row = document.createElement('div');
+    row.textContent = line;
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  document.getElementById('learnbtn').onclick = async () => {
+    const button = document.getElementById('learnbtn');
+    const note = document.getElementById('learnnote');
+    const references = chosen.map(ref => ref.path).concat(
+      document.getElementById('links').value.split('\n').map(s => s.trim()).filter(Boolean));
+    const name = document.getElementById('stylename').value.trim();
+    if (!references.length) { note.textContent = 'Add at least one video or link.'; return; }
+    if (!name) { note.textContent = 'Give it a name — it is the key it is saved under.'; return; }
+
+    button.disabled = true;
+    button.textContent = 'Measuring…';
+    /* It decodes every reference, so this is minutes rather than seconds. The lines
+       arrive as each one is measured, because a progress bar with no idea how long a
+       video is would be a guess drawn as a fact. */
+    note.textContent = 'This takes a few minutes per video.';
+    try {
+      const answered = await fetch('/api/styles/learn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ references, name, upgrade: document.getElementById('upgrade').checked }),
+      });
+      if (!answered.ok) throw new Error((await answered.text()).slice(0, 200));
+      const reader = answered.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          let event;
+          try { event = JSON.parse(line); } catch { continue; }
+          if (event.type === 'log') say(event.text);
+          if (event.type === 'joined') say('Joining the run already going.');
+          if (event.type === 'done') {
+            if (event.ok && event.result && event.result.key) {
+              location.href = '/styles?selected=' + encodeURIComponent(event.result.key);
+              return;
+            }
+            say((event.result && event.result.error) || 'Nothing could be measured.');
+          }
+        }
+      }
+    } catch (error) {
+      say('Could not learn it — ' + String(error.message || error));
+    }
+    button.disabled = false;
+    button.textContent = 'Learn';
+    note.textContent = '';
+  };
+</script>
 
 {% endblock %}

@@ -17,8 +17,11 @@ something the agent can read, explain and work around.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
+import secrets
+import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -67,6 +70,37 @@ def epidemic_cache_path() -> Path:
     return get_settings().storage_dir / "voice_catalogue_epidemic.json"
 
 
+def styles_dir() -> Path:
+    """The one shelf of learned editing styles, for the chat and the page both.
+
+    `editing.DEFAULT_DIRECTORY` is `./storage/styles` — *relative*, so a launcher
+    started from anywhere but the project root reads a different folder from the one
+    `/styles` renders. A style learned in the chat would then be a style the page
+    cannot see, which is the same disagreement `epidemic_cache_path` above exists to
+    prevent, and it is worse here because the style shelf is the thing being written.
+    """
+    return get_settings().storage_dir / "styles"
+
+
+def edits_dir() -> Path:
+    """Where paper edits are kept between being drafted and being approved.
+
+    On disk rather than in memory: the plan is the artifact an operator is meant to go
+    away and read, and a plan that evaporates when the process restarts is a plan
+    nobody is going to take their time over.
+    """
+    path = get_settings().storage_dir / "edits"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def layers_dir() -> Path:
+    """Where cutouts and composites are written."""
+    path = get_settings().storage_dir / "layers"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 @dataclass
 class Link:
     """What a pasted YouTube link turned out to be."""
@@ -103,6 +137,25 @@ def parse_link(text: str) -> Link:
     if groups.get("vanity"):
         return Link("handle", groups["vanity"], raw)
     return Link("unknown", "", raw)
+
+
+def _as_list(value: Any) -> list[str]:
+    """One reference or several, however the caller happened to send them.
+
+    MCP arguments arrive as whatever the model produced, and "several references" is
+    the case that matters most here — a style learned from one video is an anecdote. A
+    list, a comma-separated string and a pasted column of lines all mean the same
+    thing, and rejecting two of the three teaches the agent to send one at a time.
+    """
+    if value is None:
+        return []
+    if isinstance(value, str):
+        parts = re.split(r"[\n,]+", value)
+    elif isinstance(value, (list, tuple, set)):
+        parts = [str(item) for item in value]
+    else:
+        parts = [str(value)]
+    return [item.strip() for item in parts if str(item).strip()]
 
 
 class Studio:
@@ -632,10 +685,11 @@ class Studio:
     def list_styles(self) -> dict:
         from ..style import editing
 
-        rows = editing.available()
+        rows = editing.available(styles_dir())
         return {"styles": rows, "count": len(rows),
-                "note": "Learn one from a creator's videos with the vision CLI, "
-                        "then apply it to a channel." if not rows else ""}
+                "note": "Learn one with learn_style from a video of theirs — several "
+                        "rather than one — then apply it to a channel." if not rows
+                        else ""}
 
     def list_scripting_styles(self) -> dict:
         """Which scripting methods exist, and which channel is written to each.
@@ -693,9 +747,9 @@ class Studio:
             if row is None:
                 return {"error": f"No channel matching {channel!r}."}
             try:
-                found = editing.get(style)
+                found = editing.get(style, styles_dir())
             except (KeyError, FileNotFoundError):
-                names = [s["key"] for s in editing.available()]
+                names = [s["key"] for s in editing.available(styles_dir())]
                 return {"error": f"No style called {style!r}.", "available": names}
 
             profile = dict(row.style_profile or {})
@@ -709,15 +763,218 @@ class Studio:
                      name: str = "") -> dict:
         from ..style import editing
 
+        folder = styles_dir()
         try:
-            left, right = editing.get(first), editing.get(second)
+            left, right = editing.get(first, folder), editing.get(second, folder)
         except (KeyError, FileNotFoundError) as exc:
             return {"error": str(exc),
-                    "available": [s["key"] for s in editing.available()]}
+                    "available": [s["key"] for s in editing.available(folder)]}
         mixed = editing.blend(left, right, float(weight), name=name or "")
-        mixed.save()
+        mixed.save(folder)
         return {"created": mixed.name, "key": editing.slug(mixed.name),
                 "summary": mixed.summary(), "weight": float(weight)}
+
+    def learn_style(self, references: Any, *, name: str = "", upgrade: bool = True,
+                    max_seconds: int = 0,
+                    on_note: Callable[[str], None] | None = None) -> dict:
+        """Measure a creator's videos and keep what they do as a named editing style.
+
+        The gap this closes: `style.learn` had exactly one caller in the whole tree, the
+        vision CLI, so `/styles` and the agent could read, apply, blend, refine and
+        delete styles and nothing in the application could produce one. A shelf you can
+        only take things off is a shelf that is always empty.
+
+        Several references rather than one, because a style is what survives across a
+        creator's work and a single video is an anecdote. Each is measured on its own so
+        one unreadable file costs one reference instead of the whole attempt.
+
+        Slow — it decodes video — so it takes an `on_note` and every caller runs it off
+        the event loop. The upgrade pass runs by default and every departure it makes
+        from the reference is returned, because the difference between "this is how they
+        cut" and "this is how we cut" is the thing that must not get quietly baked in.
+        """
+        from ..style import editing, refine
+        from ..vision import AcquireError, ProbeError, analyse_file, analyse_reference
+
+        def note(line: str) -> None:
+            if on_note is not None:
+                on_note(line)
+
+        wanted = _as_list(references)
+        if not wanted:
+            return {"error": "Learning a style needs at least one reference — a video "
+                             "attached to this conversation, or a link to one."}
+        title = str(name or "").strip()
+        if not title:
+            return {"error": "Give the style a name. It is the key it is saved and "
+                             "applied under, so 'their look' beats 'style 1'."}
+
+        profiles: list[dict] = []
+        failures: list[str] = []
+        workdir = Path(tempfile.mkdtemp(prefix="forgecast-learn-"))
+        for index, reference in enumerate(wanted, start=1):
+            note(f"Measuring {index} of {len(wanted)}: {reference}")
+            try:
+                local, why = self._supplied(reference)
+                if local is not None:
+                    profiles.append(analyse_file(local).as_dict(include_shots=False))
+                elif "://" in reference:
+                    # A link is acquired first. Kept separate from the local path so a
+                    # mistyped filename is reported as a missing file rather than
+                    # attempted as a download and reported as a network failure.
+                    measured, _got = analyse_reference(
+                        reference, workdir,
+                        max_seconds=float(max_seconds) if max_seconds else None)
+                    profiles.append(measured.as_dict(include_shots=False))
+                else:
+                    failures.append(f"{reference} — {why}")
+                    continue
+                note(f"Measured {reference}")
+            except (AcquireError, ProbeError, OSError, ValueError) as exc:
+                failures.append(f"{reference} — {exc}")
+                note(f"Could not measure {reference}: {exc}")
+
+        if not profiles:
+            # The reasons are in the sentence rather than beside it: the MCP wrapper
+            # sends `error` as the whole result, and "nothing could be measured" with
+            # the reasons in a dropped sibling key is a refusal nobody can act on.
+            return {"error": "Nothing could be measured, so there is no style to save. "
+                             + "; ".join(failures),
+                    "failures": failures}
+
+        style = editing.learn(profiles, name=title, reference=str(wanted[0]))
+        departures: list[str] = []
+        if upgrade:
+            style, changes = refine(style, name=title)
+            departures = [str(item) for item in changes]
+        path = style.save(styles_dir())
+        note(f"Saved {style.name}")
+
+        # Fields the references disagreed about, named. A median over sources that do
+        # not agree is a number with a confidence nobody can see, and the operator is
+        # the only one who can decide whether to trust it.
+        weak = sorted(key for key, value in (style.spread or {}).items() if value > 0.5)
+        return {
+            "learned": style.name,
+            "key": style.key,
+            "summary": style.summary(),
+            "measured": len(profiles),
+            "failures": failures,
+            "path": str(path),
+            "departures": departures,
+            "departures_note": (
+                "Measured from the references, then changed — each one because the "
+                "reference crossed from a choice into a defect." if departures else
+                "None — the references were already inside every guard rail."),
+            "weak_fields": weak,
+            "next": f"apply_style('{style.key}', channel) puts it on a channel.",
+        }
+
+    # ------------------------------------------------------------- render backend
+
+    def render_backends(self) -> dict:
+        """Which engine draws motion scenes, what each channel is set to, and why.
+
+        `finalize` reads `motion_backend` off the channel's style profile and off the
+        run options, and until this existed the only writer in the tree was one CLI
+        flag. So an operator who installed the layered renderer through the app kept
+        rendering with ffmpeg for ever, and the downgrade was a `log.warning` in a file
+        nobody opens. Reporting it is half the fix; `set_motion_backend` is the other.
+        """
+        from ..desktop import toolchain
+        from ..render.backends import BACKENDS, backend_for
+
+        engines = []
+        for key, cls in BACKENDS.items():
+            engines.append({"backend": key, "available": bool(cls().available())})
+        installed, absent = toolchain.extra_installed("motion")
+        spec = toolchain.EXTRAS["motion"]
+
+        with self._session() as session:
+            user = self._user(session)
+            if user is None:
+                return {"error": "No account."}
+            channels = session.execute(
+                select(Channel).where(Channel.user_id == user.id).order_by(Channel.id)
+            ).scalars().all()
+            using = []
+            for channel in channels:
+                asked = str((channel.style_profile or {}).get("motion_backend") or "ffmpeg")
+                # Resolved rather than repeated, so this says what will actually run.
+                # An unavailable backend downgrades silently at render time, and a
+                # panel echoing the stored word would agree with the setting and
+                # disagree with the video.
+                using.append({"channel": channel.name, "id": channel.id,
+                              "asked_for": asked,
+                              "will_use": backend_for(asked).name})
+
+        return {
+            "engines": engines,
+            "channels": using,
+            "default": "ffmpeg",
+            "motion_extra": {
+                "key": "motion", "label": spec["label"], "installed": bool(installed),
+                "missing": absent, "megabytes": spec["megabytes"],
+                "gives": spec["gives"],
+            },
+            "install": "" if installed else
+                       "Forgecast installs it — the Install button on the toolchain "
+                       "banner, or POST /api/setup/extras/motion.",
+            "note": "remotion needs that toolset and carries its own licence terms; "
+                    "ffmpeg needs nothing and is the default.",
+        }
+
+    def set_motion_backend(self, channel: Any, backend: str) -> dict:
+        """Choose the renderer for one channel's motion scenes.
+
+        A targeted setter rather than `update_channel(style_profile=...)`, which takes a
+        wholesale dict: writing the whole profile to change one key is how a channel's
+        learned render spec, map style and loudness target get wiped by a caller that
+        only meant to switch renderer. This merges one validated key.
+
+        An unavailable choice is stored and *reported as a downgrade* rather than
+        refused. Refusing it would mean the setting cannot be made before the toolset
+        is installed, and the honest failure here is not "you may not want this" — it is
+        that the operator never found out they were not getting it.
+        """
+        from ..desktop import toolchain
+        from ..render.backends import BACKENDS, backend_for
+
+        wanted = str(backend or "").strip().lower()
+        if wanted not in BACKENDS:
+            return {"error": f"{wanted!r} is not a render backend. "
+                             f"Pick one of {sorted(BACKENDS)}."}
+
+        with self._session() as session:
+            user = self._user(session)
+            if user is None:
+                return {"error": "No account."}
+            row = self._channel(session, user, channel)
+            if row is None:
+                return {"error": f"No channel matching {channel!r}."}
+            profile = dict(row.style_profile or {})
+            profile["motion_backend"] = wanted
+            # Reassigned rather than mutated in place: the column is JSON, and
+            # SQLAlchemy does not see a mutation of the dict it handed out, so the
+            # commit would write nothing and the setting would appear to save.
+            row.style_profile = profile
+            session.commit()
+            name = row.name
+
+        resolved = backend_for(wanted).name
+        installed, absent = toolchain.extra_installed("motion")
+        downgraded = resolved != wanted
+        return {
+            "channel": name,
+            "motion_backend": wanted,
+            "will_use": resolved,
+            "downgraded": downgraded,
+            "why": (f"{wanted} is not installed here ({absent}), so renders fall back "
+                    f"to {resolved} until it is." if downgraded else ""),
+            "install": "" if installed or not downgraded else
+                       "Forgecast installs it — the Install button on the toolchain "
+                       "banner, or POST /api/setup/extras/motion.",
+        }
 
     # ------------------------------------------------------------------ research
 
@@ -989,6 +1246,376 @@ class Studio:
             files = sorted(p.name for p in path.rglob("*") if p.is_file())[:40]
             return {"path": str(path), "files": files, "count": len(files)}
         return {"path": str(base)}
+
+    # --------------------------------------------------------- supplied footage
+
+    # Forgecast generates: topic in, brief, script, shot list, render. `ingest`, `edit`
+    # and `layers` are the way in from the other end — "here is a video, edit it" — and
+    # for as long as nothing imported them that direction existed on disk and nowhere
+    # else. These are its door. The separation the three packages keep is kept here
+    # too: `read_video` measures, `plan_edit` decides, and neither cuts anything.
+
+    @staticmethod
+    def _supplied(path: Any) -> tuple[Path | None, str]:
+        """A file the operator actually handed this install, or a refusal saying so.
+
+        Two roots, and both are needed: attachments land under the app root because
+        that is the only folder the agent is allowed to open, and a storage directory
+        pointed somewhere else entirely is a supported install rather than an oddity.
+
+        Confined to them on purpose. Everything here is reachable over HTTP by a
+        signed-in account, and "measure this video" that accepts any absolute path is a
+        file-existence oracle for the whole disk.
+        """
+        # Lazily, because `assistant` imports this module — at call time it is loaded
+        # and the cycle cannot form.
+        from .assistant import APP_ROOT
+
+        raw = str(path or "").strip()
+        if not raw:
+            return None, "no file was named"
+        roots = [APP_ROOT.resolve(), get_settings().storage_dir.resolve()]
+        try:
+            resolved = Path(raw).expanduser().resolve()
+        except (OSError, RuntimeError):
+            return None, f"{raw} is not a path this can open"
+        if not any(resolved == root or root in resolved.parents for root in roots):
+            return None, (f"{raw} is outside this install. Attach the file in the chat "
+                          f"and pass the path it comes back with.")
+        if not resolved.is_file():
+            return None, f"there is no file at {resolved}"
+        return resolved, ""
+
+    def editing_tools(self) -> dict:
+        """What this machine can measure and cut, before a file is handed over.
+
+        Asked first rather than discovered late. Dropping in a two-gigabyte video and
+        being told twenty seconds later that the transcription model is absent is the
+        exact shape of failure the `ingest` package refuses to have, so the answer is
+        available without a file and names the install for anything missing.
+        """
+        from ..desktop import toolchain
+        from ..ingest import available as readings_available
+        from ..layers import matte
+
+        readings = readings_available()
+        readings["subject cutout"] = matte.available()
+        installed, absent = toolchain.extra_installed("edit")
+        spec = toolchain.EXTRAS["edit"]
+
+        # Which installer fixes what, kept apart. The probe and the silence map need
+        # ffmpeg, which the app installs as part of the mandatory toolchain; the other
+        # three are the optional extra. Offering the 400 MB extra for a missing ffmpeg
+        # would be an install that does not fix the thing it was offered for.
+        needs_extra = [name for name in ("shots", "transcript", "subject cutout")
+                       if not readings[name][0]]
+        needs_ffmpeg = [name for name in ("probe", "silence")
+                        if not readings[name][0]]
+
+        return {
+            "can": sorted(name for name, (ok, _why) in readings.items() if ok),
+            "cannot": [{"reading": name, "why": why}
+                       for name, (ok, why) in sorted(readings.items()) if not ok],
+            "edit_extra": {
+                "key": "edit", "label": spec["label"], "installed": bool(installed),
+                "missing": absent, "megabytes": spec["megabytes"],
+                "gives": spec["gives"],
+            },
+            # Never a command to go and run. The app installs its own tools, and being
+            # handed homework instead was reported as a defect once already.
+            "install": "" if not needs_extra else
+                       f"Forgecast installs it ({spec['megabytes']} MB, once) — the "
+                       f"Install button on the toolchain banner, or "
+                       f"POST /api/setup/extras/edit.",
+            "install_ffmpeg": "" if not needs_ffmpeg else
+                              "ffmpeg is missing and everything here needs it. The "
+                              "Setup page installs it — POST /api/setup/install.",
+            "note": "A missing reading is not a blocked edit. What can be measured is "
+                    "measured, and the plan names what it could not see.",
+        }
+
+    def read_video(self, path: Any, *, want_transcript: bool = True,
+                   want_shots: bool = True, limit: int = 12) -> dict:
+        """Measure a supplied video. Decides nothing and changes nothing.
+
+        Partial results are the normal outcome and are returned as such — `missing`
+        names every reading that could not be taken and why. An edit built from three of
+        the four available readings is a worse edit; one that could not start at all is
+        no edit.
+        """
+        from .. import ingest
+
+        found, why = self._supplied(path)
+        if found is None:
+            return {"error": why}
+        try:
+            measured = ingest.read(found, want_transcript=bool(want_transcript),
+                                   want_shots=bool(want_shots))
+        except Exception as exc:
+            # The probe is the one reading with nothing to degrade to: a file that
+            # cannot be probed is not a video.
+            return {"error": f"Could not read {found.name}: "
+                             f"{type(exc).__name__}: {exc}"}
+
+        cap = max(1, min(int(limit or 12), 60))
+        return {
+            "path": str(found),
+            "summary": measured.summary(),
+            "seconds": measured.media.duration,
+            "frame": f"{measured.media.width}x{measured.media.height}",
+            "fps": measured.media.fps,
+            "shots": len(measured.shots),
+            "shots_per_minute": measured.shots_per_minute,
+            "quiet_seconds": measured.quiet_seconds,
+            "speech_seconds": measured.speech_seconds,
+            "lines": len(measured.lines),
+            "first_lines": [{"at": round(line.start, 2), "text": line.text}
+                            for line in measured.lines[:cap]],
+            "missing": list(measured.missing),
+            "next": "plan_edit on the same path writes the paper edit. Nothing is cut "
+                    "until you have read it and approved it.",
+        }
+
+    def plan_edit(self, path: Any, *, drop_fillers: bool = True) -> dict:
+        """Write the paper edit for a supplied video and save it to be argued with.
+
+        It does not cut, open an output file or spend anything. That is the whole design
+        of the package behind it: a plan costs nothing to produce, nothing to change and
+        nothing to throw away, and it fixes every expensive decision that comes after
+        it. An operator who can read "47s of silence across 38 gaps" corrects it in ten
+        seconds; the same operator watching a finished render has to describe what is
+        wrong with something already paid for.
+        """
+        from .. import ingest
+        from ..edit import tighten
+        from ..style import editing
+
+        found, why = self._supplied(path)
+        if found is None:
+            return {"error": why}
+        try:
+            measured = ingest.read(found)
+        except Exception as exc:
+            return {"error": f"Could not read {found.name}: "
+                             f"{type(exc).__name__}: {exc}"}
+        plan = tighten(measured, drop_fillers=bool(drop_fillers))
+
+        with self._session() as session:
+            user = self._user(session)
+            if user is None:
+                return {"error": "No account."}
+            owner = user.id
+
+        plan_id = f"{editing.slug(found.stem)}-{secrets.token_hex(3)}"
+        record = {
+            "id": plan_id,
+            # The owner travels with the plan, because these are files rather than rows
+            # and there is no foreign key to lean on. Every read filters on it.
+            "user_id": owner,
+            "source": str(found),
+            "state": "drafted",
+            "note": "",
+            "plan": plan.as_dict(),
+            "markdown": plan.as_markdown(),
+            "measured": measured.summary(),
+        }
+        (edits_dir() / f"{plan_id}.json").write_text(
+            json.dumps(record, indent=2), encoding="utf-8")
+
+        return {
+            "plan_id": plan_id,
+            "source": str(found),
+            "original_seconds": plan.original_seconds,
+            "final_seconds": plan.final_seconds,
+            "removed_seconds": plan.removed_seconds,
+            "tightened_by": plan.tightened_by,
+            "cuts": len([item for item in plan.decisions if item.action != "keep"]),
+            "unknown": list(plan.unknown),
+            "markdown": plan.as_markdown(),
+            "state": "drafted",
+            "next": "Nothing has been cut. Show this to the operator and let them "
+                    "approve or reject it — approve_edit is theirs to call, not yours.",
+        }
+
+    def edit_plans(self, plan_id: str = "", *, limit: int = 20) -> dict:
+        """The saved paper edits, or one of them in full. Reads only."""
+        with self._session() as session:
+            user = self._user(session)
+            if user is None:
+                return {"error": "No account."}
+            owner = user.id
+
+        wanted = str(plan_id or "").strip()
+        if wanted:
+            record = self._edit_record(wanted, owner)
+            if record is None:
+                return {"error": f"No edit plan {wanted!r}."}
+            return {"plan_id": record["id"], "source": record["source"],
+                    "state": record["state"], "note": record.get("note", ""),
+                    "measured": record.get("measured", ""),
+                    "markdown": record["markdown"], **record["plan"]}
+
+        rows = []
+        for record in self._edit_records(owner):
+            body = record.get("plan") or {}
+            rows.append({"plan_id": record["id"], "source": record["source"],
+                         "state": record["state"],
+                         "original_seconds": body.get("original_seconds"),
+                         "final_seconds": body.get("final_seconds"),
+                         "tightened_by": body.get("tightened_by")})
+        rows = rows[:max(1, min(int(limit or 20), 100))]
+        return {"plans": rows, "count": len(rows)}
+
+    def approve_edit(self, plan_id: str, *, approve: bool = True,
+                     note: str = "") -> dict:
+        """Accept or reject a paper edit. The operator's call, never the agent's.
+
+        This is the gate, and it sits here rather than beside a cutting function because
+        this app puts gates on the stage that *determines* the spend, not the stage that
+        incurs it. Everything expensive downstream is committed to by this decision, and
+        it is reversible up to the moment it is taken.
+        """
+        with self._session() as session:
+            user = self._user(session)
+            if user is None:
+                return {"error": "No account."}
+            owner = user.id
+
+        wanted = str(plan_id or "").strip()
+        record = self._edit_record(wanted, owner)
+        if record is None:
+            known = [row["plan_id"] for row in self.edit_plans().get("plans", [])]
+            # The ids that do exist go in the sentence, not beside it. Asking for the
+            # right one is the only sensible next move, and the MCP wrapper drops every
+            # key but `error`.
+            return {"error": f"No edit plan {wanted!r}. These exist: "
+                             f"{', '.join(known) or 'none yet'}.",
+                    "plans": known}
+
+        record["state"] = "approved" if approve else "rejected"
+        record["note"] = str(note or "")
+        (edits_dir() / f"{record['id']}.json").write_text(
+            json.dumps(record, indent=2), encoding="utf-8")
+
+        body = record.get("plan") or {}
+        return {
+            "plan_id": record["id"], "state": record["state"],
+            "source": record["source"], "note": record["note"],
+            "final_seconds": body.get("final_seconds"),
+            "keeps": [item for item in (body.get("decisions") or [])
+                      if item.get("action") == "keep"] if approve else [],
+            # Said plainly rather than implied. The plan is a decision, and this install
+            # has no stage that cuts a supplied video from one — so an approval that
+            # reported "done" would be the app claiming work it has not done.
+            "note_to_reader": (
+                "Approved. The kept spans are the plan a cutting stage would execute; "
+                "nothing has been cut yet." if approve else
+                "Rejected. Say what was wrong and plan_edit can be run again with "
+                "different thresholds."),
+        }
+
+    @staticmethod
+    def _edit_records(owner: int) -> list[dict]:
+        """Every plan this account owns, newest first."""
+        rows: list[dict] = []
+        for path in sorted(edits_dir().glob("*.json"),
+                           key=lambda item: item.stat().st_mtime, reverse=True):
+            try:
+                record = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):                              # pragma: no cover
+                continue
+            if int(record.get("user_id") or 0) == int(owner):
+                rows.append(record)
+        return rows
+
+    @staticmethod
+    def _edit_record(plan_id: str, owner: int) -> dict | None:
+        """One plan, by id, for this account only.
+
+        The id is never joined onto a path directly — it arrives from a model or a
+        request body, and `../../.env` is a valid string. It is matched against the ids
+        of the files this account owns instead.
+        """
+        for record in Studio._edit_records(owner):
+            if str(record.get("id")) == str(plan_id):
+                return record
+        return None
+
+    def cut_subject(self, image: Any, *, text: str = "", background: Any = None,
+                    out: str = "") -> dict:
+        """Lift the subject onto its own layer, and optionally put a title behind it.
+
+        A refused matte is a result, not an error. Hair, motion blur and soft edges are
+        where automatic segmentation fails, and it fails by leaving a fringe the eye
+        catches instantly — so a bad cutout falls back to the plain still and says why,
+        which is the same degradation the renderer already does when an animation fails.
+        """
+        from ..layers import cut, matte, text_behind
+
+        ok, why = matte.available()
+        if not ok:
+            # The offer goes *inside* the sentence. The MCP wrapper sends `error` as the
+            # whole tool result and drops every sibling key, so a next step kept in one
+            # is a next step the agent never reads — and it then reports the feature as
+            # unavailable full stop, which is how a 400 MB install nobody was offered
+            # becomes a capability nobody has.
+            spec = self._install_hint("edit")
+            return {"error": f"{why}. {spec['install']}", **spec}
+
+        source, complaint = self._supplied(image)
+        if source is None:
+            return {"error": complaint}
+
+        stem = str(out or "").strip() or f"{source.stem}-{secrets.token_hex(3)}"
+        target = layers_dir() / f"{Path(stem).name}.png"
+        try:
+            result = cut(source, target)
+        except Exception as exc:                                      # pragma: no cover
+            return {"error": f"Could not cut {source.name}: "
+                             f"{type(exc).__name__}: {exc}"}
+
+        answer = {**result.as_dict(), "composited": ""}
+        if not result.usable:
+            answer["next"] = ("Use the plain still. A fringed cutout reads as cheaper "
+                              "than no cutout at all, which is why this one is refused.")
+            return answer
+
+        wanted = str(text or "").strip()
+        if wanted:
+            plate = None
+            if background is not None:
+                plate, complaint = self._supplied(background)
+                if plate is None:
+                    return {**answer, "error": complaint}
+            layered = text_behind(result.path, layers_dir() / f"{Path(stem).name}-title",
+                                  wanted, background=plate)
+            answer["composited"] = layered.path
+            answer["layers"] = layered.layers
+        answer["next"] = ("Open the file to check the edge before it goes in a video."
+                          if not wanted else
+                          "The subject occludes the title — check the overlap reads as "
+                          "deliberate rather than as a mistake.")
+        return answer
+
+    @staticmethod
+    def _install_hint(extra: str) -> dict:
+        """The offer that replaces a command to go and run.
+
+        Offered whenever the capability is missing, and deliberately not conditioned on
+        the toolset reporting itself installed. The two disagree in the case that
+        matters — a stale virtualenv is recorded as installed and imports nothing — and
+        the branch that trusts the record is the branch that hands the operator a reason
+        with no next step.
+        """
+        from ..desktop import toolchain
+
+        spec = toolchain.EXTRAS.get(extra) or {}
+        return {
+            "extra": extra,
+            "install": f"Forgecast installs it ({spec.get('megabytes', 0)} MB, once) — "
+                       f"the Install button on the toolchain banner, or "
+                       f"POST /api/setup/extras/{extra}.",
+        }
 
     # -------------------------------------------------------------------- skills
 
