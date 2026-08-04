@@ -157,11 +157,12 @@ CATALOGUE: tuple[ConnectorSpec, ...] = (
         # dashboard has no API section read the whole row as unavailable to them and
         # said so. The key is still accepted and is now named as the exception it is.
         where="The URL is already filled in and there is nothing to paste. Press Sign "
-              "in: a terminal opens, you approve it with the Google account you use for "
-              "NexLev, and the agent inherits that session through the same CLI it runs "
-              "through. Leave the token box empty. If your account does happen to issue "
-              "an API key — one starting with `nlv_`, under API access — that works too, "
-              "but a session cookie, a JWT or a password will all be refused.",
+              "in: a terminal opens and your browser follows, where you approve it with "
+              "the Google account you use for NexLev. The grant is stored by the Claude "
+              "CLI the agent runs through, so leave the token box empty. If your account "
+              "does happen to issue an API key — one starting with `nlv_`, under API "
+              "access — that works too, but a session cookie, a JWT or a password will "
+              "all be refused.",
         docs="Once connected, ask for outliers in a niche and I will query NexLev "
              "directly instead of asking you to paste numbers. A 401 on Test means the "
              "connection reached NexLev and the credential was not the one it wanted; "
@@ -581,13 +582,18 @@ def start_browser_signin(key: str, url: str = "") -> tuple[bool, str]:
     Returns (opened, message). The message is shown verbatim, so it says what to do
     next rather than reporting an internal state.
 
-    **This does not itself open a browser, and an earlier version of this docstring
-    said it did.** `claude mcp add` registers the server and returns immediately;
-    the authorisation happens on first connect, inside an interactive `claude`
-    session, which is why the terminal it opens runs `claude` afterwards and why the
-    message tells the operator to approve it there. Claiming a browser flow that never
-    appeared left the operator watching for a window that was not coming, next to a
-    connector the page had already marked green.
+    **It opens a browser.** That took three attempts to get right and the history is
+    worth keeping, because two of them were wrong in opposite directions.
+
+    The first version claimed a browser flow it did not have. The second corrected the
+    claim but not the behaviour: it ran `claude mcp add`, which *registers* a server and
+    returns immediately, and then told the operator to start `claude` themselves and
+    approve it when asked — homework, in the window a button had just opened for them.
+
+    The CLI has had `claude mcp login <name>` all along: "Authenticate with an MCP server
+    (HTTP, SSE, or claude.ai connector)", and it opens a browser unless told not to. So
+    the terminal runs both — add to register, login to authorise — and the operator sees
+    a browser tab, which is what pressing Sign in should produce.
     """
     from . import auth, terminal
 
@@ -624,16 +630,24 @@ def start_browser_signin(key: str, url: str = "") -> tuple[bool, str]:
         return False, ("This runs through the Claude Code CLI, which was not found. "
                        f"Install it: {auth.INSTALL_HINT}")
 
-    # `mcp add` registers it; `claude` is what actually authorises it, on first connect.
-    # Both in one terminal, in that order, so the operator finishes the job in the window
-    # the button opened rather than being told to go and start a session themselves.
-    script = [cli, "mcp", "add", "--transport", spec.transport, "--scope", "user",
-              key, endpoint]
+    # Two commands, in one terminal, in this order. `mcp add` registers the server;
+    # `mcp login` is what opens the browser and completes the OAuth exchange. Only
+    # running the first left a registered-but-unauthorised entry, which is precisely the
+    # state `cli_servers` filters out — so the button reported success and the row stayed
+    # grey, and pressing Test then returned a 401 nobody could act on.
+    #
+    # `add` is allowed to fail: re-signing in to a connector that is already registered
+    # is an ordinary thing to do, and `add` refuses a duplicate name. `;` rather than
+    # `&&` so the login still runs in that case, which is the whole point of pressing the
+    # button a second time.
     return terminal.open_terminal(
-        script,
-        done=(f"A terminal opened and registered {spec.label}. It is not authorised "
-              "yet: run `claude` in that window and approve it when it asks — that is "
-              "where the sign-in happens. Then press Test here."),
-        manual=(f"No terminal emulator was found to open. Run this yourself to add "
-                f"{spec.label}, then run `claude` and approve it when it asks:"),
+        [cli, "mcp", "add", "--transport", spec.transport, "--scope", "user",
+         key, endpoint],
+        then=[cli, "mcp", "login", key],
+        done=(f"A terminal opened and a browser tab should follow — approve {spec.label} "
+              "there with the account you use for it. The grant is stored by the Claude "
+              "CLI, which the agent runs through, so there is nothing to paste back "
+              "here. Press Test when the browser says it is done."),
+        manual=(f"No terminal emulator was found to open. Run these two yourself to "
+                f"connect {spec.label} — the second opens your browser:"),
     )

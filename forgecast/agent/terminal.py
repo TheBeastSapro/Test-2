@@ -77,25 +77,46 @@ _LINUX_TERMINALS = (
 _SETTLE_SECONDS = 1.5
 
 
+def _both(argv: list[str], then: list[str] | None) -> str:
+    """Both commands as a person would type them, one per line."""
+    lines = [command_line(argv)]
+    if then:
+        lines.append(command_line(then))
+    return "\n    ".join(lines)
+
+
 def command_line(argv: list[str]) -> str:
     """The command as a person would type it, for a message that has to name it."""
     return shlex.join(argv)
 
 
-def _script_file(argv: list[str]) -> Path:
-    """The command, as a file a terminal can be pointed at.
+def _script_file(argv: list[str], then: list[str] | None = None) -> Path:
+    """The command — or two of them — as a file a terminal can be pointed at.
 
     Written rather than interpolated. See the module docstring — this function is the
     whole defence, and the reason it exists is a proved injection.
+
+    `then` runs after `argv` **whether or not it succeeded**, which is deliberate and is
+    the reason it is a second argv rather than something the caller joins itself. The
+    pair this exists for is `claude mcp add` followed by `claude mcp login`: `add`
+    refuses a name that is already registered, and re-signing in to a connector you
+    already added is an ordinary thing to do. Chaining on success would make the second
+    press of the button do nothing, which is exactly when it is pressed.
     """
     if os.name == "nt":
         # One argument per line, each quoted by `list2cmdline`, which is the encoding
         # `cmd` itself uses for an argv. No metacharacter reaches the parser unquoted
         # because nothing is concatenated into a command line here.
-        body = "@echo off\r\n" + subprocess.list2cmdline(argv) + "\r\n"
+        lines = ["@echo off", subprocess.list2cmdline(argv)]
+        if then:
+            lines.append(subprocess.list2cmdline(then))
+        body = "\r\n".join(lines) + "\r\n"
         suffix = ".cmd"
     else:
-        body = "#!/bin/sh\n" + shlex.join(argv) + "\n"
+        lines = ["#!/bin/sh", shlex.join(argv)]
+        if then:
+            lines.append(shlex.join(then))
+        body = "\n".join(lines) + "\n"
         suffix = ".sh"
 
     # `delete=False` because the terminal reads this file after we return; the OS
@@ -130,8 +151,9 @@ def _launched(process: subprocess.Popen) -> tuple[bool, str]:
     return False, f"the terminal launcher exited with code {code}"
 
 
-def open_terminal(argv: list[str], *, done: str, manual: str) -> tuple[bool, str]:
-    """Run `argv` in a console the operator can see.
+def open_terminal(argv: list[str], *, done: str, manual: str,
+                  then: list[str] | None = None) -> tuple[bool, str]:
+    """Run `argv` — and then `then` — in a console the operator can see.
 
     `done` is what to say when a window opened; `manual` is the instruction to put above
     the command when no terminal could be opened. Both are passed in because the sentence
@@ -141,7 +163,7 @@ def open_terminal(argv: list[str], *, done: str, manual: str) -> tuple[bool, str
     if not argv:                                                      # pragma: no cover
         return False, "Nothing to run."
 
-    script = _script_file(argv)
+    script = _script_file(argv, then)
     try:
         if os.name == "nt":
             process = subprocess.Popen(
@@ -155,7 +177,7 @@ def open_terminal(argv: list[str], *, done: str, manual: str) -> tuple[bool, str
             chosen = next(((name, flag) for name, flag in _LINUX_TERMINALS
                            if shutil.which(name)), None)
             if chosen is None:
-                return False, f"{manual}\n\n    {command_line(argv)}"
+                return False, f"{manual}\n\n    {_both(argv, then)}"
             name, flag = chosen
             process = subprocess.Popen([name, flag, "/bin/sh", str(script)])
     except OSError as exc:
@@ -164,5 +186,5 @@ def open_terminal(argv: list[str], *, done: str, manual: str) -> tuple[bool, str
     ok, why = _launched(process)
     if not ok:
         return False, (f"A terminal could not be opened ({why}). Run this yourself:"
-                       f"\n\n    {command_line(argv)}")
+                       f"\n\n    {_both(argv, then)}")
     return True, done

@@ -775,10 +775,10 @@ def _why_unauthorised(response, had_token: bool) -> str:
         # the only instruction on screen and it cannot be followed.
         lines.append(
             "That is an OAuth challenge: this service wants a browser sign-in, not a "
-            "pasted key. Press Sign in at the top of this card — a terminal opens, you "
-            "approve it in your browser, and the agent inherits that session. Many "
-            "services issue no API key at all, so this is often the only way in and the "
-            "token box below can be left empty.")
+            "pasted key. Press Sign in at the top of this card — a terminal opens and "
+            "your browser follows, and the agent inherits the grant it leaves behind. "
+            "Many services issue no API key at all, so this is often the only way in "
+            "and the token box can stay empty.")
     elif had_token:
         lines.append(
             "A token was sent and was not accepted. Check it is the kind of credential "
