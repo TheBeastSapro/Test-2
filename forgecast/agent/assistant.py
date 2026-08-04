@@ -37,6 +37,8 @@ import logging
 from collections.abc import AsyncIterator
 from pathlib import Path
 
+from claude_agent_sdk import PermissionResultAllow, PermissionResultDeny
+
 from . import auth, connectors, setup_notice, tools
 from .studio import Studio
 
@@ -161,6 +163,38 @@ def _connector_note() -> str:
             "one an answer came from.\n\n")
 
 
+async def connector_permission(tool_name: str, tool_input: dict, context):
+    """Answer the SDK's permission question for a connector's tool.
+
+    Three outcomes, and each is a decision the operator can see and change on
+    Settings → Connectors:
+
+    * **allow** — the default for a service they went and connected. Asking every time
+      is what the app was effectively doing by granting nothing, and the result was not
+      a careful operator approving each call.
+    * **deny** — refused with the reason, so the agent can say which connector is off
+      and carry on rather than retrying a call that will never be permitted.
+    * **ask** — nothing here can ask yet, so it is refused *and says so*: it names the
+      connector and points at the page that grants it. A refusal that explains itself is
+      recoverable in one click; a silent cancellation is the bug this replaced.
+
+    Anything that is not a connector tool falls through to `permission_mode`, which is
+    the CLI's own model for file edits and shell commands and is not this app's to
+    second-guess.
+    """
+    decision, why = connectors.Store.load().decide(tool_name)
+    if decision == "allow":
+        return PermissionResultAllow()
+    bare = str(tool_name or "").split("__")[-1]
+    if decision == "ask":
+        return PermissionResultDeny(
+            message=(f"{bare} needs permission and this app cannot prompt for one "
+                     f"mid-turn. Grant it on Settings → Connectors ({why}), then ask "
+                     f"again. Say that to the operator rather than retrying."))
+    return PermissionResultDeny(
+        message=f"{bare} is not permitted: {why}. Tell the operator rather than retrying.")
+
+
 def build_options(*, studio: Studio, permission_mode: str = "default",
                   model: str | None = None, resume: str | None = None,
                   allow_web: bool = True, budget_usd: float | None = None):
@@ -190,6 +224,12 @@ def build_options(*, studio: Studio, permission_mode: str = "default",
         add_dirs=[],                                   # nothing outside the app root
         mcp_servers=servers,
         allowed_tools=list(tools.ALLOWED),
+        # Every server above hands the agent tools, and `allowed_tools` names only this
+        # app's own. Without this callback the rest need a permission prompt, and this
+        # app has no surface on which one can be shown or answered — so the CLI recorded
+        # them as `user cancelled MCP tool call` and the agent lost every connector it
+        # had. Nobody cancelled anything; there was nobody to ask.
+        can_use_tool=connector_permission,
         permission_mode=permission_mode,
         sandbox={
             "enabled": True,
@@ -260,6 +300,7 @@ async def run(prompt: str, *, studio: Studio, resume: str | None = None,
         AssistantMessage,
         CLINotFoundError,
         ResultMessage,
+        SystemMessage,
         TextBlock,
         ThinkingBlock,
         ToolResultBlock,
@@ -280,6 +321,15 @@ async def run(prompt: str, *, studio: Studio, resume: str | None = None,
     session_id = resume or ""
     try:
         async for message in query(prompt=prompt, options=options):
+            if isinstance(message, SystemMessage):
+                # The opening message names every tool the agent actually holds, fully
+                # namespaced. It is the only way to see inside a connector authorised by
+                # browser sign-in — that grant lives in the CLI, this app has no token
+                # for it, and cannot ask the server itself. Recorded so Settings can
+                # show what was granted rather than an empty list.
+                listed = (getattr(message, "data", None) or {}).get("tools")
+                if isinstance(listed, list):
+                    connectors.learn_session_tools([str(name) for name in listed])
             if isinstance(message, AssistantMessage):
                 fresh = getattr(message, "session_id", "") or ""
                 if fresh and fresh != session_id:

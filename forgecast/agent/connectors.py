@@ -90,6 +90,12 @@ from pathlib import Path
 from ..config import get_settings
 from ..crypto import decrypt, encrypt, mask
 
+# This app's own in-process MCP server. Named here rather than imported from
+# `agent.tools`, which imports the SDK — and this module is loaded to draw a settings
+# page, on a machine where the CLI may not be installed at all.
+# `tests/test_connector_permissions.py` asserts the two agree.
+OWN_SERVER = "forgecast"
+
 log = logging.getLogger("forgecast.agent.connectors")
 
 
@@ -264,6 +270,30 @@ class Connection:
     api_key: str = ""
     enabled: bool = True
     note: str = ""
+    # What this server actually offers, as it reported it: one row per tool with
+    # `name`, `title`, `description` and `read_only`. Stored rather than asked for on
+    # every page load because a `tools/list` is a network round trip to somebody else's
+    # server, and the answer changes about as often as the service ships a release.
+    tools: list[dict] = field(default_factory=list)
+    # Per-tool overrides: name -> allow | ask | deny. Sparse. Anything absent falls to
+    # `default_policy`, so connecting a service with sixty tools does not mean writing
+    # sixty rows to disk to say "yes, the thing I just connected".
+    policy: dict[str, str] = field(default_factory=dict)
+    default_policy: str = "allow"
+
+    def decide(self, tool_name: str) -> str:
+        """allow | ask | deny for one tool on this connector.
+
+        `allow` is the default for a connector the operator went and connected, and that
+        is a deliberate choice rather than laziness. The alternative — ask every time —
+        is what the app was effectively doing by never granting anything, and the result
+        was not a careful operator approving each call. It was every call dying as
+        `user cancelled MCP tool call`, because nothing in this app could show the
+        prompt or answer it.
+        """
+        bare = str(tool_name or "").rsplit("__", 1)[-1]
+        choice = self.policy.get(bare) or self.policy.get(tool_name) or self.default_policy
+        return choice if choice in {"allow", "ask", "deny"} else "allow"
 
     @property
     def spec(self) -> ConnectorSpec:
@@ -316,7 +346,16 @@ class Connection:
                 "api_ready": self.api_ready,
                 "connected": self.mcp_ready or self.api_ready,
                 "enabled": self.enabled,
-                "note": self.note}
+                "note": self.note,
+                # What the agent will be able to call, and whether it may. On the row
+                # rather than behind a second request because this is the thing the
+                # operator is agreeing to when they connect a service, and a permission
+                # you have to go and look for is one nobody looks for.
+                "tools": [{**row, "decision": self.decide(row.get("name", ""))}
+                          for row in self.tools],
+                "tool_count": len(self.tools),
+                "default_policy": self.default_policy,
+                "policy": dict(self.policy)}
 
 
 @dataclass
@@ -358,6 +397,13 @@ class Store:
             store.connections[key] = Connection(
                 key=key, url=entry.get("url", ""), token=token,
                 enabled=bool(entry.get("enabled", True)), note=entry.get("note", ""),
+                tools=[row for row in (entry.get("tools") or []) if isinstance(row, dict)],
+                policy={str(k): str(v) for k, v in (entry.get("policy") or {}).items()},
+                # An entry written before this field existed is a connector the operator
+                # already connected, and the app was already handing its server to the
+                # agent. Defaulting it to `ask` on upgrade would silently turn a working
+                # connector off, so it reads as the same permission it effectively had.
+                default_policy=str(entry.get("default_policy") or "allow"),
             )
         return store
 
@@ -365,7 +411,9 @@ class Store:
         payload = {"connectors": {
             key: {"url": conn.url,
                   "token": encrypt(conn.token) if conn.token else "",
-                  "enabled": conn.enabled, "note": conn.note}
+                  "enabled": conn.enabled, "note": conn.note,
+                  "tools": conn.tools, "policy": conn.policy,
+                  "default_policy": conn.default_policy}
             for key, conn in self.connections.items()
         }}
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -381,9 +429,80 @@ class Store:
         if not token and existing is not None:
             token = existing.token
         conn = Connection(key=key, url=url, token=token.strip(), enabled=enabled)
+        if existing is not None:
+            # Carried across a re-save, because saving the row is how the URL gets
+            # corrected and a corrected URL must not silently re-grant sixty tools the
+            # operator had narrowed down. The inventory is cleared when the endpoint
+            # itself changes — a different server's tool list is not this one's.
+            conn.policy = dict(existing.policy)
+            conn.default_policy = existing.default_policy
+            conn.tools = list(existing.tools) if existing.url == conn.url else []
         self.connections[key] = conn
         self.save()
         return conn
+
+    def remember_tools(self, key: str, rows: list[dict]) -> Connection | None:
+        """Record what a server said it offers. Called after a probe or a live session.
+
+        Merged rather than replaced so a tool that disappeared from one listing — a
+        server mid-deploy, a partial answer — does not silently drop the operator's
+        decision about it. A name that comes back later finds its policy still there.
+        """
+        conn = self.connections.get(key)
+        if conn is None:
+            return None
+        seen = {str(row.get("name") or ""): row for row in conn.tools}
+        for row in rows:
+            name = str(row.get("name") or "").strip()
+            if name:
+                seen[name] = {**seen.get(name, {}), **row, "name": name}
+        conn.tools = sorted(seen.values(), key=lambda row: row["name"])
+        self.save()
+        return conn
+
+    def set_policy(self, key: str, *, default: str = "", tools: dict | None = None
+                   ) -> Connection | None:
+        """Change what this connector's tools are allowed to do."""
+        conn = self.connections.get(key)
+        if conn is None:
+            return None
+        if default in {"allow", "ask", "deny"}:
+            conn.default_policy = default
+        for name, choice in (tools or {}).items():
+            if choice in {"allow", "ask", "deny"}:
+                conn.policy[str(name)] = choice
+            else:
+                conn.policy.pop(str(name), None)
+        self.save()
+        return conn
+
+    def decide(self, tool_name: str) -> tuple[str, str]:
+        """`(decision, why)` for a namespaced tool name like `mcp__nexlev__youtube_search`.
+
+        The single place that answers "may the agent call this", so the page that shows
+        a permission and the callback that enforces it cannot disagree — which is the
+        failure this whole mechanism replaced, in a different form.
+        """
+        parts = str(tool_name or "").split("__")
+        if len(parts) < 3 or parts[0] != "mcp":
+            return "allow", "not a connector tool"
+        server = parts[1]
+        if server == OWN_SERVER:
+            # This app's own tools, governed by `tools.ALLOWED` and by the gates that
+            # deliberately keep `decide_gate` and `approve_edit` out of it. Falling
+            # through to the unknown-server branch below would answer `ask` for
+            # `studio_status` — which is the reported bug exactly, re-created by the
+            # mechanism built to fix it.
+            return "allow", "this app's own tool"
+        conn = self.connections.get(server)
+        if conn is None:
+            # A server the agent holds that this app has no row for. It got there
+            # somehow — a `claude mcp add` run by hand, most likely — and the honest
+            # answer is to ask rather than to assume either way.
+            return "ask", f"{server} is not a connector this app configured"
+        if not conn.enabled:
+            return "deny", f"{conn.spec.label} is switched off in Settings → Connectors"
+        return conn.decide(parts[-1]), f"{conn.spec.label} policy"
 
     def remove(self, key: str) -> bool:
         if key in self.connections:
@@ -484,6 +603,134 @@ def active_servers() -> dict[str, dict]:
     except Exception:                                  # pragma: no cover
         log.exception("could not load connectors — the agent will run without them")
         return {}
+
+
+# --------------------------------------------------------------- what a server offers
+#
+# The bug this exists to close. `active_servers()` hands the SDK every connected server,
+# and `allowed_tools` only ever listed this app's own tools — so a connector's tools were
+# never granted. In `default` permission mode the CLI then asks, and this app has no
+# surface on which a permission can be asked or answered, so every call came back as
+# `user cancelled MCP tool call`. Nobody cancelled it. There was nobody to ask.
+#
+# Two halves fix that and both are needed. `probe_tools` finds out what a server offers,
+# so the operator can see what they are granting at the moment they connect it. `decide`
+# above answers the SDK's `can_use_tool`, so a call is allowed or refused with a reason
+# instead of dying silently.
+
+
+def _tool_rows(payload: dict) -> list[dict]:
+    """`tools/list` output as rows this app stores.
+
+    `read_only` comes from the MCP `readOnlyHint` annotation where the server sets one.
+    Most do not, and `None` is kept as "did not say" rather than being flattened to
+    false — a page that labels sixty unannotated tools "writes" is a page that makes the
+    operator switch off a connector that only reads.
+    """
+    rows = []
+    for tool in (payload.get("tools") or []):
+        if not isinstance(tool, dict) or not tool.get("name"):
+            continue
+        hints = tool.get("annotations") or {}
+        rows.append({
+            "name": str(tool["name"]),
+            "title": str(tool.get("title") or hints.get("title") or ""),
+            "description": " ".join(str(tool.get("description") or "").split())[:300],
+            "read_only": hints.get("readOnlyHint"),
+        })
+    return sorted(rows, key=lambda row: row["name"])
+
+
+def _decode_mcp(text: str) -> dict:
+    """One JSON-RPC result out of a body that may be JSON or an SSE stream.
+
+    MCP over HTTP is allowed to answer either way, and which one arrives depends on the
+    server rather than on anything asked for — so a reader that only handles JSON works
+    against half of them and reports the other half as unreachable.
+    """
+    body = text.strip()
+    if body.startswith("{"):
+        with contextlib.suppress(ValueError):
+            return json.loads(body).get("result") or {}
+    for line in body.splitlines():
+        if line.startswith("data:"):
+            with contextlib.suppress(ValueError):
+                found = json.loads(line[5:].strip())
+                if isinstance(found, dict) and "result" in found:
+                    return found["result"] or {}
+    return {}
+
+
+async def probe_tools(conn: Connection, *, timeout: float = 20.0) -> tuple[list[dict], str]:
+    """Ask a connector's server what tools it has. `(rows, why_not)`.
+
+    Never raises: an unreachable server, an expired grant and a service that answers in a
+    shape this does not recognise are all "cannot tell", and the page says so rather than
+    showing an empty list that reads as "this connector has no tools".
+
+    It cannot see a connector authorised by browser sign-in, and that is not a defect to
+    work around here: that grant lives in the Claude CLI under user scope, this app holds
+    no token for it, and a request made without one can only come back 401. Those are
+    filled in from the live session instead — see `remember_tools`.
+    """
+    import httpx
+
+    if not conn.url:
+        return [], "no server URL"
+    if not conn.token:
+        return [], ("signed in through the Claude CLI, so this app has no token to ask "
+                    "with — the tool list is filled in the first time the agent runs")
+
+    config = conn.as_mcp()
+    headers = {"Content-Type": "application/json",
+               "Accept": "application/json, text/event-stream",
+               **config.get("headers", {})}
+    hello = {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+             "params": {"protocolVersion": "2025-06-18", "capabilities": {},
+                        "clientInfo": {"name": "forgecast", "version": "0.1.0"}}}
+    try:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+            first = await client.post(conn.url, json=hello, headers=headers)
+            if first.status_code >= 400:
+                return [], f"the server answered {first.status_code} to the handshake"
+            # The session id, when the server issues one. Sending `tools/list` without it
+            # is a fresh unauthenticated request as far as a stateful server is concerned.
+            session = first.headers.get("mcp-session-id", "")
+            if session:
+                headers["Mcp-Session-Id"] = session
+            listed = await client.post(
+                conn.url, headers=headers,
+                json={"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
+            if listed.status_code >= 400:
+                return [], f"the server answered {listed.status_code} to tools/list"
+            rows = _tool_rows(_decode_mcp(listed.text))
+            return rows, "" if rows else "the server listed no tools"
+    except Exception as exc:                           # pragma: no cover - network
+        return [], f"{type(exc).__name__}: {exc}"
+
+
+def learn_session_tools(names: list[str]) -> None:
+    """Record the connector tools a live session reported holding.
+
+    The other half of discovery, and the only one that works for a browser sign-in. The
+    SDK's opening message names every tool the agent has, fully namespaced; anything
+    `mcp__<connector>__<tool>` belongs to a connector this app configured, and a name is
+    enough to show and to govern even when no description came with it.
+    """
+    found: dict[str, list[dict]] = {}
+    for name in names:
+        parts = str(name or "").split("__")
+        if len(parts) >= 3 and parts[0] == "mcp":
+            found.setdefault(parts[1], []).append({"name": parts[-1]})
+    if not found:
+        return
+    try:
+        store = Store.load()
+        for server, rows in found.items():
+            if server in store.connections:
+                store.remember_tools(server, rows)
+    except Exception:                                  # pragma: no cover
+        log.exception("could not record the tools this session reported")
 
 
 # ------------------------------------------------------------ the browser sign-in

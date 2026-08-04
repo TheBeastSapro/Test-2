@@ -131,6 +131,33 @@
             <p class="conn-where">Where to find it: {{ item.where }}</p>
             {% if item.docs %}<p class="conn-where">{{ item.docs }}</p>{% endif %}
 
+            {#- What connecting this actually grants, on the row that grants it.
+                Painted from /api/connectors rather than rendered here, because the tool
+                list arrives from somebody else's server and a page that waits on it is a
+                page that hangs when they are slow.
+
+                It exists because the permission was invisible AND ungranted. Every
+                connector's tools needed an approval this app had no way to show or to
+                answer, so each call came back "user cancelled MCP tool call" — the
+                agent lost every connector it had, and nothing on this page said why. -#}
+            {% if item.kind != 'api' %}
+              <div class="conn-perms" data-role="perms" hidden>
+                <div class="conn-perms-head">
+                  <b>Tool permissions</b>
+                  <span class="conn-perms-count" data-role="perm-count"></span>
+                  <span class="grow"></span>
+                  <select data-role="perm-default" aria-label="What this connector may do">
+                    <option value="allow">Always allow</option>
+                    <option value="ask">Ask each time</option>
+                    <option value="deny">Never allow</option>
+                  </select>
+                </div>
+                <p class="conn-where" data-role="perm-note"></p>
+                <div class="conn-perms-list" data-role="perm-list" hidden></div>
+                <button class="btn-sm" data-role="perm-toggle" hidden>Show tools</button>
+              </div>
+            {% endif %}
+
             <div class="conn-form">
               {# An `api` connector has no server URL in existence. Asking for one
                  anyway is how a credential, a dashboard link or a guessed endpoint
@@ -708,14 +735,92 @@
     .then(r => r.json())
     .then(data => {
       for (const item of (data.connectors || [])) {
-        if (!item.cli_signed_in) continue;
         const row = document.querySelector(`.conn[data-key="${item.key}"]`);
         if (!row) continue;
-        row.querySelector('[data-role="cli"]').hidden = false;
-        row.querySelector('.dot').className = 'dot dot-ok';
+        if (item.cli_signed_in) {
+          row.querySelector('[data-role="cli"]').hidden = false;
+          row.querySelector('.dot').className = 'dot dot-ok';
+        }
+        paintPerms(row, item);
       }
     })
     .catch(() => {});
+
+  /* What connecting this granted. Every connector, not just the one that happened to
+     be looked at — the whole point is that the operator can see what the agent may
+     call, on the row where they agreed to it. */
+  function paintPerms(row, item) {
+    const box = row.querySelector('[data-role="perms"]');
+    if (!box || !item.connected) return;
+    box.hidden = false;
+
+    const tools = item.tools || [];
+    const count = row.querySelector('[data-role="perm-count"]');
+    const note = row.querySelector('[data-role="perm-note"]');
+    const list = row.querySelector('[data-role="perm-list"]');
+    const toggle = row.querySelector('[data-role="perm-toggle"]');
+    const choice = row.querySelector('[data-role="perm-default"]');
+
+    choice.value = item.default_policy || 'allow';
+    choice.onchange = async () => {
+      await fetch(`/api/connectors/${item.key}/policy`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({default: choice.value}),
+      });
+      toast(`${item.label}: ${choice.selectedOptions[0].textContent.toLowerCase()}`);
+    };
+
+    count.textContent = tools.length ? `${tools.length} tools` : '';
+    if (!tools.length) {
+      // Said out loud rather than left as an empty list, which reads as "this service
+      // has no tools" — the one thing it certainly is not.
+      note.textContent = 'Reading what this offers…';
+      discoverTools(row, item);
+      return;
+    }
+    note.textContent = '';
+    toggle.hidden = false;
+    toggle.onclick = () => {
+      list.hidden = !list.hidden;
+      toggle.textContent = list.hidden ? 'Show tools' : 'Hide tools';
+    };
+    list.innerHTML = tools.map(t => `
+      <div class="conn-tool">
+        <span class="conn-tool-name">${esc(t.title || t.name)}</span>
+        <span class="grow"></span>
+        <select data-tool="${esc(t.name)}">
+          <option value="">Same as connector</option>
+          <option value="allow">Always allow</option>
+          <option value="ask">Ask each time</option>
+          <option value="deny">Never allow</option>
+        </select>
+      </div>`).join('');
+    for (const picker of list.querySelectorAll('select')) {
+      picker.value = (item.policy || {})[picker.dataset.tool] || '';
+      picker.onchange = () => fetch(`/api/connectors/${item.key}/policy`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tools: {[picker.dataset.tool]: picker.value || 'inherit'}}),
+      });
+    }
+  }
+
+  async function discoverTools(row, item) {
+    const note = row.querySelector('[data-role="perm-note"]');
+    try {
+      const r = await fetch(`/api/connectors/${item.key}/tools`, {method: 'POST'});
+      const fresh = await r.json();
+      if (fresh.tools && fresh.tools.length) { paintPerms(row, fresh); return; }
+      // A connector signed in through the browser cannot be read from here: the grant
+      // lives in the Claude CLI and this app holds no token to ask with. That is a
+      // sentence, not a failure — the list fills in the first time the agent runs.
+      note.textContent = fresh.why_not || 'Could not read its tool list.';
+    } catch (e) {
+      note.textContent = 'Could not read its tool list.';
+    }
+  }
+
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+    ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 
   async function testConnector(key) {
     const out = $(`#test-${key}`);

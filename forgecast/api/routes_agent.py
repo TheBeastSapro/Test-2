@@ -648,6 +648,52 @@ def drop_connector(key: str, _user: User = Depends(current_user)) -> None:
     connectors.Store.load().remove(key)
 
 
+@connector_router.post("/{key}/tools")
+async def discover_tools(key: str, _user: User = Depends(current_user)) -> dict:
+    """Ask this connector's server what it offers, and remember the answer.
+
+    Called when a connector is connected, because connecting one is the moment the
+    operator is agreeing to what it can do — and a permission nobody is shown is a
+    permission nobody gave. The app used to grant none of them and prompt for all of
+    them, on a page that has no prompt, so every connector tool call died as
+    `user cancelled MCP tool call`.
+
+    A connector authorised by browser sign-in cannot be probed from here: the grant
+    lives in the Claude CLI, this app holds no token, and a request without one comes
+    back 401. Those fill in from the first live session instead, which is what
+    `learn_session_tools` does. This says so rather than showing an empty list.
+    """
+    store = connectors.Store.load()
+    conn = store.connections.get(key)
+    if conn is None:
+        raise HTTPException(status_code=404, detail=f"{key} is not configured")
+    rows, why_not = await connectors.probe_tools(conn)
+    if rows:
+        store.remember_tools(key, rows)
+        store = connectors.Store.load()
+    updated = store.connections.get(key)
+    return {"ok": bool(rows), "why_not": why_not,
+            **(updated.as_dict() if updated else {})}
+
+
+@connector_router.post("/{key}/policy")
+def set_connector_policy(key: str, payload: dict | None = None,
+                         _user: User = Depends(current_user)) -> dict:
+    """Change what this connector's tools may do.
+
+    `default` covers everything the connector offers; `tools` is a sparse map of
+    name -> allow | ask | deny for the exceptions. Sending a choice that is none of the
+    three clears that tool's override rather than erroring — the page's "same as the
+    connector" option is exactly that, and it should not need a second endpoint.
+    """
+    body = payload or {}
+    conn = connectors.Store.load().set_policy(
+        key, default=str(body.get("default") or ""), tools=body.get("tools") or {})
+    if conn is None:
+        raise HTTPException(status_code=404, detail=f"{key} is not configured")
+    return conn.as_dict()
+
+
 @connector_router.post("/{key}/test")
 async def test_connector(key: str, _user: User = Depends(current_user)) -> dict:
     """Ask the server who it is. A saved URL that has never been reached is a guess.
