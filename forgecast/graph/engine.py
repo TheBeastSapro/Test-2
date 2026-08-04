@@ -71,9 +71,13 @@ class ChannelSnapshot:
     # method, which is what `scripting.prompt_block` falls back to anyway — so a snapshot
     # built by an older caller produces a script written to a method rather than to none.
     scripting_style: str = ""
-    # Which image-to-video model this channel's shots are generated on. Empty means the
-    # app default, which is what every run got before the choice existed.
+    # Which image-to-video models this channel's shots are generated on: the batch model
+    # every shot falls to, and the hero model for the beats the video is judged on. Empty
+    # `video_model` means the app default, which is what every run got before the choice
+    # existed; empty `video_model_hero` means no upgrade, so the plan routes every shot to
+    # the batch model and the run costs what it did before.
     video_model: str = ""
+    video_model_hero: str = ""
     # The frame and the rate this channel delivers at. Zero means the app default —
     # 1080p at 30fps. Both defaulted so every older construction of this snapshot keeps
     # working and means "let the app decide".
@@ -529,6 +533,7 @@ class GraphEngine:
                 voice_vendor=channel.voice_vendor or "",
                 scripting_style=channel.scripting_style or "",
                 video_model=channel.video_model or "",
+                video_model_hero=channel.video_model_hero or "",
                 video_height=int(channel.video_height or 0),
                 video_fps=int(channel.video_fps or 0),
             )

@@ -3,9 +3,9 @@
 > **Model reference — cost/strength notes, NOT a closed list.**
 >
 > A starting reference of i2v models known to work for these jobs, with per-second costs.
-> It is **not the full set**: fal hosts more. There *is* a blessed default in this app —
-> `DEFAULT_VIDEO_MODEL` — and it is the only one a render can currently use; see the note
-> under the table. If a model is named that isn't here, or something else suits the shot
+> It is **not the full set**: fal hosts more. A channel picks two of these — a batch model
+> and a hero model — and the planner routes each shot to one of them; see the note under
+> the table. If a model is named that isn't here, or something else suits the shot
 > better, **discover what's actually available and
 > use it** — list fal's video models or fetch the provider docs. **Never say a model is
 > unavailable just because it's absent from this table — verify first.**
@@ -21,21 +21,43 @@
 > | The same at lower latency | `fal-ai/kling-video/v2.5-turbo/pro/image-to-video` | ~$0.07/sec. |
 > | Dramatic camera moves, action, faces in motion | `fal-ai/kling-video/v3/pro/image-to-video` | ~$0.112/sec. |
 > | High volume, budget (OS, Apache 2.0) | `fal-ai/wan/v2.2-a14b/image-to-video` | ~$0.08/sec. Cheaper per clip than per second suggests — it is not the cheapest option. |
-> | Cheap fast commercial | `fal-ai/minimax/hailuo-2.3-fast/standard/image-to-video` | ~$0.032/sec. The cheapest here. |
+> | Cheap fast commercial | `fal-ai/minimax/hailuo-2.3-fast/standard/image-to-video` | ~$0.032/sec. |
 > | Cheap, quick | `fal-ai/ltx-2.3/image-to-video` / `…/image-to-video/fast` | ~$0.06 and ~$0.04/sec. |
-> | Audio gen / long-form coherence | `fal-ai/veo3/image-to-video` (~$0.20/sec, audio), `fal-ai/veo3/fast/image-to-video` (~$0.10/sec), `fal-ai/sora-2/image-to-video` (~$0.10/sec, coherence) | Premium edge cases. |
+> | Batch work, and long-form coherence | `fal-ai/veo3.1/lite/image-to-video` | ~$0.03/sec audio off. The cheapest per second here, Hailuo included, and Google Flow's engine. The batch model to beat. |
+> | Hero beats: the opening, the reveal, the payoff, the close | `fal-ai/veo3.1/image-to-video` (~$0.20/sec), `fal-ai/veo3.1/fast/image-to-video` (~$0.10/sec), `fal-ai/sora-2/image-to-video` (~$0.10/sec, coherence) | Premium. Worth it on a handful of shots and ruinous across eighty — which is what the hero/batch split is for. |
 >
-> **Which one a render actually uses.** Today: always the default, on every shot. The
-> registry builds each provider as `cls(api_key)` (`providers/registry.py`), so
-> `FalVideoProvider` takes its `DEFAULT_VIDEO_MODEL` and there is no per-shot, per-run or
-> per-channel path to any other slug. Advice to "pick a model per shot" is therefore not
-> actionable from this app yet — say so rather than promising it, and treat the table
-> above as what a render would cost if the choice existed.
+> **Which one a render actually uses.** Two, chosen per channel and routed per shot. A
+> channel holds a **batch model** (`Channel.video_model`) and a **hero model**
+> (`Channel.video_model_hero`), both set on the channel page. The B-roll planner marks
+> every scene with a **tier** — `"hero"` or `"standard"` — and
+> `providers.media.model_for_tier` turns the tier into a slug. Hero is for the beats the
+> video is judged on: the opening hook, the reveal it is built around, the payoff, the
+> closing shot. The app always grants the opening beat and caps the rest at a quarter of
+> the scenes, so a plan that marks everything hero does not quietly buy the premium model
+> for the whole video.
 >
-> **How to choose:** match the model to the shot — general B-roll, hero/dramatic,
-> high-volume/cheap, or premium audio/coherence — weighing fidelity against per-second
-> cost. Pick per shot, not per project, then lock to one or two models per project for
-> visual consistency. Prices drift; re-check when it matters.
+> So "pick per shot" is actionable, in exactly one form: **pick the two models and let the
+> tier route the beats.** Never write a model slug into a plan, a shot or a prompt — the
+> app owns that mapping, and a slug written by hand is either invented or out of date. An
+> empty hero model means no upgrade at all: every shot renders on the batch model, and the
+> channel costs what it costs today.
+>
+> What the split is worth, on a realistic eighty-shot script (460s of footage, scenes
+> 3-9s): **$14.70** entirely on Veo 3.1 Lite, **$98.00** entirely on Veo 3.1, and
+> **$21.50** for five hero shots on Veo 3.1 with the other seventy-five on Lite. A premium
+> opening for a fifth of the money, which is the whole reason the split exists. Today's
+> default — Kling 2.6 Pro on every shot — is $43.75.
+>
+> The Sample Gate groups on the model, so a two-model plan surfaces **two samples, one per
+> tier**. That is correct and not optional: the hero sample is the only evidence anybody
+> has about the endpoint doing the expensive work, and approving a batch sample authorises
+> nothing about the hero one.
+>
+> **How to choose:** match each *tier* to what it does — a cheap high-volume model for the
+> batch, a premium one for the beats that carry the video — weighing fidelity against
+> per-second cost. Two models per project, which is what "lock to one or two models per
+> project" means: a hero/batch split is the disciplined form of picking per shot, not the
+> drift the anti-pattern list warns about. Prices drift; re-check when it matters.
 
 Image-to-video is the most expensive single operation in the pipeline — roughly $0.01 to
 $0.50 per second of output. Getting it right in one or two tries is the difference between
@@ -225,15 +247,19 @@ movement"). Too many subjects. Pop-culture style references (often produce parod
 names (content policy).
 
 **Workflow.** Skipping the Sample Gate — the biggest budget burner. Mass-rendering before
-testing one. Mixing models within a project. Re-prompting endlessly without changing seed.
+testing one. Mixing models within a project *ad hoc* — two on purpose, a hero and a batch
+model with a sample approved for each, is the supported shape; a third because one shot
+felt different is the drift this warns about. Re-prompting endlessly without changing seed.
 
 ## 9. Runtime checklist
 
 **Before each submission:** storyboard shot exists with subject, action, camera, lighting,
-mood, duration · style locked · keyframe approved · model selected per shot · reference
+mood, duration · style locked · keyframe approved · tier set per shot and the channel's two
+models chosen — never a slug written into the plan · reference
 meets aspect/resolution/composition · prompt follows the skeleton · motion intensity biased
-low · aspect matches platform · Sample Gate run with explicit approval before a full render
-· cost surfaced pre-render · seed locked if repeating a shot type · each clip mapped to an
+low · aspect matches platform · Sample Gate run with explicit approval before a full render,
+one sample per model in use · cost surfaced pre-render as the blend rather than as one
+model's rate · seed locked if repeating a shot type · each clip mapped to an
 approved beat.
 
 **After each result, before presenting or assembling:** representative frames extracted and

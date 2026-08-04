@@ -85,6 +85,14 @@ class Decision:
     def as_dict(self) -> dict:
         return {**asdict(self), "seconds": self.seconds}
 
+    @classmethod
+    def from_dict(cls, row: dict) -> Decision:
+        return cls(action=str(row.get("action") or ""),
+                   start=float(row.get("start") or 0.0),
+                   end=float(row.get("end") or 0.0),
+                   why=str(row.get("why") or ""),
+                   source=str(row.get("source") or ""))
+
 
 @dataclass
 class EditPlan:
@@ -116,6 +124,24 @@ class EditPlan:
         if self.original_seconds <= 0:
             return 0.0
         return round(self.removed_seconds / self.original_seconds, 3)
+
+    @classmethod
+    def from_dict(cls, row: dict) -> EditPlan:
+        """A plan read back off disk.
+
+        The plan is written down precisely so somebody can go away and read it, which
+        means the thing that eventually executes it is loading JSON rather than holding
+        the object that produced it. Rebuilt from the decisions alone — every derived
+        number on this class is a property, so a stored `final_seconds` that disagreed
+        with the decisions it was computed from could not survive the round trip.
+        """
+        return cls(
+            source=str(row.get("source") or ""),
+            original_seconds=float(row.get("original_seconds") or 0.0),
+            decisions=[Decision.from_dict(item)
+                       for item in (row.get("decisions") or [])],
+            unknown=[str(item) for item in (row.get("unknown") or [])],
+        )
 
     def as_dict(self) -> dict:
         return {

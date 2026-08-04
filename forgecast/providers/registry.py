@@ -236,7 +236,20 @@ class ProviderRegistry:
 
     # -- capability resolution --------------------------------------------------
 
-    def resolve(self, capability: Capability):
+    def resolve(self, capability: Capability, *, model: str = ""):
+        """The provider for this capability, optionally pinned to one model.
+
+        `model` is how a single run reaches two models at once, which is the shape
+        image-to-video actually has: a plan routes its hero beats to one endpoint and the
+        other seventy-five shots to another, and both are the same vendor on the same key.
+        It overrides `self.models` rather than replacing it — the standing choice is still
+        what an unpinned call gets — because a caller passing a slug has already decided
+        something more specific than the channel did.
+
+        Asking twice is cheap and correct: the cache is keyed on vendor *and* model, so
+        the second model builds one more adapter and every later shot on either tier hits
+        the cache.
+        """
         preferred = self.overrides.get(capability.value)
 
         if self.mode == "mock":
@@ -276,12 +289,14 @@ class ProviderRegistry:
 
             api_key = self.key_for(key_name)
             if api_key:
-                model = self.models.get(capability.value, "")
-                if model and _takes_model(cls):
+                wanted = model or self.models.get(capability.value, "")
+                if wanted and _takes_model(cls):
                     # The model is in the cache key. Without it a second channel on the
                     # same vendor would be handed the first channel's provider and render
                     # on a model nobody chose — silently, and at the other model's price.
-                    return self._cached(f"{vendor}:{model}", cls, api_key, model)
+                    # It is also what lets one run hold a hero adapter and a batch adapter
+                    # at the same time instead of the second overwriting the first.
+                    return self._cached(f"{vendor}:{wanted}", cls, api_key, wanted)
                 return self._cached(f"{vendor}", cls, api_key)
             refused.append(f"{vendor}: no {key_name} key configured")
 
@@ -308,8 +323,16 @@ class ProviderRegistry:
     def image(self) -> ImageProvider:
         return self.resolve(Capability.image)  # type: ignore[return-value]
 
-    def video(self) -> VideoProvider:
-        return self.resolve(Capability.video)  # type: ignore[return-value]
+    def video(self, model: str = "") -> VideoProvider:
+        """The video provider, on `model` where a shot named one.
+
+        The only typed accessor that takes a model, because video is the only capability
+        where the model rather than the vendor is the expensive decision — one fal key
+        reaches endpoints spanning $0.03 to $0.20 a second, and a shot list routes across
+        two of them. Empty means the run's standing choice, so every caller that predates
+        per-shot routing keeps getting exactly what it got.
+        """
+        return self.resolve(Capability.video, model=model)  # type: ignore[return-value]
 
     def avatar(self) -> AvatarProvider:
         return self.resolve(Capability.avatar)  # type: ignore[return-value]

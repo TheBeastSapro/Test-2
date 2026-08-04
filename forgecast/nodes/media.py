@@ -16,7 +16,14 @@ from PIL import Image, ImageDraw, ImageFont
 
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..prompts import moves as camera_moves
-from ..providers import ProviderError
+from ..providers import ProviderError, VideoProvider
+from ..providers.media import (
+    HERO_TIER,
+    STANDARD_TIER,
+    model_for_tier,
+    video_tier,
+    video_usd,
+)
 from ..render import ffmpeg as ff
 from ..render.cutting import plates_for, shot_estimate, spec_for
 from ._common import ask_json, dimensions, request_payload
@@ -55,7 +62,7 @@ def known_places(value) -> list[str]:
 
 BROLL_INSTRUCTIONS = """Plan the visual for every scene in the script.
 
-Return JSON: {"shots": [{"scene_index", "prompt", "kind", "motion", "places"}]}
+Return JSON: {"shots": [{"scene_index", "prompt", "kind", "tier", "motion", "places"}]}
 
   scene_index  integer matching the script scene
   prompt       generation prompt: subject, setting, lens, lighting, composition.
@@ -65,6 +72,14 @@ Return JSON: {"shots": [{"scene_index", "prompt", "kind", "motion", "places"}]}
                "map" when the scene is about *where*: a route, a distance, a spread
                between places, a location the viewer needs situated. A map is the
                right answer far less often than it is tempting; one or two per video.
+  tier         "hero" or "standard" — how much this beat is worth spending on.
+               "hero" for the shots the video is judged on: the opening hook, the one
+               reveal it is built around, the payoff, and the closing shot. Everything
+               else is "standard", including shots that are merely good.
+               At most a quarter of the scenes, and fewer is better. Name the tier and
+               never a model: the app decides which endpoint each tier renders on, the
+               hero one can cost six times the standard one, and a plan that marks half
+               the scenes hero has simply chosen the expensive model for the whole video.
   motion       the camera move, chosen from the vocabulary appended below. Free text
                still works — it is matched onto the nearest known move — but picking a
                key is what gets the shot the fragment that has been found to work.
@@ -323,6 +338,34 @@ def _concat_audio(clips: list[Path], out_path: Path) -> Path:
 
 # ---------------------------------------------------------------------- broll plan
 
+# What share of a script's beats the app will grant the hero tier, however many the
+# planner asks for.
+#
+# A cap rather than an allocation, and it exists because of how a language model satisfies
+# "mark the important shots": the cheapest way to be safe is to mark most of them, and a
+# plan with half its scenes hero has not routed anything — it has chosen the expensive
+# model for the whole video, at a settings page that promised a fifth of the cost. The
+# roles that earn an upgrade are a fixed, short list — hook, reveal, payoff, close — so a
+# quarter is generous at the twelve-scene ceiling `render.cutting` plans against.
+HERO_SHARE = 0.25
+
+
+def tier_models(ctx: NodeContext) -> tuple[str, str]:
+    """The two slugs this run's tiers render on, as (standard, hero).
+
+    The standard one is read off the registry rather than off the channel because that is
+    where a per-run override has already landed: the engine folds `provider_models` and
+    the channel's standing choice together before a node sees either, and re-reading the
+    channel here would quietly ignore "render this one on the cheap model".
+
+    The hero one is read off the channel, which is the asymmetry it looks like. There is
+    no per-run hero override today and this is not the file to invent one — a second
+    precedence chain that only one caller uses is how the two settings come to disagree
+    about which run they applied to.
+    """
+    standard = str(ctx.registry.models.get("video", "") or ctx.channel.video_model or "")
+    return standard, str(ctx.channel.video_model_hero or "")
+
 
 @node_handler("broll_plan")
 async def broll_plan_node(ctx: NodeContext) -> NodeResult:
@@ -364,12 +407,17 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
     # the measured voiceover, which is the only place the shot *lengths* can be right.
     spec = spec_for(ctx.channel.style_profile)
 
+    standard_model, hero_model = tier_models(ctx)
+
     # Every scene must end up with at least one plate, planned or inferred.
     shots: list[dict] = []
     video_budget = max(1, len(scenes) // 3)
+    hero_budget = max(1, round(len(scenes) * HERO_SHARE))
     videos = 0
+    heroes = 0
     planned_shots = 0
-    for scene in scenes:
+    animation_usd = 0.0
+    for position, scene in enumerate(scenes):
         planned = by_index.get(scene["index"], {})
         kind = str(planned.get("kind") or scene.get("visual_kind") or "image")
 
@@ -391,6 +439,23 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
         # enough that a second one is worth buying to break up a long beat.
         plates = plates_for(seconds, spec, reusable=kind == "image")
 
+        # The opening beat is hero whether or not the planner marked it. Position settles
+        # that one on its own: it is the shot retention is won or lost on, and it is the
+        # only shot in the video every viewer sees.
+        tier = HERO_TIER if position == 0 else video_tier(planned.get("tier"))
+        model = ""
+        if kind == "video":
+            # The budget is spent here and only here, because a tier is only money where
+            # it is a different endpoint: a still marked hero costs exactly what a still
+            # costs, so charging it against the cap would deny the upgrade to an animated
+            # beat that would actually have used it.
+            if tier == HERO_TIER and heroes >= hero_budget:
+                tier = STANDARD_TIER
+            if tier == HERO_TIER:
+                heroes += 1
+            model = model_for_tier(tier, standard=standard_model, hero=hero_model)
+            animation_usd += video_usd(model, seconds)
+
         prompt = str(planned.get("prompt") or scene.get("visual_prompt") or "").strip() \
             or f"cinematic b-roll: {scene['narration'][:120]}"
         for plate_index in range(plates):
@@ -407,6 +472,14 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
                     "prompt": prompt if plate_index == 0
                     else f"{prompt}. Alternative angle {plate_index + 1} on the same subject.",
                     "kind": kind,
+                    # What this beat is worth spending on, and the endpoint that follows
+                    # from it. The slug is written down rather than re-derived downstream
+                    # so the shot the Sample Gate approved and the shot the batch renders
+                    # cannot be on two different models — and it is empty on a still,
+                    # because a still is not generated on a video endpoint and carrying a
+                    # slug there would read as though it had been.
+                    "tier": tier,
+                    "model": model,
                     "motion": str(planned.get("motion") or "slow push in"),
                     "places": places,
                     "seconds": seconds,
@@ -422,13 +495,36 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
         f"{spec.target_shot_seconds:.1f}s"
     )
 
+    hero_slug = model_for_tier(HERO_TIER, standard=standard_model, hero=hero_model)
+    batch_slug = model_for_tier(STANDARD_TIER, standard=standard_model, hero=hero_model)
+    if videos:
+        # The plan is the stage that decides this spend, so it is the stage that has to
+        # say what it decided. Reported per model rather than as one figure at one rate,
+        # because a blended plan quoted at either model's rate is wrong in whichever
+        # direction that model sits — and the low direction is a reserve that runs out
+        # in the middle of a batch.
+        ctx.log(
+            f"{heroes} hero shot(s) on {hero_slug} and {videos - heroes} on {batch_slug}"
+            f" — about ${animation_usd:.2f} of animation",
+            hero_model=hero_slug, standard_model=batch_slug,
+            video_usd=round(animation_usd, 2),
+        )
+
     return NodeResult(
         output={
             "shots": shots,
             "video_shots": videos,
+            "hero_shots": heroes,
             "plates": len(shots),
             "planned_shots": planned_shots,
             "target_shot_seconds": round(spec.target_shot_seconds, 3),
+            # What the animated shots in this plan cost, each priced on the model it will
+            # actually run on and on the duration that endpoint will actually bill. It is
+            # here rather than in `credits.py` because that table holds one figure per node
+            # type and this run has two rates in it; see the note beside `PER_UNIT_COSTS`
+            # for the reserve this number is the honest version of.
+            "video_usd": round(animation_usd, 2),
+            "video_models": {"hero": hero_slug, "standard": batch_slug},
         },
         credits=credits,
         provider=provider,
@@ -471,17 +567,27 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
     width, height = dimensions(ctx)
     image_provider = ctx.registry.image()
 
-    video_provider = None
-    if any(s["kind"] == "video" for s in shots):
+    # One provider per model the plan routed to, rather than one for the run. The plan
+    # sends its hero beats to one endpoint and the rest to another, and a single provider
+    # would render every shot on whichever slug happened to resolve — at that model's
+    # price, with nothing on the clip to say the tier had been ignored.
+    #
+    # Resolved before the loop so a missing video vendor is one warning rather than
+    # eighty. The registry caches on vendor *and* model, so this is one adapter per
+    # distinct model and a cache hit for every shot after the first.
+    video_providers: dict[str, VideoProvider] = {}
+    for slug in sorted({str(shot.get("model") or "")
+                        for shot in shots if shot["kind"] == "video"}):
         try:
-            video_provider = ctx.registry.video()
+            video_providers[slug] = ctx.registry.video(slug)
         except ProviderError as exc:
             # No video vendor configured. The loop below already falls back to the
             # still for any shot whose animation fails, so resolving eagerly and
             # letting this propagate would fail a run that could have finished —
             # and stills plus a Ken Burns push is a perfectly good B-roll bed.
             ctx.log(
-                f"no video provider available, rendering every shot as a still: {exc}",
+                f"no video provider for {slug or 'the run default model'}, so those "
+                f"shots render as stills: {exc}",
                 level="warning",
             )
 
@@ -489,6 +595,11 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
     provider = ""
     produced: list[dict] = []
     degraded = 0
+    # What the animation actually came to, per model. The plan quoted this before the
+    # gate; this is the same arithmetic against the shots that survived, so a run whose
+    # animations mostly failed over to stills does not report the estimate as a cost.
+    animation_usd = 0.0
+    clips_by_model: dict[str, int] = {}
 
     for shot in shots:
         index = int(shot["scene_index"])
@@ -557,7 +668,9 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                 ctx.log(f"shot {index} map failed, falling back to the still: {exc}",
                         level="warning")
 
-        if shot["kind"] == "video" and video_provider is not None:
+        model = str(shot.get("model") or "")
+        video_provider = video_providers.get(model) if shot["kind"] == "video" else None
+        if video_provider is not None:
             try:
                 # The vocabulary's fragment, not the planner's words. `motion` used to
                 # be appended verbatim, so "dramatic sweeping movement" reached the
@@ -580,10 +693,19 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                 provider = clip.provider or provider
                 final_path = clip.path
                 kind = "video"
+                animation_usd += video_usd(model, seconds)
+                clips_by_model[model or "(run default)"] = (
+                    clips_by_model.get(model or "(run default)", 0) + 1)
                 ctx.emit_artifact(
                     "video", clip.path, clip.mime, scene_index=index,
                     plate_index=plate_index, role="shot", prompt=prompt[:300],
                     seconds=clip.duration_seconds,
+                    # Which endpoint this clip came off, and the tier that chose it. On
+                    # the artifact rather than only in the log because this is the row an
+                    # audit reads back: two clips in one video can be from two models now,
+                    # and a charge nobody can attribute to a model cannot be checked
+                    # against the plan that authorised it.
+                    model=model, tier=str(shot.get("tier") or ""),
                     # The move that actually ran, which is not always the one asked
                     # for: a shot too short to contain its move is downgraded, and
                     # without this the artifact records a camera the video does not
@@ -617,8 +739,22 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
         f"generated {len(usable)}/{len(shots)} plates across {scenes_covered} scenes"
         + (f", {degraded} degraded" if degraded else "")
     )
+    if clips_by_model:
+        ctx.log(
+            "animated " + ", ".join(f"{count} on {name}"
+                                    for name, count in sorted(clips_by_model.items()))
+            + f" — about ${animation_usd:.2f}",
+            video_usd=round(animation_usd, 2), clips_by_model=clips_by_model,
+        )
     return NodeResult(
-        output={"shots": produced, "degraded": degraded, "plates": len(usable)},
+        output={"shots": produced, "degraded": degraded, "plates": len(usable),
+                # The same arithmetic the plan quoted, against the clips that actually
+                # rendered. Reported here because `credits.py` prices this node at one
+                # blended per-clip figure for one model, and a run that routed across two
+                # has no single rate that figure could be — see the report in the node
+                # output rather than trusting the reserve to describe the spend.
+                "video_usd": round(animation_usd, 2),
+                "clips_by_model": clips_by_model},
         credits=credits,
         provider=provider,
     )

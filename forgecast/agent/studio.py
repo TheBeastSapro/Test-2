@@ -101,6 +101,19 @@ def layers_dir() -> Path:
     return path
 
 
+def cuts_dir() -> Path:
+    """Where the videos cut from approved paper edits land.
+
+    Beside `edits/` rather than inside it, so that folder stays what its name says: the
+    paper edits, and nothing that was made from one. It is also what lets the Files
+    browser answer "did the approval produce anything" by opening one directory — the
+    question the operator actually asks after approving.
+    """
+    path = get_settings().storage_dir / "cuts"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 @dataclass
 class Link:
     """What a pasted YouTube link turned out to be."""
@@ -1252,8 +1265,9 @@ class Studio:
     # Forgecast generates: topic in, brief, script, shot list, render. `ingest`, `edit`
     # and `layers` are the way in from the other end — "here is a video, edit it" — and
     # for as long as nothing imported them that direction existed on disk and nowhere
-    # else. These are its door. The separation the three packages keep is kept here
-    # too: `read_video` measures, `plan_edit` decides, and neither cuts anything.
+    # else. These are its door. The separation the packages keep is kept here too, as one
+    # method per verb: `read_video` measures, `plan_edit` decides, `approve_edit` is the
+    # operator agreeing, and `cut_plan` executes what they agreed to and nothing else.
 
     @staticmethod
     def _supplied(path: Any) -> tuple[Path | None, str]:
@@ -1434,7 +1448,8 @@ class Studio:
             "markdown": plan.as_markdown(),
             "state": "drafted",
             "next": "Nothing has been cut. Show this to the operator and let them "
-                    "approve or reject it — approve_edit is theirs to call, not yours.",
+                    "approve or reject it — approve_edit is theirs to call, not yours. "
+                    "Once they have approved it, cut_plan makes the file.",
         }
 
     def edit_plans(self, plan_id: str = "", *, limit: int = 20) -> dict:
@@ -1453,6 +1468,10 @@ class Studio:
             return {"plan_id": record["id"], "source": record["source"],
                     "state": record["state"], "note": record.get("note", ""),
                     "measured": record.get("measured", ""),
+                    # What executing it produced, if it has been executed. Carried on the
+                    # plan rather than looked up from the folder so that a plan and the
+                    # file cut from it cannot disagree about which is which.
+                    "cut": record.get("cut") or {},
                     "markdown": record["markdown"], **record["plan"]}
 
         rows = []
@@ -1462,7 +1481,8 @@ class Studio:
                          "state": record["state"],
                          "original_seconds": body.get("original_seconds"),
                          "final_seconds": body.get("final_seconds"),
-                         "tightened_by": body.get("tightened_by")})
+                         "tightened_by": body.get("tightened_by"),
+                         "cut": (record.get("cut") or {}).get("path", "")})
         rows = rows[:max(1, min(int(limit or 20), 100))]
         return {"plans": rows, "count": len(rows)}
 
@@ -1474,6 +1494,12 @@ class Studio:
         this app puts gates on the stage that *determines* the spend, not the stage that
         incurs it. Everything expensive downstream is committed to by this decision, and
         it is reversible up to the moment it is taken.
+
+        It records the decision and releases the cut; it does not perform it. Cutting a
+        twenty-minute source is minutes of encoding, and an approval that waited for it
+        would be an operator's decision that could fail because ffmpeg was busy. So this
+        stays instant and `cut_plan` — which refuses anything this has not approved — is
+        the stage that does the work.
         """
         with self._session() as session:
             user = self._user(session)
@@ -1504,14 +1530,83 @@ class Studio:
             "final_seconds": body.get("final_seconds"),
             "keeps": [item for item in (body.get("decisions") or [])
                       if item.get("action") == "keep"] if approve else [],
-            # Said plainly rather than implied. The plan is a decision, and this install
-            # has no stage that cuts a supplied video from one — so an approval that
-            # reported "done" would be the app claiming work it has not done.
+            # Whether the work behind the gate has been released, as a fact rather than
+            # as a claim that it is finished. The cut is a separate stage and it may not
+            # have started yet, so an approval that reported "done" would be the app
+            # claiming work that is still queued.
+            "released": bool(approve),
             "note_to_reader": (
-                "Approved. The kept spans are the plan a cutting stage would execute; "
-                "nothing has been cut yet." if approve else
+                "Approved. The cut is released — cut_plan executes these spans and "
+                "writes the video; nothing is cut until it runs." if approve else
                 "Rejected. Say what was wrong and plan_edit can be run again with "
                 "different thresholds."),
+        }
+
+    def cut_plan(self, plan_id: str, *, on_note: Callable[[str], None] | None = None,
+                 fps: int = 0) -> dict:
+        """Cut the video an approved paper edit describes. Refuses an unapproved one.
+
+        The refusal is the point of the method existing separately. Anything that can
+        reach the studio can reach this — the chat's tools included — and it will not act
+        on a plan the operator has not agreed to, which is what keeps `approve_edit` a
+        gate rather than a formality that something downstream can route around.
+
+        Slow: it re-encodes, because cutting on keyframes lands on the wrong frame. See
+        `render/cut.py` for the measurements behind that choice. Callers in a request or
+        on an event loop have to run it on a thread.
+        """
+        from ..edit import EditPlan
+        from ..render import cut as cutter
+        from ..render.ffmpeg import RenderError
+
+        with self._session() as session:
+            user = self._user(session)
+            if user is None:
+                return {"error": "No account."}
+            owner = user.id
+
+        wanted = str(plan_id or "").strip()
+        record = self._edit_record(wanted, owner)
+        if record is None:
+            return {"error": f"No edit plan {wanted!r}."}
+        if record.get("state") != "approved":
+            state = record.get("state") or "drafted"
+            return {"error": f"Edit plan {wanted} is {state}, not approved. Show it to "
+                             f"the operator and let them approve it — approving is "
+                             f"theirs to do, and it is what releases this.",
+                    "state": state}
+
+        # The plan travels with its own source path, and the file behind it is checked
+        # against the same two roots everything else here is. A plan is a JSON file, and
+        # a JSON file whose `source` is `/etc/shadow` is a plausible thing to be handed.
+        source, why = self._supplied((record.get("plan") or {}).get("source")
+                                     or record.get("source"))
+        if source is None:
+            return {"error": why}
+
+        plan = EditPlan.from_dict(record.get("plan") or {})
+        target = cuts_dir() / f"{record['id']}.mp4"
+        try:
+            made = cutter.execute(plan, target, source=source,
+                                  fps=int(fps) or None, on_note=on_note)
+        except (RenderError, OSError) as exc:
+            return {"error": f"Could not cut {source.name}: "
+                             f"{type(exc).__name__}: {exc}"}
+
+        record["cut"] = made.as_dict()
+        (edits_dir() / f"{record['id']}.json").write_text(
+            json.dumps(record, indent=2), encoding="utf-8")
+
+        return {
+            "plan_id": record["id"], "state": record["state"],
+            **made.as_dict(),
+            # Storage-relative as well as absolute, because the two readers of this
+            # answer want different ones: a person opens the Files browser at the
+            # relative path, and anything on this machine opens the absolute one.
+            "relative": f"cuts/{record['id']}.mp4",
+            "summary": made.summary(),
+            "next": "Watch it before it goes anywhere. The plan is still on disk, so a "
+                    "cut that took out too much can be re-planned and cut again.",
         }
 
     @staticmethod

@@ -718,6 +718,52 @@ VIDEO_MODELS: dict[str, VideoModel] = {
 # workhorse, at $0.07/sec against the $0.09 flat rate that used to be assumed.
 DEFAULT_VIDEO_MODEL = "fal-ai/kling-video/v2.6/pro/image-to-video"
 
+
+# ------------------------------------------------------------------------- shot tiers
+#
+# What a planned shot asks for, and the only vocabulary the planner is given. A shot names
+# a *tier* and the app names the endpoint, which is not a stylistic preference: asked for a
+# model directly, a language model invents slugs that do not exist and quotes prices for
+# them, and both of those reach the operator as fact. A tier is a claim about the beat —
+# this one is the hook, that one is the twelfth cutaway — and that is a claim the planner
+# is actually in a position to make.
+HERO_TIER = "hero"
+STANDARD_TIER = "standard"
+VIDEO_TIERS: tuple[str, ...] = (HERO_TIER, STANDARD_TIER)
+
+
+def video_tier(value: str) -> str:
+    """What a planner's word for a tier means, as one of `VIDEO_TIERS`.
+
+    Read loosely, and in one place, because the field is written by a language model:
+    "Hero", "  hero " and "hero shot" all mean the same thing, and only an exact match
+    would make the difference between them cost money. Anything else is standard — see
+    `model_for_tier` for why the unrecognised case falls that way rather than the other.
+    """
+    return (HERO_TIER if str(value or "").strip().lower().startswith(HERO_TIER)
+            else STANDARD_TIER)
+
+
+def model_for_tier(tier: str, *, standard: str = "", hero: str = "") -> str:
+    """The slug a shot of this tier renders on, given a channel's two choices.
+
+    Two fallbacks, and the direction of each one is the whole safety of this feature.
+
+    An empty hero slug falls through to the standard one rather than to some shipped
+    premium default. A channel that has not chosen a hero model therefore costs exactly
+    what it cost before this existed — down to the cent, because every shot resolves to
+    the same endpoint it already used. The opposite default would raise the bill on every
+    existing channel at once, silently, in return for a decision nobody made.
+
+    An unrecognised tier resolves to standard for the same reason it resolves at all: the
+    planner is a language model, so "premium", an omitted field and a misspelling all have
+    to land somewhere, and the cheap tier is the safe place to land. Landing on the dear
+    one would make a typo in a JSON field the most expensive thing in the run.
+    """
+    if video_tier(tier) == HERO_TIER:
+        return hero or standard or DEFAULT_VIDEO_MODEL
+    return standard or DEFAULT_VIDEO_MODEL
+
 # What an unrecognised slug is priced at: the top of the observed range, not the middle
 # and certainly not the cheapest. An estimate that is too high is released back to the
 # operator when the node settles; one that is too low is a run that stops mid-batch with
@@ -767,6 +813,19 @@ def video_model(slug: str) -> VideoModel:
     return UNPRICED_MODEL
 
 
+def video_usd(slug: str, seconds: float) -> float:
+    """What one clip of this length costs on this model, billed the way it is billed.
+
+    Through `submittable` rather than `rate x seconds`, because the endpoint charges for
+    the duration it accepted and not for the one the scene wanted: a six-second scene on
+    Kling is a ten-second submission. Priced the naive way, a plan mixing two models
+    reports a saving that the invoice does not contain — and the whole point of routing
+    per shot is that somebody is going to check that number.
+    """
+    priced = video_model(slug)
+    return priced.usd_per_second * priced.submittable(max(0.0, float(seconds or 0.0)))
+
+
 def video_reserve_credits(model: str, seconds: float, *, samples: int = 0) -> int:
     """Credits to hold for `seconds` on `model`, plus `samples` sample renders.
 
@@ -794,13 +853,43 @@ def video_reserve_credits(model: str, seconds: float, *, samples: int = 0) -> in
 _TYPICAL_SHOTS: tuple[float, ...] = tuple(
     float(n) for n in [3, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 8, 9] * 5)
 
+# How many of those eighty shots are hero beats. Four roles earn the upgrade — the opening
+# hook, the reveal the video is built around, the payoff, and the closing shot — and five
+# is that list with one spare, which is what a real script tends to want.
+#
+# It is deliberately a small number and the arithmetic is why. Upgrading five shots of
+# eighty from Veo 3.1 Lite to Veo 3.1 costs about seven dollars; upgrading forty costs
+# about sixty, which is the all-hero bill with extra steps. The saving is not "use a
+# cheaper model", it is "use the dear one where it is looked at".
+TYPICAL_HERO_SHOTS = 5
 
-def video_catalogue(chosen: str = "") -> list[dict]:
+
+def _split_typical(hero_shots: int = TYPICAL_HERO_SHOTS) -> tuple[list[float], list[float]]:
+    """The typical shot list as (hero durations, batch durations).
+
+    The hero shots are the *longest* entries rather than a slice off the front, and that
+    is both the conservative reading and the true one: the beats worth upgrading are the
+    beats you let run, so they are the expensive seconds. Split here rather than at each
+    call site so the figure on a dropdown row and the figure in the blend below it cannot
+    be computed from two different five shots.
+    """
+    count = max(0, min(int(hero_shots), len(_TYPICAL_SHOTS)))
+    ranked = sorted(_TYPICAL_SHOTS, reverse=True)
+    return ranked[:count], ranked[count:]
+
+
+def video_catalogue(chosen: str = "", *, default: str = DEFAULT_VIDEO_MODEL) -> list[dict]:
     """Every selectable i2v model, priced as a whole video rather than per second.
 
     For the channel settings page and for the agent, from one function, so the operator
     and the assistant cannot be looking at two different tables. Cheapest first — the
     order the decision is usually made in.
+
+    `default` is what an empty choice means, and it is a parameter because the two tiers
+    disagree about it. Nothing chosen for the batch model means `DEFAULT_VIDEO_MODEL`;
+    nothing chosen for the hero model means *no upgrade at all*, which is not a model and
+    so cannot be marked on a row. Passing `default=""` says that honestly instead of
+    lighting up a row the channel has not picked.
     """
     rows: list[dict] = []
     for slug, model in VIDEO_MODELS.items():
@@ -809,21 +898,70 @@ def video_catalogue(chosen: str = "") -> list[dict]:
             # but not offered: choosing one is choosing an older model at a higher rate.
             continue
         billed = sum(model.submittable(shot) for shot in _TYPICAL_SHOTS)
+        hero_billed = sum(model.submittable(shot) for shot in _split_typical()[0])
         rows.append({
             "slug": slug,
             "label": _video_label(slug),
             "usd_per_second": model.usd_per_second,
             "typical_video_usd": round(model.usd_per_second * billed, 2),
+            # What this model costs on the hero beats alone, which is the only figure a
+            # hero pick can honestly be shown against: nobody is proposing to run the
+            # whole video on it, so `typical_video_usd` next to a hero option would be a
+            # true number answering a question nobody asked.
+            "hero_shots_usd": round(model.usd_per_second * hero_billed, 2),
             # How much of what this model bills for survives into the finished video.
             # 1.00 means its durations match how scenes actually run.
             "billed_ratio": round(billed / sum(_TYPICAL_SHOTS), 2),
             "durations": [int(option) for option in model.durations],
             "sample_usd": round(model.usd_per_second * model.sample_seconds, 2),
             "note": model.note,
-            "chosen": slug == (chosen or DEFAULT_VIDEO_MODEL),
-            "is_default": slug == DEFAULT_VIDEO_MODEL,
+            "chosen": slug == (chosen or default),
+            "is_default": slug == default,
         })
     return sorted(rows, key=lambda row: row["typical_video_usd"])
+
+
+def video_blend(standard: str = "", hero: str = "",
+                *, hero_shots: int = TYPICAL_HERO_SHOTS) -> dict:
+    """What a typical video costs with the hero beats on one model and the rest on another.
+
+    The number the two-model decision actually turns on, and it is not derivable from the
+    two rows in `video_catalogue` — a reader given "$14.70" and "$98.00" and asked to
+    picture five-of-eighty will not arrive at $21.50, and the gap between what they guess
+    and what it is decides whether the premium model gets used at all.
+    """
+    standard_slug = model_for_tier(STANDARD_TIER, standard=standard, hero=hero)
+    hero_slug = model_for_tier(HERO_TIER, standard=standard, hero=hero)
+
+    upgraded, batch = _split_typical(hero_shots)
+    count = len(upgraded)
+
+    blended = (sum(video_usd(hero_slug, seconds) for seconds in upgraded)
+               + sum(video_usd(standard_slug, seconds) for seconds in batch))
+    standard_only = sum(video_usd(standard_slug, seconds) for seconds in _TYPICAL_SHOTS)
+    hero_only = sum(video_usd(hero_slug, seconds) for seconds in _TYPICAL_SHOTS)
+
+    return {
+        "standard": standard_slug,
+        "hero": hero_slug,
+        "standard_label": _video_label(standard_slug),
+        "hero_label": _video_label(hero_slug),
+        # False when the channel has chosen no hero model, or chose the same one twice.
+        # The page needs to know, because "$43.75 a video, saving $0.00" reads as a broken
+        # calculation rather than as a channel that has not opted in.
+        "upgraded": hero_slug != standard_slug,
+        "shots": len(_TYPICAL_SHOTS),
+        "hero_shots": count,
+        "usd": round(blended, 2),
+        "standard_only_usd": round(standard_only, 2),
+        "hero_only_usd": round(hero_only, 2),
+        # Against all-hero rather than against all-standard. Routing per shot never beats
+        # putting everything on the cheap model and was never meant to; what it beats is
+        # the video you would have made if you wanted the opening to look expensive.
+        # Floored, so two identical models produce "$0.00" rather than the "-$0.00" that
+        # summing the same seconds in two orders leaves behind.
+        "saved_usd": round(max(0.0, hero_only - blended), 2),
+    }
 
 
 def _video_label(slug: str) -> str:

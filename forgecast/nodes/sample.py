@@ -37,6 +37,19 @@ So shots are grouped by `ShotSetup.setup_id` — model, style and motion togethe
 sample is generated per distinct group. On a normal video that is two or three samples
 covering eighty shots.
 
+## Why the model comes from the shot and not from the provider
+
+`setup_id` has always hashed the model in, and this node used to overwrite every shot's
+model with the single resolved provider's before grouping — so the facet that `gates.py`
+calls "the largest single difference there is" was constant by construction and could
+never split a group. Now that a plan routes its hero beats to one endpoint and the rest to
+another, that would have shown the operator one sample and rendered the batch across two
+models, one of which nobody looked at, at six times the rate of the one they approved.
+
+Reading each shot's own model produces one sample per tier, which is not an extra cost so
+much as the cost the gate was always supposed to surface: the hero sample is the only
+evidence anybody has about the model doing the expensive work.
+
 ## What this node does not do
 
 It does not render the batch and it does not decide whether the samples are good. It
@@ -50,7 +63,8 @@ from __future__ import annotations
 import json
 
 from ..graph.engine import NodeContext, NodeResult, node_handler
-from ..providers import ProviderError
+from ..providers import ProviderError, VideoProvider
+from ..providers.media import video_model
 from ..skills import gates, prompt_check
 from ._common import dimensions
 
@@ -108,26 +122,31 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
         ctx.log("no generated-video shots in this plan, so there is nothing to sample")
         return NodeResult(output={"samples": [], "setups": 0, "skipped": "no video shots"})
 
-    try:
-        video_provider = ctx.registry.video()
-    except ProviderError as exc:
-        ctx.log(f"no video provider, so nothing will be generated at full cost either: "
-                f"{exc}", level="warning")
+    # One provider per model the plan routed to. Two tiers is two endpoints, and the
+    # sample for each has to come off the endpoint that tier will actually render on —
+    # a hero sample generated on the batch model approves a look nothing will produce.
+    providers: dict[str, VideoProvider] = {}
+    for slug in sorted({str(shot.get("model") or "") for shot in shots}):
+        try:
+            providers[slug] = ctx.registry.video(slug)
+        except ProviderError as exc:
+            ctx.log(f"no video provider for {slug or 'the run default model'}, so "
+                    f"nothing will be generated at full cost on it either: {exc}",
+                    level="warning")
+    if not providers:
         return NodeResult(output={"samples": [], "setups": 0,
                                   "skipped": "no video provider"})
 
     width, height = dimensions(ctx)
     aspect = str(getattr(ctx.channel, "aspect_ratio", "") or "")
-    model = str(getattr(video_provider, "model", "") or
-                getattr(video_provider, "name", ""))
-    rate = float(getattr(video_provider, "usd_per_second", 0.0) or 0.0)
-    shortest = float(getattr(video_provider, "shortest_seconds", 0.0) or 0.0)
-    longest = float(getattr(video_provider, "longest_seconds", 0.0) or 0.0)
 
     grouped: dict[str, list[dict]] = {}
     setups: dict[str, gates.ShotSetup] = {}
     for shot in shots:
-        setup = _setup_for({**shot, "model": model}, ctx.channel, aspect)
+        # The shot's own model, not the provider's. See the module docstring: overwriting
+        # it here made the one facet that separates a $0.03 endpoint from a $0.20 one
+        # constant across the whole run, so the group it was meant to split never split.
+        setup = _setup_for(shot, ctx.channel, aspect)
         grouped.setdefault(setup.setup_id, []).append(shot)
         setups.setdefault(setup.setup_id, setup)
 
@@ -142,12 +161,22 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
     ordered = sorted(setups.items(), key=lambda item: len(grouped[item[0]]), reverse=True)
 
     quotes: dict[str, gates.Quote] = {}
-    for setup_id, _setup in ordered:
+    for setup_id, setup in ordered:
         covered = grouped[setup_id]
         full_seconds = sum(float(shot.get("seconds") or 0.0) for shot in covered)
+        # Priced from the catalogue rather than off the provider object, which is a fix
+        # as well as a necessity. The duration envelope used to be read as
+        # `shortest_seconds` and `longest_seconds` — attribute names no adapter in this
+        # tree has ever carried — so both came back 0.0 and every sample was quoted at
+        # five seconds whatever the model was. That under-quotes Hailuo, whose shortest
+        # generation is six, and names a duration Sora rejects outright, since Sora takes
+        # 4, 8, 12, 16 and 20 and nothing between.
+        priced = video_model(setup.model)
         quotes[setup_id] = gates.quote(
-            model=model, usd_per_second=rate, full_seconds=full_seconds,
-            shortest_supported=shortest, longest_supported=longest)
+            model=setup.model, usd_per_second=priced.usd_per_second,
+            full_seconds=full_seconds,
+            shortest_supported=priced.sample_seconds,
+            longest_supported=priced.max_seconds)
 
     budget = gates.batch_budget(quotes)
     surfaced: list[dict] = []
@@ -160,6 +189,21 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
         prompt = str(first.get("prompt") or first.get("visual_prompt") or "").strip()
         seconds = quotes[setup_id].sample.seconds
 
+        # Settled before the prompt is read, and that order is deliberate rather than
+        # tidy: everything from here down is the gate deciding what to show a person
+        # about a clip it is about to buy, and a branch in the middle of that which can
+        # skip a setup reads as the checker below taking the decision. This one is not a
+        # judgement about the prompt — the tier's endpoint would not resolve, so there is
+        # nothing to sample on. It is surfaced as an unapproved setup rather than sampled
+        # on the other tier's model, because a clip from the wrong endpoint is worse than
+        # no clip: it is evidence about something the batch will not run.
+        video_provider = providers.get(setup.model)
+        if video_provider is None:
+            surfaced.append({"setup_id": setup_id, "model": setup.model, "clip": "",
+                             "error": "no provider for this model",
+                             "shots": len(covered)})
+            continue
+
         # Read before it is paid for. `skills/prompt_check` has been able to say which
         # prompts melt since it was written and nothing had ever called it — so a prompt
         # chaining four finite verbs, or whip-panning across a face, was submitted,
@@ -167,7 +211,11 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
         # carried to the operator rather than acted on: the gate's whole shape is that a
         # person decides, so a checker that silently skipped a setup would be taking the
         # decision this node exists to hand over.
-        verdict = prompt_check.review(prompt, model=model)
+        #
+        # The setup's own model, not the run's: `review` gives realism-model-specific
+        # advice, and on a plan routing two endpoints there is no single model it could
+        # be given that would be right for both setups.
+        verdict = prompt_check.review(prompt, model=setup.model)
         if verdict.findings:
             ctx.log(f"setup {setup_id}: {verdict.summary()}",
                     level="warning" if verdict.blocked else "info")
@@ -183,7 +231,7 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
             # the others, and a setup with no sample is reported as unapproved rather
             # than quietly rendered — which is the state this gate exists to prevent.
             ctx.log(f"sample for setup {setup_id} failed: {exc}", level="warning")
-            surfaced.append({"setup_id": setup_id, "model": model, "clip": "",
+            surfaced.append({"setup_id": setup_id, "model": setup.model, "clip": "",
                              "error": str(exc), "shots": len(covered)})
             continue
 
@@ -191,7 +239,11 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
         spent += quotes[setup_id].sample.usd
         ctx.emit_artifact("video", clip.path, clip.mime, role="sample",
                           setup_id=setup_id, shots_covered=len(covered),
-                          seconds=clip.duration_seconds)
+                          seconds=clip.duration_seconds,
+                          # Which endpoint this sample is evidence about. One gate can
+                          # now hold a hero sample and a batch sample, and an approval
+                          # that cannot name its model approves neither.
+                          model=setup.model, tier=str(first.get("tier") or ""))
 
         payload = gates.surface(setup=setup, prompt=prompt, clip_path=str(clip.path),
                                 quote_=quotes[setup_id], usd_spent_so_far=spent,
@@ -212,6 +264,10 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
         # rather than against what was planned — those differ the moment an operator
         # rejects one setup and approves another.
         "setup_ids": [setup_id for setup_id, _ in ordered],
+        # Every endpoint this batch will touch. A gate that named one model while
+        # authorising two would be the same defect as the one this node was fixed for,
+        # moved from the grouping into the summary.
+        "models": sorted({setup.model for setup in setups.values()}),
     }
 
     readable = ctx.path_for("samples.json")
@@ -221,4 +277,8 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
 
     ctx.log(f"sampled {output['sampled']} of {len(setups)} setups covering "
             f"{len(shots)} shots — {budget.sentence() if hasattr(budget, 'sentence') else ''}")
-    return NodeResult(output=output, credits=credits, provider=video_provider.name)
+    # The vendor, which is one vendor even when it is serving two models: they are
+    # different endpoints on the same key. The first resolved provider is therefore the
+    # right name for the ledger row, and there is no second name it could be.
+    return NodeResult(output=output, credits=credits,
+                      provider=next(iter(providers.values())).name)

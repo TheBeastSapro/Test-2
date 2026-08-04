@@ -212,20 +212,43 @@ def test_the_model_table_in_the_i2v_skill_matches_the_code():
         "the i2v skill names models this app cannot run:\n  " + "\n  ".join(unknown))
 
 
-def test_the_i2v_skill_does_not_promise_a_choice_the_app_cannot_make():
-    """`registry.py` builds every provider as `cls(api_key)`, so `FalVideoProvider`
-    always uses its default model. There is no per-shot, per-run or per-channel path to
-    any other slug — so "pick a model per shot" was advice the agent could not follow
-    and would report as done."""
+def test_the_i2v_skill_describes_the_model_choice_the_app_can_actually_make():
+    """This used to assert the opposite, and the flip is the point.
+
+    While the registry built every provider as `cls(api_key)`, `FalVideoProvider` always
+    took its default model and "pick a model per shot" was advice the agent could not
+    follow and would report as done. So the document carried the caveat "always the
+    default", and this test held it there — under an instruction to say what had been
+    built instead of deleting it.
+
+    It has been built: a channel holds a batch model and a hero model, the planner marks
+    a tier per scene, and `model_for_tier` maps the tier onto a slug. So the caveat is now
+    the false statement, and what has to be pinned is that the document describes the
+    mechanism rather than either promising more than exists or still denying it.
+    """
     from pathlib import Path
 
     from forgecast import skills
+    from forgecast.providers.media import model_for_tier
 
     doc = (Path(skills.__file__).resolve().parent / "data"
            / "image-to-video.md").read_text(encoding="utf-8")
-    assert "always the default" in doc, (
-        "the skill no longer states that model selection is fixed — if that has been "
-        "built, say so here instead of deleting the caveat")
+
+    assert "always the default" not in doc, (
+        "the skill still says model selection is fixed, which it no longer is — a channel "
+        "has a batch model and a hero model and the planner routes between them")
+    # Named, because the agent reads this document to find out what to set and a
+    # description with no field names is a description it cannot act on.
+    for named in ("Channel.video_model", "Channel.video_model_hero", "model_for_tier"):
+        assert named in doc, f"the skill does not name {named}"
+    # And the tier vocabulary is the app's, not prose: an agent that writes "premium" gets
+    # the standard model and no error.
+    assert '"hero"' in doc and '"standard"' in doc
+
+    # The instruction that keeps the agent out of the mapping. It invents slugs and quotes
+    # prices for them, which is why the plan carries a tier and never a model.
+    assert "Never write a model slug" in doc
+    assert model_for_tier("premium") == model_for_tier("standard")
 
 
 def test_no_shipped_skill_names_a_service_this_app_does_not_use():

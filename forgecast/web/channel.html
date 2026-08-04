@@ -398,17 +398,24 @@
    models in the wrong order. Durations are enums: Kling offers five seconds or ten and
    nothing between, so a six-second scene is billed at ten and over a third of the spend
    never reaches the screen. On rate alone Kling looks mid-table. On what a video costs
-   it is near the top. #}
+   it is near the top.
+
+   Two selects rather than one, because one model priced the whole video at its dearest
+   shot's rate. The blend is printed below them and it is the only number here anybody
+   can act on: neither list contains it, and nobody reads "$14.70" beside "$98.00" and
+   arrives at "$21.50 for five hero shots and seventy-five batch ones". #}
 <h2>Image-to-video model</h2>
 <div class="card">
   <p class="muted" style="margin:0 0 12px;font-size:13px">
-    Which model animates this channel's shots. It is around 90% of what a video costs,
+    Which models animate this channel's shots. It is around 90% of what a video costs,
     and the same script runs from about ${{ '%.0f'|format(video_models[0].typical_video_usd) }}
-    to ${{ '%.0f'|format(video_models[-1].typical_video_usd) }} depending on this one
-    choice. Figures are for a typical eighty-shot long-form video, not per second.
+    to ${{ '%.0f'|format(video_models[-1].typical_video_usd) }} depending on these two
+    choices. The first model animates every shot; the second takes over the
+    {{ video_blend.hero_shots }} the video is judged on. Figures are for a typical
+    eighty-shot long-form video, not per second.
   </p>
   <form class="method" method="post" action="/c/{{ channel.id }}/video-model">
-    <select name="video_model" aria-label="Image-to-video model for this channel">
+    <select name="video_model" aria-label="Image-to-video model for every shot">
       {% for row in video_models %}
         <option value="{{ row.slug }}" {{ 'selected' if row.chosen }}>
           {{ row.label }} — ${{ '%.2f'|format(row.typical_video_usd) }} a video
@@ -416,9 +423,44 @@
         </option>
       {% endfor %}
     </select>
+    <select name="video_model_hero" aria-label="Image-to-video model for hero shots">
+      {# Empty first, and it is the option most channels should stay on: no hero model
+         means every shot renders on the model to its left, which is what this channel
+         costs today. #}
+      <option value="" {{ 'selected' if not channel.video_model_hero }}>
+        Hero shots: same as above
+      </option>
+      {% for row in hero_models %}
+        {# Priced for the hero beats alone, not as a whole video. Nobody is proposing to
+           run eighty shots on the hero model, so its `typical_video_usd` would be a true
+           number answering a question this control does not ask. #}
+        <option value="{{ row.slug }}" {{ 'selected' if row.chosen }}>
+          Hero shots: {{ row.label }} — ${{ '%.2f'|format(row.hero_shots_usd) }} for the
+          {{ video_blend.hero_shots }}
+        </option>
+      {% endfor %}
+    </select>
     <button class="primary">Save</button>
     {% if saved == 'video-model' %}<span class="n">Saved.</span>{% endif %}
   </form>
+
+  <p class="methodnote">
+    {% if video_blend.upgraded %}
+      {{ video_blend.hero_shots }} hero shots on <b>{{ video_blend.hero_label }}</b> and
+      the other {{ video_blend.shots - video_blend.hero_shots }} on
+      <b>{{ video_blend.standard_label }}</b>:
+      <b>${{ '%.2f'|format(video_blend.usd) }} a video</b> — against
+      ${{ '%.2f'|format(video_blend.hero_only_usd) }} with every shot on the hero model
+      and ${{ '%.2f'|format(video_blend.standard_only_usd) }} with none. A premium
+      opening for ${{ '%.2f'|format(video_blend.saved_usd) }} less than the premium video.
+    {% else %}
+      Every shot on <b>{{ video_blend.standard_label }}</b>:
+      <b>${{ '%.2f'|format(video_blend.usd) }} a video</b>. Picking a hero model animates
+      the {{ video_blend.hero_shots }} beats the video is judged on — the opening hook,
+      the reveal, the payoff, the closing shot — without paying for a premium model
+      across the other {{ video_blend.shots - video_blend.hero_shots }}.
+    {% endif %}
+  </p>
 
   {% set picked = video_models | selectattr('chosen') | list | first %}
   {% if picked %}
@@ -428,8 +470,9 @@
       {%- if picked.billed_ratio > 1.15 %}, so a scene between those lengths is billed at
       the next one up — about {{ ((picked.billed_ratio - 1) * 100) | round | int }}% of
       what you pay is trimmed off in assembly{% endif %}.
-      The Sample Gate renders one clip on this model for
-      ${{ '%.2f'|format(picked.sample_usd) }} before the batch is authorised.
+      The Sample Gate renders one clip per model before the batch is authorised —
+      ${{ '%.2f'|format(picked.sample_usd) }} on this one{% if video_blend.upgraded %},
+      and one more on the hero model{% endif %}.
     </p>
     <p class="methodnote">{{ picked.note }}</p>
   {% endif %}

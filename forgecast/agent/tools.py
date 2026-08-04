@@ -67,7 +67,14 @@ _WRITES = ("create_channel", "update_channel", "start_run", "apply_style",
            "blend_styles", "cancel_run", "sync_voice_artists",
            # Each of these produces a file that can be produced again from the same
            # input, and none of them spends credits or touches a run.
-           "plan_edit", "cut_subject", "set_motion_backend", "learn_style")
+           "plan_edit", "cut_subject", "set_motion_backend", "learn_style",
+           # Executing a plan the operator has *already* approved. It is here rather than
+           # behind the gate because it cannot get past one: it refuses any plan that is
+           # not approved, so the only thing the agent can do with it is carry out a
+           # decision that was already taken. Keeping it out would mean an operator
+           # approving an edit in the chat and then being sent somewhere else to receive
+           # the file, which is the shape of gap this whole direction exists to close.
+           "cut_plan")
 
 # `decide_gate` is intentionally absent: approving a gate is the moment the run is
 # allowed to spend on the stage behind it, and that is the user's call, not a step
@@ -411,12 +418,32 @@ def build_server(studio):
     @tool("approve_edit",
           "Accept or reject a paper edit. ONLY call this when the user has told you to "
           "in this conversation — approving is them agreeing to the edit, and every "
-          "expensive decision downstream is fixed by it.",
+          "expensive decision downstream is fixed by it. Approving records the decision "
+          "and releases the cut; cut_plan is what then makes the file.",
           {"plan_id": str, "approve": bool, "note": str})
     async def approve_edit(args):
         return _text(studio.approve_edit(args.get("plan_id") or "",
                                          approve=bool(args.get("approve", True)),
                                          note=args.get("note") or ""))
+
+    @tool("cut_plan",
+          "Cut the video an APPROVED paper edit describes, and report what came out: "
+          "how long it is, how much was removed, and where the file is. Refuses any plan "
+          "the operator has not approved — approving is theirs, executing is this. Slow: "
+          "it re-encodes, because cutting on keyframes lands on the wrong frame. Spends "
+          "no credits and calls no provider. Report the finished length against the "
+          "length the plan predicted, because a difference there is the one thing that "
+          "says the file is not the edit that was agreed to.",
+          {"plan_id": str, "fps": int})
+    async def cut_plan(args):
+        import asyncio
+
+        # Off the loop. It is minutes of ffmpeg on a long source, and on the event loop
+        # that stalls every other request in the process — including the chat the
+        # operator is watching while it runs.
+        return _text(await asyncio.to_thread(
+            studio.cut_plan, args.get("plan_id") or "",
+            fps=int(args.get("fps") or 0)))
 
     @tool("cut_subject",
           "Lift the subject of a still onto its own layer with an alpha channel, and "
@@ -446,7 +473,7 @@ def build_server(studio):
              list_styles, apply_style, blend_styles, list_scripting_styles,
              learn_style, render_backends, set_motion_backend,
              editing_tools, read_video, plan_edit, edit_plans, approve_edit,
-             cut_subject,
+             cut_plan, cut_subject,
              *skills_tools.build(studio)]
     server = create_sdk_mcp_server(name=SERVER_NAME, version="1.0.0", tools=built)
     _BUILT[id(server)] = built

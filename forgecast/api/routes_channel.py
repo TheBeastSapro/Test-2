@@ -53,7 +53,7 @@ from ..db import get_session
 from ..graph import formats
 from ..models import Channel, Run, RunStatus, User
 from ..nodes._common import SUPPORTED_HEIGHTS, frame_for, resolve_height
-from ..providers.media import VIDEO_MODELS, video_catalogue
+from ..providers.media import VIDEO_MODELS, video_blend, video_catalogue
 from ..render.ffmpeg import SUPPORTED_FPS, resolve_fps
 from .routes_analytics import spend_report
 
@@ -224,13 +224,22 @@ def _context(session: Session, user: User, channel: Channel, view: str) -> dict:
         # command line rendered with ffmpeg for ever — including after installing the
         # alternative from inside the app.
         "motion_backend": motion_backend_state(channel),
-        # Which image-to-video model this channel's shots are generated on. Every entry
+        # Which image-to-video models this channel's shots are generated on. Every entry
         # was already in the catalogue and none of them was reachable: the registry built
         # every video provider as `cls(api_key)`, so the slug the app shipped with was the
         # slug every render on every channel used. Priced per finished video rather than
         # per second, because per-second rates rank these models in the wrong order — see
         # `video_catalogue`.
         "video_models": video_catalogue(channel.video_model),
+        # The hero list has no default: an unset hero model means no upgrade, which is not
+        # a row in the table and must not light one up. `default=""` is what says so.
+        "hero_models": video_catalogue(channel.video_model_hero, default=""),
+        # And what the two together actually cost, which is the number the decision turns
+        # on and the one neither list contains. Nobody reading "$14.70" beside "$98.00"
+        # arrives at "$21.50 for five hero shots and seventy-five batch ones" on their
+        # own, and the gap between the guess and the figure is what decides whether the
+        # premium model ever gets used.
+        "video_blend": video_blend(channel.video_model, channel.video_model_hero),
         # The frame and the rate. Both were constants, and the frame was a constant
         # nobody chose: 9:16 and 1:1 already resolved to 1080 while 16:9 fell back to
         # 720, so the main format was the single one shipping at the lower resolution.
@@ -307,10 +316,11 @@ def save_video_model(
     # Defaulted rather than required, because empty is a meaningful value here: it means
     # "use the app default". `Form(...)` rejected the one submission that expresses it.
     video_model: str = Form(""),
+    video_model_hero: str = Form(""),
     user: User = Depends(current_user),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
-    """Set which image-to-video model this channel's shots are generated on.
+    """Set which image-to-video models this channel's shots are generated on.
 
     An unknown slug is refused rather than stored, and unlike the scripting method there
     is no "unavailable but keep it" case: a slug that is not in the catalogue is priced
@@ -318,16 +328,25 @@ def save_video_model(
     channel onto the conservative estimate for every future run. Empty is allowed and
     means the app default — that is a choice, not a missing value.
 
+    Both models are saved by one submission because they are one decision. The batch
+    model on its own is not a cost — it is a cost given how much of the video is not on
+    it — and letting them be set separately would let the page show a blend the operator
+    had agreed to half of. An empty hero model means no upgrade, which is why it is not
+    refused for being absent from a catalogue it is not naming.
+
     This is the single most expensive setting on the page. The same eighty-shot script is
     $14.70 on one of these models and $98 on another, and until this route existed the
     answer was always whichever slug the app shipped with.
     """
     channel = owned_channel(session, user, channel_id)
     wanted = (video_model or "").strip()
-    if wanted and wanted not in VIDEO_MODELS:
-        raise HTTPException(status_code=400, detail=f"unknown video model {wanted!r}")
+    hero = (video_model_hero or "").strip()
+    for slug in (wanted, hero):
+        if slug and slug not in VIDEO_MODELS:
+            raise HTTPException(status_code=400, detail=f"unknown video model {slug!r}")
 
     channel.video_model = wanted
+    channel.video_model_hero = hero
     session.commit()
     return RedirectResponse(f"/c/{channel_id}?saved=video-model", 303)
 

@@ -11,18 +11,30 @@ gets reported as missing. It was not missing. It had no door.
 
 ## The separation the packages keep, kept here
 
-`ingest` measures, `edit` decides, `render` executes. Nothing in this module cuts
-anything, and that is not an oversight:
+`ingest` measures, `edit` decides, `render` executes, and each of those is its own call:
 
 * `POST /read` measures and returns numbers.
 * `POST /plan` returns a paper edit — what comes out, where, and why.
 * `POST /plans/{id}/decision` is the operator accepting or rejecting it.
+* `POST /plans/{id}/cut` executes one they have accepted, and nothing else.
 
 The plan is the cheapest possible place to disagree with the machine. It costs nothing to
 produce, nothing to change and nothing to throw away, and it fixes every expensive
 decision that follows it — which is exactly why this app puts its gates on the stage that
 *determines* the spend rather than the stage that incurs it. An approval here is that
 gate, and it is why no endpoint here goes from a file to an output in one call.
+
+## Why approving does not wait for the cut
+
+Cutting re-encodes — `render/cut.py` has the measurements for why it must — and a
+twenty-minute source is minutes of work. An approval that waited for it would be an
+operator's decision that could fail because ffmpeg was busy, on a request most proxies
+close after sixty seconds anyway.
+
+So the decision is recorded instantly and *releases* the cut, which runs as a job on a
+worker thread and streams its progress as NDJSON. That is the same shape `routes_styles`
+uses for learning a style and `routes_setup` uses for installing a toolchain, for the same
+reason, and it means a page reloaded mid-cut can rejoin rather than start a second one.
 
 ## Where the file comes from
 
@@ -50,15 +62,21 @@ including the chat stream the operator is watching while they wait for the plan.
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
+import threading
+import time
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
 from ..agent.studio import Studio
 from ..auth import current_user
 from ..db import SessionLocal
 from ..models import User
+from .media import sign_url
 from .routes_agent import VIDEO_EXT, attach_dir, describe
 
 log = logging.getLogger("forgecast.api.edit")
@@ -69,6 +87,18 @@ router = APIRouter(prefix="/api/edit", tags=["edit"])
 # voice take rather than something these three packages can read, and listing it would
 # invite a caller to hand a PDF to the probe.
 READABLE = VIDEO_EXT | {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
+
+# The running cut, process-wide, because it is an ffmpeg encode on a machine that is also
+# expected to render. A plain dict for the same reason `routes_styles.LEARN` is one: the
+# worker thread writes it and the streaming generator reads it, and a mapping is easier to
+# reason about than an object whose methods either could call.
+CUT: dict = {"running": False, "done": False, "ok": False, "log": [], "result": {},
+             "plan_id": "", "user_id": 0, "started": 0.0}
+CUT_LOCK = threading.Lock()
+
+# Enough to see what happened to a plan with a lot of cuts in it, and not enough to grow
+# without bound on one with thousands.
+MAX_LOG = 200
 
 
 def _studio(user: User) -> Studio:
@@ -167,7 +197,84 @@ def read_plan(plan_id: str, user: User = Depends(current_user)) -> dict:
     found = _studio(user).edit_plans(plan_id)
     if found.get("error"):
         raise HTTPException(status_code=404, detail=found["error"])
+    made = found.get("cut") or {}
+    if made.get("path"):
+        # The point of cutting it is that somebody watches it. A path on the server's
+        # disk is not that, so the plan carries a link the browser can actually open —
+        # signed, expiring, and for this account only.
+        found["cut"] = {**made, "media_url": sign_url(made["path"], user.id),
+                        "files": f"/files?path=cuts/{plan_id}.mp4"}
     return found
+
+
+def _cut_state(user_id: int) -> dict:
+    """The running cut as the caller reads it, scoped to whoever is asking.
+
+    A cut belonging to another account is reported as busy without its plan id, its source
+    path or its result. This is a single-operator app today, but the job carries the
+    operator's own file paths and a status endpoint is not the place to hand those over.
+    """
+    mine = int(CUT.get("user_id") or 0) == int(user_id)
+    return {
+        "running": bool(CUT["running"]),
+        "mine": mine,
+        "done": bool(CUT["done"]) if mine else False,
+        "ok": bool(CUT["ok"]) if mine else False,
+        "plan_id": str(CUT["plan_id"]) if mine else "",
+        "seconds_elapsed": round(time.monotonic() - float(CUT["started"] or 0.0), 1)
+                           if CUT["running"] else 0.0,
+        "log": list(CUT["log"][-40:]) if mine else [],
+        "result": dict(CUT["result"]) if mine else {},
+    }
+
+
+def _cut_now(user_id: int, plan_id: str) -> None:
+    """Execute one approved plan, on a worker thread. Never raises into the thread's exit.
+
+    A failure here has to end up in `CUT` rather than in a traceback: the only thing
+    watching is a generator polling this dict, and an exception that escapes leaves
+    `running` true for ever and the caller waiting on a job that has stopped.
+    """
+    def note(line: str) -> None:
+        log.info("cut-plan: %s", line)
+        CUT["log"].append(line)
+        del CUT["log"][:-MAX_LOG]
+
+    try:
+        result = Studio(SessionLocal, user_id=user_id).cut_plan(plan_id, on_note=note)
+        CUT["result"] = result
+        CUT["ok"] = not result.get("error")
+        if result.get("error"):
+            note(str(result["error"]))
+    except Exception as exc:                                           # pragma: no cover
+        log.exception("cutting an approved plan failed")
+        CUT["result"] = {"error": f"{type(exc).__name__}: {exc}"}
+        CUT["ok"] = False
+        note(f"Failed: {type(exc).__name__}: {exc}")
+    finally:
+        CUT["done"] = True
+        CUT["running"] = False
+
+
+def _start_cut(user_id: int, plan_id: str) -> tuple[bool, str]:
+    """Take the cutting slot for one plan, or say who has it.
+
+    One at a time, process-wide. Two concurrent cuts would run two encodes on a machine
+    that is also expected to render, and the second would finish over the first if both
+    were given the same plan.
+    """
+    with CUT_LOCK:
+        if CUT["running"]:
+            if (int(CUT.get("user_id") or 0) == int(user_id)
+                    and str(CUT.get("plan_id")) == str(plan_id)):
+                return False, "joined"
+            return False, "busy"
+        CUT.update(running=True, done=False, ok=False, log=[], result={},
+                   plan_id=str(plan_id), user_id=int(user_id),
+                   started=time.monotonic())
+        threading.Thread(target=_cut_now, args=(int(user_id), str(plan_id)),
+                         daemon=True, name="forgecast-cut-plan").start()
+        return True, "started"
 
 
 @router.post("/plans/{plan_id}/decision")
@@ -178,14 +285,88 @@ def decide_plan(plan_id: str, payload: dict | None = None,
     Rejecting is a first-class outcome rather than a way of deleting the plan: the note
     says what was wrong with it, and the next draft is made against that instead of
     against a blank page.
+
+    Approving releases the cut and starts it, and returns without waiting for it — see the
+    module docstring. Pass `cut: false` to approve without starting one, which is what an
+    operator approving several plans in a row wants: the decision is the thing that had to
+    be recorded, and the encoding can be taken one at a time afterwards.
     """
     body = payload or {}
-    result = _studio(user).approve_edit(plan_id,
-                                        approve=bool(body.get("approve", True)),
+    approve = bool(body.get("approve", True))
+    result = _studio(user).approve_edit(plan_id, approve=approve,
                                         note=str(body.get("note") or ""))
     if result.get("error"):
         raise HTTPException(status_code=404, detail=result["error"])
-    return {"ok": True, **result}
+
+    cut: dict = {"running": False, "started": False}
+    if approve and bool(body.get("cut", True)):
+        started, why = _start_cut(user.id, plan_id)
+        cut = {
+            "running": started or why == "joined",
+            "started": started,
+            "busy": why == "busy",
+            "stream": f"POST /api/edit/plans/{plan_id}/cut",
+            "status": "GET /api/edit/cut",
+            "why": ("a cut is already running — take this one when it finishes"
+                    if why == "busy" else ""),
+        }
+    return {"ok": True, **result, "cut": cut}
+
+
+@router.get("/cut")
+def cut_status(user: User = Depends(current_user)) -> dict:
+    """Where the running cut has got to, for a caller that was not watching the stream."""
+    return _cut_state(user.id)
+
+
+@router.post("/plans/{plan_id}/cut")
+async def cut_plan(plan_id: str, user: User = Depends(current_user)):
+    """Execute an approved paper edit, streaming progress as it goes.
+
+    Refuses a plan that has not been approved — the refusal lives in `Studio.cut_plan`, so
+    the chat's tools and this endpoint cannot disagree about what the gate means. NDJSON
+    over a generator polling a worker thread, which is the shape the style shelf and the
+    setup page already read; the alternative holds a worker for the length of an encode,
+    blocks the event loop for all of it and reports nothing until the proxy gives up.
+    """
+    found = _studio(user).edit_plans(plan_id)
+    if found.get("error"):
+        raise HTTPException(status_code=404, detail=found["error"])
+
+    _started, why = _start_cut(user.id, plan_id)
+    if why == "busy":
+        raise HTTPException(status_code=409,
+                            detail="a cut is already running — they share one machine, "
+                                   "so this one waits")
+
+    async def stream():
+        if why == "joined":
+            yield json.dumps({"type": "joined"}) + "\n"
+        sent = 0
+        while True:
+            while sent < len(CUT["log"]):
+                yield json.dumps({"type": "log", "text": CUT["log"][sent]}) + "\n"
+                sent += 1
+            if CUT["done"] and sent >= len(CUT["log"]):
+                break
+            # A heartbeat rather than only log lines. The encode is one ffmpeg call with
+            # nothing to say in the middle of it, and a stream that goes quiet for four
+            # minutes is a stream an intermediary closes.
+            yield json.dumps({"type": "progress",
+                              "seconds_elapsed": round(
+                                  time.monotonic() - float(CUT["started"] or 0.0), 1)
+                              }) + "\n"
+            await asyncio.sleep(0.5)
+
+        result = dict(CUT["result"])
+        # Minted here rather than in the studio: signing needs the account the link is
+        # for, and the studio is the layer that has no idea it is being reached over HTTP.
+        if result.get("path") and not result.get("error"):
+            result["media_url"] = sign_url(result["path"], user.id)
+        yield json.dumps({"type": "done", "ok": bool(CUT["ok"]),
+                          "result": result}) + "\n"
+
+    return StreamingResponse(stream(), media_type="application/x-ndjson")
 
 
 @router.post("/layers")

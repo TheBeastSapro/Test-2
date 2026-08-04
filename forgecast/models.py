@@ -174,10 +174,27 @@ class Channel(Base):
     #
     # Until this existed the registry built every video provider as `cls(api_key)`, so
     # every render on every channel used the default slug and the catalogue beside it was
-    # decoration. A per-shot choice would be better still and is what the skills describe;
-    # per channel is what a style lock actually wants, because mixing models inside one
-    # project is the anti-pattern those same skills name.
+    # decoration.
+    #
+    # This is now the *batch* model: what the seventy-five shots nobody will remember are
+    # generated on. The hero model below is the other half.
     video_model: Mapped[str] = mapped_column(String(128), default="")
+
+    # The model the beats the video is judged on are generated on — the opening hook, the
+    # reveal, the payoff, the closing shot. Empty means "do not upgrade anything", so the
+    # shots node falls back to `video_model` and the channel costs what it costs today.
+    #
+    # Two columns rather than one, because one model per channel priced the whole video at
+    # its dearest shot's rate. A realistic eighty-shot script is $14.70 entirely on Veo 3.1
+    # Lite and $98.00 entirely on Veo 3.1; five hero shots on the second and seventy-five
+    # on the first is about $21.50 — a premium opening for a fifth of the money. That gap
+    # is the reason this column exists, and no single-model setting can express it.
+    #
+    # It does not contradict the skills' "lock to one or two models per project": two is
+    # the number they permit, and a hero/batch split is the disciplined form of it rather
+    # than the shot-by-shot drift they warn about. Which shot gets which is decided by the
+    # planner as a *tier*, never as a slug — see `providers.media.model_for_tier`.
+    video_model_hero: Mapped[str] = mapped_column(String(128), default="")
 
     # The frame this channel's videos are delivered at. Both zero mean the app default,
     # which is 1080p at 30fps.
