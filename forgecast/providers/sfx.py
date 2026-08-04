@@ -38,7 +38,6 @@ people learn to ignore.
 from __future__ import annotations
 
 import logging
-import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -210,12 +209,18 @@ async def fetch_freesound(preview_url: str, out_path: Path) -> Path:
 # ----------------------------------------------------------------------- the web tier
 
 
-def _ytdlp() -> str:
-    found = shutil.which("yt-dlp")
+def _ytdlp() -> list[str]:
+    """The argv prefix that runs yt-dlp. See `forgecast.ytdlp`.
+
+    Not `shutil.which`: yt-dlp ships as a base dependency inside the app's own
+    virtualenv, and on Windows that virtualenv's `Scripts` is not on `PATH` — so a
+    `which` lookup reports it missing on a machine that has it.
+    """
+    from ..ytdlp import command, why_missing
+
+    found = command()
     if not found:
-        raise SfxError(
-            "yt-dlp is needed to fetch a named sound from the web — install it in Setup"
-        )
+        raise SfxError(f"a named sound cannot be fetched: {why_missing()}")
     return found
 
 
@@ -234,7 +239,7 @@ def fetch_named_sound(query: str, out_path: Path, *,
     """
     out_path.parent.mkdir(parents=True, exist_ok=True)
     command = [
-        _ytdlp(), f"ytsearch1:{query}",
+        *_ytdlp(), f"ytsearch1:{query}",
         "--extract-audio", "--audio-format", "mp3",
         "--postprocessor-args", f"ExtractAudio:-t {max(0.5, float(seconds)):.2f}",
         "--no-playlist", "--quiet", "--no-warnings",

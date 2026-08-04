@@ -140,7 +140,7 @@ def test_research_with_no_way_to_fetch_names_every_way_out(user, monkeypatch):
     out = Studio(user_id=user.id).research_channel("https://youtube.com/@someone")
 
     assert "error" in out
-    assert "pip install yt-dlp" in out["error"]
+    assert "Setup" in out["error"], "the fix is this app's installer, not a pip command"
     assert "Settings" in out["error"]
     assert "paste" in out["alternative"]
 

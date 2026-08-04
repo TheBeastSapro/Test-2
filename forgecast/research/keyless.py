@@ -51,7 +51,6 @@ from __future__ import annotations
 
 import json
 import logging
-import shutil
 import subprocess
 from datetime import UTC, datetime
 
@@ -88,8 +87,15 @@ class KeylessError(RuntimeError):
     """Something went wrong that the operator can act on. The message says what."""
 
 
-def _executable() -> str | None:
-    return shutil.which("yt-dlp")
+def _executable() -> list[str] | None:
+    """The argv prefix that runs yt-dlp. See `forgecast.ytdlp` for why it is not a path.
+
+    A list now, because on Windows the answer is usually `python -m yt_dlp` rather than
+    an executable: yt-dlp is a base dependency living in the app's own virtualenv, and
+    the `.vbs` that starts the app never puts that virtualenv's `Scripts` on `PATH`.
+    """
+    from ..ytdlp import command
+    return command()
 
 
 def _run(command: list[str]) -> subprocess.CompletedProcess:
@@ -107,13 +113,13 @@ def available() -> tuple[bool, str]:
     """Can a channel be read without a key, and if not, what would fix it."""
     if _executable():
         return True, ""
-    # No backticks. This string is printed as plain text under the fetch box on the
-    # research page, where a backtick is a backtick and "Install it with `pip install
-    # yt-dlp`" reads as a typo rather than as code.
-    return False, (
-        "yt-dlp is not installed, so a channel link cannot be read without a YouTube "
-        "Data API key. Install it with: pip install yt-dlp — or add a key in Settings."
-    )
+    # Names the app's own installer rather than a pip command, and printed as plain
+    # text under the fetch box, so it carries no backticks either. An operator handed
+    # `pip install yt-dlp` has been handed the maintainer's job — and on a managed
+    # Windows machine it is a job policy forbids, which is what the agent found out by
+    # trying it four times and being refused by the sandbox on every one.
+    from ..ytdlp import why_missing
+    return False, why_missing()
 
 
 def _listing_url(reference: str) -> str:
@@ -159,7 +165,7 @@ def channel_uploads(reference: str, *, limit: int = 50) -> ParseResult:
     url = _listing_url(reference)
 
     command = [
-        binary, "--flat-playlist", "--dump-single-json",
+        *binary, "--flat-playlist", "--dump-single-json",
         "--playlist-end", str(max(1, min(int(limit), 200))),
         # Without this every entry's timestamp is null and there is nothing to score.
         "--extractor-args", "youtubetab:approximate_date",
@@ -272,7 +278,7 @@ def video_stats(video_ids: list[str]) -> ParseResult:
         return ParseResult()
 
     command = [
-        binary, "--dump-json", "--skip-download",
+        *binary, "--dump-json", "--skip-download",
         # A watch URL copied from the sidebar carries `&list=`, and without this yt-dlp
         # reads the whole playlist behind it — 200 videos where one was asked for.
         "--no-playlist",

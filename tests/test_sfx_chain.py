@@ -132,7 +132,7 @@ def test_a_named_sound_is_trimmed_on_arrival(tmp_path: Path, monkeypatch):
         return subprocess.CompletedProcess(command, 0, b"", b"")
 
     monkeypatch.setattr(sfx.subprocess, "run", fake_run)
-    monkeypatch.setattr(sfx, "_ytdlp", lambda: "yt-dlp")
+    monkeypatch.setattr(sfx, "_ytdlp", lambda: ["yt-dlp"])
 
     chain = SfxChain(allow_web=True)
     result = chain.fetch_named("vine boom", tmp_path / "s", seconds=3.0)
@@ -144,7 +144,11 @@ def test_a_named_sound_is_trimmed_on_arrival(tmp_path: Path, monkeypatch):
 
 
 def test_a_missing_ytdlp_names_the_fix(monkeypatch):
-    monkeypatch.setattr(sfx.shutil, "which", lambda name: None)
+    """Patched at the resolver, not at `shutil.which`. yt-dlp is reachable as an
+    importable module as well as an executable — faking only the `PATH` lookup would
+    leave the module path answering, and the test would assert nothing."""
+    import forgecast.ytdlp as resolver
+    monkeypatch.setattr(resolver, "command", lambda: None)
     with pytest.raises(SfxError, match="Setup"):
         sfx._ytdlp()
 

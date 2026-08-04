@@ -14,7 +14,6 @@ from a host with working egress before trusting it.
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -22,7 +21,18 @@ from pathlib import Path
 from typing import ClassVar
 from urllib.parse import urlparse
 
-YT_DLP = shutil.which("yt-dlp")
+
+def _yt_dlp() -> list[str] | None:
+    """The argv prefix that runs yt-dlp, resolved per call. See `forgecast.ytdlp`.
+
+    A function rather than the module constant this used to be. The constant was
+    computed at import, so a machine that gained yt-dlp after the app started went on
+    being told it had none until the app was restarted — and it was wrong even at
+    import, because it searched `PATH` for a package that lives in the app's own
+    virtualenv and is not on it under Windows.
+    """
+    from ..ytdlp import command
+    return command()
 
 
 class AcquireError(RuntimeError):
@@ -122,14 +132,16 @@ class YtDlpSource(Source):
 
     def fetch(self, reference: str, workdir: Path, *, max_seconds: float | None = None
               ) -> Acquired:
-        if not YT_DLP:
-            raise AcquireError("yt-dlp is not installed")
+        binary = _yt_dlp()
+        if not binary:
+            from ..ytdlp import why_missing
+            raise AcquireError(why_missing())
         workdir.mkdir(parents=True, exist_ok=True)
 
         # 480p is plenty: every measurement here runs on 160px-wide frames anyway,
         # and a smaller file is a faster, more reliable download.
         cmd = [
-            YT_DLP, "--no-warnings", "--no-playlist",
+            *binary, "--no-warnings", "--no-playlist",
             # The native downloader avoids handing the media fetch to ffmpeg, which
             # does not honour HTTPS_PROXY and fails with exit 8 behind one.
             "--downloader", "native",

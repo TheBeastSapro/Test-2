@@ -196,12 +196,12 @@ def test_without_the_binary_the_fix_names_both_ways_out(monkeypatch):
 
     ready, fix = keyless.available()
     assert ready is False
-    assert "pip install yt-dlp" in fix
+    assert "Setup" in fix, "the fix is a button in this app, not a pip command"
     assert "Settings" in fix
 
     with pytest.raises(keyless.KeylessError) as caught:
         keyless.channel_uploads("@x")
-    assert "pip install yt-dlp" in str(caught.value)
+    assert "Setup" in str(caught.value)
 
 
 # ------------------------------------------------------------------ failure modes
@@ -329,7 +329,7 @@ def test_with_no_key_and_no_binary_the_error_is_actionable(monkeypatch):
     monkeypatch.setattr(keyless, "_executable", lambda: None)
     with pytest.raises(sources.ResearchError) as caught:
         sources.read_channel("@x")
-    assert "pip install yt-dlp" in str(caught.value)
+    assert "Setup" in str(caught.value)
 
 
 def _when():
@@ -425,7 +425,7 @@ def test_the_fetch_box_names_the_fix_when_nothing_can_read_a_channel(client, mon
     page = client.get("/research")
     box = page.text.split('id="channel"', 1)[1][:400]
     assert "disabled" in box
-    assert "pip install yt-dlp" in page.text
+    assert "Setup" in page.text
 
 
 def test_the_desk_scores_a_channel_link_with_no_key(client, yt_dlp):

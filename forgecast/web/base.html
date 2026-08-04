@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}Forgecast{% endblock %}</title>
-<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="{{ static_url('app.css') }}">
 {# Inline rather than a file: it is four shapes, it costs no request, and it works
    on a machine with no network — which is every machine this runs on. #}
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235eead4'/%3E%3Cpath d='M16 7l7 9-7 9-7-9z' fill='%2304211d'/%3E%3C/svg%3E">

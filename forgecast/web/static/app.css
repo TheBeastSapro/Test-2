@@ -145,12 +145,18 @@ code, .mono { font-family: var(--mono); font-size: 12.5px; }
 /* A 20px target on a 10px label. Deliberately not smaller: this is the only way to make
    a channel from the rail, and it was missing entirely — an operator with one channel had
    no `+` anywhere in the shell and no reason to guess a format tab held the form. */
+/* Sized against the lane label rather than against the 10px text beside it. A `+` scaled
+   to a 10px uppercase caption is a 10px `+`, which was reported as too small to find
+   before it was reported as too small to hit — and it is the only way to make a channel
+   from the shell, so it earns a real target rather than a matching one. 28px also clears
+   the 24px minimum a pointer wants. */
 .side .lane-add {
-  width: 20px; height: 20px; margin-right: -4px; border-radius: 6px;
+  width: 28px; height: 28px; margin: -6px -6px -6px 0; border-radius: 8px;
   display: grid; place-items: center; text-decoration: none;
-  font-size: 15px; line-height: 1; font-weight: 500;
-  color: var(--muted); background: transparent;
-  transition: background .12s, color .12s;
+  font-size: 21px; line-height: 1; font-weight: 400;
+  color: var(--text); background: var(--raise-2);
+  border: 1px solid var(--line);
+  transition: background .12s, color .12s, border-color .12s;
 }
 .side .lane-add:hover { background: var(--raise-2); color: var(--text); text-decoration: none; }
 .side .lane-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -700,6 +706,15 @@ button.danger:hover { background: #1a1011; border-color: #6b2f2f; }
   max-width: 780px; margin: 0 auto 16px;
   display: flex; align-items: center; gap: 9px;
   font-size: 13px; color: var(--muted);
+}
+/* What it is doing, then how long it has been doing it. The elapsed time is the half
+   that answers "has this hung?" — a line reading the same at four seconds and four
+   minutes is the reason that question gets asked at all. Tabular figures so a ticking
+   number does not shuffle the text beside it every second. */
+.thinking .what { flex: 1; min-width: 0; }
+.thinking .elapsed {
+  flex: none; font-size: 12px; color: var(--faint);
+  font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
 }
 .thinking i { display: flex; gap: 3px; font-style: normal; }
 .thinking i b {

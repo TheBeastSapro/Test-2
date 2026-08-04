@@ -613,11 +613,12 @@ async function openThread(id) {
       // The turn is still streaming into a container that was detached when this
       // transcript was repainted. Say so, rather than showing a conversation that
       // appears to have stopped mid-thought.
-      const note = document.createElement('div');
-      note.className = 'thinking';
-      note.innerHTML = '<i><b></b><b></b><b></b></i>'
-        + 'Still working on your last message — it will appear here when it finishes.';
-      chat().append(note);
+      // Same line, same clock. Repainting the transcript used to reset the wait to a
+      // sentence with no number in it, so a four-minute turn looked like a fresh one.
+      progressLine(chat(), {
+        since: RUNNING.get(id) || Date.now(),
+        label: 'Still working on your last message',
+      });
     }
     scrollDown();
   } catch (error) { toast(String(error.message || error)); }
@@ -761,7 +762,61 @@ async function takePaste(event) {
    with the rest of the transcript and the turn keeps writing into something nobody
    is looking at — which is exactly right, because the server is still working and
    the reply is persisted, so reopening the thread shows the finished answer. */
-const RUNNING = new Map();          // thread id -> true while a turn is streaming
+/* ── the progress line ──────────────────────────────────────────────────────
+
+   "Still working on your last message" is true and useless. A turn that installs
+   yt-dlp, reads a channel and writes a plan spends minutes inside a single tool, and
+   with no elapsed time and no activity the line reads identically at four seconds and
+   at four minutes — so the honest question it provokes is "has this hung?", which the
+   UI cannot answer and the operator cannot either.
+
+   Two things fix that and neither needs the backend to send anything new: how long it
+   has been, and what it is doing right now. The tool events already carry the second. */
+
+function humanElapsed(ms) {
+  const total = Math.max(0, Math.round(ms / 1000));
+  if (total < 60) return `${total}s`;
+  return `${Math.floor(total / 60)}m ${String(total % 60).padStart(2, '0')}s`;
+}
+
+function progressLine(host, { since = Date.now(), label = '' } = {}) {
+  const el = document.createElement('div');
+  el.className = 'thinking';
+  el.innerHTML = '<i><b></b><b></b><b></b></i>'
+    + '<span class="what"></span><span class="elapsed"></span>';
+  const what = el.querySelector('.what');
+  const elapsed = el.querySelector('.elapsed');
+
+  what.textContent = label || 'Thinking with Claude…';
+  // Ticked every second rather than driven by events, because the gap this exists to
+  // fill is exactly the stretch where no events arrive.
+  const tick = () => { elapsed.textContent = humanElapsed(Date.now() - since); };
+  tick();
+  const timer = setInterval(tick, 1000);
+
+  el.say = text => { what.textContent = text || 'Thinking with Claude…'; };
+  el.stop = () => clearInterval(timer);
+  // Cleared when the node leaves the document, so a repainted transcript does not leave
+  // a timer running against an element nobody can see.
+  const observer = new MutationObserver(() => {
+    if (!el.isConnected) { clearInterval(timer); observer.disconnect(); }
+  });
+  observer.observe(host, { childList: true });
+
+  host.append(el);
+  return el;
+}
+
+/* The progress line says what the tool is doing, in the words `TOOL_SAYS` already
+   uses for the tool card beside it. A second table here would be a second answer to
+   "what is this call called", and the two would disagree the first time either was
+   edited — `toolLabel` already falls back to `calling <name>` for anything unlisted. */
+function activityLabel(name) {
+  const said = toolLabel(name);
+  return said.charAt(0).toUpperCase() + said.slice(1);
+}
+
+const RUNNING = new Map();          // thread id -> turn start time while streaming
 
 function turnLockUI() {
   const busy = THREAD && RUNNING.has(THREAD.id);
@@ -810,7 +865,7 @@ async function send() {
   chat().append(host);
   bubble((shown ? `<div class="att-row">${shown}</div>` : '') + render(text), 'me', host);
 
-  RUNNING.set(turnThread, true);
+  RUNNING.set(turnThread, Date.now());
   SENDING = false;
   turnLockUI();
   markThreadBusy();
@@ -854,10 +909,7 @@ async function stream(text, files, host) {
   let reply = null;                 // the prose block currently being written into
   let body = '';
 
-  const thinking = document.createElement('div');
-  thinking.className = 'thinking';
-  thinking.innerHTML = '<i><b></b><b></b><b></b></i>Thinking with Claude…';
-  host.append(thinking);
+  const thinking = progressLine(host);
   scrollDown();
 
   const paint = () => {
@@ -900,10 +952,15 @@ async function stream(text, files, host) {
 
         if (event.type === 'text') {
           thinking.hidden = true;
+          thinking.say('');
           body += event.text;
           paint();
         } else if (event.type === 'tool') {
-          thinking.hidden = true;
+          // Kept visible now rather than hidden: the tool is the slow part, and the
+          // spinner naming it is the only thing on screen during the wait it causes.
+          thinking.say(activityLabel(event.name) + '…');
+          thinking.hidden = false;
+          host.append(thinking);
           if (worthShowing(event.name)) {
             closeProse();
             cards.set(event.id, toolCard(event, { into: host }));
@@ -912,6 +969,7 @@ async function stream(text, files, host) {
           const card = cards.get(event.id);
           if (card) fillToolCard(card, { text: event.text, isError: event.is_error });
           // The agent goes quiet again between a result and its next sentence.
+          thinking.say('');
           thinking.hidden = false;
           host.append(thinking);
           scrollDown();

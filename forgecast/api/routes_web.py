@@ -36,6 +36,37 @@ TEMPLATES = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent
 TEMPLATES.env.globals["ffmpeg_ok"] = ffmpeg_available
 
 
+def static_url(name: str) -> str:
+    """`/static/<name>` with a token that changes when the file does.
+
+    This is not a nicety. The app runs inside an embedded WebView, and that WebView keeps
+    its cache across restarts — so `/static/app.css` and `/static/chat.js` stayed on
+    whatever it fetched the first time the app ever ran, for as long as the install
+    lived. Reinstalling over the top did not help, because the URL never changed.
+
+    The symptom is worse than "an old stylesheet", because HTML is not cached the same
+    way: templates updated while their styles and scripts did not, so a build arrived
+    half-new. A control added to `base.html` appeared, unstyled and the wrong size,
+    because its CSS was months old; a control added in `chat.js` did not appear at all.
+    Both were reported as "you did not build it", and both were in the archive.
+
+    The token is the file's modification time, which every build changes and no build has
+    to remember to bump — a hand-kept version number is a thing to forget, and forgetting
+    it reproduces exactly this bug with nothing on screen to say so.
+    """
+    path = Path(__file__).resolve().parent.parent / "web" / "static" / name
+    try:
+        stamp = int(path.stat().st_mtime)
+    except OSError:
+        # A missing file is the packager's problem, not this function's. Serving the
+        # bare URL lets the 404 be the error rather than hiding it behind a crash here.
+        return f"/static/{name}"
+    return f"/static/{name}?v={stamp:x}"
+
+
+TEMPLATES.env.globals["static_url"] = static_url
+
+
 def when(value) -> str:
     """A timestamp a person can read, from whatever the caller has.
 
