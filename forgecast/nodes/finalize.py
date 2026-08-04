@@ -144,6 +144,10 @@ async def render_node(ctx: NodeContext) -> NodeResult:
         narration_path=narration if narration.exists() else None,
         width=width,
         height=height,
+        # The channel's rate, not the encoder's constant. It has to reach every piece of
+        # the render: `concat_clips` stream-copies, so pieces at mixed rates produce a
+        # file whose timestamps drift against its audio.
+        fps=int(ctx.params.get("fps") or getattr(ctx.channel, "video_fps", 0) or 0) or None,
         avatar_path=avatar_path,
         subtitles=bool(ctx.params.get("subtitles", True)),
         motion_preset=preset,

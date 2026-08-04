@@ -19,7 +19,54 @@ FFMPEG = shutil.which("ffmpeg") or "ffmpeg"
 FFPROBE = shutil.which("ffprobe") or "ffprobe"
 
 # Normalising every intermediate clip to one codec/rate makes concat safe.
-VCODEC = ["-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-r", "30"]
+# Frame rates this pipeline will encode at, and why the list is short.
+#
+# 24 is the film rate and reads as film. 30 is the default and the right answer for
+# almost everything here. 60 exists because it was asked for, and it is worth being
+# straight about what it does and does not buy on this kind of footage:
+#
+#   * The image-to-video vendors return 24 or 30 natively — WAN returns 16. Encoding
+#     those at 60 duplicates frames. It doubles the file and the encode time and adds no
+#     information, because there is none to add.
+#   * It is genuinely better for high-motion capture — gaming, sport, screen recording —
+#     which is not what this pipeline produces.
+#   * `motion/paper.py` counts its holds in frames, so a style that steps every third
+#     frame steps twice as fast at 60 and reads smoother, which is the one quality it
+#     exists to remove. `paper.hold_for_fps` scales it.
+#
+# So it is offered, with the trade stated, rather than either hidden or recommended.
+SUPPORTED_FPS: tuple[int, ...] = (24, 30, 60)
+DEFAULT_FPS = 30
+
+
+def resolve_fps(fps: int | None = None) -> int:
+    """The frame rate to encode at, snapped to one this pipeline supports.
+
+    Snapped rather than trusted, because the rate is not only an encoder flag: it is
+    baked into filter strings and into the concat. An unsupported value would produce
+    pieces at one rate and a stream copy expecting another.
+    """
+    wanted = int(fps or DEFAULT_FPS)
+    if wanted in SUPPORTED_FPS:
+        return wanted
+    return min(SUPPORTED_FPS, key=lambda option: abs(option - wanted))
+
+
+def vcodec(fps: int | None = None) -> list[str]:
+    """Encoder settings for one rate.
+
+    Every piece of a render has to come out of this same call. `concat_clips` stream-
+    copies rather than re-encoding — a second generation loss for nothing — and a stream
+    copy of pieces at mixed frame rates produces a file whose timestamps drift against
+    its audio, which shows up as lip-sync slipping later in a long video and nowhere near
+    the code that caused it.
+    """
+    return ["-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+            "-r", str(resolve_fps(fps))]
+
+
+#: The default settings, for the callers that have no per-run rate to honour.
+VCODEC = vcodec()
 ACODEC = ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2"]
 
 
@@ -143,9 +190,11 @@ def make_color_clip(
     height: int = 720,
     color: str = "0x101820",
     label: str = "",
+    fps: int | None = None,
 ) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    filters = [f"color=c={color}:s={width}x{height}:r=30:d={max(seconds, 0.1):.3f}"]
+    rate = resolve_fps(fps)
+    filters = [f"color=c={color}:s={width}x{height}:r={rate}:d={max(seconds, 0.1):.3f}"]
     args = ["-f", "lavfi", "-i", filters[0]]
     if label:
         safe = _escape_drawtext(label)
@@ -154,7 +203,7 @@ def make_color_clip(
             f"drawtext=text='{safe}':fontcolor=white@0.85:fontsize={max(height // 18, 16)}"
             f":x=(w-text_w)/2:y=(h-text_h)/2",
         ]
-    args += ["-t", f"{max(seconds, 0.1):.3f}", *VCODEC, "-an", str(out_path)]
+    args += ["-t", f"{max(seconds, 0.1):.3f}", *vcodec(rate), "-an", str(out_path)]
     run_ffmpeg(args, label="make_color_clip")
     return out_path
 
@@ -189,6 +238,7 @@ def still_to_clip(
     height: int = 720,
     ken_burns: bool = True,
     punch_in: float = 1.0,
+    fps: int | None = None,
 ) -> Path:
     """Animate a still so a slideshow does not look like a slideshow.
 
@@ -199,7 +249,8 @@ def still_to_clip(
     """
     out_path.parent.mkdir(parents=True, exist_ok=True)
     duration = max(seconds, 0.2)
-    frames = max(int(duration * 30), 2)
+    rate = resolve_fps(fps)
+    frames = max(int(duration * rate), 2)
     punch = _punch_crop(punch_in)
     if ken_burns:
         # zoompan cost scales with input pixels, so oversample by 1.25x and no more —
@@ -211,7 +262,7 @@ def still_to_clip(
             f"crop={source_w}:{source_h},"
             f"{punch}"
             f"zoompan=z='min(zoom+{zoom_step},1.12)':d={frames}:"
-            f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps=30,"
+            f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={rate},"
             f"format=yuv420p"
         )
     else:
@@ -229,7 +280,7 @@ def still_to_clip(
             # input at `duration` seconds of frames, and zoompan then multiplies every
             # one of them by d — hundreds of times more frames than the clip needs.
             "-t", f"{duration:.3f}",
-            *VCODEC,
+            *vcodec(rate),
             "-an",
             str(out_path),
         ],
@@ -247,6 +298,7 @@ def normalise_clip(
     height: int = 720,
     punch_in: float = 1.0,
     seek: float = 0.0,
+    fps: int | None = None,
 ) -> Path:
     """Trim/pad a provider clip to the exact scene length and uniform codec.
 
@@ -257,6 +309,7 @@ def normalise_clip(
     """
     out_path.parent.mkdir(parents=True, exist_ok=True)
     duration = max(seconds, 0.2)
+    rate = resolve_fps(fps)
     vf = (
         f"{_punch_crop(punch_in)}"
         f"scale={width}:{height}:force_original_aspect_ratio=increase,"
@@ -272,7 +325,7 @@ def normalise_clip(
             "-t", f"{duration:.3f}",
             # If the source is short, hold its last frame rather than cutting early.
             "-vsync", "cfr",
-            *VCODEC,
+            *vcodec(rate),
             "-an",
             str(out_path),
         ],
@@ -285,7 +338,7 @@ def normalise_clip(
             [
                 "-i", str(out_path),
                 "-vf", f"tpad=stop_mode=clone:stop_duration={duration - actual:.3f}",
-                *VCODEC, "-an", str(padded),
+                *vcodec(rate), "-an", str(padded),
             ],
             label="pad_clip",
         )
@@ -327,7 +380,8 @@ def mux(video_path: Path, audio_path: Path, out_path: Path) -> Path:
     return out_path
 
 
-def overlay_video(base: Path, overlay: Path, out_path: Path, *, scale: float = 0.28,
+def overlay_video(base: Path, overlay: Path, out_path: Path, *, fps: int | None = None,
+                  scale: float = 0.28,
                   corner: str = "br") -> Path:
     """Picture-in-picture: drop the avatar pass onto the B-roll bed."""
     positions = {
@@ -345,7 +399,7 @@ def overlay_video(base: Path, overlay: Path, out_path: Path, *, scale: float = 0
             f"[1:v]scale=iw*{scale}:-2[pip];[0:v][pip]overlay={xy}:shortest=0[v]",
             "-map", "[v]",
             "-map", "0:a?",
-            *VCODEC,
+            *vcodec(resolve_fps(fps)),
             "-c:a", "copy",
             str(out_path),
         ],
@@ -477,7 +531,8 @@ def _wrap(text: str, width: int) -> str:
     return "\n".join(out[:MAX_LINES])
 
 
-def burn_subtitles(video_path: Path, srt_path: Path, out_path: Path) -> Path:
+def burn_subtitles(video_path: Path, srt_path: Path, out_path: Path, *,
+                   fps: int | None = None) -> Path:
     style = (
         "FontSize=18,PrimaryColour=&H00FFFFFF,OutlineColour=&H90000000,"
         "BorderStyle=3,Outline=1,Shadow=0,MarginV=42"
@@ -486,7 +541,7 @@ def burn_subtitles(video_path: Path, srt_path: Path, out_path: Path) -> Path:
         [
             "-i", str(video_path),
             "-vf", f"subtitles='{srt_path.resolve().as_posix()}':force_style='{style}'",
-            *VCODEC,
+            *vcodec(resolve_fps(fps)),
             "-c:a", "copy",
             str(out_path),
         ],
@@ -499,13 +554,14 @@ def burn_subtitles(video_path: Path, srt_path: Path, out_path: Path) -> Path:
 
 
 def _shot_clip(
-    scene: Scene, cut, out_path: Path, *, width: int, height: int, subdivided: bool
+    scene: Scene, cut, out_path: Path, *, width: int, height: int, subdivided: bool,
+    fps: int | None = None,
 ) -> Path:
     """One visual segment of a scene, from whichever plate the plan assigned it."""
     plate = scene.plate(getattr(cut, "plate_index", 0))
     if plate is None:
         make_color_clip(
-            out_path, cut.seconds, width=width, height=height,
+            out_path, cut.seconds, width=width, height=height, fps=fps,
             label=scene.narration[:80] or f"scene {scene.index}",
         )
         return out_path
@@ -515,6 +571,7 @@ def _shot_clip(
         normalise_clip(
             plate, out_path, cut.seconds, width=width, height=height,
             punch_in=punch, seek=float(getattr(cut, "source_offset", 0.0) or 0.0),
+            fps=fps,
         )
     else:
         still_to_clip(
@@ -524,12 +581,14 @@ def _shot_clip(
             # cut is detected at all. The cut carries the motion instead.
             ken_burns=not subdivided,
             punch_in=punch,
+            fps=fps,
         )
     return out_path
 
 
 def _build_scene_clip(
-    scene: Scene, target: Path, cuts: list, *, workdir: Path, width: int, height: int
+    scene: Scene, target: Path, cuts: list, *, workdir: Path, width: int, height: int,
+    fps: int | None = None,
 ) -> Path:
     """Build one scene's visual bed, as one clip or as several cut together."""
     if len(cuts) <= 1:
@@ -538,20 +597,23 @@ def _build_scene_clip(
         only = cuts[0] if cuts else None
         if only is not None and scene.plate(only.plate_index) is not None:
             return _shot_clip(
-                scene, only, target, width=width, height=height, subdivided=False
+                scene, only, target, width=width, height=height, subdivided=False,
+                fps=fps,
             )
         if scene.visual_path and scene.visual_path.exists():
             if scene.is_video:
                 normalise_clip(
-                    scene.visual_path, target, scene.seconds, width=width, height=height
+                    scene.visual_path, target, scene.seconds, width=width,
+                    height=height, fps=fps,
                 )
             else:
                 still_to_clip(
-                    scene.visual_path, target, scene.seconds, width=width, height=height
+                    scene.visual_path, target, scene.seconds, width=width,
+                    height=height, fps=fps,
                 )
         else:
             make_color_clip(
-                target, scene.seconds, width=width, height=height,
+                target, scene.seconds, width=width, height=height, fps=fps,
                 label=scene.narration[:80] or f"scene {scene.index}",
             )
         return target
@@ -560,7 +622,7 @@ def _build_scene_clip(
         _shot_clip(
             scene, cut,
             workdir / f"scene_{scene.index:03d}_shot_{cut.shot_index:03d}.mp4",
-            width=width, height=height, subdivided=True,
+            width=width, height=height, subdivided=True, fps=fps,
         )
         for cut in cuts
     ]
@@ -584,6 +646,7 @@ def assemble_video(
     motion_backend: str = "ffmpeg",
     loudness_target: str = "youtube",
     shot_cuts=None,
+    fps: int | None = None,
 ) -> Path:
     """Turn scenes + narration into one finished file.
 
@@ -620,7 +683,7 @@ def assemble_video(
         target = workdir / f"scene_{scene.index:03d}.mp4"
         _build_scene_clip(
             scene, target, cuts_by_scene.get(scene.index) or [],
-            workdir=workdir, width=width, height=height,
+            workdir=workdir, width=width, height=height, fps=fps,
         )
 
         item = plan_by_scene.get(scene.index)
@@ -628,14 +691,14 @@ def assemble_video(
             target = engine.render(
                 target, workdir / f"scene_{scene.index:03d}_motion.mp4", item,
                 preset=motion_preset, seconds=scene.seconds,
-                width=width, height=height,
+                width=width, height=height, fps=resolve_fps(fps),
             )
         clips.append(target)
 
     bed = concat_clips(clips, workdir / "bed.mp4")
 
     if avatar_path and avatar_path.exists():
-        bed = overlay_video(bed, avatar_path, workdir / "bed_pip.mp4")
+        bed = overlay_video(bed, avatar_path, workdir / "bed_pip.mp4", fps=fps)
 
     if narration_path and narration_path.exists():
         staged = mux(bed, narration_path, workdir / "with_audio.mp4")
@@ -647,7 +710,8 @@ def assemble_video(
     if subtitles:
         srt = write_srt(scenes, workdir / "captions.srt")
         if srt.stat().st_size > 0:
-            staged = burn_subtitles(staged, srt, workdir / "with_captions.mp4")
+            staged = burn_subtitles(staged, srt, workdir / "with_captions.mp4",
+                                     fps=fps)
 
     # Last, after every pass that could touch the audio. Voice providers disagree on
     # output level by more than 10 dB, so without this one video plays quiet and the

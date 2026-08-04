@@ -52,7 +52,9 @@ from ..auth import current_user, optional_user
 from ..db import get_session
 from ..graph import formats
 from ..models import Channel, Run, RunStatus, User
+from ..nodes._common import SUPPORTED_HEIGHTS, frame_for, resolve_height
 from ..providers.media import VIDEO_MODELS, video_catalogue
+from ..render.ffmpeg import SUPPORTED_FPS, resolve_fps
 from .routes_analytics import spend_report
 
 router = APIRouter(include_in_schema=False)
@@ -229,6 +231,22 @@ def _context(session: Session, user: User, channel: Channel, view: str) -> dict:
         # per second, because per-second rates rank these models in the wrong order — see
         # `video_catalogue`.
         "video_models": video_catalogue(channel.video_model),
+        # The frame and the rate. Both were constants, and the frame was a constant
+        # nobody chose: 9:16 and 1:1 already resolved to 1080 while 16:9 fell back to
+        # 720, so the main format was the single one shipping at the lower resolution.
+        "frames": [
+            {"height": option,
+             "label": f"{option}p",
+             "frame": "x".join(str(edge)
+                               for edge in frame_for(channel.aspect_ratio, option)),
+             "chosen": option == resolve_height(channel.video_height or None)}
+            for option in SUPPORTED_HEIGHTS
+        ],
+        "rates": [
+            {"fps": option,
+             "chosen": option == resolve_fps(channel.video_fps or None)}
+            for option in SUPPORTED_FPS
+        ],
     }
 
 
@@ -312,6 +330,32 @@ def save_video_model(
     channel.video_model = wanted
     session.commit()
     return RedirectResponse(f"/c/{channel_id}?saved=video-model", 303)
+
+
+@router.post("/c/{channel_id}/delivery")
+def save_delivery(
+    channel_id: int,
+    video_height: int = Form(0),
+    video_fps: int = Form(0),
+    user: User = Depends(current_user),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    """Set the frame and the frame rate this channel delivers at.
+
+    Snapped rather than refused. Neither of these is a slug that can resolve to nothing —
+    they are numbers, and a number outside the supported set has an obvious nearest
+    neighbour. Refusing would mean a 400 on a form that offered only valid options, which
+    can only happen to somebody posting by hand.
+
+    Stored together because they are one decision. An operator choosing 1440p is choosing
+    how long a render takes, and so is one choosing 60fps; splitting them across two forms
+    would let the page show a cost the operator has only half agreed to.
+    """
+    channel = owned_channel(session, user, channel_id)
+    channel.video_height = resolve_height(video_height) if video_height else 0
+    channel.video_fps = resolve_fps(video_fps) if video_fps else 0
+    session.commit()
+    return RedirectResponse(f"/c/{channel_id}?saved=delivery", 303)
 
 
 @router.post("/c/{channel_id}/motion-backend")

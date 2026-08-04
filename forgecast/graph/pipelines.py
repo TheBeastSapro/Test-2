@@ -61,7 +61,7 @@ def faceless_longform(
             depends_on=("script",),
             requires_approval=True,
             estimated_units=2,
-            params={"concepts": 2, "width": 1280, "height": 720},
+            params={"concepts": 2},
         ),
         NodeSpec(
             key="voice_casting",
@@ -126,7 +126,6 @@ def faceless_longform(
             # while the sample was still being looked at.
             depends_on=("broll_plan", "sample"),
             estimated_units=shots,
-            params={"width": 1280, "height": 720},
         ),
     ]
 
@@ -153,7 +152,7 @@ def faceless_longform(
             type="render",
             title="Render final video",
             depends_on=tuple(render_deps),
-            params={"width": 1280, "height": 720, "subtitles": True},
+            params={"subtitles": True},
             max_attempts=2,
         )
     )
@@ -256,17 +255,17 @@ def faceless_shorts(*, target_seconds: int = 45, publish: bool = True, **_) -> P
         NodeSpec(
             key="shots", type="shots", title="Generate vertical B-roll",
             depends_on=("broll_plan", "sample"), estimated_units=shots,
-            params={"width": 1080, "height": 1920},
+            
         ),
         NodeSpec(
             key="thumbnail", type="thumbnail", title="Generate cover frame",
             depends_on=("script",), estimated_units=1,
-            params={"concepts": 1, "width": 1080, "height": 1920},
+            params={"concepts": 1},
         ),
         NodeSpec(
             key="render", type="render", title="Render vertical video",
             depends_on=("shots", "voice", "sound"),
-            params={"width": 1080, "height": 1920, "subtitles": True},
+            params={"subtitles": True},
             max_attempts=2,
         ),
         NodeSpec(

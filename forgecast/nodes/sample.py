@@ -51,7 +51,7 @@ import json
 
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..providers import ProviderError
-from ..skills import gates
+from ..skills import gates, prompt_check
 from ._common import dimensions
 
 # What a shot with no stated camera is assumed to be doing. Matches the planner's own
@@ -160,6 +160,18 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
         prompt = str(first.get("prompt") or first.get("visual_prompt") or "").strip()
         seconds = quotes[setup_id].sample.seconds
 
+        # Read before it is paid for. `skills/prompt_check` has been able to say which
+        # prompts melt since it was written and nothing had ever called it — so a prompt
+        # chaining four finite verbs, or whip-panning across a face, was submitted,
+        # billed in full, and thrown away. It costs nothing to ask, and the answer is
+        # carried to the operator rather than acted on: the gate's whole shape is that a
+        # person decides, so a checker that silently skipped a setup would be taking the
+        # decision this node exists to hand over.
+        verdict = prompt_check.review(prompt, model=model)
+        if verdict.findings:
+            ctx.log(f"setup {setup_id}: {verdict.summary()}",
+                    level="warning" if verdict.blocked else "info")
+
         try:
             clip = await video_provider.generate_clip(
                 prompt,
@@ -185,6 +197,9 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
                                 quote_=quotes[setup_id], usd_spent_so_far=spent,
                                 batch=budget)
         payload["shots"] = len(covered)
+        # Travels with the sample, so the operator looking at a clip that is subtly wrong
+        # has the reason in front of them rather than having to name it themselves.
+        payload["prompt_review"] = verdict.as_dict()
         payload["scene_indexes"] = [shot.get("scene_index") for shot in covered]
         surfaced.append(payload)
 

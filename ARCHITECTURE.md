@@ -222,7 +222,7 @@ Honest inventory of what is skeleton and what is finished.
 **Finished and verified**
 - Graph engine: gates, revisions, cascade invalidation, retries, stale-lease reclaim
 - Credit ledger with holds and idempotency; closure verified end to end
-- Full pipeline on mock providers → a real 1280×720 H.264 + AAC MP4 with captions
+- Full pipeline on mock providers → a real 1920×1080 H.264 + AAC MP4 with captions
 - Auth, tenant isolation (cross-user reads and gates return 404), key encryption
 - JSON API, SSE live updates, node-graph UI
 - 57 tests, all offline

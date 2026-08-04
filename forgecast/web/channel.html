@@ -352,6 +352,43 @@
   {% endif %}
 </div>
 
+{# The frame and the rate. Both were constants, and the frame was a constant nobody
+   chose: 9:16 and 1:1 already resolved to 1080 while 16:9 fell back to 720, so the main
+   long-form format was the single one shipping at the lower resolution. #}
+<h2>Delivery</h2>
+<div class="card">
+  <p class="muted" style="margin:0 0 12px;font-size:13px">
+    The frame and the frame rate every video on this channel is exported at. Both change
+    how long a render takes; neither changes what is written, narrated or generated.
+  </p>
+  <form class="method" method="post" action="/c/{{ channel.id }}/delivery">
+    <select name="video_height" aria-label="Resolution for this channel">
+      {% for row in frames %}
+        <option value="{{ row.height }}" {{ 'selected' if row.chosen }}>
+          {{ row.label }} — {{ row.frame }}
+        </option>
+      {% endfor %}
+    </select>
+    <select name="video_fps" aria-label="Frame rate for this channel">
+      {% for row in rates %}
+        <option value="{{ row.fps }}" {{ 'selected' if row.chosen }}>
+          {{ row.fps }} fps
+        </option>
+      {% endfor %}
+    </select>
+    <button class="primary">Save</button>
+    {% if saved == 'delivery' %}<span class="n">Saved.</span>{% endif %}
+  </form>
+  <p class="methodnote">
+    {# Said here rather than left to be discovered after a render that took twice as
+       long. The vendors' native rates are a fact about the footage, not an opinion. #}
+    30 fps is the right answer for generated footage: the image-to-video models return
+    24 or 30 natively, so 60 duplicates frames — it doubles the file and the encode time
+    and adds nothing the source did not have. 60 earns its place on high-motion capture,
+    which is not what this pipeline produces.
+  </p>
+</div>
+
 {# The most expensive setting on this page, and until now the only one with no control.
    The registry built every video provider as `cls(api_key)`, so the slug the app shipped
    with was the slug every render on every channel used, and the catalogue of eleven

@@ -145,3 +145,52 @@ def test_style_comes_from_the_channel_and_motion_from_the_shot():
         {"model": "other", "motion": "push_in", "intensity": "subtle",
          "focal_verb": "looks", "seconds": 6}, channel, "16:9")
     assert other.setup_id != setup_for().setup_id
+
+
+# ------------------------------------------------------------------ the prompt read
+
+
+def test_the_prompt_is_read_before_it_is_paid_for():
+    """`skills/prompt_check` could say which prompts melt from the day it was written and
+    nothing had ever called it — so a prompt chaining four finite verbs, or whip-panning
+    across a face, was submitted, billed in full, and thrown away."""
+    import inspect
+
+    source = inspect.getsource(sample_node.sample_node)
+    assert "prompt_check.review" in source
+    # Before the submission, not after it. After is a diagnosis of a charge already made.
+    assert source.index("prompt_check.review") < source.index("generate_clip")
+
+
+def test_the_check_reports_and_does_not_decide():
+    """The gate's whole shape is that a person decides. A checker that skipped a setup
+    on its own would be taking the decision this node exists to hand over."""
+    import inspect
+
+    source = inspect.getsource(sample_node.sample_node)
+    reading = source.split("prompt_check.review", 1)[1].split("generate_clip", 1)[0]
+    # It logs. It does not `continue`, `return` or raise.
+    assert "ctx.log" in reading
+    assert "continue" not in reading
+    assert "raise" not in reading
+
+
+def test_the_verdict_travels_with_the_sample():
+    """So an operator looking at a clip that is subtly wrong has the reason in front of
+    them rather than having to name it themselves."""
+    import inspect
+
+    assert "prompt_review" in inspect.getsource(sample_node.sample_node)
+
+
+def test_the_checker_actually_catches_the_two_failures_it_is_here_for():
+    from forgecast.skills import prompt_check
+
+    chained = prompt_check.review(
+        "a man walks to the door, opens it, steps outside, and waves")
+    assert chained.blocked
+    assert "multi_action" in chained.codes
+
+    whipped = prompt_check.review(
+        "fast whip pan across her face as she turns")
+    assert "face_camera_move" in whipped.codes

@@ -74,6 +74,11 @@ class ChannelSnapshot:
     # Which image-to-video model this channel's shots are generated on. Empty means the
     # app default, which is what every run got before the choice existed.
     video_model: str = ""
+    # The frame and the rate this channel delivers at. Zero means the app default —
+    # 1080p at 30fps. Both defaulted so every older construction of this snapshot keeps
+    # working and means "let the app decide".
+    video_height: int = 0
+    video_fps: int = 0
 
 
 @dataclass
@@ -524,6 +529,8 @@ class GraphEngine:
                 voice_vendor=channel.voice_vendor or "",
                 scripting_style=channel.scripting_style or "",
                 video_model=channel.video_model or "",
+                video_height=int(channel.video_height or 0),
+                video_fps=int(channel.video_fps or 0),
             )
 
             upstream_outputs: dict[str, dict] = {}

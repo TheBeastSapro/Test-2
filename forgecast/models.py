@@ -179,6 +179,22 @@ class Channel(Base):
     # project is the anti-pattern those same skills name.
     video_model: Mapped[str] = mapped_column(String(128), default="")
 
+    # The frame this channel's videos are delivered at. Both zero mean the app default,
+    # which is 1080p at 30fps.
+    #
+    # Height rather than a width-and-height pair, because the aspect ratio is already a
+    # column and storing both lets them disagree — a channel set to 9:16 with a stored
+    # 1920x1080 would render landscape shorts and nothing would say why.
+    #
+    # 16:9 was the only aspect falling back to 720p; vertical and square already resolved
+    # to 1080. So the main format was the one shipping at the lower resolution, which was
+    # not a decision anybody made, and a column is how it stops being one nobody can see.
+    video_height: Mapped[int] = mapped_column(Integer, default=0)
+    # Frame rate. A column and not a run option because it has to be the same for every
+    # piece of one video — `concat_clips` stream-copies, and a copy of pieces at mixed
+    # rates drifts against the audio.
+    video_fps: Mapped[int] = mapped_column(Integer, default=0)
+
     avatar_id: Mapped[str] = mapped_column(String(128), default="")
     aspect_ratio: Mapped[str] = mapped_column(String(16), default="16:9")
     target_duration_seconds: Mapped[int] = mapped_column(Integer, default=480)

@@ -33,7 +33,7 @@ cp .env.example .env            # defaults are fine: mock mode, SQLite
 .venv/bin/python -m forgecast.cli demo --topic "Why deep-sea cables keep breaking" --seconds 60
 ```
 
-That produces a real 60-second 1280×720 H.264 file with narration and burned
+That produces a real 60-second 1920×1080 H.264 file with narration and burned
 captions at `storage/runs/1/render/final.mp4`, and prints the credit accounting.
 
 **Mock mode is the default and it is not a stub.** It emits genuine PNGs and MP4s via
