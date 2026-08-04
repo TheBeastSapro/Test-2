@@ -181,3 +181,70 @@ def test_no_two_documents_share_a_trigger():
     assert len(set(heads)) == len(heads)
     for head in heads:
         assert len(head) > 30, head
+
+
+def test_the_model_table_in_the_i2v_skill_matches_the_code():
+    """The skill was quoting prices out by more than 3x in both directions.
+
+    It had Kling v3 Pro at $0.40/sec against a real $0.112, and WAN 2.2 at $0.02/sec
+    against a real $0.08 — and four of its seven slugs did not exist in `VIDEO_MODELS`
+    at all. `providers/media.py` had been corrected against fal's own pages; the
+    document the agent quotes to the operator had not, so the agent was confidently
+    reporting fiction about money.
+
+    Asserted against the code rather than against a second hard-coded list, so the two
+    cannot drift apart again without this failing.
+    """
+    import re
+    from pathlib import Path
+
+    from forgecast.providers.media import VIDEO_MODELS
+    from forgecast import skills
+
+    doc = (Path(skills.__file__).resolve().parent / "data"
+           / "image-to-video.md").read_text(encoding="utf-8")
+
+    # Every fal video slug the document names has to be one the app can actually run.
+    quoted = set(re.findall(r"`(fal-ai/[a-z0-9./-]+image-to-video[a-z/]*)`", doc))
+    assert quoted, "the model table has no slugs in it any more — has it been rewritten?"
+    unknown = sorted(slug for slug in quoted if slug not in VIDEO_MODELS)
+    assert not unknown, (
+        "the i2v skill names models this app cannot run:\n  " + "\n  ".join(unknown))
+
+
+def test_the_i2v_skill_does_not_promise_a_choice_the_app_cannot_make():
+    """`registry.py` builds every provider as `cls(api_key)`, so `FalVideoProvider`
+    always uses its default model. There is no per-shot, per-run or per-channel path to
+    any other slug — so "pick a model per shot" was advice the agent could not follow
+    and would report as done."""
+    from pathlib import Path
+
+    from forgecast import skills
+
+    doc = (Path(skills.__file__).resolve().parent / "data"
+           / "image-to-video.md").read_text(encoding="utf-8")
+    assert "always the default" in doc, (
+        "the skill no longer states that model selection is fixed — if that has been "
+        "built, say so here instead of deleting the caveat")
+
+
+def test_no_shipped_skill_names_a_service_this_app_does_not_use():
+    """The i2v skill told the agent to query the Vercel AI Gateway's `/v1/models`.
+
+    There is no gateway in this codebase and never has been — that sentence came from
+    another product, and an instruction to call something that does not exist is an
+    instruction the agent either ignores or hallucinates a result for.
+    """
+    from pathlib import Path
+
+    from forgecast import skills
+
+    data = Path(skills.__file__).resolve().parent / "data"
+    offenders = []
+    for document in sorted(data.glob("*.md")):
+        body = document.read_text(encoding="utf-8").lower()
+        for word in ("vercel", "ai gateway", "/v1/models"):
+            if word in body:
+                offenders.append(f"{document.name}: {word!r}")
+    assert not offenders, "a shipped skill names a service this app does not use:\n  " \
+        + "\n  ".join(offenders)

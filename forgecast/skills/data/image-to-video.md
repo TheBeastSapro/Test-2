@@ -1,23 +1,36 @@
 # Image-to-Video Prompting
 
-> **Model reference (2026-05) — cost/strength notes, NOT a closed list.**
+> **Model reference — cost/strength notes, NOT a closed list.**
 >
 > A starting reference of i2v models known to work for these jobs, with per-second costs.
-> It is **not the full set**. fal hosts more; the Vercel AI Gateway can route others. There
-> is no blessed default: pick the model that fits the shot. If a model is named that isn't
-> here, or something else suits the shot better, **discover what's actually available and
-> use it** — list fal's video models, query the gateway's `/v1/models`, or fetch the
-> provider docs. **Never say a model is unavailable just because it's absent from this
-> table — verify first.**
+> It is **not the full set**: fal hosts more. There *is* a blessed default in this app —
+> `DEFAULT_VIDEO_MODEL` — and it is the only one a render can currently use; see the note
+> under the table. If a model is named that isn't here, or something else suits the shot
+> better, **discover what's actually available and
+> use it** — list fal's video models or fetch the provider docs. **Never say a model is
+> unavailable just because it's absent from this table — verify first.**
+>
+> The authoritative list is `VIDEO_MODELS` in `forgecast/providers/media.py`, which
+> carries a `PRICES_CHECKED` date. This table is a copy of it and copies go stale: it was
+> once out by more than 3x in both directions, and the agent quoted those figures to the
+> operator as fact. If the two disagree, the code is right.
 >
 > | Strengths | Model id | Cost / notes |
 > |---|---|---|
-> | B-roll, atmospheric, dialogue close-ups | `fal-ai/kling-video/v2.6-turbo/image-to-video` | ~$0.11/sec. Reliable workhorse. |
-> | Dramatic camera moves, action, faces in motion | `fal-ai/kling-video/v3.0/pro/image-to-video` | ~$0.40/sec. 10s max. |
-> | High volume, budget (OS, Apache 2.0) | `fal-ai/wan/v2.2-a14b/image-to-video` | ~$0.02/sec. |
-> | Cheap fast commercial | `fal-ai/minimax/hailuo-2.3/fast/image-to-video` | ~$0.03/sec. |
-> | Cheapest | `fal-ai/lightricks/ltx-video-v2.3/image-to-video` | ~$0.01/sec. |
-> | Audio gen / long-form coherence | `fal-ai/veo3/image-to-video` (audio), `fal-ai/sora-2/image-to-video` (coherence) | Premium edge cases. |
+> | B-roll, atmospheric, dialogue close-ups | `fal-ai/kling-video/v2.6/pro/image-to-video` | ~$0.07/sec. The default, and the reliable workhorse. |
+> | The same at lower latency | `fal-ai/kling-video/v2.5-turbo/pro/image-to-video` | ~$0.07/sec. |
+> | Dramatic camera moves, action, faces in motion | `fal-ai/kling-video/v3/pro/image-to-video` | ~$0.112/sec. |
+> | High volume, budget (OS, Apache 2.0) | `fal-ai/wan/v2.2-a14b/image-to-video` | ~$0.08/sec. Cheaper per clip than per second suggests — it is not the cheapest option. |
+> | Cheap fast commercial | `fal-ai/minimax/hailuo-2.3-fast/standard/image-to-video` | ~$0.032/sec. The cheapest here. |
+> | Cheap, quick | `fal-ai/ltx-2.3/image-to-video` / `…/image-to-video/fast` | ~$0.06 and ~$0.04/sec. |
+> | Audio gen / long-form coherence | `fal-ai/veo3/image-to-video` (~$0.20/sec, audio), `fal-ai/veo3/fast/image-to-video` (~$0.10/sec), `fal-ai/sora-2/image-to-video` (~$0.10/sec, coherence) | Premium edge cases. |
+>
+> **Which one a render actually uses.** Today: always the default, on every shot. The
+> registry builds each provider as `cls(api_key)` (`providers/registry.py`), so
+> `FalVideoProvider` takes its `DEFAULT_VIDEO_MODEL` and there is no per-shot, per-run or
+> per-channel path to any other slug. Advice to "pick a model per shot" is therefore not
+> actionable from this app yet — say so rather than promising it, and treat the table
+> above as what a render would cost if the choice existed.
 >
 > **How to choose:** match the model to the shot — general B-roll, hero/dramatic,
 > high-volume/cheap, or premium audio/coherence — weighing fidelity against per-second
