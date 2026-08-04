@@ -164,10 +164,9 @@ async def script_node(ctx: NodeContext) -> NodeResult:
     # structure. Appended as a hard constraint for the same reason the research block
     # below is — a method offered as background is a method the model agrees with and
     # then does not follow.
-    instructions = (
-        f"{SCRIPT_INSTRUCTIONS.safe_substitute(rate=f'{budget.words_per_second:.2f}', words=budget.words_for(seconds))}"
-        f"\n\n{scripting_block(ctx, seconds)}"
-    )
+    rules = SCRIPT_INSTRUCTIONS.safe_substitute(
+        rate=f"{budget.words_per_second:.2f}", words=budget.words_for(seconds))
+    instructions = f"{rules}\n\n{scripting_block(ctx, seconds)}"
 
     # How this channel opens, when a reference has been measured — the length and the pace
     # of its first beat, which is the one thing about the script the Hook Gate downstream

@@ -64,6 +64,9 @@
      one channel's habit and is deliberately the quietest of the three. */
   .scope.convention { color: var(--ok); border-color: #1f4b38; background: #10201a; }
   .scope.shared { color: var(--warn); border-color: #5c4a1e; background: #241f10; }
+  /* Where the channels point opposite ways. Not a fourth grade of agreement, so it does
+     not sit on the same green-to-amber scale as the three above it. */
+  .scope.split { color: #ff8a5c; border-color: #6b3319; background: #2a1710; }
   .scope.picks { color: var(--accent); border-color: var(--accent-dim);
                  background: var(--accent-dim); }
   .synth details { margin-top: 10px; }
@@ -288,18 +291,22 @@ function synthesis(payload) {
   const missing = synth.not_assessed || [];
 
   const label = (item) => item.scope === "picks" ? "your picks"
+    // A split says how many channels and that they disagree. "4 of 4 channels" on a
+    // finding whose content is that they point opposite ways reads as four channels
+    // agreeing, which is the reverse of what it measured.
+    : item.scope === "split" ? `${item.channel_count} channels, split`
     : item.channel_count <= 1 ? "1 channel"
     : `${item.channel_count} of ${item.of_channels} channels`;
 
   // Support, what it was measured against, and how confident that makes it — on every
   // row, next to the claim rather than behind a hover. A finding whose sample size is
-  // one click away is a finding read without its sample size.
+  // one click away is a finding read without its sample size. `support_note` is built
+  // server-side because the unit is not always videos and the singular has to be right.
   const row = (item) => `<li>
     <div class="s"><span class="scope ${esc(item.scope)}">${esc(label(item))}</span>${esc(item.headline)}</div>
     ${item.detail ? `<div class="d">${esc(item.detail)}</div>` : ""}
     <div class="d">${esc(item.scope_note)}</div>
-    <div class="d">${item.support} ${esc(item.support_unit)}${item.compared_with
-      ? ` against ${item.compared_with}` : ""} · ${esc(item.confidence)} confidence</div>
+    <div class="d">${esc(item.support_note)} · ${esc(item.confidence)} confidence</div>
     ${(item.notes || []).map((n) => `<div class="d">— ${esc(n)}</div>`).join("")}
   </li>`;
 
@@ -313,8 +320,12 @@ function synthesis(payload) {
   // a pattern" is worth reading; the same three silently missing is indistinguishable
   // from a pass that looked and found nothing.
   if (thin.length) {
-    parts.push(`<details><summary>${thin.length} more, too thin to call a pattern
-      (fewer than 4 videos behind it)</summary><ul>${thin.map(row).join("")}</ul></details>`);
+    // No threshold quoted here on purpose: every row already prints what is behind it,
+    // and a copy of `synthesis.MIN_SUPPORT` written into a template is a number that
+    // goes stale the first time the real one is tuned.
+    parts.push(`<details><summary>${thin.length} more, too thin to call a pattern —
+      the count under each says how thin</summary>
+      <ul>${thin.map(row).join("")}</ul></details>`);
   }
   if (missing.length) {
     parts.push(`<details><summary>What this could not check (${missing.length})</summary>

@@ -39,6 +39,7 @@ from forgecast.research.synthesis import (
     SCOPE_CONVENTION,
     SCOPE_PICKS,
     SCOPE_SHARED,
+    SCOPE_SPLIT,
     synthesise,
 )
 
@@ -390,6 +391,42 @@ def test_channels_that_do_not_share_a_schedule_are_reported_as_disagreeing():
     assert "do not share a schedule" in found.headline
     assert "Fast every 3d" in found.headline
     assert "Slow every 21d" in found.headline
+    # And it is scoped as a split, not as two channels agreeing about something. The
+    # convention wording is precisely false about a finding whose content is the
+    # difference between them.
+    assert found.scope == SCOPE_SPLIT
+    assert "they do not agree" in found.scope_note
+
+
+def test_outliers_that_landed_after_a_longer_gap_than_usual_are_named():
+    """Measured against that channel's own usual gap, not against a number of days.
+
+    A fortnight off is a long break on a daily channel and nothing at all on a monthly
+    one, so pooling raw days across channels would report the slowest channel's habits as
+    everybody's. What this cannot say is why, and it says that it cannot: a video that
+    took longer to make and a video that got a rested audience are identical from here.
+    """
+    videos: list[VideoStat] = []
+    index = 0
+    age = 200.0
+    while age > 30:
+        for _ in range(4):
+            videos.append(uploads("Solo", count=1, start=age)[0])
+            videos[-1].video_id = f"solo{index}"
+            index += 1
+            age -= 7.0
+        age -= 14.0    # the extra wait, on top of the usual seven days
+        videos.append(hit("Solo", f"solohit{index}", f"the big one {index}", days_old=age))
+        index += 1
+        age -= 7.0
+
+    (found,) = [item for item in kinds(synthesise(videos, now=NOW), "cadence")
+                if "longer gap" in item.headline]
+
+    assert "3.0x the channel's own typical gap" in found.headline
+    assert found.support == 4
+    assert found.usable is True
+    assert "says nothing about cause" in found.detail
 
 
 # ------------------------------------------------------------------------- duration
@@ -417,6 +454,7 @@ def test_channels_pointing_opposite_ways_about_length_are_not_averaged_away():
     assert "on Long the outliers run longer" in split.headline
     assert "on Short they run shorter" in split.headline
     assert sorted(split.channels) == ["Long", "Short"]
+    assert split.scope == SCOPE_SPLIT
 
 
 def test_the_length_finding_is_computed_per_cohort():
@@ -447,6 +485,8 @@ def test_a_pick_is_measured_against_the_median_of_its_own_channel():
 
     (found,) = kinds(synthesise(videos, now=NOW), "picks")
 
+    # "1 picks" under a finding is where a reader stops trusting the numbers above it.
+    assert found.support_note == "1 pick"
     assert found.scope == SCOPE_PICKS
     assert found.usable is True
     assert "1 of your 1 measured pick(s) beat the median" in found.headline

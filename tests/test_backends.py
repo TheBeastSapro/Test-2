@@ -179,7 +179,10 @@ def test_every_element_declares_its_kind():
                      width=640, height=360)
     payload = json.loads(plan.to_props())
     for element in payload["plan"]["elements"]:
-        assert element["kind"] in {"text", "band", "card"}
+        # `card` is deliberately absent. It was a third element kind that no path ever
+        # emitted, and it is gone from the planner, the Remotion renderer and the browser
+        # preview alike — leaving it permitted here would let it come back unnoticed.
+        assert element["kind"] in {"text", "band"}
 
 
 @pytest.mark.parametrize("kind", ["title", "lower_third", "kinetic"])

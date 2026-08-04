@@ -134,6 +134,10 @@ GAP_LIFT = 1.25
 SCOPE_CHANNEL = "channel"          # one channel — a habit
 SCOPE_SHARED = "shared"            # two — agreement, not yet a convention
 SCOPE_CONVENTION = "convention"    # three or more — the niche's convention
+# Several channels, pointing opposite ways. Its own scope rather than a convention with a
+# different sentence, because the convention wording — "the same thing on four different
+# channels" — is precisely false about a finding whose content is that they differ.
+SCOPE_SPLIT = "split"
 SCOPE_PICKS = "picks"              # not a generalisation at all; named videos, measured
 
 UNNAMED = "(unnamed)"
@@ -201,6 +205,10 @@ class Finding:
         count = len(self.channels)
         if self.scope == SCOPE_PICKS:
             return "your picks, each measured against the channel it came from"
+        if self.scope == SCOPE_SPLIT:
+            return (f"{count} of the {self.of_channels} channels in this fetch, and they "
+                    f"do not agree — this is where they differ, which is a finding and "
+                    f"not a shared pattern.")
         if count <= 1:
             name = self.channels[0] if self.channels else "one channel"
             return (f"{name} only — one channel's habit, not a niche pattern. Another "
@@ -212,6 +220,24 @@ class Finding:
                 f"thing on {count} different channels is the niche's convention, not "
                 f"one channel's habit.")
 
+    @property
+    def support_note(self) -> str:
+        """How much is behind this, in words, with the singular right.
+
+        Assembled here rather than left to a template because the unit is not always
+        videos — a cadence figure is measured from the gaps between uploads — and a
+        template that appends an "s" prints "1 picks" under a finding. A seam like that
+        in the sample size is where a reader stops trusting the numbers above it.
+        """
+        unit = self.support_unit
+        if self.support == 1:
+            unit = {"videos": "video", "picks": "pick",
+                    "gaps between uploads": "gap between uploads"}.get(unit, unit)
+        text = f"{self.support} {unit}"
+        if self.compared_with:
+            text += f" against {self.compared_with}"
+        return text
+
     def as_dict(self) -> dict:
         return {
             "kind": self.kind,
@@ -222,6 +248,7 @@ class Finding:
             "of_channels": self.of_channels,
             "support": self.support,
             "support_unit": self.support_unit,
+            "support_note": self.support_note,
             "compared_with": self.compared_with,
             "scope": self.scope,
             "scope_note": self.scope_note,
@@ -518,7 +545,7 @@ def _duration_disagreement(timed: list[VideoStat], others: list[VideoStat],
                "is no one length to copy here — pooled, these two cancel out and the "
                "fetch reads as though length did not matter to either of them.",
         channels=[*longer, *shorter], support=len(supporting),
-        of_channels=of_channels, compared_with=len(others),
+        of_channels=of_channels, compared_with=len(others), scope=SCOPE_SPLIT,
     )]
 
 
@@ -715,7 +742,7 @@ def _cadence_agreement(cadence: dict[str, float], gap_counts: dict[str, int],
         detail="So cadence is not what this niche has in common, and matching any one of "
                "these is copying that channel rather than the niche.",
         channels=names, support=support, of_channels=of_channels,
-        support_unit="gaps between uploads",
+        support_unit="gaps between uploads", scope=SCOPE_SPLIT,
     )]
 
 

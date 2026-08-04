@@ -80,12 +80,10 @@ from ..render import ffmpeg as ff
 from ..style.editing import HOOK_SECONDS, WritingBudget, writing_budget
 from ._common import dimensions
 
-# `HOOK_SECONDS` — the window a viewer decides in on a channel with no learned reference —
-# is imported rather than declared here now, because it is the fallback half of a decision
-# `style.editing.writing_budget` makes and a default that lives away from its override is
-# the one that goes stale. Scenes are still taken whole until the window is covered rather
-# than cut at exactly it: half a sentence tests nothing, and a hook judged on a truncated
-# clause is judged on an artefact of the cut.
+# `HOOK_SECONDS` is imported rather than declared here: it is now the fallback half of a
+# decision `writing_budget` makes, and a shipped default kept away from its override is the
+# one that goes stale without anybody noticing. It is still the name this module's window
+# is spelled with, so `hook.HOOK_SECONDS` reads as it always did.
 
 # However short the opening scenes are, more than this is not a hook any more, it is the
 # first act. The gate exists to be cheap; a "hook" running to forty seconds because the
@@ -94,9 +92,9 @@ MAX_HOOK_SCENES = 4
 
 # How far the written opening has to sit from the references' before the difference is
 # worth a sentence at the gate. An opening length is a choice a creator makes within a
-# range and not to a stopwatch, so their own references disagree by a fifth without
+# range and not to a stopwatch, so their own references disagree by a third without
 # meaning anything by it — and a gate that remarks on every run is one the operator stops
-# reading, which costs more than saying nothing.
+# reading, which costs more than a gate that says nothing.
 NOTABLE_DRIFT = 0.35
 
 

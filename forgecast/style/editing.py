@@ -536,11 +536,11 @@ def _sourcing_of(profiles: list[dict]) -> dict:
 def _narrative_of(profiles: list[dict]) -> dict:
     """What this creator's narration does, pooled across the references.
 
-    Reads the `semantic` block each reference already carries. A block that came from a
-    vision provider rather than from `vision.semantic` has none of these fields and
-    contributes nothing — which is the right outcome and not a check worth adding, since
-    `measure_narrative` counts words and seconds and a description of the shots has
-    neither.
+    Reads the `semantic` block each reference already carries. The socket takes two kinds
+    of block — `vision.engine` still lets a caller supply a vision provider's description
+    of the shots — so a block is only a narrative if it says whether it was transcribed.
+    Anything else is dropped here rather than counted as a reference that was measured and
+    came back at zero words, which would drag the pooled rate toward nothing.
 
     `{}` when no reference carries a narrative block at all, so a style learned before
     this existed does not arrive at `to_channel_profile` claiming to have measured

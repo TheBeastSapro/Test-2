@@ -360,17 +360,6 @@ function drawScene(scene, local) {
             paint-order:stroke fill">${escapeHtml(element.text)}</span>
         </div>`);
 
-    } else if (element.kind === "card" && element.src) {
-      const opacity = envelope(t, element.duration, element.fadeIn, element.fadeOut);
-      const zoom = between(t, 0, element.duration, 1 / element.zoom, element.zoom, element.easing);
-      const tilt = between(t, 0, Math.min(element.duration, element.fadeIn * 2.2 + 0.2),
-                           element.tilt, 0, element.easing);
-      parts.push(
-        `<div class="card" style="left:${element.x * width}px;top:${element.y * height}px;
-          width:${element.scale * width}px;opacity:${opacity};
-          transform:translate(-50%,-50%) scale(${zoom}) rotate(${tilt}rad);
-          filter:${element.shadow ? "drop-shadow(0 18px 34px rgba(0,0,0,.45))" : "none"}">
-          <img src="${element.src}" alt=""></div>`);
     }
   }
 
