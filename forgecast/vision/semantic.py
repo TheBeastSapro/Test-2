@@ -101,7 +101,7 @@ from __future__ import annotations
 import logging
 import statistics
 from dataclasses import dataclass, field
-from pathlib import Path
+from itertools import pairwise
 
 from ..ingest import transcript
 from ..ingest.transcript import Line
@@ -207,12 +207,18 @@ class Section:
 
     @property
     def words_per_second(self) -> float:
-        """Speech rate across this beat.
+        """Words over the span this beat occupies — first word in it to last word out.
 
-        Over the beat's *spoken* span rather than over wall-clock, which is the same
-        span `ingest.transcript.Line` divides by. A section that ends on three seconds
-        of silence has not slowed down; it has stopped, and the pause is reported
-        separately as the next section's `opened_on_pause`.
+        One denominator rule at both levels: a section is measured against its own
+        span, the reference against its runtime. Dividing beats by their *spoken*
+        seconds instead would answer a different question — how fast the narrator
+        articulates — and a narrator who keeps their articulation and stops breathing
+        between sentences is plainly speeding up, which is exactly what `escalation`
+        needs to see.
+
+        The break that closes a beat is not in here. A section ending on three seconds
+        of silence has not slowed down, it has stopped, and that silence is reported as
+        the next section's `opened_on_pause`.
         """
         return round(self.words / self.seconds, 2) if self.seconds > 0 else 0.0
 
@@ -255,6 +261,14 @@ class Narrative:
     # formats with the same word count.
     speech_share: float = 0.0
     words: int = 0
+    # Words over the runtime, which is `Section.words_per_second`'s rule applied to the
+    # whole reference — the span the thing occupies, at both levels, so a beat's rate
+    # and the video's rate are the same measurement and can be compared directly.
+    #
+    # It is also the number this app needs. `nodes/content` writes a script to a target
+    # duration, and words-per-second of *runtime* is what converts "forty seconds" into
+    # a word count in this creator's style. The articulation rate — words over speaking
+    # time — is not thrown away: it is `words / spoken_seconds`, and both terms are here.
     words_per_second: float = 0.0
     words_per_minute: float = 0.0
     # accelerating | steady | decelerating | not_measured — the read, over the whole
@@ -332,7 +346,7 @@ def _gaps(lines: list[Line]) -> list[float]:
     overlap by a few milliseconds, and a negative gap would drag the median that every
     threshold below is measured against.
     """
-    return [max(0.0, after.start - before.end) for before, after in zip(lines, lines[1:])]
+    return [max(0.0, after.start - before.end) for before, after in pairwise(lines)]
 
 
 def _break_threshold(gaps: list[float]) -> float:
@@ -359,7 +373,7 @@ def _prune(bounds: list[int], lines: list[Line]) -> list[int]:
     while bounds:
         spans = _spans(bounds, len(lines))
         lengths = [lines[last].end - lines[first].start for first, last in spans]
-        shortest = min(range(len(lengths)), key=lambda i: lengths[i])
+        shortest = lengths.index(min(lengths))
         if lengths[shortest] >= MIN_SECTION_SECONDS:
             break
         # Merge backwards into the previous section, except for the opening one, which
@@ -488,7 +502,7 @@ def _name(sections: list[Section]) -> dict[str, str]:
     if len(sections) >= 3:
         sections[-1].name = "close"
         sections[-1].evidence = (
-            f"the final beat, after the last break of "
+            "the final beat, after the last break of "
             f"{sections[-1].opened_on_pause:.2f}s")
     else:
         # Two sections is a hook and the rest of the video. Calling the second one a
@@ -510,8 +524,10 @@ def _name(sections: list[Section]) -> dict[str, str]:
     escalation = _name_escalation(sections, claimable)
     if not escalation:
         not_claimed["escalation"] = (
+            "there are not two beats left between the hook and the close to read a "
+            "rise across" if len(claimable) < 2 else
             f"the read never gets {ESCALATION_RISE:.0%} faster across two consecutive "
-            f"beats, so nothing measurable is building")
+            "beats, so nothing measurable is building")
 
     # `setup` is the beats between the opening and the point the read starts rising.
     # Claimed only when an escalation was found, because the escalation is what gives
@@ -598,8 +614,8 @@ def section(lines: list[Line], *, runtime: float = 0.0) -> Narrative:
         spoken_seconds=spoken,
         speech_share=round(spoken / runtime, 3) if runtime > 0 else 0.0,
         words=words,
-        words_per_second=round(words / spoken, 2) if spoken > 0 else 0.0,
-        words_per_minute=round(words / spoken * 60, 1) if spoken > 0 else 0.0,
+        words_per_second=round(words / runtime, 2) if runtime > 0 else 0.0,
+        words_per_minute=round(words / runtime * 60, 1) if runtime > 0 else 0.0,
         delivery_trend=_delivery_trend(lines),
         not_claimed=dict(UNCLAIMABLE),
         lines_read=len(lines),
@@ -634,9 +650,10 @@ def section(lines: list[Line], *, runtime: float = 0.0) -> Narrative:
     found.hook_ends_at = found.sections[0].end
     found.not_claimed = _name(found.sections)
 
-    # Enough sections to have a shape, and enough lines that each one was read off more
-    # than a sentence. Below either, the structure is right where it is and thin
-    # everywhere else.
+    # Two gates, and they fail differently. Under four sections there is a structure but
+    # not enough of one to say a reference has a shape rather than a beginning and an
+    # end; under eight lines the sections are real and each was read off a sentence or
+    # two, which is a boundary in the right place and a rate measured off almost nothing.
     found.confidence = ("high" if len(found.sections) >= 4 and len(lines) >= 8
                         else "medium")
 

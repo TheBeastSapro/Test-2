@@ -674,55 +674,61 @@ def read_desk(channels, videos, *, api_key: str = "", limit: int = 50) -> Readou
 
 def _read_priority_into(readout: Readout, references: list[str], *,
                         api_key: str = "") -> None:
-    """Read the pasted video links into `readout`, one report row per link."""
-    wanted: dict[str, str] = {}                  # video id -> the reference as pasted
+    """Read the pasted video links into `readout`: one row per link, in the order given.
+
+    In the order given because the rows are read against the box they were typed into.
+    Grouping the failures first, which is what building the list as the work happens
+    produces, means the fourth line of the box is the second row of the report.
+    """
+    ids: dict[str, str] = {}          # reference -> video id, for those that resolved
+    refused: dict[str, str] = {}      # reference -> why it never reached a reader
     for reference in references[:MAX_PRIORITY_VIDEOS]:
         try:
-            wanted[as_video_id(reference)] = reference
+            ids[reference] = as_video_id(reference)
         except ResearchError as exc:
-            readout.priority.append(PriorityRead(reference, error=str(exc)))
-
+            refused[reference] = str(exc)
     for reference in references[MAX_PRIORITY_VIDEOS:]:
-        readout.priority.append(PriorityRead(
-            reference,
-            error=f"not read: one fetch takes {MAX_PRIORITY_VIDEOS} pasted videos",
-        ))
+        refused[reference] = (
+            f"not read: one fetch takes {MAX_PRIORITY_VIDEOS} pasted videos"
+        )
 
-    if not wanted:
-        return
-
-    try:
-        parsed, via = read_videos(list(wanted), api_key=api_key)
-    except ResearchError as exc:
-        # The whole batch failed — no binary, no key, nothing to read them with. Every
-        # link says so, because a video box that reports nothing at all reads as a box
-        # that was never wired up.
-        for video_id, reference in wanted.items():
-            readout.priority.append(PriorityRead(reference, video_id=video_id,
-                                                 error=str(exc)))
-        return
-
-    readout.source_notes.append(via)
-    read = {stat.video_id: stat for stat in parsed.videos}
-    # The readers put the id at the front of each skipped line, so the reason lands on
-    # the link the operator pasted instead of in one pooled list they have to match up
-    # against their own clipboard by hand.
-    reasons = {
-        line.split(":", 1)[0].strip(): line.split(":", 1)[1].strip()
-        for line in parsed.skipped if ":" in line
-    }
+    read: dict[str, VideoStat] = {}
+    reasons: dict[str, str] = {}
+    leftovers: list[str] = []
+    if ids:
+        try:
+            parsed, via = read_videos(list(ids.values()), api_key=api_key)
+        except ResearchError as exc:
+            # The whole batch failed — no binary, no key, nothing to read them with.
+            # Every link says so, because a video box that reports nothing at all reads
+            # as a box that was never wired up.
+            for reference in ids:
+                refused[reference] = str(exc)
+        else:
+            readout.source_notes.append(via)
+            read = {stat.video_id: stat for stat in parsed.videos}
+            leftovers = parsed.skipped
+            # The readers put the id at the front of each skipped line, so the reason
+            # lands on the link the operator pasted instead of in one pooled list they
+            # have to match against their own clipboard by hand.
+            reasons = {
+                line.split(":", 1)[0].strip(): line.split(":", 1)[1].strip()
+                for line in parsed.skipped if ":" in line
+            }
 
     seen_ids: set[str] = set()
-    for video_id, reference in wanted.items():
-        stat = read.get(video_id)
+    for reference in references:
+        video_id = ids.get(reference, "")
+        stat = read.get(video_id) if video_id else None
         if stat is None:
             readout.priority.append(PriorityRead(
                 reference, video_id=video_id,
-                error=reasons.get(video_id)
+                error=refused.get(reference)
+                or reasons.get(video_id)
                 # The API path labels a skipped row by title when it has one, so the id
                 # prefix is not guaranteed; a line mentioning the id anywhere still says
                 # more than "could not be read".
-                or next((line for line in parsed.skipped if video_id in line),
+                or next((line for line in leftovers if video_id and video_id in line),
                         "could not be read"),
             ))
             continue

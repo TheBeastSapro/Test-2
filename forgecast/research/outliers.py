@@ -381,22 +381,24 @@ def find_outliers(
 
     Each video is measured against *its own channel's* median, so a fetch covering
     several competitors does not compare a small channel to a large one. Videos the
-    operator pasted by hand are the two exceptions: they are kept whatever they
-    measure — a pick that turns out to be a 1.4x is the answer to the question they
-    asked, and dropping it silently is not — and they sort by `rank_score`.
+    operator pasted by hand are kept whatever they measure — a pick that turns out to be
+    a 1.4x is the answer to the question they asked, and dropping it silently is not —
+    and they sort by `rank_score` rather than by the multiple.
     """
     if not videos:
         return []
 
+    channels = _by_channel(videos)
     per_channel = {
         key: baselines(rows, now=now, min_age_days=min_age_days, min_cohort=min_cohort)
-        for key, (_, rows) in _by_channel(videos).items()
+        for key, (_, rows) in channels.items()
     }
-    # Only ever reached by a pasted video whose own channel was not among the ones
-    # fetched. Not a substitute for that channel's median and never used as one — a
-    # video scored against it says so on the row and is marked unreliable.
+    # Every channel's videos together. Not a substitute for a channel's own median and
+    # never used as one where that exists — a video scored against this says so on its
+    # row and is marked unreliable.
     pooled = baselines(videos, now=now, min_age_days=min_age_days,
                        min_cohort=min_cohort)
+    several = len(per_channel) > 1
 
     found: list[Outlier] = []
     for video in videos:
@@ -404,11 +406,19 @@ def find_outliers(
         if age < min_age_days:
             continue
 
-        base = per_channel.get(_channel_key(video), {}).get(video.cohort)
-        borrowed = False
-        if (base is None or base.median_views_per_day <= 0) and video.is_priority:
+        own = per_channel[_channel_key(video)][video.cohort]
+        base, borrowed = own, False
+        if several and not own.reliable and pooled[video.cohort].median_views_per_day > 0:
+            # A channel with too few of its videos in this fetch has no median of its
+            # own, and with exactly one it has a *degenerate* one: a rate divided by
+            # itself is 1.0x, so a table holding one video from each of twenty channels
+            # would report all twenty as precisely average. Where the channel's own
+            # cohort cannot answer, everything read together is the only other thing
+            # there is. Only when there is more than one channel, though — with one, the
+            # pooled median is that channel's own and calling it a cross-channel
+            # comparison would be a caveat about nothing.
             base, borrowed = pooled[video.cohort], True
-        if base is None or base.median_views_per_day <= 0:
+        if base.median_views_per_day <= 0:
             continue
         # A pasted video is scored against whatever baseline exists, soft or not: it was
         # asked about by name, so "here is the number, and here is why it is soft" beats
@@ -431,6 +441,10 @@ def find_outliers(
                 "you pasted this one and its channel is not in this fetch, so it is "
                 "measured against the median of the channels that are — add its "
                 "channel above for a multiple that means something"
+                if video.is_priority else
+                "too few videos from this channel to have a median of its own, so this "
+                "is measured against every channel in the fetch together — across "
+                "channels, not like for like"
             )
         elif video.is_priority and multiple < threshold:
             notes.append(

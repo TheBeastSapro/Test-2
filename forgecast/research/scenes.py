@@ -106,7 +106,7 @@ from dataclasses import dataclass, field
 from urllib.parse import quote_plus, urlparse
 
 from ..providers.footage import ATTRIBUTION_REQUIRED, COMMERCIAL_LICENCES
-from ..providers.search import SearchProvider
+from ..providers.search import SearchProvider, provider_for
 from . import keyless
 
 log = logging.getLogger("forgecast.research.scenes")
@@ -175,7 +175,7 @@ PRESS_DOMAINS: dict[str, str] = {
 REFUSED_MARKERS: tuple[str, ...] = (
     "hdhub", "123movies", "fmovies", "putlocker", "soap2day", "gomovies",
     "solarmovie", "primewire", "watchseries", "movierulz", "tamilrockers",
-    "yts.", "1337x", "rarbg", "torrent", "magnet:", "kickass",
+    "yts.", "1337x", "rarbg", "torrent", "kickass",
     "kodi", "exodus-", "seren-", "openload", "streamtape", "vidcloud",
 )
 
@@ -371,6 +371,14 @@ _QUOTED_TITLE = re.compile(r"[\"“']([^\"”']{2,60})[\"”']")
 # The last one wins: "the shootout in the street in Heat" names a film once, at the end.
 _TITLE_MARKER = re.compile(r"\s+(?:in|from|out of)\s+", re.I)
 _TRAILING_YEAR = re.compile(r"\s*\(?(19|20)\d{2}\)?\s*$")
+# How an operator opens the sentence, and none of it identifies anything. Stripped
+# because the action goes into a YouTube query verbatim, and "the scene where the truck
+# flips scene" is a worse query than "the truck flips scene" against titles that all
+# carry the word already.
+_LEAD_FILLER = re.compile(
+    r"^\s*(?:the\s+)?(?:scene|clip|shot|moment|bit|part)\s+"
+    r"(?:where|when|in which|that|with|of)\s+", re.I
+)
 
 
 def read_description(description: str) -> tuple[str, str]:
@@ -399,21 +407,21 @@ def read_description(description: str) -> tuple[str, str]:
     if quoted:
         film = quoted.group(1).strip()
         action = (text[: quoted.start()] + " " + text[quoted.end():]).strip()
-        return _TRAILING_YEAR.sub("", film).strip(), action
+        return _TRAILING_YEAR.sub("", film).strip(), _LEAD_FILLER.sub("", action).strip()
 
     markers = list(_TITLE_MARKER.finditer(text))
     if not markers:
-        return "", text
+        return "", _LEAD_FILLER.sub("", text).strip()
 
     last = markers[-1]
     candidate = _TRAILING_YEAR.sub("", text[last.end():]).strip(" .,-—")
-    action = text[: last.start()].strip()
+    action = _LEAD_FILLER.sub("", text[: last.start()]).strip()
 
     plausible = bool(candidate) and len(_words(candidate)) <= 6
     if plausible and any(char.isupper() for char in text):
         plausible = any(word[:1].isupper() for word in candidate.split())
     if not plausible:
-        return "", text
+        return "", _LEAD_FILLER.sub("", text).strip()
     return candidate, action
 
 
@@ -422,9 +430,13 @@ def read_description(description: str) -> tuple[str, str]:
 
 def _refused(url: str) -> bool:
     """Whether this is a piracy-class source. Checked on every candidate, every lane."""
-    lowered = (url or "").lower()
-    host = urlparse(lowered).netloc
-    return any(marker in host or marker in lowered for marker in REFUSED_MARKERS)
+    parsed = urlparse((url or "").lower())
+    if parsed.scheme in ("magnet", "torrent"):
+        return True
+    # Host and path, never the query string. A YouTube video id is eleven arbitrary
+    # characters and can contain any of these markers by chance, so matching the whole
+    # URL would drop legitimate results at random and look like the search being empty.
+    return any(marker in parsed.netloc + parsed.path for marker in REFUSED_MARKERS)
 
 
 def _permitted_page(url: str) -> str:
@@ -477,11 +489,20 @@ def _permitted_channel(entry: dict) -> tuple[str, str, str]:
     The caveat is non-empty when the only thing that matched was a display name. YouTube
     permits duplicate display names, so that is a presumption rather than an identity,
     and a result carrying it says so instead of being quietly treated as the real one.
+
+    The name is only ever consulted when the entry carries no identity at all — an older
+    yt-dlp, or a listing shape that dropped the field. An entry that *has* a handle and
+    whose handle is not on the list has already answered the question, and letting a
+    display name overturn that is how an impostor calling itself "Warner Bros. Pictures"
+    gets in through the one door built for a missing field.
     """
-    for identity in _identities(entry):
+    identities = _identities(entry)
+    for identity in identities:
         if identity in LICENSED_CHANNELS:
             source, label = LICENSED_CHANNELS[identity]
             return source, label, ""
+    if identities:
+        return "", "", ""
 
     name = str(entry.get("channel") or entry.get("uploader") or "").strip()
     if name and name.lower() in CANONICAL_NAMES:
@@ -579,7 +600,10 @@ def _from_channels(film: str, action: str, *, want: int) -> list[SceneMatch]:
     videos, so asking for the number of results wanted would leave the allow-list
     nothing to keep.
     """
-    query = " ".join(part for part in (film, action, "scene") if part).strip()
+    # "scene" is appended because the licensed clip channels put it in nearly every
+    # title — and not appended twice when the operator already said it.
+    tail = "" if "scene" in _words(action) else "scene"
+    query = " ".join(part for part in (film, action, tail) if part).strip()
     if not query:
         return []
     entries = _entries(f"ytsearch{max(10, min(want * 5, 40))}:{query}",
@@ -660,7 +684,15 @@ async def _from_press(film: str, action: str, *, search: SearchProvider,
     Searched broadly and filtered by host, rather than searched per-site: `site:` support
     varies by vendor and a query that silently means nothing to one of them returns its
     ordinary web results, which for this query is a page of streaming-rip sites.
+
+    Skipped outright on the keyless Wikipedia fallback. That provider is real search and
+    it is the right default for the research desk, but an encyclopaedia cannot hold a
+    studio press page — running it here would spend a request on a lane that has no way
+    to succeed, and then report the empty result as though the press sites had nothing.
     """
+    if getattr(search, "name", "") == "wikipedia":
+        log.info("press lane skipped: %s cannot hold a studio press page", search.name)
+        return []
     query = " ".join(part for part in (film, action, "press kit b-roll") if part).strip()
     if not query:
         return []
@@ -827,6 +859,10 @@ async def locate(
     Returns an empty list when nothing legitimate was found, which is a real answer and
     the right one: there is no lane here that reaches further when the licensed ones come
     back empty.
+
+    `search` defaults to whatever `providers.search.provider_for` picked, so the press
+    lane runs by default rather than being a capability a caller has to know to switch
+    on. Pass one to route the lane through a specific vendor's key.
     """
     film, action = read_description(description)
     if not (film or action):
@@ -849,11 +885,14 @@ async def locate(
         except SceneLookupError as exc:
             log.warning("Creative Commons lane skipped: %s", exc)
 
-    if search is not None:
-        try:
-            found += await _from_press(film, action, search=search, want=limit)
-        except Exception as exc:
-            log.warning("press lane skipped: %s", exc)
+    try:
+        provider = search if search is not None else provider_for()
+        found += await _from_press(film, action, search=provider, want=limit)
+    except Exception as exc:
+        # Broad, and only here. A search vendor raises whatever its own adapter raises,
+        # and the two YouTube lanes have already answered by this point — losing them to
+        # a 429 from a press-page search would be the tail wagging the dog.
+        log.warning("press lane skipped: %s", exc)
 
     unique: dict[str, SceneMatch] = {}
     for match in found:

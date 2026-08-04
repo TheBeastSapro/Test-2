@@ -179,16 +179,16 @@ def test_the_sections_account_for_every_word_that_was_said():
     assert found.speech_share == pytest.approx(0.795, abs=0.01)
 
 
-def test_the_read_rate_is_over_speech_not_over_runtime():
-    """A reference that speaks for two thirds of its length is not reading slowly, it is
-    reading over pictures. Dividing by runtime would report the same narrator as slower
-    on the video where they left more room."""
+def test_a_beat_and_the_whole_reference_are_measured_by_one_rule():
+    """Words over the span the thing occupies, at both levels. Two denominators under
+    one field name would be two answers to how fast this creator talks, and the
+    difference between them is large enough — 166 words a minute against 209 — to
+    change what a script written to their style comes out at."""
     found = semantic.section(FULL, runtime=40.0)
-    assert found.words_per_second == pytest.approx(111 / 31.8, abs=0.02)
-    assert found.words_per_minute == pytest.approx(found.words_per_second * 60, abs=0.2)
-    # Over the runtime it would read as 2.8 words/s — a slow, deliberate narrator,
-    # which this one is not.
-    assert found.words / found.runtime_seconds < found.words_per_second
+    assert found.words_per_second == pytest.approx(111 / 40.0, abs=0.02)
+    assert found.words_per_minute == pytest.approx(111 / 40.0 * 60, abs=0.2)
+    # The articulation rate is recoverable rather than reported twice.
+    assert found.words / found.spoken_seconds == pytest.approx(3.49, abs=0.02)
 
 
 def test_a_beat_is_named_only_by_the_measurement_that_reaches_it():
@@ -306,6 +306,45 @@ def test_a_pause_for_effect_is_not_a_section():
     assert found.hook_ends_at == 10.8
     assert all(section.seconds >= semantic.MIN_SECTION_SECONDS
                for section in found.sections)
+
+
+def test_two_beats_do_not_get_a_close():
+    """A hook and the rest of the video. Calling the second half a `close` would claim
+    this reference had a middle, and the middle is the part a close is defined against."""
+    halved = _narration([
+        (0.00, 2.90, "There is one setting in the export dialog that everybody gets wrong."),
+        (3.10, 6.00, "It is not the bitrate and it is not the codec."),
+        (6.20, 9.00, "It is the keyframe interval."),
+        (10.20, 13.10, "Set it to two seconds and the platform stops re-encoding you."),
+        (13.30, 16.20, "That is the whole trick."),
+        (16.40, 19.00, "Nothing else in that dialog matters as much."),
+    ])
+    found = semantic.section(halved, runtime=20.0)
+
+    assert [section.name for section in found.sections] == ["hook", "body"]
+    assert "second name" in found.not_claimed["close"]
+    assert "two beats" in found.not_claimed["escalation"]
+
+
+def test_a_read_of_nothing_but_short_beats_is_not_sectioned_into_them():
+    """Eight one-line beats, each under a second. Every break here is real and none of
+    them separates a *section* — reporting four is reporting the punctuation of the read
+    as the structure of the story."""
+    staccato = _narration([
+        (0.00, 0.40, "Stop."),
+        (0.50, 0.90, "Look at this."),
+        (1.70, 2.10, "Right there."),
+        (2.20, 2.60, "See it?"),
+        (3.40, 3.80, "One frame."),
+        (3.90, 4.30, "That is all."),
+        (5.10, 5.50, "Nobody notices."),
+        (5.60, 6.00, "You will now."),
+    ])
+    found = semantic.section(staccato, runtime=7.0)
+
+    assert found.sectioned is False
+    assert found.sections == []
+    assert any("pauses for effect, not sections" in note for note in found.notes)
 
 
 def test_a_read_the_model_could_not_hear_is_graded_down():

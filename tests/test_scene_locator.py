@@ -110,6 +110,13 @@ def test_the_refusal_list_covers_the_things_a_scene_search_actually_returns():
     for host in ("hdhub4u.ms", "www.123movies.st", "fmovies.to", "yts.mx",
                  "kodi-repo.example", "solarmovie.pe", "1337x.to"):
         assert scenes._refused(f"https://{host}/the-dark-knight"), host
+    assert scenes._refused("magnet:?xt=urn:btih:0000")
+
+
+def test_a_video_id_that_happens_to_spell_a_marker_is_not_a_piracy_result():
+    """Eleven arbitrary characters will eventually contain any four of them, and a
+    refusal driven by the query string would empty the search at random."""
+    assert not scenes._refused("https://www.youtube.com/watch?v=kodiA1b2C3d")
 
 
 def test_a_refused_host_is_dropped_by_the_press_lane_whatever_it_ranks(monkeypatch):
@@ -232,6 +239,15 @@ def test_a_look_alike_channel_does_not_get_in_on_its_display_name():
     is the door a re-uploader walks through."""
     impostor = _entry(channel="Warner Bros. Pictures HD", uploader_id="@wbpicturesHD1080",
                       channel_id="UCsomethingelse")
+    assert scenes._permitted_channel(impostor) == ("", "", "")
+
+
+def test_an_exact_display_name_cannot_overturn_a_handle_that_is_not_on_the_list():
+    """The name fallback exists for an entry with no identity field at all. An entry that
+    has a handle has already answered the question, and a channel calling itself exactly
+    'Warner Bros. Pictures' is precisely who would walk through that door."""
+    impostor = _entry(channel="Warner Bros. Pictures", uploader_id="@wbpicturesofficialhd",
+                      channel_id="UCimpostor")
     assert scenes._permitted_channel(impostor) == ("", "", "")
 
 
@@ -368,9 +384,10 @@ def test_confidence_is_about_identification_and_not_about_rights():
 
 
 def test_the_film_and_the_action_come_out_of_one_sentence():
-    assert scenes.read_description(TRUCK_FLIP) == (
-        "The Dark Knight", "the scene where the truck flips"
-    )
+    """The opening filler goes with it: the action is put into a YouTube query verbatim,
+    and "the scene where the truck flips scene" is a worse query than "the truck flips
+    scene" against titles that all carry the word already."""
+    assert scenes.read_description(TRUCK_FLIP) == ("The Dark Knight", "the truck flips")
     assert scenes.read_description("the bus jump in Speed (1994)")[0] == "Speed"
     assert scenes.read_description('the diner scene from "Heat"')[0] == "Heat"
     # The last marker wins: a film is named once, at the end.
@@ -432,6 +449,32 @@ def test_the_press_lane_keeps_only_the_studio_press_hosts():
     assert "has not read those terms" in found[0].flag_reason
 
 
+def test_the_press_lane_runs_without_a_caller_knowing_to_switch_it_on(yt, monkeypatch):
+    """A capability reached only by passing an argument is a capability nobody uses."""
+    yt.payloads["search"] = {"entries": []}
+    search = _Search(["https://dmedmedia.disney.com/assets/andor-corridor"])
+    monkeypatch.setattr(scenes, "provider_for", lambda: search)
+
+    found = asyncio.run(scenes.locate("the corridor fight in Andor", limit=4))
+    assert [match.source for match in found] == [scenes.PRESS_KIT]
+    assert search.queries, "the configured provider was never asked"
+
+
+def test_the_press_lane_is_not_run_against_the_keyless_wikipedia_fallback(yt):
+    """Real search, right default for the research desk, and no way at all to hold a
+    studio press page — so running it spends a request that cannot succeed and then
+    reports the emptiness as though the press sites had nothing."""
+    class _Wikipedia(_Search):
+        name = "wikipedia"
+
+        async def search(self, query, *, limit=8):        # pragma: no cover
+            raise AssertionError("the press lane searched Wikipedia for a press kit")
+
+    found = asyncio.run(scenes._from_press("Andor", "corridor fight",
+                                           search=_Wikipedia([]), want=3))
+    assert found == []
+
+
 def test_a_press_page_has_no_window_and_is_not_asked_for_one(yt):
     search = _Search(["https://media.netflix.com/en/photos/999"])
     found = asyncio.run(scenes._from_press("Stranger Things", "the upside down",
@@ -448,6 +491,9 @@ def test_the_search_is_over_fetched_because_most_hits_are_re_uploads(yt):
     assert target.startswith("ytsearch")
     asked = int(target[len("ytsearch"):].split(":", 1)[0])
     assert asked >= 10, "asking for three would leave the allow-list nothing to keep"
+    query = target.split(":", 1)[1]
+    assert query == "The Dark Knight truck flips scene", query
+    assert query.lower().count("scene") == 1, "the word is not doubled onto the query"
 
 
 def test_nothing_legitimate_found_is_an_empty_list_and_not_a_wider_search(yt):
