@@ -112,9 +112,37 @@ CATALOGUE: tuple[CameraMove, ...] = (
         fragment="camera trucks steadily sideways on a dolly, parallel to the subject, "
                  "maintaining distance",
         aliases=("truck", "track", "dolly left", "dolly right", "slide", "lateral",
-                 "pan left", "pan right", "panning"),
+                 "crab"),
         when_to_use="Moving along something long — a shelf, a queue, a wall, a "
                     "production line. It surveys rather than approaches.",
+    ),
+    CameraMove(
+        key="pan", label="Pan", intensity=0.35, ken_burns="pan",
+        fragment="camera pans steadily, rotating on a fixed tripod to sweep across "
+                 "the scene",
+        aliases=("pan left", "pan right", "panning", "pan across", "pan"),
+        when_to_use="Sweeping across something wider than the frame from a fixed "
+                    "position. Not a truck: the camera turns where it stands rather "
+                    "than travelling, so the foreground and background move at "
+                    "different rates and the shot reads as looking rather than moving.",
+    ),
+    CameraMove(
+        key="tilt", label="Tilt", intensity=0.35, ken_burns="pan",
+        fragment="camera tilts steadily, pivoting vertically to reveal the height of "
+                 "the subject",
+        aliases=("tilt up", "tilt down", "tilt", "look up", "look down", "craning up"),
+        when_to_use="Height, and the fact of it — a tower, a stack, a wall of "
+                    "something. The vertical counterpart of a pan, and the shot that "
+                    "makes scale legible without a wide.",
+    ),
+    CameraMove(
+        key="whip_pan", label="Whip pan", intensity=0.9, ken_burns="pan",
+        min_seconds=0.0,
+        fragment="fast whip pan, camera snapping sideways with heavy motion blur",
+        aliases=("whip pan", "whip", "swish pan", "snap pan"),
+        when_to_use="A hard change of subject, used as punctuation between two "
+                    "unrelated things. Architecture and objects only — a whip pan "
+                    "across a face renders as a smear, and both prompt skills say so.",
     ),
     CameraMove(
         key="drift", label="Handheld drift", intensity=0.5, ken_burns="push",

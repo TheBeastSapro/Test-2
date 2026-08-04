@@ -99,3 +99,32 @@ def test_the_artifact_records_the_camera_that_actually_ran():
     """Not the one asked for. A shot too short to contain its move is downgraded, and
     without this the artifact claims a camera the video does not have."""
     assert "camera=move.key" in _media_source()
+
+
+def test_a_pan_is_not_a_truck():
+    """They are different shots and the vocabulary conflated them.
+
+    A pan rotates on a fixed tripod; a truck travels sideways on a dolly. `pan left`
+    was aliased to `truck`, so a planner asking for a pan got the fragment "camera
+    trucks steadily sideways on a dolly" — a different shot, silently. Both prompt
+    skills instruct the planner to use these terms precisely because the model
+    distinguishes them.
+    """
+    assert moves.resolve("pan left").key == "pan"
+    assert moves.resolve("pan right").key == "pan"
+    assert moves.resolve("truck right").key == "truck"
+    assert moves.resolve("dolly left").key == "truck"
+    assert "rotating" in moves.resolve("pan left").fragment
+    assert "dolly" in moves.resolve("truck right").fragment
+
+
+def test_the_moves_the_skills_ask_for_all_exist():
+    """`storyboard.md` and the i2v cookbook name a controlled vocabulary and tell the
+    planner to use it. Three of its terms resolved to `push_in`, so the shot the skill
+    asked for was silently replaced by the default."""
+    for term, expected in (("tilt up", "tilt"), ("tilt down", "tilt"),
+                           ("whip pan", "whip_pan"), ("pan left", "pan"),
+                           ("static", "static"), ("push in", "push_in"),
+                           ("pull out", "pull_out"), ("orbit", "orbit")):
+        assert moves.resolve(term).key == expected, (
+            f"{term!r} resolved to {moves.resolve(term).key!r}, not {expected!r}")
