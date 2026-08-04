@@ -26,7 +26,7 @@ SQLite cannot add a foreign key to an existing column, so the column is rebuilt 
 batch operation. The values survive it — this is a constraint change, not a data change.
 
 Revision ID: d9c31f7a5be2
-Revises: f7a1c58d92b4
+Revises: b2d4e6180c39
 Create Date: 2026-08-04
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ from collections.abc import Sequence
 from alembic import op
 
 revision: str = "d9c31f7a5be2"
-down_revision: str | None = "f7a1c58d92b4"
+down_revision: str | None = "b2d4e6180c39"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -280,6 +280,33 @@ def _result_text(block) -> str:
     return text
 
 
+async def _streamed(prompt: str) -> AsyncIterator[dict]:
+    """One turn's prompt as the stream the SDK requires.
+
+    `build_options` sets `can_use_tool`, and the SDK refuses that callback alongside a
+    plain string prompt: a permission callback only means anything if input is still
+    open when the agent asks, so streaming mode is a precondition rather than a
+    preference. Passing a string raised `ValueError: can_use_tool callback requires
+    streaming mode` on *every* turn — the connector permission work made the callback
+    unconditional, and nothing here was changed to match, so the whole agent stopped
+    answering and the error surfaced in the chat as though the model had produced it.
+
+    One message, then the generator returns, which is what closes the input stream and
+    lets the turn end. A generator that stayed open would leave the CLI waiting for a
+    second prompt that is never coming, and the turn would hang instead of failing —
+    which is the worse of the two, because a hang has no error to read.
+
+    `session_id` is the SDK's own placeholder for the opening message of a turn.
+    Resumption is carried by `options.resume`, not by this field.
+    """
+    yield {
+        "type": "user",
+        "message": {"role": "user", "content": prompt},
+        "parent_tool_use_id": None,
+        "session_id": "default",
+    }
+
+
 async def run(prompt: str, *, studio: Studio, resume: str | None = None,
               **kwargs) -> AsyncIterator[dict]:
     """One turn, as a stream of events.
@@ -320,7 +347,7 @@ async def run(prompt: str, *, studio: Studio, resume: str | None = None,
     options = build_options(studio=studio, resume=resume, **kwargs)
     session_id = resume or ""
     try:
-        async for message in query(prompt=prompt, options=options):
+        async for message in query(prompt=_streamed(prompt), options=options):
             if isinstance(message, SystemMessage):
                 # The opening message names every tool the agent actually holds, fully
                 # namespaced. It is the only way to see inside a connector authorised by

@@ -819,8 +819,15 @@
     }
   }
 
-  const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
-    ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  // `esc` is declared once, near `checkAgent` above. A second `const` of the same name
+  // in this block is not a shadow and not a harmless duplicate — it is a SyntaxError,
+  // and a SyntaxError is refused at parse time, so *nothing* in the block runs. The
+  // whole page went inert: the panel tabs never bound their click handlers, both agent
+  // cards sat on "Checking your sign-in..." forever, and no connector could be tested.
+  //
+  // Nothing about that failure points at this line. The page renders correctly, every
+  // control is present and looks enabled, and the only evidence is in a console nobody
+  // has open — which is why this comment is here rather than a tidier deletion.
 
   async function testConnector(key) {
     const out = $(`#test-${key}`);
