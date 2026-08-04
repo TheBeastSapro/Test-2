@@ -15,6 +15,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from ..graph.engine import NodeContext, NodeResult, node_handler
+from ..prompts import moves as camera_moves
 from ..providers import ProviderError
 from ..render import ffmpeg as ff
 from ..render.cutting import plates_for, shot_estimate, spec_for
@@ -64,7 +65,9 @@ Return JSON: {"shots": [{"scene_index", "prompt", "kind", "motion", "places"}]}
                "map" when the scene is about *where*: a route, a distance, a spread
                between places, a location the viewer needs situated. A map is the
                right answer far less often than it is tempting; one or two per video.
-  motion       intended camera move, e.g. "slow push in", "static", "pan left".
+  motion       the camera move, chosen from the vocabulary appended below. Free text
+               still works — it is matched onto the nearest known move — but picking a
+               key is what gets the shot the fragment that has been found to work.
   places       required when kind is "map": 1-4 place names in the order the scene
                mentions them, e.g. ["Rotterdam", "Suez Canal", "Singapore"]. Use
                well-known cities, ports, straits or canals — not countries or
@@ -338,7 +341,11 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
         role="Turn the script into a shot list a generation model can execute.",
         schema_name="broll_plan",
         payload=payload,
-        instructions=BROLL_INSTRUCTIONS,
+        # The camera vocabulary is appended rather than written into the constant, so
+        # a move added to the catalogue reaches the planner without anyone remembering
+        # to update a second copy of the list.
+        instructions=(f"{BROLL_INSTRUCTIONS}\n\nCAMERA MOVES\n"
+                      f"{camera_moves.planner_vocabulary()}"),
         max_tokens=8192,
     )
 
@@ -552,8 +559,17 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
 
         if shot["kind"] == "video" and video_provider is not None:
             try:
+                # The vocabulary's fragment, not the planner's words. `motion` used to
+                # be appended verbatim, so "dramatic sweeping movement" reached the
+                # model exactly like that and it did whatever it liked. `fragment_for`
+                # matches it onto a known move and contributes the phrasing that
+                # actually produces one — and downgrades a move the shot is too short
+                # to contain, which renders as a jump rather than as a slower version
+                # of itself.
+                move, camera = camera_moves.fragment_for(
+                    shot.get("motion", ""), seconds=seconds)
                 clip = await video_provider.generate_clip(
-                    f"{prompt}. Camera: {shot.get('motion', 'slow push in')}.",
+                    f"{prompt}. {camera}.",
                     out_path=ctx.path_for(f"{slug}_clip"),
                     seconds=seconds,
                     width=width,
@@ -568,6 +584,12 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                     "video", clip.path, clip.mime, scene_index=index,
                     plate_index=plate_index, role="shot", prompt=prompt[:300],
                     seconds=clip.duration_seconds,
+                    # The move that actually ran, which is not always the one asked
+                    # for: a shot too short to contain its move is downgraded, and
+                    # without this the artifact records a camera the video does not
+                    # have. It is also what a later pass would compare a reference
+                    # against.
+                    camera=move.key,
                 )
             except ProviderError as exc:
                 degraded += 1
