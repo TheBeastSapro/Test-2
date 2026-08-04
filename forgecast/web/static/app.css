@@ -137,6 +137,29 @@ code, .mono { font-family: var(--mono); font-size: 12.5px; }
   font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
   color: var(--faint); padding: 16px 20px 6px; font-weight: 620;
 }
+/* The lane header carries an action now, so it becomes a row rather than a label. Its
+   padding is the label's, unchanged, so a lane with no action still sits where it did. */
+.side .lane-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+/* A 20px target on a 10px label. Deliberately not smaller: this is the only way to make
+   a channel from the rail, and it was missing entirely — an operator with one channel had
+   no `+` anywhere in the shell and no reason to guess a format tab held the form. */
+.side .lane-add {
+  width: 20px; height: 20px; margin-right: -4px; border-radius: 6px;
+  display: grid; place-items: center; text-decoration: none;
+  font-size: 15px; line-height: 1; font-weight: 500;
+  color: var(--muted); background: transparent;
+  transition: background .12s, color .12s;
+}
+.side .lane-add:hover { background: var(--raise-2); color: var(--text); text-decoration: none; }
+.side .lane-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* What the rail says when there are no channels yet. Without it the `+` sits under a
+   header with nothing beneath it, which reads as a list that failed to load rather than
+   as one that is empty on purpose. */
+.side .lane-empty {
+  padding: 2px 20px 6px; font-size: 11.5px; color: var(--faint);
+}
 .side .scroll { overflow-y: auto; flex: 1; min-height: 0; }
 .side .chan {
   display: flex; align-items: center; gap: 7px;
@@ -303,11 +326,19 @@ button.danger:hover { background: #1a1011; border-color: #6b2f2f; }
    So: no opacity, no hover-only reveal, and a colour that contrasts on both
    backgrounds. A 22px glyph in the corner does not compete with anything, which is what
    the hiding was for. */
+/* A resting background, not just a glyph. The previous pass fixed the hover-only reveal
+   — the control was invisible until the pointer was already on the row — and that was
+   the right fix and not a sufficient one: a bare 15px mark in muted ink still reads as
+   decoration, and it was reported twice more as "I have no idea how to delete a chat".
+   The feature worked the whole time and could not be found, which costs exactly as much
+   as not having built it.
+   So it now looks like what it is: a tinted target with a border, at rest, always. */
 .thread-more {
   position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; padding: 0;
-  border: 0; border-radius: 6px; background: transparent; color: var(--text-2);
+  border: 1px solid var(--line); border-radius: 6px;
+  background: var(--raise-2); color: var(--text);
   display: grid; place-items: center; cursor: pointer;
-  transition: background .12s, color .12s;
+  transition: background .12s, color .12s, border-color .12s;
 }
 .thread-more svg { width: 15px; height: 15px; display: block; }
 /* On the accent-filled selected row, the brighter foreground token — `--text-2` is tuned

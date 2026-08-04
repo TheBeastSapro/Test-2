@@ -24,7 +24,11 @@
        than a one-line description. The agent reads it, shows you what it measured,
        and then creates the channel — so the form below is the fallback, not the
        front door. #}
-    <h2 style="margin-top:0">New channel</h2>
+    {# The id is the target of the rail's `+`. Without it that button can only reach the
+       top of this page, which on a format tab with channels already in it puts the box
+       below the fold — and a "create a channel" control that lands somewhere you still
+       have to search is the same dead end as no control. #}
+    <h2 id="new-channel" style="margin-top:0">New channel</h2>
     <form action="/" method="get" style="margin-bottom:6px">
       <label for="model_on">Model it on a YouTube channel</label>
       <div class="keyrow">

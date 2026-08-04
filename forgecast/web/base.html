@@ -97,8 +97,23 @@
     {# The channels themselves, because every entry in the nav above is the account.
        With one channel that is the same thing; with two, "how is the space channel
        doing" has no page to go to and the dot is the only place the answer shows. #}
+    {# The lane header and its `+` render whether or not there are channels yet, and that
+       is the whole fix. Gating the entire block on `rail_channels` meant a fresh install
+       had no channel *and* no visible way to make one from the rail — the only route was
+       a format tab the operator had to already know held the form. An empty lane with a
+       `+` in it is how the rail says "this is where channels go". #}
+    <div class="lane lane-head">
+      <span>Channels</span>
+      {# `/f/{slug}#new-channel` rather than a modal: the form already exists there, is
+         already wired, and already reads a link. A second copy in a dialog would be a
+         second thing to keep working. #}
+      <a class="lane-add" href="/f/{{ formats[0].slug if formats else 'longform' }}#new-channel"
+         title="Add a channel" aria-label="Add a channel">+</a>
+    </div>
+    {% if not rail_channels %}
+      <div class="lane-empty">No channels yet</div>
+    {% endif %}
     {% if rail_channels %}
-      <div class="lane">Channels</div>
       {% for item in rail_channels %}
         {# `here` when this is the channel whose hub is open: the format tab above is lit
            on a channel page too, and on its own it says you are in an account-wide
