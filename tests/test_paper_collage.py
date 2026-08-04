@@ -213,14 +213,17 @@ def test_the_same_seed_is_the_same_paper():
             != paper.paper_filtergraph(1920, 1080, seed=8))
 
 
-def test_the_torn_edge_touches_alpha_only():
-    """Displacing the colour channels fringes the edge with whatever was behind the
-    subject in the source image."""
+def test_the_torn_edge_works_on_a_greyscale_alpha_not_an_image():
+    """It takes an already-extracted alpha, so the colour channels cannot reach it.
+
+    Running them through would fringe the edge with whatever was behind the subject in
+    the source image. `cutout_filtergraph` is what splits them.
+    """
     graph = paper.torn_edge_filter()
-    assert "alphaextract" in graph
+    assert "alphaextract" not in graph
+    assert "geq" not in graph
     # Re-thresholded after the blur. Blurring alone rounds the edge; blurring and
     # re-thresholding makes it wander, which is what torn looks like.
-    assert "curves=" in graph
     assert graph.index("boxblur") < graph.index("curves=")
 
 
@@ -305,3 +308,194 @@ def test_a_finer_cell_puts_more_ink_on_the_page(tmp_path):
 def test_a_missing_source_is_a_readable_error_rather_than_a_traceback(tmp_path):
     with pytest.raises(RuntimeError, match="screening"):
         paper.render_halftone(tmp_path / "nothing.png", tmp_path / "out")
+
+
+# ------------------------------------------------------------------- compositing
+
+
+def _rows(seconds=8.0, layers=("base", "scraps", "subject", "strips")):
+    return paper.PaperShot(seconds=seconds, layers=list(layers)).timeline(fps=30)
+
+
+def test_each_layer_reads_its_own_input():
+    """Inputs are supplied in row order, base first, so a row's position is its index.
+
+    Offsetting by one made every layer composite the next layer's image, and the last one
+    referenced an input that did not exist — which ffmpeg reports only as "Invalid
+    argument", several seconds into building the graph.
+    """
+    graph = paper.shot_filtergraph(_rows(), {}, width=1280, height=720, fps=30)
+    assert "[0:v]scale=1280:720" in graph
+    for index in (1, 2, 3):
+        assert f"[{index}:v]" in graph
+    assert "[4:v]" not in graph
+
+
+def test_the_base_is_the_canvas_and_never_overlays():
+    graph = paper.shot_filtergraph(_rows(), {}, width=1280, height=720, fps=30)
+    # Three layers over the base means three overlays, not four.
+    assert graph.count("overlay=") == 3
+
+
+def test_motion_is_stepped_in_the_filtergraph_too():
+    """A render that eases smoothly while the Python preview steps is worse than no
+    preview. The `floor` is what makes them the same animation."""
+    graph = paper.shot_filtergraph(_rows(), {}, width=1280, height=720, fps=30)
+    assert "floor(" in graph
+    assert "eval=frame" in graph
+
+
+def test_the_filtergraph_steps_at_the_same_moments_as_the_python():
+    """Pinned to each other, because they are two implementations of one curve."""
+    expression = paper._stepped_expression(0.0, 3.0, fps=30, hold=3)
+    # 90 frames, held three at a time, is 30 steps — so the divisor is 29.
+    assert "/29" in expression
+
+    # Counted as runs rather than as distinct values: under an ease-out the last few
+    # steps are close enough together that two of them round to the same number, so
+    # counting distinct values undercounts the steps that actually happen.
+    values = paper.stepped(0, 100, frames=90, hold=3)
+    runs = 1 + sum(1 for a, b in pairwise(values) if a != b)
+    assert runs == 30
+
+
+def test_a_layer_that_does_not_travel_gets_no_travel_expression():
+    """`x+-100*(...)` is valid ffmpeg and unreadable, and a layer with no offset should
+    not carry the arithmetic at all."""
+    assert paper._travel("(W-w)*0.5", 0.0, "1") == "(W-w)*0.5"
+    assert "-100.0*" in paper._travel("(W-w)*0.5", -100.0, "P")
+    assert "+100.0*" in paper._travel("(W-w)*0.5", 100.0, "P")
+    assert "+-" not in paper._travel("(W-w)*0.5", -100.0, "P")
+
+
+def test_a_placement_can_be_given_as_a_bare_pair():
+    """Most layers need nothing said about them beyond where they sit."""
+    assert paper.Placement.of((0.3, 0.7)) == paper.Placement(0.3, 0.7)
+    assert paper.Placement.of(paper.Placement(0.1, 0.2, 0.5)).height == 0.5
+    assert paper.Placement.of(None) == paper.Placement()
+
+
+def test_a_sized_layer_is_scaled_to_a_fraction_of_the_frame():
+    """A 1024-wide portrait dropped on a 1280-wide frame is not a placement, it is a
+    background. Sizing is in fractions so one composition renders at any resolution."""
+    graph = paper.shot_filtergraph(
+        _rows(), {"subject": paper.Placement(0.5, 0.5, height=0.62)},
+        width=1280, height=720, fps=30)
+    # 0.62 of 720, and even, because libx264 will not take an odd dimension.
+    assert "scale=-2:446" in graph
+
+
+def test_a_rotated_layer_keeps_transparent_corners():
+    """Black corners would cover the sheet the layer is supposed to be lying on."""
+    graph = paper.shot_filtergraph(
+        _rows(), {"scraps": paper.Placement(0.3, 0.4, rotate=-3.5)},
+        width=1280, height=720, fps=30)
+    assert "fillcolor=none" in graph
+
+
+def test_the_red_string_is_revealed_rather_than_moved():
+    """The drawing is the argument, so it appears progressively instead of arriving."""
+    rows = _rows(layers=("base", "subject", "string"))
+    graph = paper.shot_filtergraph(rows, {}, width=1280, height=720, fps=30)
+    assert "crop=w='max(2\\,iw*" in graph
+    # Floored at two pixels: a zero-width crop is an invalid filter and fails at render
+    # time rather than at build time.
+    assert "crop=w='max(2" in graph
+
+
+# ------------------------------------------------------------------- the cut-out
+
+
+def test_screening_a_cut_out_keeps_its_alpha():
+    """The halftone starts with format=gray and greyscale has no alpha.
+
+    Screening an RGBA image straight through returns a rectangle — which is exactly what
+    the first render of this style produced: a portrait with a border, sitting on the
+    paper like a photograph rather than like something torn out of a newspaper.
+    """
+    graph = paper.cutout_filtergraph()
+    assert "split=2" in graph
+    assert "alphaextract" in graph
+    assert "alphamerge" in graph
+    # The colour half is screened; the alpha half is torn. Never the other way round.
+    assert graph.index("[colour]") < graph.index("geq=lum")
+
+
+def test_the_tear_never_touches_the_colour_channels():
+    """Displacing them fringes the edge with whatever was behind the subject."""
+    graph = paper.cutout_filtergraph()
+    tear = graph.split("[matte]", 1)[1].split("[torn]", 1)[0]
+    assert "noise=" in tear
+    assert "geq" not in tear
+
+
+def test_a_cut_out_renders_with_transparency(tmp_path):
+    import subprocess
+
+    source = tmp_path / "src.png"
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi",
+         "-i", "gradients=s=256x256:c0=black:c1=white",
+         "-vf", "format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)'"
+                ":a='if(lt(hypot(X-128,Y-128),100),255,0)'",
+         "-frames:v", "1", str(source)],
+        check=True, timeout=60)
+
+    out = paper.render_cutout(source, tmp_path / "cut", cell=6, tear=4)
+    assert out.exists()
+
+    # Still has an alpha channel, and it is still partly transparent.
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=pix_fmt", "-of", "csv=p=0", str(out)],
+        capture_output=True, text=True, timeout=60, check=True)
+    assert "a" in probe.stdout.strip()
+
+
+# ------------------------------------------------------------------- end to end
+
+
+def test_a_whole_beat_renders_to_video(tmp_path):
+    import subprocess
+
+    base = paper.render_paper(tmp_path / "base", width=640, height=360, seed=7)
+    scrap = paper.render_paper(tmp_path / "scrap", width=200, height=140, seed=22,
+                               tone="kraft", vignette=False)
+    strip = paper.render_paper(tmp_path / "strip", width=180, height=30, seed=31,
+                               tone="bone", vignette=False)
+
+    shot = paper.PaperShot(seconds=3.0, layers=["base", "scraps", "strips"])
+    out = paper.render_shot(
+        shot, {"base": base.path, "scraps": scrap.path, "strips": strip.path},
+        tmp_path / "beat",
+        placements={"scraps": paper.Placement(0.3, 0.4, 0.45, -3.0),
+                    "strips": (0.3, 0.85)},
+        width=640, height=360, fps=24)
+
+    assert out.exists()
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-show_entries", "stream=width,height", "-of", "csv=p=0", str(out)],
+        capture_output=True, text=True, timeout=120, check=True)
+    assert "640,360" in probe.stdout
+    assert abs(float(probe.stdout.strip().splitlines()[-1]) - 3.0) < 0.15
+
+
+def test_a_layer_with_no_source_is_skipped_rather_than_failing_the_run(tmp_path):
+    """A beat that planned for a stamp nobody supplied should still render the rest.
+
+    The alternative is a run that has already paid for a script and a voiceover dying
+    over a missing decoration.
+    """
+    base = paper.render_paper(tmp_path / "base", width=320, height=180, seed=7)
+    shot = paper.PaperShot(seconds=2.0, layers=["base", "subject", "stamp"])
+    out = paper.render_shot(shot, {"base": base.path}, tmp_path / "beat",
+                            width=320, height=180, fps=24)
+    assert out.exists()
+
+
+def test_a_shot_with_no_base_is_refused_with_a_sentence(tmp_path):
+    shot = paper.PaperShot(seconds=2.0, layers=["subject"])
+    with pytest.raises(ValueError, match="base"):
+        paper.render_shot(shot, {"subject": tmp_path / "nothing.png"},
+                          tmp_path / "beat")

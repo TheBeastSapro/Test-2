@@ -250,7 +250,11 @@ def paper_filtergraph(width: int, height: int, *, seed: int = 7,
     big_seed = int(seed) % 10000
     mid_seed = (int(seed) * 7 + 41) % 10000
 
-    vignette_step = "vignette=angle=PI/8:mode=backward," if vignette else ""
+    # Darkening at the edges, not brightening. `mode=backward` lightens the corners,
+    # which is what a backlit screen does and the opposite of what handling does to
+    # paper — the edges are where a sheet is held, folded and foxed. A wide angle keeps
+    # it subtle; a sheet with an obvious vignette reads as a photograph of paper.
+    vignette_step = "vignette=angle=PI/9," if vignette else ""
     return (
         f"[1:v]noise=alls=80:allf=t+u:all_seed={big_seed},format=gray,"
         f"scale={int(width)}:{int(height)}:flags=bicubic,"
@@ -271,26 +275,64 @@ def paper_filtergraph(width: int, height: int, *, seed: int = 7,
 
 
 def torn_edge_filter(*, seed: int = 5, bite: int = 7) -> str:
-    """Ragged the alpha channel, so a cut-out looks torn rather than cut.
+    """Ragged an already-extracted alpha channel, so a cut-out looks torn rather than cut.
 
     The single cheapest thing that separates this style from a clean composite. A matte
     from background removal has a smooth, slightly soft edge — correct for a photographic
     composite and wrong here, where every element is supposed to have been pulled apart by
     hand.
 
-    Works on alpha only. Displacing the colour channels as well would fringe the edge with
-    whatever was behind the subject in the source image.
+    Takes and returns a greyscale alpha rather than an RGBA image, because the colour
+    channels must not go through this: displacing them as well fringes the edge with
+    whatever was behind the subject in the source.
     """
     amount = max(1, int(bite))
     return (
-        "format=yuva420p,"
-        "alphaextract,"
         # Displace the edge by a noise field, then re-threshold. Blurring alone rounds
-        # the edge; blurring and re-thresholding makes it wander.
+        # the edge; blurring and re-thresholding makes it wander, which is what torn is.
         f"noise=alls={amount * 9}:allf=t+u:all_seed={int(seed) % 10000},"
         f"boxblur=luma_radius={amount}:luma_power=1,"
         "curves=all='0/0 0.46/0 0.54/1 1/1'"
     )
+
+
+def cutout_filtergraph(*, cell: int = DEFAULT_CELL, tear: int = 7,
+                       seed: int = 5, gain: float = DOT_GAIN) -> str:
+    """Screen a cut-out's colour and tear its alpha, in one pass.
+
+    The two halves have to be separated and put back together, because the halftone
+    starts with `format=gray` and greyscale has no alpha — screening an RGBA image
+    directly returns a rectangle, which is exactly what the first render of this style
+    produced: a portrait with a border, sitting on the paper like a photograph rather than
+    like something torn out of a newspaper.
+    """
+    return (
+        "[0:v]format=yuva420p,split=2[colour][matte];"
+        f"[matte]alphaextract,{torn_edge_filter(seed=seed, bite=tear)}[torn];"
+        f"[colour]{halftone_filter(cell=cell, gain=gain)},format=gray,format=yuva420p"
+        "[screened];"
+        "[screened][torn]alphamerge[out]"
+    )
+
+
+def render_cutout(src: Path, out_path: Path, *, cell: int = DEFAULT_CELL,
+                  tear: int = 7, seed: int = 5) -> Path:
+    """One subject, screened and torn, with its background already removed.
+
+    Expects an RGBA source — `layers.matte.cut` is what produces one. Passing a JPEG
+    here screens it and tears an alpha channel that is fully opaque, which produces a
+    torn-edged rectangle rather than a cut-out and is worth knowing rather than guessing
+    at from the output.
+    """
+    out_path = Path(out_path).with_suffix(".png")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    _run(
+        ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", str(src),
+         "-filter_complex", cutout_filtergraph(cell=cell, tear=tear, seed=seed),
+         "-map", "[out]", "-frames:v", "1", str(out_path)],
+        "cutting out and screening a subject",
+    )
+    return out_path
 
 
 # --------------------------------------------------------------------------- rendering
@@ -447,6 +489,244 @@ class PaperShot:
                 "hold_frames": self.hold_frames,
             })
         return rows
+
+
+# --------------------------------------------------------------------------- compositing
+#
+# The stack is rendered with ffmpeg rather than with Remotion. Remotion is the better tool
+# for this style and is where it should end up — real path trimming, real masks, real
+# typography — but it is an optional install, and a style that only renders when an
+# optional 350MB toolchain is present is a style most installs cannot use. So the layers
+# composite here, in the dependency the app already requires, and the Remotion backend
+# becomes the upgrade rather than the entry fee.
+#
+# Stepped motion survives the translation because ffmpeg's overlay expressions can read
+# `t`. Quantising it is the whole trick: `floor` the elapsed frames into holds, and the
+# element moves in the same visible steps `stepped()` produces in Python.
+
+
+def _stepped_expression(start: float, duration: float, *, fps: int, hold: int,
+                        ease: str = "out") -> str:
+    """Progress from 0 to 1 in visible steps, as an ffmpeg expression in `t`.
+
+    The same arithmetic as `stepped`, written for a filtergraph. It is duplicated rather
+    than shared because there is nothing to share — one produces a list of numbers and the
+    other produces a string of ffmpeg syntax — but the two are pinned to each other by
+    test, because a Python preview that steps differently from the render is worse than
+    no preview.
+    """
+    frames = max(1, round(max(0.001, duration) * fps))
+    rest = max(1, int(hold))
+    steps = max(1, math.ceil(frames / rest))
+    begin = round(float(start), 4)
+
+    if steps == 1:
+        return "1"
+
+    # Elapsed frames since this layer started, floored into holds, as a fraction of the
+    # total number of steps. Clipped at both ends so the expression is safe before the
+    # layer starts and after it lands.
+    progress = (f"clip(floor(max(0\\,(t-{begin}))*{fps}/{rest})/{steps - 1}\\,0\\,1)")
+
+    if ease == "linear":
+        return progress
+    if ease == "in":
+        return f"pow({progress}\\,2)"
+    return f"(1-pow(1-{progress}\\,2))"  # "out", the default
+
+
+#: Where each entry comes from, as a fraction of the frame. The moves are short on
+#: purpose — a long travel reads as a slide transition, and this is meant to read as
+#: something being *placed*, which is a movement of a few centimetres.
+_ENTRY_OFFSETS: dict[str, tuple[float, float]] = {
+    "drop": (0.0, -0.14),     # from above, the way a hand lays paper down
+    "slide": (-0.16, 0.0),    # in from the left, the way a cut strip is pushed in
+    "stamp": (0.0, -0.05),    # a short hard fall
+    "draw": (0.0, 0.0),       # does not travel; it is revealed. See `_draw_chain`
+    "hold": (0.0, 0.0),
+}
+
+#: The stamp lands harder than anything else, which is what "stamp" means. Two frames
+#: rather than three, so it arrives in fewer, larger jumps.
+_STAMP_HOLD = 2
+
+
+def _travel(target: str, offset_pixels: float, progress: str) -> str:
+    """Resting position, plus however much of the entry offset is still to be covered.
+
+    The sign is folded into the operator rather than left on the number. `x+-100*(...)`
+    is valid ffmpeg and unreadable, and this expression is the first thing anybody
+    debugging a misplaced layer will look at.
+    """
+    if not round(offset_pixels, 2):
+        return target
+    sign = "-" if offset_pixels < 0 else "+"
+    return f"{target}{sign}{abs(offset_pixels):.1f}*(1-{progress})"
+
+
+def _draw_chain(label: str, start: float, duration: float, *, fps: int,
+                hold: int) -> str:
+    """Reveal a layer left to right instead of moving it.
+
+    Red string is the case this exists for: it connects two things already on screen, and
+    the drawing *is* the argument, so it has to appear progressively rather than arrive.
+    `crop` with `eval=frame` re-evaluates its width every frame, which is the only way to
+    animate a reveal without a mask.
+
+    The width floors at two pixels rather than zero — a zero-width crop is an invalid
+    filter, and it fails at render time rather than at build time.
+    """
+    progress = _stepped_expression(start, duration, fps=fps, hold=hold)
+    return (f"[{label}]crop=w='max(2\\,iw*{progress})':h=ih:x=0:y=0:eval=frame,"
+            f"format=yuva420p[{label}d]")
+
+
+@dataclass(frozen=True)
+class Placement:
+    """Where a layer rests and how big it is, both as fractions of the frame.
+
+    Fractions rather than pixels throughout, so one composition renders at 720p for a
+    preview and 1080p for delivery without being laid out twice. `height` is the
+    load-bearing one: a cut-out arrives at whatever size its source image happened to be,
+    and a 1024-pixel-wide portrait dropped onto a 1280-wide frame covers almost all of it
+    — which is not a placement, it is a background.
+    """
+
+    x: float = 0.5
+    y: float = 0.5
+    #: Fraction of the frame's height this layer should occupy. 0 leaves it as supplied.
+    height: float = 0.0
+    #: Degrees. Paper is laid down by hand and almost never lands square.
+    rotate: float = 0.0
+
+    @classmethod
+    def of(cls, value) -> Placement:
+        """Accept a bare (x, y) too — most layers need nothing else said about them."""
+        if isinstance(value, Placement):
+            return value
+        if isinstance(value, (tuple, list)) and len(value) >= 2:
+            return cls(float(value[0]), float(value[1]),
+                       float(value[2]) if len(value) > 2 else 0.0,
+                       float(value[3]) if len(value) > 3 else 0.0)
+        return cls()
+
+
+def shot_filtergraph(rows: list[dict], placements: dict, *,
+                     width: int, height: int, fps: int) -> str:
+    """The filter_complex that assembles one beat.
+
+    `rows` is a `PaperShot.timeline()`. `placements` maps a layer key to a `Placement`,
+    or to a bare (x, y) pair, so a composition is described once and renders at any size.
+    """
+    chains: list[str] = []
+    # Input 0 is the base sheet, scaled to fill. Everything else overlays onto it in the
+    # order the timeline already sorted them into.
+    chains.append(f"[0:v]scale={width}:{height},setsar=1,format=yuva420p[canvas0]")
+
+    canvas = "canvas0"
+    overlay_index = 0
+    for index, row in enumerate(rows):
+        if row["key"] == "base":
+            continue
+        overlay_index += 1
+        # Inputs are supplied in `rows` order, base first, so a row's own position *is*
+        # its input index. Offsetting by one made every layer read the next layer's
+        # image, and the last one read an input that did not exist.
+        source = f"{index}:v"
+        label = f"L{overlay_index}"
+        spot = Placement.of(placements.get(row["key"], Placement()))
+        rest_x, rest_y = spot.x, spot.y
+        entry = str(row["entry"])
+        hold = _STAMP_HOLD if entry == "stamp" else int(row["hold_frames"])
+        offset_x, offset_y = _ENTRY_OFFSETS.get(entry, (0.0, 0.0))
+
+        # Sized before anything else, so the entry offsets and the reveal crop all work
+        # against the size it will actually be composited at.
+        prepare = ["setsar=1"]
+        if spot.height > 0:
+            # Height-driven with the width following, so the layer keeps its proportions.
+            # -2 rather than -1 because libx264 needs even dimensions and an odd
+            # intermediate fails at encode time rather than here.
+            prepare.append(f"scale=-2:{max(2, round(height * spot.height))}")
+        if round(spot.rotate, 2):
+            # Transparent corners, not black ones: the whole point is that the sheet
+            # underneath shows through where this one does not cover it.
+            prepare.append(f"rotate={math.radians(spot.rotate):.5f}"
+                           ":fillcolor=none:ow=rotw(iw):oh=roth(ih)")
+        prepare.append("format=yuva420p")
+        chains.append(f"[{source}]{','.join(prepare)}[{label}]")
+
+        if entry == "draw":
+            chains.append(_draw_chain(label, row["start"], row["duration"],
+                                      fps=fps, hold=hold))
+            moving = f"{label}d"
+            progress = "1"
+        else:
+            moving = label
+            progress = _stepped_expression(row["start"], row["duration"],
+                                           fps=fps, hold=hold)
+
+        # Resting position in pixels, minus the entry offset scaled by how far the move
+        # still has to go. At progress 0 the element sits at rest+offset; at 1, at rest.
+        target_x = f"(W-w)*{rest_x:.4f}"
+        target_y = f"(H-h)*{rest_y:.4f}"
+        x_expr = _travel(target_x, offset_x * width, progress)
+        y_expr = _travel(target_y, offset_y * height, progress)
+
+        # `enable` rather than trusting the position: an element parked off-frame is
+        # still composited every frame, and eighty of those is real encode time.
+        out = f"canvas{overlay_index}"
+        chains.append(
+            f"[{canvas}][{moving}]overlay=x='{x_expr}':y='{y_expr}'"
+            f":enable='gte(t,{round(float(row['start']), 4)})'"
+            f":eval=frame:format=auto[{out}]"
+        )
+        canvas = out
+
+    chains.append(f"[{canvas}]format=yuv420p[out]")
+    return ";".join(chains)
+
+
+def render_shot(shot: PaperShot, sources: dict[str, Path], out_path: Path, *,
+                placements: dict | None = None,
+                width: int = 1920, height: int = 1080, fps: int = 30) -> Path:
+    """Composite and encode one beat.
+
+    `sources` maps layer key to an image already prepared — cut-outs screened, scraps
+    torn. This function does not screen or tear anything: doing it here would re-screen
+    the same cut-out on every beat it appears in, and the halftone is meant to be applied
+    once so that every instance of an element is identical.
+
+    A layer named in the shot with no source is skipped rather than failing. A beat that
+    planned for a stamp nobody supplied should still render the other four layers, since
+    the alternative is a run that has already paid for a script and a voiceover dying over
+    a missing decoration.
+    """
+    rows = [row for row in shot.timeline(fps=fps)
+            if row["key"] == "base" or row["key"] in sources]
+    if not any(row["key"] == "base" for row in rows):
+        raise ValueError("a paper shot needs a base sheet")
+    if "base" not in sources:
+        raise ValueError("no base image supplied")
+
+    out_path = Path(out_path).with_suffix(".mp4")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    args = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error"]
+    for row in rows:
+        # Every input is a still looped for the shot's length. `-loop 1` with `-t` is
+        # what turns a PNG into a stream the overlay chain can animate against.
+        args += ["-loop", "1", "-t", f"{shot.seconds:.3f}", "-i", str(sources[row["key"]])]
+
+    args += [
+        "-filter_complex",
+        shot_filtergraph(rows, placements or {}, width=width, height=height, fps=fps),
+        "-map", "[out]", "-r", str(fps), "-t", f"{shot.seconds:.3f}",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
+        str(out_path),
+    ]
+    _run(args, "compositing a paper shot")
+    return out_path
 
 
 def catalogue() -> dict:
