@@ -12,8 +12,8 @@ narration (93% voiced, no pause longer than 0.40 s), ~600 cues, mastered to
 
 ## 1. Diagnose by measuring, never by ear
 
-Sync was "fixed" twice in the wrong direction by guessing before
-`sync_check.py --by-tier` existed. Two rules follow:
+Sync was "fixed" twice in the wrong direction by guessing, before anyone
+scored the placements *by tier*. Two rules follow:
 
 - **Read the per-tier breakdown, not the headline.** The overall number only ever
   says "scattered". The per-tier view says *which* tier and by how much, and the
@@ -48,7 +48,7 @@ because a title card is deliberately a whoosh leading into a boom 0.4 s later.
 
 That render's effects bus peaked at **−23.7 dB** against a −13 dB music bed, so
 everything sat under the music and whole minutes read as having *no* effects. The
-bed is the thing that gets out of the way. See `house.py` for the tier table.
+bed is the thing that gets out of the way. The tier table is in §5.
 
 **Normalise the palette before placing anything.** Across 81 library files the
 peak spread was **15 dB** (+12.3 to −2.8 dB of correction). Without that pass the
@@ -135,8 +135,8 @@ and call them by hand only where a crowd is on screen.
 
 One "sword on shield" recording was **3.23 s holding four blows**. Placed whole it
 read as a slam, and because its energy accumulates across all four its anchor
-landed 695 ms in, so the whole cluster was early too. `oneshot.py` splits takes
-into single hits. The same applies to forge and armour recordings.
+landed 695 ms in, so the whole cluster was early too. Split a take into single
+hits before placing any of them. The same applies to forge and armour recordings.
 
 ## 8. Casting — the category is not the question, the OBJECT is
 
@@ -165,8 +165,8 @@ One sound is a sample; two is a designed hit. A strike gets a short swish **130 
 before** contact (anticipation) and a weight layer **35 ms after** (the body reacts
 after the blade arrives). Metal alone is thin.
 
-`sync_check.py` scores stack layers separately, because those offsets *are* the
-design and scoring them as independent sync targets punishes doing it right.
+Score stack layers separately, because those offsets *are* the design: scoring
+them as independent sync targets punishes doing it right.
 
 ## 10. Panning — a static sound under a moving picture reads as stuck
 

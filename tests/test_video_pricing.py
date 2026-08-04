@@ -129,7 +129,13 @@ def test_a_sample_is_reserved_as_extra_seconds_never_folded_into_the_shot():
 
     without = media.video_reserve_credits(slug, 8.0)
     with_sample = media.video_reserve_credits(slug, 8.0, samples=1)
-    assert with_sample == credits_for(model.usd_per_second * (8.0 + model.sample_seconds))
+    # Ten, not eight: the shot goes through `submittable`, because Kling offers five
+    # seconds or ten and an eight-second scene is a ten-second submission. The sample does
+    # not — `sample_seconds` is one of the accepted values by construction, so putting it
+    # through `submittable` would be a no-op dressed as a rule.
+    billed = model.submittable(8.0)
+    assert billed == 10.0
+    assert with_sample == credits_for(model.usd_per_second * (billed + model.sample_seconds))
     assert with_sample > without
 
     two = media.video_reserve_credits(slug, 8.0, samples=2)

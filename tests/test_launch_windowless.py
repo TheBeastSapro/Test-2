@@ -60,11 +60,39 @@ def test_it_starts_the_process_hidden_and_waits():
         "the hidden launch must be Run(..., 0, True)"
 
 
-def test_a_failure_reopens_visibly():
-    """The recovery path, because an invisible failure is unreportable."""
+def test_a_failure_is_reported_without_opening_a_console():
+    """The recovery path, because an invisible failure is unreportable — and the shape it
+    must *not* take.
+
+    The first version of this re-ran the same command visibly on a non-zero exit. It
+    worked, and it was the wrong fix: a crash then produced exactly the black console this
+    file exists to prevent, and two of them, because the visible re-run starts a child of
+    its own. The complaint was about the box, not about the error inside it.
+
+    So: log every run, and on failure show a dialog naming what went wrong with the log one
+    click away. A message box is not a console — it says one thing, it is dismissed, and it
+    leaves nothing in the taskbar.
+    """
     text = VBS.read_text(encoding="utf-8", errors="replace")
-    assert "Forgecast.bat" in text, "a failed hidden start must re-run the console version"
-    assert "cmd /k" in text, "/k keeps the window open so the error can be read"
+    assert "MsgBox" in text, "a failed hidden start must say so somewhere"
+    assert "notepad.exe" in text, "the log has to be openable, and not in a terminal"
+    assert "forgecast-launch.log" in text, "there is nothing to open without a log"
+
+    # The regression guard proper, against the code rather than the prose: the header
+    # comment explains why the console re-run was removed and names both, so a plain
+    # substring search over the file would only ever be testing the explanation.
+    code = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith("'"))
+    assert "cmd /k" not in code, "/k is a console window that stays open — the whole complaint"
+    assert "Forgecast.bat" not in code, "re-running the batch file is what drew the black box"
+
+
+def test_the_hidden_run_is_captured_rather_than_discarded():
+    """A dialog with nothing in it is a failure with no reason attached, so the child's
+    output has to go somewhere a human can be pointed at."""
+    text = VBS.read_text(encoding="utf-8", errors="replace")
+    assert "2>&1" in text, "stderr is where the traceback is"
+    assert re.search(r">\s*\"\"?&?\s*logPath|> \"\"\" & logPath", text), \
+        "the run must redirect into the log the dialog offers"
 
 
 def test_it_prefers_the_windowless_interpreter():

@@ -206,7 +206,14 @@ shape stays where you can reason about its cost.
 
 ### 2.6 Cost control in the pipeline itself
 
-- `broll_plan` caps animated shots at ⅓ of the list and downgrades the excess.
+- `broll_plan` caps animated beats at ⅓ of the script and downgrades the excess, and
+  the premium tier at a quarter on top of that. Both caps live in `render/cutting.py`
+  rather than beside the planner, because the ledger reserves against the same numbers
+  — a spending cap the money model cannot read is one it under-reserves for.
+- The reserve for the two animation nodes is priced on the channel's chosen endpoints
+  (`graph.pipelines.animation_reserve`), not on a flat per-unit rate. Those endpoints
+  span $0.03 to $0.20 a second, and one figure for all of them was wrong by up to
+  seven times in the direction that spends past the hold.
 - Stills default to Ken Burns rather than generated video (~10× cheaper).
 - Media stages degrade instead of dying: a failed animation falls back to its still
   plate, a failed still to a captioned card. A vendor timeout must not lose ten
@@ -225,7 +232,13 @@ Honest inventory of what is skeleton and what is finished.
 - Full pipeline on mock providers → a real 1920×1080 H.264 + AAC MP4 with captions
 - Auth, tenant isolation (cross-user reads and gates return 404), key encryption
 - JSON API, SSE live updates, node-graph UI
-- 57 tests, all offline
+- Alembic migrations: `migrations/versions/` holds the chain from the baseline schema
+  through the channel's video-model columns. `init_db()` still creates tables from
+  scratch for a fresh install; the chain is what upgrades one that already has data.
+- Signed media URLs. `/files` no longer serves straight off disk to anyone with a
+  path — `api/media.sign_url` issues a per-account, expiring URL, and the browser gets
+  that rather than a filesystem location.
+- ~2,100 tests, all offline
 
 **Skeleton — written, never run against the live vendor**
 - `providers/media.py` and `providers/youtube.py`. The code is complete; the API
@@ -239,11 +252,10 @@ Honest inventory of what is skeleton and what is finished.
   mock mode. Credits must only be minted by a verified Stripe webhook
   (`checkout.session.completed`), keyed on the event id for idempotency — never by a
   request a browser can make.
-- **Alembic migrations.** `init_db()` creates tables; the dependency is declared but
-  no migration chain exists. Generate one before the first schema change in prod.
-- **Object storage.** `/files` serves straight off disk with no per-user
-  authorisation — anyone with a path can read any artifact. S3 + presigned URLs
-  before launch.
+- **Object storage.** Artifacts live on the local disk. The URLs handed out are signed
+  and expiring, so the authorisation hole is closed, but a multi-machine deployment
+  still needs S3 behind them — a signed URL to a path on one worker's disk is not
+  readable from another.
 - **Teams/orgs.** One user owns everything. No sharing, roles, or seats.
 - **YouTube OAuth callback route.** The client methods (`authorize_url`,
   `exchange_code`) exist; the redirect endpoint that stores the refresh token does not.

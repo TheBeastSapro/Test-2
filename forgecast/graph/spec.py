@@ -24,10 +24,21 @@ class NodeSpec:
     max_attempts: int = 3
     # Cost estimation hint: how many units this node is expected to consume.
     estimated_units: float = 0.0
+    # The variable half of the reserve, in credits, when the pipeline can price this node
+    # better than a flat per-unit rate can. Set it and `estimated_units` is ignored for
+    # money — see `credits.estimate_node`.
+    #
+    # It exists for the two nodes that buy animation. Their bill is dominated by which
+    # *model* the channel chose, and a per-unit table has one figure per node type, so a
+    # table entry is necessarily right for one channel and wrong by up to seven times for
+    # the rest. The pipeline knows the channel; the table never can.
+    estimated_credits: int = 0
 
     def to_node(self, run_id: int) -> Node:
         params = dict(self.params)
         params["estimated_units"] = self.estimated_units
+        if self.estimated_credits:
+            params["estimated_credits"] = self.estimated_credits
         return Node(
             run_id=run_id,
             key=self.key,

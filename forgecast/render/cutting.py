@@ -74,10 +74,61 @@ SHOTS_PER_PLATE = 4
 # ledger's existing 80-unit reserve, so the fix fits inside money already held.
 SECONDS_PER_PLATE = DEFAULT_SHOT_SECONDS * SHOTS_PER_PLATE
 
-# The brief prompt asks for 4-12 beats and the script covers every one, so 12 is the most
-# scenes a run produces. The reserve has to assume the densest legal script: every scene
-# buys at least one plate however short it is.
-MAX_SCRIPT_SCENES = 12
+# The most scenes a run of this length produces, which is what the reserve has to assume:
+# every scene buys at least one plate however short it is, and one in three of them may
+# be animated, which is where the money is.
+#
+# It used to be the literal 12, on the grounds that "the brief prompt asks for 4-12
+# beats". That stopped being true when the beat count moved into `scripting.method`'s
+# cadence — which asks for 19 beats at eight minutes, 36 at fifteen and 72 at half an
+# hour. A reserve enumerating twelve splits of an eight-minute video was pricing four
+# animated beats against the six a real script produces.
+#
+# The margin is because a language model asked for nineteen beats returns about
+# nineteen. Holding for a script that came back a quarter denser costs a user the wait
+# for a release; not holding for it is a run that spends past its own hold.
+_SCENE_MARGIN = 1.25
+
+
+def max_scenes(target_seconds: float) -> int:
+    """How many scenes a script of this length can be expected to contain, generously.
+
+    From `scripting.method.cadence`, which is the thing that actually tells the model how
+    many beats to write, so the two cannot drift the way a literal did.
+    """
+    from ..scripting.method import cadence
+
+    return max(4, math.ceil(cadence(int(max(0.0, float(target_seconds or 0.0)))).beats
+                            * _SCENE_MARGIN))
+
+# What share of a script's beats the app will grant the hero tier, however many the
+# planner asks for.
+#
+# A cap rather than an allocation, and it exists because of how a language model satisfies
+# "mark the important shots": the cheapest way to be safe is to mark most of them, and a
+# plan with half its scenes hero has not routed anything — it has chosen the expensive
+# model for the whole video, at a settings page that promised a fifth of the cost. The
+# roles that earn an upgrade are a fixed, short list — hook, reveal, payoff, close — so a
+# quarter is generous at the twelve-scene ceiling above.
+HERO_SHARE = 0.25
+
+
+def video_budget(scenes: int) -> int:
+    """How many of a script's beats may be animated. At most one in three.
+
+    Here rather than beside the planner that enforces it, because the ledger has to
+    reserve against the same number. Animation is the whole cost of a run — a still is
+    five credits and a premium clip is two hundred — so a budget the money model cannot
+    read is a budget that under-reserves every run it constrains. That is exactly what
+    happened: the reserve priced a blended per-plate figure invented by hand while this
+    cap decided the real bill, and the two disagreed by a factor of three.
+    """
+    return max(1, max(0, int(scenes)) // 3)
+
+
+def hero_budget(scenes: int) -> int:
+    """How many animated beats may take the premium model. See `HERO_SHARE`."""
+    return max(1, round(max(0, int(scenes)) * HERO_SHARE))
 
 
 class CutPlanError(RuntimeError):
@@ -194,7 +245,7 @@ def plates_for(seconds: float, spec: RenderSpec | None = None, *, reusable: bool
     return max(1, math.ceil(max(0.0, seconds) / SECONDS_PER_PLATE))
 
 
-def estimate_plates(target_seconds: float, *, scenes: int = MAX_SCRIPT_SCENES) -> int:
+def estimate_plates(target_seconds: float, *, scenes: int = 0) -> int:
     """The ledger's reserve for the shots node, in plates.
 
     The reserve has to cover whatever shape of script arrives, and the shape matters
@@ -205,14 +256,15 @@ def estimate_plates(target_seconds: float, *, scenes: int = MAX_SCRIPT_SCENES) -
     The old reserve was `target_seconds / 6` — about 80 units for an 8-minute video
     against the 8 the node then spent, wrong by an order of magnitude in the safe
     direction. It is derived from the same constant now, so the two move together.
+
+    `scenes` is the ceiling to enumerate up to, and defaults to `max_scenes` for this
+    runtime. It was a flat 12 until the beat count moved into the scripting cadence.
     """
     total = max(0.0, float(target_seconds))
+    ceiling = max(1, int(scenes) if scenes else max_scenes(total))
     return max(
         1,
-        max(
-            count * plates_for(total / count)
-            for count in range(1, max(1, int(scenes)) + 1)
-        ),
+        max(count * plates_for(total / count) for count in range(1, ceiling + 1)),
     )
 
 

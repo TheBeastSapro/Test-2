@@ -25,7 +25,13 @@ from ..providers.media import (
     video_usd,
 )
 from ..render import ffmpeg as ff
-from ..render.cutting import plates_for, shot_estimate, spec_for
+from ..render.cutting import (
+    hero_budget,
+    plates_for,
+    shot_estimate,
+    spec_for,
+    video_budget,
+)
 from ._common import ask_json, dimensions, request_payload, tier_models
 
 THUMBNAIL_INSTRUCTIONS = """Design thumbnail concepts for this video.
@@ -338,17 +344,6 @@ def _concat_audio(clips: list[Path], out_path: Path) -> Path:
 
 # ---------------------------------------------------------------------- broll plan
 
-# What share of a script's beats the app will grant the hero tier, however many the
-# planner asks for.
-#
-# A cap rather than an allocation, and it exists because of how a language model satisfies
-# "mark the important shots": the cheapest way to be safe is to mark most of them, and a
-# plan with half its scenes hero has not routed anything — it has chosen the expensive
-# model for the whole video, at a settings page that promised a fifth of the cost. The
-# roles that earn an upgrade are a fixed, short list — hook, reveal, payoff, close — so a
-# quarter is generous at the twelve-scene ceiling `render.cutting` plans against.
-HERO_SHARE = 0.25
-
 
 @node_handler("broll_plan")
 async def broll_plan_node(ctx: NodeContext) -> NodeResult:
@@ -394,8 +389,11 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
 
     # Every scene must end up with at least one plate, planned or inferred.
     shots: list[dict] = []
-    video_budget = max(1, len(scenes) // 3)
-    hero_budget = max(1, round(len(scenes) * HERO_SHARE))
+    # Both caps come from `render.cutting`, which is also where the ledger reads them to
+    # size the reserve. Two copies of "one in three" would be two answers to how much a
+    # run may spend, and the one the money model held would be the wrong one.
+    animated_allowed = video_budget(len(scenes))
+    heroes_allowed = hero_budget(len(scenes))
     videos = 0
     heroes = 0
     planned_shots = 0
@@ -409,7 +407,7 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
             # A map with nothing to mark is an empty map. Fall back rather than
             # rendering an establishing shot of the whole planet with no point to it.
             kind = "image"
-        if kind == "video" and videos >= video_budget:
+        if kind == "video" and videos >= animated_allowed:
             kind = "image"  # protect the budget from an over-eager plan
         if kind == "video":
             videos += 1
@@ -432,7 +430,7 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
             # it is a different endpoint: a still marked hero costs exactly what a still
             # costs, so charging it against the cap would deny the upgrade to an animated
             # beat that would actually have used it.
-            if tier == HERO_TIER and heroes >= hero_budget:
+            if tier == HERO_TIER and heroes >= heroes_allowed:
                 tier = STANDARD_TIER
             if tier == HERO_TIER:
                 heroes += 1

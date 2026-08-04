@@ -242,17 +242,33 @@ def estimate_pipeline(
     name: str,
     target_seconds: int = Query(480, ge=15, le=3600),
     use_avatar: bool = False,
+    standard_model: str = "",
+    hero_model: str = "",
 ) -> EstimateOut:
-    """What a run will cost before committing to it."""
+    """What a run will cost before committing to it.
+
+    The two model slugs are worth passing, and they are the channel's `video_model` and
+    `video_model_hero`. Two of these nodes are priced by the image-to-video endpoint the
+    channel chose, and the ones it can choose between span a seven-fold range — so
+    without them this answers for the default, and an estimate quoting a different model
+    from the one the run will reserve against is worse than no estimate.
+
+    They are query parameters rather than a `channel_id` so this stays open: it is a price
+    list, it reads nothing belonging to anyone, and requiring a session to ask what a
+    video costs is a sign-up wall in front of the answer that decides whether to sign up.
+    """
     try:
-        spec = get_pipeline(name, target_seconds=target_seconds, use_avatar=use_avatar)
+        spec = get_pipeline(name, target_seconds=target_seconds, use_avatar=use_avatar,
+                            standard_model=standard_model, hero_model=hero_model)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     per_node = []
     total = 0
     for node_spec in spec.topological_order():
-        estimate = billing.estimate_node(node_spec.type, node_spec.estimated_units)
+        estimate = billing.estimate_node(
+            node_spec.type, node_spec.estimated_units, priced=node_spec.estimated_credits
+        )
         total += estimate.credits
         per_node.append(
             {

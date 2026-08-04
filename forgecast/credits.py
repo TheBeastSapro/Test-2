@@ -69,21 +69,20 @@ PER_UNIT_COSTS: dict[str, tuple[str, int, int]] = {
     "hook": ("characters", 18, 1000),
     "thumbnail": ("images", 5, 1),      # FAL $0.04/image
     "avatar": ("seconds", 12, 10),      # HeyGen $0.60/min
-    # Blended: the B-roll planner caps animated shots at a third of the list, so a
-    # per-clip estimate of "all video" (≈55) would hold three times what a run spends.
-    # 1/3 x 55 (video) + 2/3 x 5 (still) ≈ 22.
-    "shots": ("clips", 22, 1),
-    # One sample per distinct style-and-motion setup, and unlike a shot it is always
-    # generated video — there is no still to blend down toward, so this is nearer the
-    # all-video figure above than to the blended 22. Five seconds at the default model's
-    # $0.07 is $0.35, doubled by the markup and divided by USD_PER_CREDIT: 43.
-    #
-    # It is a figure for the default model, which is the same weakness `shots` has and
-    # now a sharper one: the model is chosen per channel and they span $0.03 to $0.20 a
-    # second, so this estimate is right for one of eleven. It errs low on the dear ones,
-    # which the node's own settlement corrects — `FalVideoProvider.reserve_credits`
-    # prices the real model, and a reserve is released rather than kept.
-    "sample": ("setups", 43, 1),
+    # The two animation nodes are the last resort rather than the answer. Both are priced
+    # by *which model the channel picked* — the selectable endpoints run from $0.03 a
+    # second to $0.20 — and one figure per node type cannot span that: these two rows were
+    # right for a default channel and wrong by up to seven times for every other one, in
+    # the direction that spends past the hold. The shipped pipelines now hold what
+    # `graph.pipelines.animation_reserve` computes from the catalogue and the budget caps,
+    # and pass it as `estimated_credits`. What is left here is the floor for a pipeline
+    # that supplies units and no price. Both are the worst case rather than a blend,
+    # because that is the only figure a fallback may honestly be: 70 is the dearest plate
+    # in the catalogue — a short script whose beats are all animated on the premium model —
+    # and 98 is one sample on the dearest endpoint. A pipeline that wants the real number
+    # sets `estimated_credits`; one that does not gets held for the worst.
+    "shots": ("plates", 70, 1),
+    "sample": ("setups", 98, 1),
     "research": ("pages", 4, 1),        # one LLM extraction call per page
     "voice_casting": ("auditions", 3, 1),
 }
@@ -99,25 +98,46 @@ class CostEstimate:
         return {"node_type": self.node_type, "credits": self.credits, "detail": self.detail}
 
 
-def estimate_node(node_type: str, units: float = 0.0) -> CostEstimate:
-    """Estimate one node. `units` is in the node's natural unit (words, clips, …)."""
+def estimate_node(node_type: str, units: float = 0.0, *, priced: int = 0) -> CostEstimate:
+    """Estimate one node. `units` is in the node's natural unit (words, clips, …).
+
+    `priced` overrides the per-unit table with a figure the caller worked out itself, and
+    the base fee is still added on top. It is how the two animation nodes are estimated:
+    what they cost is decided by the model the channel picked, which spans $0.03 to $0.20
+    a second, and no single row in `PER_UNIT_COSTS` can be right across a seven-fold
+    spread. See `graph.pipelines.animation_reserve`.
+    """
     base = BASE_COSTS.get(node_type, 5)
     detail = f"base {base}"
     variable = 0
-    if node_type in PER_UNIT_COSTS and units:
+    if priced > 0:
+        variable = int(priced)
+        detail = f"base {base} + {variable} priced on the channel's video model"
+    elif node_type in PER_UNIT_COSTS and units:
         unit_name, per, size = PER_UNIT_COSTS[node_type]
         variable = math.ceil(units / size) * per
         detail = f"base {base} + {variable} for {units:g} {unit_name}"
     return CostEstimate(node_type, base + variable, detail)
 
 
+def node_estimate(node: Node) -> CostEstimate:
+    """Estimate a persisted node from its own params — the one reading of them.
+
+    The run-level hold and the per-node release have to agree exactly or `release_unused`
+    hands back the difference forever, so both go through here rather than each unpacking
+    `params` in its own way.
+    """
+    params = node.params or {}
+    return estimate_node(
+        node.type,
+        float(params.get("estimated_units", 0) or 0),
+        priced=int(params.get("estimated_credits", 0) or 0),
+    )
+
+
 def estimate_run(nodes: list[Node]) -> int:
     """Reservation amount for a queued run, from its planned node params."""
-    total = 0
-    for node in nodes:
-        units = float(node.params.get("estimated_units", 0) or 0)
-        total += estimate_node(node.type, units).credits
-    return total
+    return sum(node_estimate(node).credits for node in nodes)
 
 
 def credits_to_usd(credits: int) -> float:

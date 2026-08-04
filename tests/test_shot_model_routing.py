@@ -48,6 +48,7 @@ from forgecast.providers.media import (
     video_tier,
     video_usd,
 )
+from forgecast.render.cutting import hero_budget
 
 LITE = "fal-ai/veo3.1/lite/image-to-video"
 VEO = "fal-ai/veo3.1/image-to-video"
@@ -291,7 +292,7 @@ async def test_a_plan_that_marks_everything_hero_does_not_buy_the_hero_model_for
     animated = [shot for shot in output["shots"] if shot["kind"] == "video"]
     heroes = [shot for shot in animated if shot["tier"] == HERO_TIER]
     assert heroes, "the opening beat is always hero"
-    assert len(heroes) <= round(8 * media_node.HERO_SHARE)
+    assert len(heroes) <= hero_budget(8)
     assert output["hero_shots"] == len(heroes)
     # And the downgraded ones actually render on the batch model, rather than being
     # relabelled while still pointing at the dear endpoint.

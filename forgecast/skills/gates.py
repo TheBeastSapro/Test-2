@@ -46,6 +46,16 @@ SAMPLE_TARGET_SECONDS = 5.0
 # would. It is a permission for the operator, not a decision this module makes.
 SHORT_SHOT_SECONDS = 3.0
 
+# A run with more distinct setups than this is not a style, it is a shot list nobody
+# constrained — and sampling each one costs more than the batch it is protecting. The
+# gate reports it rather than sampling them all, because the fix is to reduce the
+# variation, not to buy thirty samples.
+#
+# It lives here rather than in the node that enforces it because it is also the ceiling
+# the ledger reserves against: this is the largest number of clips the gate can buy, and
+# a reserve that assumed one while the gate bought six was the shape of the bug.
+MAX_SETUPS = 6
+
 
 def _norm(value: str) -> str:
     """One spelling per facet, so cosmetic differences are not treated as new setups.

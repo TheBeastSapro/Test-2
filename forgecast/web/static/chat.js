@@ -182,6 +182,10 @@ function toolCard(call, { into } = {}) {
   const card = document.createElement('div');
   card.className = 'tool running';
   card.dataset.id = call.id || '';
+  // Which tool this was, kept on the element because the result arrives in a separate
+  // event that carries only the id. `fillToolCard` needs the name to know whether the
+  // result is something the operator has to decide about.
+  card.dataset.tool = String(call.name || '').split('__').pop();
   card.innerHTML = `
     <div class="tool-head">
       <span class="tool-chev">›</span>
@@ -217,6 +221,110 @@ function fillToolCard(card, { text, isError }) {
   // A failure is opened for you. Everything else waits to be asked for.
   body.hidden = !isError;
   card.classList.toggle('open', !!isError);
+  if (!isError) editGate(card, text);
+}
+
+/* ── the paper edit's approval, which is the operator's and nobody else's ──
+   `plan_edit` writes a paper edit and cuts nothing. `cut_plan` refuses any plan that
+   has not been approved, and `approve_edit` is deliberately withheld from the agent —
+   approving is the one cheap place to disagree with the machine, and an agent that
+   approves its own plan has turned that into a formality.
+
+   Which left the decision with nowhere to be made. The endpoint existed, the refusal
+   existed, and the operator had no button — so every plan stayed drafted and the cutter
+   behind it was unreachable. This is that button. */
+function editGate(card, text) {
+  if (card.dataset.tool !== 'plan_edit' || card.querySelector('.editgate')) return;
+  let plan;
+  try { plan = JSON.parse(text); } catch { return; }
+  if (!plan || !plan.plan_id) return;
+
+  const row = document.createElement('div');
+  row.className = 'editgate';
+  card.append(row);
+
+  // Set the moment the operator commits, and never cleared. The state check below is a
+  // network round trip; without this, a decision taken while it was in flight would be
+  // painted back over with the buttons that made it — which reads as the click having
+  // been dropped, and the second click is a second POST.
+  let decided = false;
+
+  const settled = (state, note) => {
+    row.innerHTML = `<span class="editgate-state">${esc(state)}</span>`
+      + (note ? ` <span class="editgate-note">${esc(note)}</span>` : '');
+  };
+
+  const decide = async (approve, cut) => {
+    decided = true;
+    row.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    let note = '';
+    if (!approve) {
+      // What was wrong with it. The next draft is made against this rather than against
+      // a blank page, so an empty rejection is worth one prompt to avoid.
+      note = window.prompt('What was wrong with this edit?') || '';
+    }
+    try {
+      const result = await api(`/api/edit/plans/${encodeURIComponent(plan.plan_id)}/decision`,
+                               { approve, cut, note });
+      if (!approve) { settled('Rejected', note); toast('Edit rejected'); return; }
+      settled('Approved', cut ? 'cutting…' : 'not cut yet');
+      toast(cut ? 'Cutting' : 'Approved');
+      if (cut && result.cut && (result.cut.running || result.cut.started)) watchCut(row);
+    } catch (error) {
+      settled('Could not record that', `${error.message || error}`.slice(0, 160));
+      row.querySelectorAll('button').forEach(b => { b.disabled = false; });
+    }
+  };
+
+  const paint = state => {
+    if (decided) return;
+    if (state && state !== 'drafted') { settled(state === 'approved' ? 'Approved' : 'Rejected'); return; }
+    row.innerHTML =
+      `<span class="editgate-ask">Nothing has been cut yet.</span>`
+      + `<button class="btn-sm primary" data-role="cut">Approve &amp; cut</button>`
+      + `<button class="btn-sm" data-role="hold">Approve only</button>`
+      + `<button class="btn-sm" data-role="no">Reject</button>`;
+    row.querySelector('[data-role="cut"]').onclick = () => decide(true, true);
+    row.querySelector('[data-role="hold"]').onclick = () => decide(true, false);
+    row.querySelector('[data-role="no"]').onclick = () => decide(false, false);
+  };
+
+  // A replayed transcript can be days old, so the state in the stored result is not the
+  // current one. Ask, and fall back to the buttons if the plan has since been deleted —
+  // a dead button that says why beats a card that silently drops the decision.
+  paint(plan.state);
+  api(`/api/edit/plans/${encodeURIComponent(plan.plan_id)}`, undefined, 'GET')
+    .then(current => paint(current.state))
+    .catch(() => {});
+}
+
+/* Progress for a cut already running on the server. The decision endpoint starts it on
+   a worker thread and returns without waiting, because an encode outlasts a request. */
+function watchCut(row) {
+  const tick = async () => {
+    let state;
+    try { state = await api('/api/edit/cut', undefined, 'GET'); } catch { return; }
+    if (state.running) {
+      const last = (state.log || []).slice(-1)[0] || 'encoding…';
+      row.innerHTML = `<span class="editgate-state">Cutting</span>`
+        + ` <span class="editgate-note">${esc(last)}</span>`;
+      setTimeout(tick, 1500);
+      return;
+    }
+    const done = state.result || {};
+    if (done.error) {
+      row.innerHTML = `<span class="editgate-state">Cut failed</span>`
+        + ` <span class="editgate-note">${esc(done.error)}</span>`;
+      return;
+    }
+    // A cut nobody can watch is not finished work, so the link is the point of the row
+    // once it exists. `media_url` is signed, expiring and for this account only.
+    row.innerHTML = `<span class="editgate-state">Cut</span>`
+      + ` <span class="editgate-note">${esc(done.summary || done.relative || '')}</span>`
+      + (done.media_url ? ` <a class="btn btn-sm" href="${esc(done.media_url)}" target="_blank" rel="noopener">Watch</a>` : '')
+      + (done.relative ? ` <a class="btn btn-sm" href="/files?path=${encodeURIComponent(done.relative)}">Files</a>` : '');
+  };
+  tick();
 }
 
 function replayTools(calls) {

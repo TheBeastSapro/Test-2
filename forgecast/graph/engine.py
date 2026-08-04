@@ -199,6 +199,11 @@ def create_run(
         ),
         use_avatar=bool(options.get("use_avatar", bool(channel.avatar_id))),
         publish=bool(options.get("publish", True)),
+        # The reserve for the two animation nodes is priced on these, not on a flat rate.
+        # Passing them here is what makes the hold match the bill: a channel on Veo 3.1
+        # spends about seven times what one on Veo 3.1 Lite does for the same script.
+        standard_model=channel.video_model or "",
+        hero_model=channel.video_model_hero or "",
     )
 
     run = Run(
@@ -594,9 +599,7 @@ class GraphEngine:
                 memory_block=prompt_block(session, channel, node_type=node.type),
                 revision_feedback=node.review_feedback,
             )
-            estimate = billing.estimate_node(
-                node.type, float((node.params or {}).get("estimated_units", 0) or 0)
-            ).credits
+            estimate = billing.node_estimate(node).credits
             _event(session, run_id, node.key, f"started {node.title}",
                    data={"attempt": node.attempts})
             return context, node.type, estimate

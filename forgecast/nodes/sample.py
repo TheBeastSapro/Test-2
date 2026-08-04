@@ -73,11 +73,9 @@ from ._common import dimensions, tier_models
 # that did not rather than forming a setup of its own.
 DEFAULT_CAMERA = "push_in"
 
-# A run with more distinct setups than this is not a style, it is a shot list nobody
-# constrained — and sampling each one costs more than the batch it is protecting. The
-# gate reports it rather than sampling them all, because the fix is to reduce the
-# variation, not to buy thirty samples.
-MAX_SETUPS = 6
+# The ceiling on how many setups this node will sample, from the gate module so that the
+# ledger and this loop are reading one number. See `gates.MAX_SETUPS`.
+MAX_SETUPS = gates.MAX_SETUPS
 
 
 def _setup_for(shot: dict, channel, aspect: str) -> gates.ShotSetup:

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import importlib.util
 import logging
+import re
 from pathlib import Path
 
 import pytest
@@ -271,3 +272,45 @@ def test_no_shipped_skill_names_a_service_this_app_does_not_use():
                 offenders.append(f"{document.name}: {word!r}")
     assert not offenders, "a shipped skill names a service this app does not use:\n  " \
         + "\n  ".join(offenders)
+
+
+def test_no_shipped_skill_tells_the_agent_to_run_a_script_that_does_not_exist():
+    """The sound skill's whole "Order of work" was `visual_redraw.py`, `build_palette.py`,
+    `place.py`, `assemble.py`, `sync_check.py`, `house.py`, `oneshot.py` and `selftest.py`,
+    "run from this skill's `scripts/` directory".
+
+    There is no `scripts/` directory and there never was — those belonged to a different
+    tool. Forgecast's own sound stage was built, tested and wired the whole time, and the
+    document that was supposed to explain it instead sent the agent looking for programs
+    that are not on the disk. Which is the same defect as the gateway above, and the same
+    defect as a capability with no door: a instruction that cannot be carried out is worse
+    than a missing one, because the agent reports having followed it.
+
+    So: every `something.py` a shipped skill names has to be a file in this repository.
+    """
+    from pathlib import Path
+
+    from forgecast import skills
+
+    data = Path(skills.__file__).resolve().parent / "data"
+    root = Path(skills.__file__).resolve().parent.parent.parent
+
+    named = re.compile(r"`([\w./-]+\.py)[^`]*`")
+    offenders = []
+    for document in sorted(data.glob("*.md")):
+        for match in named.finditer(document.read_text(encoding="utf-8")):
+            script = match.group(1).lstrip("./")
+            if not (root / script).exists() and not list(root.glob(f"**/{script}")):
+                offenders.append(f"{document.name}: {script}")
+    assert not offenders, ("a shipped skill names a script that is not in this "
+                           "repository:\n  " + "\n  ".join(offenders))
+
+
+def test_the_sound_skill_points_at_the_stage_this_app_actually_has():
+    """And the positive half: naming no phantom script is satisfied by naming nothing at
+    all, which would leave the method true and unusable."""
+    doc = (Path(skills.__file__).resolve().parent / "data" / "sound-designer.md") \
+        .read_text(encoding="utf-8")
+    for real in ("style.sound.design", "style.sound.recommend", "nodes.sound",
+                 "providers.registry"):
+        assert real in doc, f"the sound skill does not mention {real}"

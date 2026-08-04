@@ -340,3 +340,71 @@ def test_the_chat_can_do_all_of_this_and_may_not_approve_its_own_plan():
 
     assert "approve_edit" in tools.ALL_TOOLS
     assert "mcp__forgecast__approve_edit" not in tools.ALLOWED
+
+
+# ------------------------------------------------------- and the operator's end
+#
+# The gap the tests above did not catch, which is the same defect this file opens with
+# wearing different clothes. `approve_edit` is withheld from the agent on purpose, and
+# `cut_plan` refuses any plan that is not approved. Both correct. But nothing in the web
+# UI called `POST /api/edit/plans/{id}/decision` — so a plan the agent drafted could be
+# approved by nobody, and every line behind that gate (`render/cut.py`, the worker, the
+# streaming route) was unreachable in the shipped app.
+#
+# Withholding a decision from the agent only works if the operator is given it.
+
+CHAT_JS = (Path(__file__).resolve().parent.parent / "forgecast" / "web" / "static"
+           / "chat.js")
+
+
+def test_the_operator_has_somewhere_to_approve_a_paper_edit():
+    script = CHAT_JS.read_text(encoding="utf-8")
+    assert "/api/edit/plans/" in script and "/decision" in script, \
+        "the decision endpoint has no caller in the UI — the gate cannot be passed"
+    assert "plan_edit" in script, "the buttons have to appear on the card that drafts it"
+
+
+def test_approving_and_rejecting_are_both_offered():
+    """Rejecting is a first-class outcome, not a way of ignoring the plan: the note is
+    what the next draft is written against."""
+    script = CHAT_JS.read_text(encoding="utf-8")
+    assert "Approve &amp; cut" in script or "Approve &" in script
+    assert "Reject" in script
+    assert "approve: false" in script or "decide(false" in script
+
+
+def test_the_decision_row_is_outside_the_collapsed_body():
+    """A gate behind a disclosure triangle is a gate nobody opens. The row is appended to
+    the card, and the rule that styles it is not inside `.tool-body`."""
+    script = CHAT_JS.read_text(encoding="utf-8")
+    assert "card.append(row)" in script
+    css = (Path(__file__).resolve().parent.parent / "forgecast" / "web" / "static"
+           / "app.css").read_text(encoding="utf-8")
+    assert ".editgate" in css, "the row has no styling of its own"
+    assert ".tool-body .editgate" not in css
+
+
+def test_the_running_cut_is_watched_rather_than_left_silent():
+    """The decision endpoint starts the encode and returns without waiting, so a UI that
+    does not poll shows 'Approved' for two minutes and then nothing at all."""
+    script = CHAT_JS.read_text(encoding="utf-8")
+    assert "/api/edit/cut" in script
+    assert "media_url" in script, "a cut nobody can open is not finished work"
+
+
+def test_the_decision_endpoint_is_reachable_and_guarded(client: TestClient):
+    """And the door itself: it exists, it is behind auth, and it refuses an unknown id
+    rather than 500ing on it."""
+    answer = client.post("/api/edit/plans/does-not-exist/decision", json={"approve": True})
+    assert answer.status_code == 404
+
+
+def test_a_decision_taken_mid_check_is_not_painted_over():
+    """The card asks the server for the plan's current state, because a replayed
+    transcript can be days old. That is a round trip, and a click during it would be
+    repainted with the buttons that made it — which reads as the click having been
+    dropped, and the second click is a second POST."""
+    script = CHAT_JS.read_text(encoding="utf-8")
+    assert "let decided = false" in script
+    assert "decided = true" in script
+    assert "if (decided) return" in script

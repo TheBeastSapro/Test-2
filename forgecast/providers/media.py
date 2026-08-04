@@ -834,10 +834,18 @@ def video_reserve_credits(model: str, seconds: float, *, samples: int = 0) -> in
     render are separate provider submissions, each billed on its own `request_id`. A
     reserve that quietly added five seconds to the shot would be the "rolled in" framing
     the i2v skill forbids, expressed as money.
+
+    The shot goes through `submittable` for the reason `video_usd` does: durations are
+    enums, so a six-second scene on Kling is a ten-second submission and a reserve priced
+    at six holds two thirds of what the invoice will say. The sample does not — it is
+    already generated at `sample_seconds`, which is one of the accepted values by
+    construction.
     """
     priced = video_model(model)
+    wanted = max(0.0, float(seconds))
+    billed = priced.submittable(wanted) if wanted else 0.0
     total = priced.usd_per_second * (
-        max(0.0, float(seconds)) + priced.sample_seconds * max(0, int(samples)))
+        billed + priced.sample_seconds * max(0, int(samples)))
     return _credits(total)
 
 
@@ -1030,6 +1038,15 @@ class FalVideoProvider(VideoProvider):
         return int(priced.submittable(wanted))
 
     def reserve_credits(self, seconds: float, *, samples: int = 0) -> int:
+        """This shot's hold, on the model this provider is configured for.
+
+        No caller today, and it is kept rather than deleted for one reason: it is the
+        per-shot answer, and the reserve the ledger takes is a whole-run one computed
+        before any provider exists (`graph.pipelines.animation_reserve`). If a future
+        stage ever needs to hold for a single shot at the moment it is submitted, this is
+        the arithmetic, and it goes through the same `video_reserve_credits` the run-level
+        figure does so the two cannot disagree.
+        """
         return video_reserve_credits(self.model, self.clamp_seconds(seconds),
                                      samples=samples)
 

@@ -11,7 +11,16 @@ expensive stages sit *behind* gates on the cheap stages that determine them.
 
 from __future__ import annotations
 
-from ..render.cutting import estimate_plates
+from ..credits import PER_UNIT_COSTS
+from ..providers.media import HERO_TIER, STANDARD_TIER, model_for_tier, video_reserve_credits
+from ..render.cutting import (
+    estimate_plates,
+    hero_budget,
+    max_scenes,
+    plates_for,
+    video_budget,
+)
+from ..skills.gates import MAX_SETUPS
 from .spec import NodeSpec, PipelineSpec
 
 WORDS_PER_SECOND = 2.6
@@ -23,9 +32,67 @@ WORDS_PER_SECOND = 2.6
 # `tests/test_hook_gate.py` does.
 HOOK_SECONDS = 15.0
 
+# What one generated plate costs, from the row that prices the same vendor call for the
+# thumbnail node. Read rather than restated so a change to the image rate moves both.
+STILL_CREDITS = PER_UNIT_COSTS["thumbnail"][1]
+
+
+def animation_reserve(
+    target_seconds: float, *, standard: str = "", hero: str = ""
+) -> tuple[int, int]:
+    """Credits to hold for `sample` and `shots` on this channel's chosen models.
+
+    Why this is not a row in `PER_UNIT_COSTS`. That table holds one figure per node type,
+    and both of these nodes are priced almost entirely by *which model the channel picked*
+    — the selectable endpoints run from $0.03 a second to $0.20, so any single figure is
+    right for one channel and wrong by up to seven times for the rest. It was wrong in the
+    direction that costs money: the `shots` row held a blended 22 credits a plate against
+    a worst case near 70, and `sample` held one setup's worth of the default model against
+    a gate that will buy four on the premium one.
+
+    A reserve is released when the node settles, so holding too much costs a user nothing
+    but the wait; holding too little means a run whose later nodes spend past the hold,
+    which the ledger has no way to refuse once the run is under way. So this takes the
+    worst legal shape rather than the likely one, exactly as `estimate_plates` does.
+
+    Worst legal shape means: over every scene count a script may plausibly have, the split
+    that costs the most. Scene count moves three things in opposite directions — a denser
+    script buys more animated beats but shorter ones, and more scenes each buying at least
+    one plate — so which split is dearest is not something to reason about in a comment.
+    Enumerate them and take the maximum. The ceiling comes from `max_scenes`, i.e. from the
+    scripting cadence that tells the model how many beats to write.
+    """
+    total = max(0.0, float(target_seconds or 0.0))
+    hero_slug = model_for_tier(HERO_TIER, standard=standard, hero=hero)
+    batch_slug = model_for_tier(STANDARD_TIER, standard=standard, hero=hero)
+
+    worst_shots = 0
+    worst_setups = 0
+    for scenes in range(1, max_scenes(total) + 1):
+        seconds = total / scenes
+        clips = min(video_budget(scenes), scenes)
+        heroes = min(clips, hero_budget(scenes))
+        # An animated beat buys one plate and one clip; every other beat buys stills, and
+        # a still is the cheap half of this. Maps buy one plate and no clip, so counting
+        # every non-animated beat as stills is the dearer reading and the right one here.
+        plates = clips + (scenes - clips) * plates_for(seconds)
+        worst_shots = max(worst_shots, plates * STILL_CREDITS
+                          + heroes * video_reserve_credits(hero_slug, seconds)
+                          + (clips - heroes) * video_reserve_credits(batch_slug, seconds))
+        worst_setups = max(worst_setups, min(MAX_SETUPS, clips))
+
+    # A sample is one short clip per distinct setup, and a setup cannot exist without an
+    # animated shot to belong to — so the gate's own ceiling is not the binding one here,
+    # the animation budget is. Priced on the dearer of the two models because nothing at
+    # plan time says which setups will be hero beats.
+    dearest_sample = max(video_reserve_credits(hero_slug, 0, samples=1),
+                         video_reserve_credits(batch_slug, 0, samples=1))
+    return worst_setups * dearest_sample, worst_shots
+
 
 def faceless_longform(
-    *, target_seconds: int = 480, use_avatar: bool = False, publish: bool = True
+    *, target_seconds: int = 480, use_avatar: bool = False, publish: bool = True,
+    standard_model: str = "", hero_model: str = "",
 ) -> PipelineSpec:
     words = int(target_seconds * WORDS_PER_SECOND)
     # The shots node buys *plates*, not shots: one image carries several shots at
@@ -34,6 +101,8 @@ def faceless_longform(
     # magnitude in the safe direction. Deriving it from the same constants the node uses
     # means the reserve now tracks the spend instead of guessing at it.
     shots = estimate_plates(target_seconds)
+    sample_credits, shots_credits = animation_reserve(
+        target_seconds, standard=standard_model, hero=hero_model)
 
     nodes: list[NodeSpec] = [
         NodeSpec(
@@ -140,12 +209,11 @@ def faceless_longform(
             # hand makes a rejected hook cheaper to act on rather than more expensive.
             depends_on=("broll_plan", "hook"),
             requires_approval=True,
-            # Priced as one setup rather than as the run's real count, which is not known
-            # until `broll_plan` has produced its shots. The node settles on what it
-            # actually generated, so an under-estimate here is released rather than
-            # charged — and over-reserving on a gate would defeat the point of a gate
-            # that exists to protect a budget.
-            estimated_units=1,
+            # Every setup the animation budget can produce, on the dearer of the two
+            # models. The run's real setup count is not known until `broll_plan` has
+            # produced its shots, and the old reserve answered that by holding one — which
+            # was not a conservative reading of an unknown, it was the smallest one.
+            estimated_credits=sample_credits,
         ),
         NodeSpec(
             key="shots",
@@ -156,7 +224,14 @@ def faceless_longform(
             # allowed to spend — an edge only on the plan would let the batch render
             # while the sample was still being looked at.
             depends_on=("broll_plan", "sample"),
+            # Both, and only one of them is money. `estimated_credits` is what the ledger
+            # holds. `estimated_units` is the plate budget — how many images this stage is
+            # expected to buy — which is a different question from what they cost and is
+            # the one `render.cutting` answers. Nothing but the estimate reads it today;
+            # it is on the node so the count is visible next to the price rather than
+            # derivable only by re-running `estimate_plates` by hand.
             estimated_units=shots,
+            estimated_credits=shots_credits,
         ),
     ]
 
@@ -226,11 +301,14 @@ def faceless_longform(
     return spec
 
 
-def faceless_shorts(*, target_seconds: int = 45, publish: bool = True, **_) -> PipelineSpec:
+def faceless_shorts(*, target_seconds: int = 45, publish: bool = True,
+                    standard_model: str = "", hero_model: str = "", **_) -> PipelineSpec:
     words = int(target_seconds * WORDS_PER_SECOND)
     # A short is mostly floor rather than rate: its beats are too brief to want a second
     # plate, so the reserve is one per scene and the runtime term barely contributes.
     shots = estimate_plates(target_seconds)
+    sample_credits, shots_credits = animation_reserve(
+        target_seconds, standard=standard_model, hero=hero_model)
 
     nodes: list[NodeSpec] = [
         NodeSpec(
@@ -292,12 +370,12 @@ def faceless_shorts(*, target_seconds: int = 45, publish: bool = True, **_) -> P
             # short exactly as it is wrong in all eighty of a long-form, and a short that
             # has to be regenerated has lost the whole render rather than a fraction.
             depends_on=("broll_plan", "hook"), requires_approval=True,
-            estimated_units=1,
+            estimated_credits=sample_credits,
         ),
         NodeSpec(
             key="shots", type="shots", title="Generate vertical B-roll",
             depends_on=("broll_plan", "sample"), estimated_units=shots,
-            
+            estimated_credits=shots_credits,
         ),
         NodeSpec(
             key="thumbnail", type="thumbnail", title="Generate cover frame",

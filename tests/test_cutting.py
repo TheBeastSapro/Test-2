@@ -22,7 +22,6 @@ from pathlib import Path
 
 import pytest
 
-from forgecast.credits import estimate_node
 from forgecast.graph.pipelines import get_pipeline
 from forgecast.render import Scene, assemble_video
 from forgecast.render.cutting import (
@@ -34,6 +33,7 @@ from forgecast.render.cutting import (
     ShotCut,
     default_spec,
     estimate_plates,
+    max_scenes,
     plan_cuts,
     plates_for,
     shot_estimate,
@@ -209,21 +209,30 @@ def test_an_animated_plate_is_bought_once_and_sliced():
     assert plates_for(90.0, spec, reusable=True) > 1
 
 
-def test_the_ledger_reserve_covers_what_a_run_spends():
+def test_the_plate_budget_covers_every_script_shape():
     """A reserve that does not cover the spend is an overdraft; one that covers it ten
-    times over is the bug this replaced."""
+    times over is the bug this replaced.
+
+    In plates only. What those plates *cost* is no longer a per-unit rate — it is priced
+    on the channel's video model in `graph.pipelines.animation_reserve`, and
+    `tests/test_animation_reserve.py` is where that is checked. This is the unit count:
+    how many plates the densest legal script buys, against how many were held for.
+
+    The shapes enumerated come from `max_scenes`, i.e. from the scripting cadence. They
+    used to come from "the 4-12 beats the brief prompt allows", which the prompt stopped
+    saying when the beat count moved into `scripting.method` — at eight minutes the
+    cadence asks for nineteen.
+    """
     target = 480
     reserved = next(
         node.estimated_units
         for node in get_pipeline("faceless_longform", target_seconds=target).nodes
         if node.key == "shots"
     )
-    # Every script shape the brief prompt allows, across its 4-12 beats.
-    spends = [scenes * plates_for(target / scenes) for scenes in range(4, 13)]
+    spends = [scenes * plates_for(target / scenes)
+              for scenes in range(4, max_scenes(target) + 1)]
     assert max(spends) <= reserved, f"spends up to {max(spends)} against {reserved}"
     assert reserved <= max(spends) * 1.25, "the reserve is holding money nothing will use"
-    # The old reserve was 80 units, 1765 credits, against 181 actually spent.
-    assert estimate_node("shots", reserved).credits < 1765
 
 
 def test_a_longer_video_never_reserves_less():
