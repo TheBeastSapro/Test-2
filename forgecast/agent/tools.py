@@ -31,6 +31,7 @@ not reversible by re-running them, and finding out afterwards is not an option.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 
@@ -141,17 +142,28 @@ def build_server(studio):
     @tool("create_channel",
           "Create a channel. `format` is 'longform' or 'shorts' and decides the "
           "aspect ratio and default length. Give `niche` in plain words — it steers "
-          "every script written for this channel.",
+          "every script written for this channel.\n\n"
+          "ALWAYS pass `model_on` when the operator named a channel to model on — the "
+          "same reference you gave study_youtube_channel. It measures their strongest "
+          "videos: words per second, where their hook ends, how often they change "
+          "picture. Without it the channel has no learned style and every script is "
+          "written at house defaults with their view counts stapled on, which reads as "
+          "generic and is. It decodes video, so it takes a few minutes; say so and do "
+          "it anyway rather than offering it as an extra step.",
           {"name": str, "niche": str, "format": str, "language": str,
-           "target_seconds": int, "youtube_channel_id": str})
+           "target_seconds": int, "youtube_channel_id": str, "model_on": str})
     async def create_channel(args):
-        return _text(studio.create_channel(
+        return _text(await asyncio.to_thread(
+            studio.create_channel,
             args.get("name") or "",
             niche=args.get("niche") or "",
             fmt=(args.get("format") or "longform"),
             language=args.get("language") or "en",
             target_seconds=int(args.get("target_seconds") or 0),
             youtube_channel_id=args.get("youtube_channel_id") or "",
+            # The reference to measure. Off the event loop above, because learning
+            # decodes video and would otherwise block every other tool for minutes.
+            model_on=args.get("model_on") or "",
         ))
 
     @tool("update_channel",

@@ -349,11 +349,66 @@ class Studio:
                 })
         return {"channels": out, "count": len(out)}
 
+    def best_videos(self, reference: str, *, count: int = 3) -> list[str]:
+        """The strongest videos on a reference channel, as watchable URLs.
+
+        What "strongest" means here is the outlier score the research desk already
+        computes — the videos that beat that channel's own cohort. Those are the ones
+        worth measuring: a channel's median upload tells you what it usually does, and
+        its outliers tell you what it does when it works.
+
+        Returns an empty list rather than raising. A channel whose numbers cannot be
+        read is a channel that gets set up from what the operator says instead, which is
+        the same fallback `study_youtube_channel` already takes.
+        """
+        from ..research import sources
+        from ..research.outliers import find_outliers
+
+        settings = get_settings()
+        link = parse_link(reference)
+        target = link.value or reference.strip()
+        try:
+            parsed, _via = sources.read_channel(
+                target, api_key=settings.youtube_api_key, limit=30)
+        except sources.ResearchError:
+            return []
+
+        ranked = find_outliers(parsed.videos)
+        ordered = [item.video for item in ranked] or list(parsed.videos)
+        out: list[str] = []
+        for video in ordered:
+            video_id = str(getattr(video, "video_id", "") or "").strip()
+            if video_id and video_id not in out:
+                out.append(f"https://www.youtube.com/watch?v={video_id}")
+            if len(out) >= max(1, int(count)):
+                break
+        return out
+
     def create_channel(self, name: str, *, niche: str = "", fmt: str = "longform",
                        language: str = "en", target_seconds: int = 0,
                        style_profile: dict | None = None,
-                       youtube_channel_id: str = "") -> dict:
-        """Make a channel. The format decides the aspect ratio and the default length."""
+                       youtube_channel_id: str = "", model_on: str = "",
+                       on_note: Callable[[str], None] | None = None) -> dict:
+        """Make a channel. The format decides the aspect ratio and the default length.
+
+        `model_on` is a reference channel, and passing it means *measure that channel*
+        rather than merely borrow its numbers. That distinction is the whole point of
+        this parameter.
+
+        Before it existed, "set up a channel modelled on @them" read their titles, view
+        counts and median length — metadata — and stopped. Nothing ever watched a video.
+        So the channel was created with no learned style, and every run afterwards logged
+        "no reference has been learned for this channel" and wrote at the shipped 2.6
+        words a second with a 15-second hook window. The app had a transcriber, a shot
+        detector, a narrative pass and a sourcing profile, and modelling a creator
+        invoked none of them — the operator had to know to ask for a style separately,
+        and if they did not, they got the house template with someone else's numbers
+        stapled to the front.
+
+        Measuring is slow because it decodes video, so it reports through `on_note` and
+        never fails the creation: a channel that exists with no style can be measured
+        later, and a channel that failed to be created cannot be anything.
+        """
         name = (name or "").strip()
         if not name:
             return {"error": "A channel needs a name."}
@@ -381,11 +436,60 @@ class Studio:
             )
             session.add(channel)
             session.commit()
-            log.info("channel %s created (%s)", channel.id, shape.slug)
-            return {"created": True, "id": channel.id, "name": channel.name,
+            channel_id = channel.id
+            log.info("channel %s created (%s)", channel_id, shape.slug)
+            made = {"created": True, "id": channel_id, "name": channel.name,
                     "format": shape.slug, "aspect_ratio": channel.aspect_ratio,
                     "target_seconds": channel.target_duration_seconds,
                     "niche": channel.niche}
+
+        if not model_on.strip():
+            return made
+
+        # Measured here rather than left for the operator to request. A channel modelled
+        # on a creator and never measured is the failure this parameter exists to close,
+        # and it is invisible: the run does not error, it writes a competent generic
+        # script and logs one line saying it had nothing to go on.
+        def note(line: str) -> None:
+            if on_note is not None:
+                on_note(line)
+
+        picks = self.best_videos(model_on, count=3)
+        if not picks:
+            made["style_learned"] = False
+            made["style_note"] = (
+                f"I could not read {model_on} well enough to pick videos to measure, so "
+                f"this channel has no learned style yet and will write to the house "
+                f"method. Give me a video link from them and I will measure it."
+            )
+            return made
+
+        note(f"measuring {len(picks)} of their strongest videos — this decodes video, "
+             f"so it takes a few minutes")
+        learned = self.learn_style(picks, name=f"{made['name']} reference",
+                                   on_note=on_note)
+        if learned.get("error"):
+            made["style_learned"] = False
+            made["style_note"] = (
+                f"The channel is created, but measuring their videos failed "
+                f"({learned['error']}). It will write to the house method until a style "
+                f"is learned."
+            )
+            return made
+
+        # `apply_style(style, channel)` — style first. Getting this round the wrong way
+        # returns "no such style" naming the channel id, which reads as a broken channel
+        # rather than a swapped argument.
+        applied = self.apply_style(learned["key"], channel_id)
+        made["style_learned"] = not applied.get("error")
+        made["style"] = learned.get("summary") or learned.get("learned")
+        made["measured_from"] = picks
+        made["style_note"] = (
+            "Measured from their own videos rather than assumed: the script is written "
+            "at their words-per-second, the hook gate cuts to where their opening beat "
+            "actually ends, and the shot plan buys pictures at the rate they change them."
+        )
+        return made
 
     def study_youtube_channel(self, reference: str, *, limit: int = 30) -> dict:
         """Read a real channel and report what it actually publishes.
