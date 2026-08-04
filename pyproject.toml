@@ -49,6 +49,20 @@ dependencies = [
 
 [project.optional-dependencies]
 postgres = ["psycopg[binary]>=3.1"]
+# Reading a video somebody hands you: shot boundaries and a word-timed transcript.
+#
+# An extra rather than a base dependency, unlike yt-dlp above, and the reason is the
+# weight. `scenedetect` pulls OpenCV at about 60 MB and `faster-whisper` pulls a runtime
+# plus a model download — neither of which the generate direction touches at all. Making
+# every first run on a slow connection pay for the edit direction would be the same
+# mistake the note above describes, in the other direction.
+#
+# `forgecast.ingest.available()` reports what is present, so the app offers the install
+# instead of failing at the moment a file is dropped in.
+edit = [
+    "scenedetect>=0.6",
+    "faster-whisper>=1.0",
+]
 # No `research` extra. yt-dlp is a base dependency: reading a channel from a link is
 # not an optional part of this app, and an extra meant the operator was told to run a
 # pip command to finish an install that had already claimed to finish.

@@ -327,7 +327,16 @@ def test_describe_lists_everything_missing_with_a_fix_each(good_clip):
     joined = " ".join(report["missing"])
     assert "pytorch.org" in joined
     assert "pip install chatterbox-tts" in joined
-    assert any("faster-whisper" in line and "optional" in line for line in report["missing"])
+    # Reported as optional whichever side of the line it is on. It used to be asserted
+    # only in `missing`, which quietly assumed nobody had it — and `forgecast[edit]`
+    # installs it for the ingest reader, so the assumption became false and this test
+    # failed on a machine where nothing was wrong.
+    whisper_lines = [line for line in report["missing"] + report["installed"]
+                     if "faster-whisper" in line]
+    assert whisper_lines, "faster-whisper is not reported either way"
+    assert all("optional" in line for line in whisper_lines), (
+        "faster-whisper is not the thing that makes local voice work, and a line that "
+        "does not say so reads as a hard requirement")
     # ffprobe is here, so the clip checks are live and the clip itself was measured.
     assert any("ffprobe" in line for line in report["installed"])
     assert report["reference"]["ok"] is True
