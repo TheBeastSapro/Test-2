@@ -854,3 +854,96 @@ def summary(root: Path) -> str:
         state = "found" if tool.present else (tool.manual or "MISSING")
         lines.append(f"    {tool.label:<28} {state}")
     return "\n".join(lines)
+
+
+# ------------------------------------------------------- optional Python extras
+#
+# The `edit` extra — shot detection, transcription, subject matting — is not in
+# `inventory()` and deliberately never will be. `inventory()` is what the app needs to
+# work at all, and `missing()` drives an install every operator is made to sit through
+# on first run. These three packages are around 400 MB with their models and are needed
+# only by somebody who hands the app a video to edit. Making every install pay for them
+# would be the same mistake as putting them in the base dependencies.
+#
+# But "not mandatory" must not mean "print a pip command and give up". That is the
+# homework this module exists to remove, and it was reported as exactly that once
+# already for the Codex CLI. So the feature that needs the extra asks for it to be
+# installed, from inside the app, and this is what does it.
+
+EXTRAS = {
+    "edit": {
+        "label": "Video editing tools",
+        "gives": "reading a video you hand it — shot detection, a word-timed "
+                 "transcript, and cutting the subject out of a still",
+        # Roughly, and stated because it is the number that decides whether somebody
+        # starts the download now or later. OpenCV is ~60 MB, the transcription model
+        # ~140 MB on first use, the matting model 176 MB.
+        "megabytes": 400,
+    },
+}
+
+
+def extra_installed(name: str) -> tuple[bool, str]:
+    """Whether an extra's packages import, and what is missing when they do not.
+
+    Asked by import rather than by consulting pip's metadata: a package recorded as
+    installed and not importable is the state that matters, and it is the one a stale
+    virtualenv produces.
+    """
+    import importlib.util
+
+    wanted = {"edit": (("scenedetect", "shot detection"),
+                       ("faster_whisper", "transcription"),
+                       ("rembg", "subject cutouts"))}.get(name, ())
+    absent = [label for module, label in wanted
+              if importlib.util.find_spec(module) is None]
+    if absent:
+        return False, ", ".join(absent)
+    return True, ""
+
+
+def install_python_extra(root: Path, name: str, *, on_note=None,
+                         on_tick=None) -> tuple[bool, str]:
+    """Install one optional extra into the app's own virtualenv.
+
+    Into *this app's* interpreter, found the way the launcher finds it, rather than
+    whatever `pip` is on PATH — a machine with a system Python ahead of the virtualenv
+    would install 400 MB somewhere the app cannot import from and report success.
+    """
+    if name not in EXTRAS:
+        return False, f"there is no {name!r} extra to install"
+
+    from .bootstrap import venv_python
+
+    python = venv_python(root)
+    if not python.exists():
+        # Not an error worth failing on: a development checkout runs from whatever
+        # interpreter started it, and that is the one to install into.
+        python = Path(sys.executable)
+
+    argv = [str(python), "-m", "pip", "install", "--disable-pip-version-check",
+            "-e", f".[{name}]"]
+    code, output = run_watched(argv, on_line=on_note, tick=on_tick,
+                               timeout=1800, cwd=str(root))
+
+    log_path = root / "runtime" / f"pip-{name}.log"
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(output or "(pip produced no output)", encoding="utf-8")
+    except OSError:                                                   # pragma: no cover
+        log_path = None
+
+    if code != 0:
+        tail = "\n".join((output or "").strip().splitlines()[-6:])
+        return False, (f"pip failed installing the {name} extra"
+                       + (f" — the whole log is at {log_path}" if log_path else "")
+                       + (f":\n{tail}" if tail else ""))
+
+    # Verified by import rather than by pip's exit code. A resolver that succeeded while
+    # leaving a package unimportable is the failure this check exists for, and reporting
+    # success for it sends the operator back to a feature that still does not work.
+    ok, absent = extra_installed(name)
+    if not ok:
+        return False, (f"pip finished but {absent} still cannot be imported — "
+                       "the app may need restarting to see them")
+    return True, f"{EXTRAS[name]['label']} installed"

@@ -37,7 +37,7 @@ import logging
 import threading
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -291,3 +291,59 @@ def skip() -> RedirectResponse:
 
 def was_skipped() -> bool:
     return bool(JOB.get("skipped"))
+
+
+@router.get("/api/setup/extras")
+def setup_extras() -> dict:
+    """The optional toolsets, and whether each is present.
+
+    Separate from `/api/setup/state`, which is about what the app needs to work at all.
+    These are needed only by somebody who hands the app a video, and putting them in the
+    mandatory list would make every first run download 400 MB it may never use.
+    """
+    return {
+        "extras": [
+            {"key": key, **spec,
+             "installed": toolchain.extra_installed(key)[0],
+             "absent": toolchain.extra_installed(key)[1]}
+            for key, spec in toolchain.EXTRAS.items()
+        ]
+    }
+
+
+@router.post("/api/setup/extras/{name}")
+def install_extra(name: str) -> StreamingResponse:
+    """Install an optional toolset, streaming pip's output as it goes.
+
+    The app does this rather than printing a command for the operator to run. Being told
+    to go and run pip is the same homework the toolchain module exists to remove, and it
+    was reported as exactly that once already — for a CLI that was never being installed
+    at all.
+    """
+    if name not in toolchain.EXTRAS:
+        raise HTTPException(status_code=404, detail=f"no {name!r} toolset")
+
+    root = app_root()
+
+    def stream():
+        lines: list[str] = []
+
+        def note(line: str) -> None:
+            lines.append(line)
+
+        yield json.dumps({"type": "log",
+                          "text": f"Installing {toolchain.EXTRAS[name]['label']} "
+                                  f"(about {toolchain.EXTRAS[name]['megabytes']} MB)…"}) + "\n"
+        try:
+            ok, detail = toolchain.install_python_extra(root, name, on_note=note)
+        except Exception as exc:                                   # pragma: no cover
+            log.exception("extra install failed")
+            ok, detail = False, f"{type(exc).__name__}: {exc}"
+
+        # The tail only. pip prints hundreds of lines resolving a dependency tree and
+        # none of them are the answer; the last few are.
+        for line in lines[-12:]:
+            yield json.dumps({"type": "log", "text": line}) + "\n"
+        yield json.dumps({"type": "done", "ok": bool(ok), "detail": detail}) + "\n"
+
+    return StreamingResponse(stream(), media_type="application/x-ndjson")

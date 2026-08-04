@@ -62,6 +62,9 @@ postgres = ["psycopg[binary]>=3.1"]
 edit = [
     "scenedetect>=0.6",
     "faster-whisper>=1.0",
+    # Subject cutouts. Its onnxruntime is shared with faster-whisper above, so the
+    # marginal cost of adding it is one wheel and a model, not a second runtime.
+    "rembg>=2.0",
 ]
 # No `research` extra. yt-dlp is a base dependency: reading a channel from a link is
 # not an optional part of this app, and an extra meant the operator was told to run a

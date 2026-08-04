@@ -51,8 +51,7 @@ def available() -> tuple[bool, str]:
     try:
         import scenedetect  # noqa: F401
     except ImportError:
-        return False, ("shot detection needs the `edit` extra — "
-                       "pip install 'forgecast[edit]'")
+        return False, "shot detection needs the video editing tools"
     return True, ""
 
 

@@ -86,8 +86,7 @@ def available() -> tuple[bool, str]:
     try:
         import faster_whisper  # noqa: F401
     except ImportError:
-        return False, ("transcription needs the `edit` extra — "
-                       "pip install 'forgecast[edit]'")
+        return False, "transcription needs the video editing tools"
     return True, ""
 
 
