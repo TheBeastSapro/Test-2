@@ -82,22 +82,59 @@ def faceless_longform(
             estimated_units=words * 5.5,  # ≈ characters
         ),
         NodeSpec(
+            key="sound",
+            type="sound",
+            title="Score the sound",
+            # After the narration, because the bed's length and its level are both derived
+            # from the voiceover that actually exists rather than from the script's
+            # estimate of it. No `estimated_units`: the bed comes out of a flat
+            # subscription rather than a per-unit price, so there is no quantity to
+            # multiply and the node's base estimate is the whole reserve.
+            depends_on=("script", "voice"),
+        ),
+        NodeSpec(
             key="broll_plan",
             type="broll_plan",
             title="Plan B-roll shots",
             depends_on=("script",),
         ),
         NodeSpec(
+            key="sample",
+            type="sample",
+            title="Sample the look",
+            # The gate this file's own preamble describes: the expensive stage sits
+            # behind an approval on the cheap stage that determines it. One short clip
+            # per distinct style-and-motion setup — two or three on a normal video —
+            # costs about a fiftieth of the batch it authorises, and the failure it
+            # catches is not one bad clip but the same defect in all eighty at once.
+            depends_on=("broll_plan",),
+            requires_approval=True,
+            # Priced as one setup rather than as the run's real count, which is not known
+            # until `broll_plan` has produced its shots. The node settles on what it
+            # actually generated, so an under-estimate here is released rather than
+            # charged — and over-reserving on a gate would defeat the point of a gate
+            # that exists to protect a budget.
+            estimated_units=1,
+        ),
+        NodeSpec(
             key="shots",
             type="shots",
             title="Generate B-roll",
-            depends_on=("broll_plan",),
+            # Both, deliberately. `broll_plan` because that is where the shot list comes
+            # from, and `sample` because the approval is the whole reason this stage is
+            # allowed to spend — an edge only on the plan would let the batch render
+            # while the sample was still being looked at.
+            depends_on=("broll_plan", "sample"),
             estimated_units=shots,
             params={"width": 1280, "height": 720},
         ),
     ]
 
-    render_deps = ["shots", "voice"]
+    # `sound` is a dependency of the render rather than a sibling of it. Both depend on
+    # `voice`, so without this edge the two are in the same wave and the render can mux
+    # the dry narration while the bed is still being fetched — a video with no music and a
+    # node output claiming one, which is the one failure worse than having no music.
+    render_deps = ["shots", "voice", "sound"]
     if use_avatar:
         nodes.append(
             NodeSpec(
@@ -200,12 +237,25 @@ def faceless_shorts(*, target_seconds: int = 45, publish: bool = True, **_) -> P
             estimated_units=words * 5.5,
         ),
         NodeSpec(
+            key="sound", type="sound", title="Score the sound",
+            depends_on=("script", "voice"),
+        ),
+        NodeSpec(
             key="broll_plan", type="broll_plan", title="Plan vertical shots",
             depends_on=("script",),
         ),
         NodeSpec(
+            key="sample", type="sample", title="Sample the look",
+            # On a short the ratio is nearer one to eight than one to fifty, so the gate
+            # buys less. It is still here, because what it catches does not scale with
+            # the batch: a camera move that melts faces is wrong in all eight clips of a
+            # short exactly as it is wrong in all eighty of a long-form, and a short that
+            # has to be regenerated has lost the whole render rather than a fraction.
+            depends_on=("broll_plan",), requires_approval=True, estimated_units=1,
+        ),
+        NodeSpec(
             key="shots", type="shots", title="Generate vertical B-roll",
-            depends_on=("broll_plan",), estimated_units=shots,
+            depends_on=("broll_plan", "sample"), estimated_units=shots,
             params={"width": 1080, "height": 1920},
         ),
         NodeSpec(
@@ -215,7 +265,7 @@ def faceless_shorts(*, target_seconds: int = 45, publish: bool = True, **_) -> P
         ),
         NodeSpec(
             key="render", type="render", title="Render vertical video",
-            depends_on=("shots", "voice"),
+            depends_on=("shots", "voice", "sound"),
             params={"width": 1080, "height": 1920, "subtitles": True},
             max_attempts=2,
         ),

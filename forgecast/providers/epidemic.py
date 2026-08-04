@@ -8,10 +8,12 @@ rather than inferred:
 
 * Its narration half is **text-to-speech voiced by real voice artists** — `ListVoices`,
   `GenerateVoiceover`, `PollVoiceoverGenerationStatus`, `DownloadVoiceover`. That is the
-  half this module implements, because narration is a pipeline stage that already exists
-  and the local Chatterbox route needs torch and a GPU.
+  half this module implements first, because narration is a pipeline stage that already
+  exists and the local Chatterbox route needs torch and a GPU.
 * It also carries recordings and sound effects (`SearchRecordings`, `SearchSoundEffects`,
-  `DownloadRecording`, …). Not built here — see "What is deliberately absent".
+  `DownloadRecording`, `EditRecording`, `DownloadSoundEffect`, …). That half is now built
+  too — see "Music and sound effects", which records who authorised it and what the
+  authorisation is conditional on.
 
 Two shape facts that a REST-shaped adapter would have got wrong:
 
@@ -42,14 +44,39 @@ consumes, and casting, the audition samples and the gate all work unchanged. A s
 voice-selection path would have meant two rankings that disagree about the same voice,
 with no way to tell which one the operator was looking at.
 
+## Music and sound effects
+
+This section used to sit under "What is deliberately absent" and read:
+
+> **Music and sound effects.** Out of scope for narration, and the licence terms matter
+> before anyone adds them: the REST docs state that only *connected users with an active
+> Epidemic Sound subscription* may download premium-library tracks, that free-tier tracks
+> carry a personal (non-commercial) licence, and that exporting a track into published
+> content is a reportable event. A bed baked into a monetised render is none of those
+> things by default. Establish the entitlement before building the download.
+
+That paragraph is kept rather than deleted because its reasoning still holds and the code
+below is shaped by it. What changed is the one fact it was waiting on: **the operator
+holds the subscription, and has asked for the sound stage.** The entitlement is therefore
+established rather than waived, and the condition the paragraph set is met by the
+operator's own account. The decision is theirs; this note records that it was made and
+that it was made by the person who pays for the licence.
+
+Two of that paragraph's worries are now properties of the code rather than notes in a
+docstring, which is the difference between a caveat and a control:
+
+* **A subscription is not a licence to spend it by accident.** Nothing here is reachable
+  unless a channel names a music vendor: `registry.DEFAULT_ROUTING` lists none at all, so
+  music is *chosen* and never *fallen back to*. That is the rule `minimax-voice` and
+  `higgsfield` are already under, for the same reason — a vendor that draws on something
+  the operator pays for must never be inherited by a run that did not ask for it.
+* **"An untraceable bed in a monetised render" is the failure to design against.** So
+  every fetch here carries the Epidemic id it came from back to its caller, and the sound
+  node writes that id into its output. A track that shipped can be named, which is what
+  makes the export reportable rather than merely unreported.
+
 ## What is deliberately absent
 
-* **Music and sound effects.** Out of scope for narration, and the licence terms matter
-  before anyone adds them: the REST docs state that only *connected users with an active
-  Epidemic Sound subscription* may download premium-library tracks, that free-tier tracks
-  carry a personal (non-commercial) licence, and that exporting a track into published
-  content is a reportable event. A bed baked into a monetised render is none of those
-  things by default. Establish the entitlement before building the download.
 * **Dubbing.** Each voice reports `languages: [String!]!`, which is the honest basis for
   narrating one script in several languages. `list_voices` passes that list through, but
   nothing consumes it yet: `voice.discover.MeasuredVoice` has no language field, so the
@@ -74,8 +101,12 @@ import httpx
 from ..credits import PER_UNIT_COSTS
 from .base import (
     MediaResult,
+    MusicProvider,
+    MusicTrack,
     ProviderError,
     ProviderTimeout,
+    SoundEffectAsset,
+    Stem,
     VoiceProvider,
 )
 
@@ -133,6 +164,27 @@ _MIMES = {
     ".flac": "audio/flac", ".m4a": "audio/mp4",
 }
 
+# What a downloaded track is licensed by, carried on every music result so the id and the
+# terms travel together. A run's output naming a track id but not what allowed it to be
+# used is half a record, and the half that is missing is the half a claim asks about.
+LICENCE = ("Epidemic Sound subscription licence, held by the operator of this install. "
+           "Publishing a render containing this track is a reportable export.")
+
+# `StemType` (what a search reports a track has) and `RecordingDownloadStemType` (what can
+# actually be fetched) are two different enums, and only the second can be asked for. A
+# track that advertises a MELODY or CLEAN_VOCALS stem will still be refused one, which
+# arrives as a rejected call at the end of a search that appeared to have succeeded.
+DOWNLOADABLE_STEMS = ("FULL", "BASS", "DRUMS", "INSTRUMENTS")
+
+# Beds arrive as mp3 and one-shots as wav, which is not an inconsistency. A bed is going to
+# be trimmed 13 dB under a voice and re-encoded to AAC in the master either way, and a
+# wav of an eight-minute bed is ~90 MB of scratch per run — the operator's own method
+# records ten leaked runs filling a 252 GB disk. A one-shot is a few hundred kB and is
+# placed on a frame, so its transient is the thing being bought and lossy pre-echo is
+# exactly what would smear it.
+BED_FILE_TYPE = "MP3"
+EFFECT_FILE_TYPE = "WAV"
+
 
 # --------------------------------------------------------------------- credential
 
@@ -173,17 +225,27 @@ def load_credential():
     return conn if (conn.token or conn.url) else None
 
 
-def available() -> tuple[bool, str]:
+# What is lost when the credential is missing, per capability. One sentence each, because
+# the operator reads this under a form and "Epidemic Sound is not connected" on its own
+# does not say which half of the run just stopped.
+_WITHOUT = {
+    "voice": ("its voice artists cannot be listed and narration cannot be generated "
+              "from them"),
+    "music": "no music bed and no sound effect can be fetched for a render",
+}
+
+
+def available(capability: str = "voice") -> tuple[bool, str]:
     """Can Epidemic Sound be reached, and if not, the one thing that would fix it.
 
     Phrased as plain text with no backticks: this sentence is printed under a form and
     in a tool result, where a backtick reads as a typo rather than as code.
     """
+    lost = _WITHOUT.get(capability, _WITHOUT["voice"])
     conn = load_credential()
     if conn is None:
         return False, (
-            "Epidemic Sound is not connected, so its voice artists cannot be listed and "
-            "narration cannot be generated from them. Connect it under Settings, "
+            f"Epidemic Sound is not connected, so {lost}. Connect it under Settings, "
             "Connectors — it takes the API key from your Epidemic Sound developer portal."
         )
     if not conn.token:
@@ -625,38 +687,55 @@ class EpidemicVoiceProvider(VoiceProvider):
 
     async def _fetch(self, asset_url: str, out_path: Path) -> Path:
         """Download the finished audio, naming the file after what it actually is."""
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            async with httpx.AsyncClient(
-                timeout=_DOWNLOAD_TIMEOUT, follow_redirects=True
-            ) as client:
-                response = await client.get(asset_url)
-        except httpx.TimeoutException as exc:
-            raise ProviderTimeout(f"downloading the voiceover timed out: {exc}",
-                                  provider=self.name) from exc
-        except httpx.HTTPError as exc:
-            raise ProviderError(f"could not download the voiceover: {exc}",
-                                provider=self.name, retryable=True) from exc
+        return await download_asset(asset_url, out_path, provider=self.name,
+                                    what="voiceover")
 
-        if not response.is_success:
-            raise ProviderError(
-                f"the voiceover download URL returned {response.status_code}",
-                provider=self.name,
-                retryable=response.status_code >= 500 or response.status_code == 429,
-            )
-        body = response.content
-        if len(body) < 512:
-            # A signed URL that has already expired answers 200 with a stub, and a
-            # stub written as narration fails much later inside ffmpeg concat.
-            raise ProviderError(
-                f"the voiceover download returned {len(body)} bytes, which is too small "
-                "to be audio — the signed URL may have expired",
-                provider=self.name, retryable=True,
-            )
 
-        final = out_path.with_suffix(_suffix_for(body))
-        final.write_bytes(body)
-        return final
+async def download_asset(asset_url: str, out_path: Path, *, provider: str,
+                         what: str) -> Path:
+    """Fetch one signed asset URL to disk, named after what the bytes actually are.
+
+    Shared by narration, beds and one-shots rather than written three times: every one of
+    them comes back as a signed CDN URL from a different tool, and the two ways these go
+    wrong — an expired signature answering 200 with a stub, and a container that is not
+    the extension anyone assumed — are the same in all three cases.
+
+    An HTTP client, never ffmpeg reading the URL directly: ffmpeg re-encodes the percent
+    escapes in a signed URL and the signature stops matching, which surfaces as a 403 and
+    reads as an authentication problem rather than as the transport bug it is.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        async with httpx.AsyncClient(
+            timeout=_DOWNLOAD_TIMEOUT, follow_redirects=True
+        ) as client:
+            response = await client.get(asset_url)
+    except httpx.TimeoutException as exc:
+        raise ProviderTimeout(f"downloading the {what} timed out: {exc}",
+                              provider=provider) from exc
+    except httpx.HTTPError as exc:
+        raise ProviderError(f"could not download the {what}: {exc}",
+                            provider=provider, retryable=True) from exc
+
+    if not response.is_success:
+        raise ProviderError(
+            f"the {what} download URL returned {response.status_code}",
+            provider=provider,
+            retryable=response.status_code >= 500 or response.status_code == 429,
+        )
+    body = response.content
+    if len(body) < 512:
+        # A signed URL that has already expired answers 200 with a stub, and a
+        # stub written as narration fails much later inside ffmpeg concat.
+        raise ProviderError(
+            f"the {what} download returned {len(body)} bytes, which is too small "
+            "to be audio — the signed URL may have expired",
+            provider=provider, retryable=True,
+        )
+
+    final = out_path.with_suffix(_suffix_for(body))
+    final.write_bytes(body)
+    return final
 
 
 def _suffix_for(body: bytes) -> str:
@@ -671,6 +750,464 @@ def _suffix_for(body: bytes) -> str:
         return ".mp3"
     log.warning("epidemic sound returned audio with no recognised container signature")
     return ".mp3"
+
+
+# --------------------------------------------------------------- music and sound effects
+
+
+def _tags(node: dict) -> tuple[list[str], list[str]]:
+    """A recording's tags split into moods and genres, dropping what is neither.
+
+    Each tag carries a `dimension`, and Epidemic's taxonomy has more of them than this
+    app has fields for — decade, world country, featured instrument, theme. Anything not
+    recognisably a mood or a genre is dropped rather than shovelled into whichever list is
+    nearest: a bed labelled with the genre "1980s" is a search that returns nothing and a
+    record that says something false about the track.
+    """
+    moods: list[str] = []
+    genres: list[str] = []
+    for tag in node.get("tags") or []:
+        if not isinstance(tag, dict):
+            continue
+        name = str(tag.get("displayName") or "").strip()
+        dimension = str((tag.get("dimension") or {}).get("name") or "").lower()
+        if not name:
+            continue
+        if "mood" in dimension:
+            moods.append(name)
+        elif "genre" in dimension:
+            genres.append(name)
+    return moods, genres
+
+
+def _music_track(node: dict) -> MusicTrack | None:
+    """One search hit as the `MusicTrack` the edit decision consumes.
+
+    `SearchRecordings` answers `RecordingWithSearchMeta`, which wraps the recording in
+    a field of its own, so the recording is unwrapped here rather than at every call
+    site — and both shapes are accepted, because a bridge that flattens the wrapper is a
+    plausible change on the far side that must not silently return zero tracks.
+    """
+    inner = node.get("recording")
+    recording = inner if isinstance(inner, dict) else node
+    track_id = str(recording.get("id") or "")
+    if not track_id:
+        return None
+
+    audio = recording.get("audioFile") or {}
+    stems: list[Stem] = []
+    for entry in recording.get("stems") or []:
+        if not isinstance(entry, dict) or not entry.get("type"):
+            continue
+        stem_audio = entry.get("audioFile") or {}
+        stems.append(Stem(
+            kind=str(entry["type"]).upper(),
+            duration_seconds=float(stem_audio.get("durationInMilliseconds") or 0) / 1000.0,
+            preview_url=str(stem_audio.get("lqmp3Url") or ""),
+        ))
+
+    artists: list[str] = []
+    for credit in recording.get("credits") or []:
+        if not isinstance(credit, dict):
+            continue
+        name = str((credit.get("artist") or {}).get("name") or "").strip()
+        # Composers and producers are credited too, and listing them as the artists of a
+        # bed would put the wrong names in a licence record that exists to be checked.
+        if name and str(credit.get("role") or "").upper() in {
+            "MAIN_ARTIST", "FEATURED_ARTIST"
+        } and name not in artists:
+            artists.append(name)
+
+    moods, genres = _tags(recording)
+    return MusicTrack(
+        track_id=track_id,
+        title=str(recording.get("title") or ""),
+        artists=artists,
+        duration_seconds=float(audio.get("durationInMilliseconds") or 0) / 1000.0,
+        bpm=int(recording.get("bpm") or 0),
+        moods=moods,
+        genres=genres,
+        stems=stems,
+        # Derived from the stem list, because `Recording` publishes no vocals field of its
+        # own. It is a proxy and it reads as one: the search filter is what actually keeps
+        # singing out of a bed, and this is only the check that the filter was applied.
+        has_vocals=any(stem.kind in {"VOCALS", "CLEAN_VOCALS"} for stem in stems),
+        preview_url=str(audio.get("lqmp3Url") or ""),
+        waveform_url=str(audio.get("waveformUrl") or ""),
+        cover_url=str(recording.get("coverArtUrl") or ""),
+        provider="epidemic-music",
+    )
+
+
+def _sound_effect(node: dict) -> SoundEffectAsset | None:
+    inner = node.get("soundEffect")
+    effect = inner if isinstance(inner, dict) else node
+    effect_id = str(effect.get("id") or "")
+    if not effect_id:
+        return None
+    audio = effect.get("audioFile") or {}
+    return SoundEffectAsset(
+        effect_id=effect_id,
+        title=str(effect.get("title") or ""),
+        duration_seconds=float(audio.get("durationInMilliseconds") or 0) / 1000.0,
+        tags=[str(tag.get("displayName") or "") for tag in (effect.get("tags") or [])
+              if isinstance(tag, dict) and tag.get("displayName")],
+        preview_url=str(audio.get("lqmp3Url") or ""),
+        provider="epidemic-music",
+    )
+
+
+def _recordings_query(term: str, topic: str) -> dict:
+    """The search half of a recordings request.
+
+    `term`, `topic` and `externalID` are mutually exclusive — the schema says "specify
+    exactly one" — so sending a term *and* a topic is a rejected call rather than a
+    narrower search. `term` wins when both are given, because an explicit keyword is the
+    more specific instruction and a topic is derived from whatever the video is about.
+    """
+    if term.strip():
+        return {"term": term.strip()}
+    if topic.strip():
+        return {"topic": topic.strip()}
+    return {}
+
+
+def _match_any(values: tuple[str, ...]) -> dict:
+    return {"matchType": "ANY", "values": [str(value) for value in values if value]}
+
+
+@dataclass
+class EpidemicMusicProvider(MusicProvider):
+    """Beds and one-shots from Epidemic Sound's catalogue.
+
+    Satisfies `MusicProvider`, so the sound node never names this vendor: it asks the
+    registry for whatever the channel chose, exactly as the narration node does. That is
+    what would let a second music vendor be added without touching a pipeline stage.
+    """
+
+    name: str = "epidemic-music"
+    # Unused, and kept for the same reason the voice adapter keeps it: the credential is a
+    # connector rather than a provider key, so the registry constructs this with nothing.
+    api_key: str = ""
+
+    def available(self) -> tuple[bool, str]:
+        return available("music")
+
+    def _credential(self) -> tuple[str, str]:
+        conn = load_credential()
+        if conn is None or not conn.token:
+            raise ProviderError(available("music")[1], provider=self.name)
+        return conn.url, conn.token
+
+    # -- search -----------------------------------------------------------------
+
+    async def search_tracks(
+        self,
+        *,
+        term: str = "",
+        topic: str = "",
+        moods: tuple[str, ...] = (),
+        genres: tuple[str, ...] = (),
+        bpm_min: int = 0,
+        bpm_max: int = 0,
+        seconds_min: float = 0.0,
+        seconds_max: float = 0.0,
+        instrumental_only: bool = False,
+        limit: int = 10,
+    ) -> list[MusicTrack]:
+        url, token = self._credential()
+
+        filters: dict = {}
+        if bpm_min or bpm_max:
+            # A window, never a point. No catalogue holds a track at exactly 127.4 BPM and
+            # asking for one is a search that returns nothing — which then reads as "the
+            # library has no music" rather than as a filter that was too tight.
+            filters["bpm"] = {k: int(v) for k, v in
+                              (("min", bpm_min), ("max", bpm_max)) if v}
+        if seconds_min or seconds_max:
+            # Milliseconds on the wire. Seconds here, because every other duration in this
+            # codebase is seconds and one unit that differs is one unit that gets mixed up.
+            filters["duration"] = {k: int(v * 1000) for k, v in
+                                   (("min", seconds_min), ("max", seconds_max)) if v}
+        if moods:
+            filters["moodSlugs"] = _match_any(moods)
+        if genres:
+            filters["taxonomySlugs"] = _match_any(genres)
+        if instrumental_only:
+            # The filter, not a post-hoc check on the results: a bed that keeps its lead
+            # vocal is a second narrator, and no amount of ducking fixes two people
+            # talking at once. Filtering after the fact would spend a whole page of
+            # results to find that out.
+            filters["vocals"] = False
+
+        args: dict = {"first": max(1, min(int(limit), 50))}
+        query = _recordings_query(term, topic)
+        if query:
+            args["query"] = query
+        if filters:
+            args["filter"] = filters
+
+        async with open_session(url=url, token=token) as remote:
+            payload = await remote.call("SearchRecordings", args)
+
+        found = [
+            track for track in
+            (_music_track(node) for node in (payload.get("nodes") or [])
+             if isinstance(node, dict))
+            if track is not None
+        ]
+        log.info("epidemic sound: %d candidate beds for %s", len(found),
+                 query or "an unfiltered browse")
+        return found[:limit]
+
+    async def search_sound_effects(
+        self, *, term: str = "", tags: tuple[str, ...] = (),
+        seconds_max: float = 0.0, limit: int = 10,
+    ) -> list[SoundEffectAsset]:
+        url, token = self._credential()
+
+        args: dict = {"first": max(1, min(int(limit), 50))}
+        if term.strip():
+            args["query"] = {"term": term.strip()}
+        filters: dict = {}
+        if tags:
+            filters["tagSlugs"] = _match_any(tags)
+        if seconds_max:
+            filters["duration"] = {"max": int(seconds_max * 1000)}
+        if filters:
+            args["filter"] = filters
+
+        async with open_session(url=url, token=token) as remote:
+            payload = await remote.call("SearchSoundEffects", args)
+
+        found = [
+            effect for effect in
+            (_sound_effect(node) for node in (payload.get("nodes") or [])
+             if isinstance(node, dict))
+            if effect is not None
+        ]
+        log.info("epidemic sound: %d sound effects for %r", len(found), term)
+        return found[:limit]
+
+    # -- download ---------------------------------------------------------------
+
+    async def make_bed(
+        self,
+        track_id: str,
+        *,
+        out_path: Path,
+        seconds: float,
+        stem: str = "",
+        hit_points: tuple[tuple[float, float, float], ...] = (),
+    ) -> MediaResult:
+        if not track_id:
+            raise ProviderError("no track to fetch a bed from", provider=self.name)
+        seconds = max(1.0, float(seconds))
+        url, token = self._credential()
+
+        async with open_session(url=url, token=token) as remote:
+            if stem:
+                asset_url, meta = await self._stem_asset(remote, track_id, stem)
+            else:
+                asset_url, meta = await self._edit_asset(
+                    remote, track_id, seconds, hit_points
+                )
+
+        if not asset_url:
+            raise ProviderError(
+                f"epidemic sound produced no download URL for track {track_id}",
+                provider=self.name, retryable=True,
+            )
+        path = await download_asset(asset_url, out_path, provider=self.name,
+                                    what="music bed")
+
+        from ..render import ffmpeg as ff
+
+        duration = await asyncio.to_thread(ff.ffprobe_duration, path)
+        return MediaResult(
+            path=path,
+            mime=_MIMES.get(path.suffix, "audio/mpeg"),
+            # Nothing per track to charge. Every other adapter here converts a published
+            # vendor unit price, and `voiceover_credits` derives narration's from the
+            # node's own per-thousand-character figure so the estimate and the settled
+            # actual cannot drift apart. Music has neither: it comes out of a flat
+            # subscription the operator already pays, and `credits.PER_UNIT_COSTS` has no
+            # music entry to derive from. Inventing a number would put a fabricated cost
+            # in /analytics, which is the failure `voiceover_credits` exists to avoid —
+            # here the honest answer happens to be zero rather than a derivation.
+            credits=0,
+            provider=self.name,
+            duration_seconds=duration,
+            meta={"track_id": track_id, "licence": LICENCE,
+                  "asked_seconds": round(seconds, 2), **meta},
+        )
+
+    async def fetch_sound_effect(self, effect_id: str, *, out_path: Path) -> MediaResult:
+        if not effect_id:
+            raise ProviderError("no sound effect to fetch", provider=self.name)
+        url, token = self._credential()
+
+        async with open_session(url=url, token=token) as remote:
+            download = await remote.call(
+                "DownloadSoundEffect",
+                {"id": effect_id, "options": {"fileType": EFFECT_FILE_TYPE}},
+            )
+        asset_url = str(download.get("assetUrl") or "")
+        if not asset_url:
+            raise ProviderError(
+                f"epidemic sound produced no download URL for effect {effect_id}",
+                provider=self.name, retryable=True,
+            )
+        path = await download_asset(asset_url, out_path, provider=self.name,
+                                    what="sound effect")
+
+        from ..render import ffmpeg as ff
+
+        duration = await asyncio.to_thread(ff.ffprobe_duration, path)
+        return MediaResult(
+            path=path, mime=_MIMES.get(path.suffix, "audio/wav"), credits=0,
+            provider=self.name, duration_seconds=duration,
+            meta={"effect_id": effect_id, "licence": LICENCE},
+        )
+
+    # -- the two routes to a bed ------------------------------------------------
+
+    async def _stem_asset(self, remote: EpidemicSession, track_id: str,
+                          stem: str) -> tuple[str, dict]:
+        """One isolated layer of the whole track.
+
+        A stem and a length-matched edit cannot be had together: `DownloadRecordingEdit`
+        takes only a job and an edit id, with nowhere to name a layer, so an edit is
+        always a full mix. Dropping the vocal is worth more than a musical ending under
+        narration, so when a stem is asked for this route wins and the length is resolved
+        locally by `render.audio.loop_to_length`.
+        """
+        wanted = stem.upper()
+        if wanted not in DOWNLOADABLE_STEMS:
+            # MELODY and the vocal stems appear in search results and cannot be fetched.
+            # Falling back to the full mix and saying so beats a rejected call, but it is
+            # a real downgrade — the bed keeps whatever the stem would have removed.
+            log.warning("epidemic sound cannot download the %s stem; taking the full mix",
+                        wanted)
+            wanted = "FULL"
+        download = await remote.call(
+            "DownloadRecording",
+            {"id": track_id,
+             "options": {"fileType": BED_FILE_TYPE, "stemType": wanted}},
+        )
+        return str(download.get("assetUrl") or ""), {"stem": wanted, "route": "stem"}
+
+    async def _edit_asset(
+        self, remote: EpidemicSession, track_id: str, seconds: float,
+        hit_points: tuple[tuple[float, float, float], ...],
+    ) -> tuple[str, dict]:
+        """A version of the track cut to length, musically.
+
+        `targetDurationMs` is capped at 300000 by the vendor: five minutes, which this
+        app's default eight-minute target reaches by the *normal* case rather than an edge
+        one. Over the cap the request becomes `loopable` — the schema's word for "seamless
+        when repeated" — and `render.audio.loop_to_length` repeats it. Stitching several
+        independent edits was the alternative and it is worse: each one is cut to resolve
+        on its own ending, so every join lands on two resolutions back to back.
+
+        Under the cap nothing loops. `forceDuration` cuts it exactly, which is the whole
+        point of the operation: a bed that ends when the video ends, musically, instead of
+        being faded out mid-phrase.
+        """
+        wanted_ms = int(seconds * 1000)
+        capped = wanted_ms > EDIT_MAX_DURATION_MS
+        target_ms = min(wanted_ms, EDIT_MAX_DURATION_MS)
+
+        edit: dict = {
+            "targetDurationMs": target_ms,
+            "downloadAudioFormat": BED_FILE_TYPE,
+            "forceDuration": not capped,
+            "loopable": capped,
+            # Nothing downloads an edit's stems — there is no field to ask for one — so
+            # generating them is time spent on a file that cannot be fetched.
+            "skipStems": True,
+            "maxResults": 1,
+        }
+        if hit_points:
+            edit["requiredRegionsAtOffsets"] = [
+                {"startMs": int(start * 1000), "endMs": int(end * 1000),
+                 "offsetMsInEdit": int(offset * 1000)}
+                for start, end, offset in hit_points
+            ]
+
+        started = await remote.call("EditRecording", {"id": track_id, "input": edit})
+        job_id = str(started.get("id") or "")
+        if not job_id:
+            raise ProviderError(
+                f"epidemic sound accepted the edit of {track_id} but returned no job id, "
+                "so there is nothing to poll for",
+                provider=self.name, retryable=True,
+            )
+
+        state = await self._await_edit(remote, job_id, started)
+        edit_id = _first_edit_id(state)
+        if not edit_id:
+            raise ProviderError(
+                f"edit job {job_id} completed without naming an edit to download",
+                provider=self.name, retryable=True,
+            )
+
+        download = await remote.call(
+            "DownloadRecordingEdit", {"input": {"jobId": job_id, "editId": edit_id}}
+        )
+        return str(download.get("assetUrl") or ""), {
+            "route": "edit", "job_id": job_id, "edit_id": edit_id,
+            "loopable": capped, "edit_seconds": round(target_ms / 1000.0, 2),
+            "polls": state.get("polls", 0),
+        }
+
+    async def _await_edit(self, remote: EpidemicSession, job_id: str,
+                          started: dict) -> dict:
+        """Poll an edit job until it completes, and stop rather than wait forever.
+
+        Its own ceiling rather than narration's: re-cutting audio is the heavier of the
+        two jobs, and a timeout sized for a sentence of speech would abandon an edit that
+        was going to arrive.
+        """
+        state = str(started.get("status") or "").upper()
+        polls = 0
+        deadline = time.monotonic() + EDIT_POLL_TIMEOUT_SECONDS
+
+        while state != "COMPLETED":
+            if state == "FAILED":
+                raise ProviderError(
+                    f"epidemic sound could not cut edit job {job_id} to length",
+                    provider=self.name,
+                )
+            if time.monotonic() >= deadline:
+                raise ProviderTimeout(
+                    f"edit job {job_id} was still running after "
+                    f"{EDIT_POLL_TIMEOUT_SECONDS:.0f}s and polling stopped. Nothing was "
+                    "downloaded, so nothing was exported against the licence.",
+                    provider=self.name,
+                )
+            await asyncio.sleep(EDIT_POLL_INTERVAL_SECONDS)
+            polls += 1
+            started = await remote.call("PollEditRecordingJob", {"id": job_id})
+            state = str(started.get("status") or "").upper()
+
+        return {**started, "polls": polls}
+
+
+def _first_edit_id(state: dict) -> str:
+    """The edit to download out of a completed job.
+
+    Both shapes are read because the schema is mid-migration: `edit` is documented as
+    deprecated in favour of `edits`, and a server that has finished that migration would
+    otherwise complete a job this code then called empty.
+    """
+    for entry in state.get("edits") or []:
+        if isinstance(entry, dict) and entry.get("id"):
+            return str(entry["id"])
+    single = state.get("edit")
+    if isinstance(single, dict) and single.get("id"):
+        return str(single["id"])
+    return ""
 
 
 # ------------------------------------------------------------------------- offline
@@ -801,4 +1338,188 @@ class MockEpidemicVoice(VoiceProvider):
                 "speed": to_epidemic_speed(speed),
                 "mock": True,
             },
+        )
+
+
+# Deterministic beds, shaped like `SearchRecordings` answers rather than like anything
+# this app invented. One of the three carries a vocal stem on purpose: the single most
+# consequential decision the sound stage makes is refusing a bed that sings over the
+# narration, and a roster where every candidate is instrumental cannot demonstrate it.
+_MOCK_RECORDINGS: tuple[dict, ...] = (
+    {"id": "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa", "title": "Cold Open",
+     "bpm": 96, "seconds": 184.0, "moods": ["Serious", "Hopeful"],
+     "genres": ["Ambient"], "stems": ["DRUMS", "BASS", "INSTRUMENTS"]},
+    {"id": "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb", "title": "Long Division",
+     "bpm": 128, "seconds": 212.0, "moods": ["Driving"], "genres": ["Electronica"],
+     "stems": ["DRUMS", "BASS", "MELODY", "INSTRUMENTS"]},
+    {"id": "cccccccc-3333-4333-8333-cccccccccccc", "title": "Say It Again",
+     "bpm": 124, "seconds": 168.0, "moods": ["Driving"], "genres": ["Pop"],
+     "stems": ["DRUMS", "BASS", "INSTRUMENTS", "CLEAN_VOCALS", "VOCALS"]},
+)
+
+# Enough distinct one-shots that the repetition rules have something to act on. The
+# operator's method is explicit that "sounds cheap" means one file played 240 times, so a
+# mock palette of one file would make the cooldown untestable offline — which is to say
+# untested, since offline is how the suite and every fresh install run.
+_MOCK_EFFECTS: tuple[dict, ...] = (
+    {"id": "dddddddd-0001-4001-8001-dddddddddddd", "title": "Whoosh Short 01",
+     "seconds": 0.9, "tags": ["whoosh", "transition"]},
+    {"id": "dddddddd-0002-4002-8002-dddddddddddd", "title": "Whoosh Short 02",
+     "seconds": 1.1, "tags": ["whoosh", "transition"]},
+    {"id": "dddddddd-0003-4003-8003-dddddddddddd", "title": "Whoosh Long 01",
+     "seconds": 1.6, "tags": ["whoosh", "transition"]},
+    {"id": "eeeeeeee-0001-4001-8001-eeeeeeeeeeee", "title": "Sub Impact 01",
+     "seconds": 2.4, "tags": ["impact", "boom"]},
+    {"id": "eeeeeeee-0002-4002-8002-eeeeeeeeeeee", "title": "Sub Impact 02",
+     "seconds": 2.1, "tags": ["impact", "boom"]},
+    {"id": "ffffffff-0001-4001-8001-ffffffffffff", "title": "Riser 01",
+     "seconds": 2.8, "tags": ["riser", "build"]},
+    {"id": "ffffffff-0002-4002-8002-ffffffffffff", "title": "Riser 02",
+     "seconds": 3.2, "tags": ["riser", "build"]},
+)
+
+
+def _mock_recording(entry: dict) -> dict:
+    """One offline track in the vendor's own record shape, not in `MusicTrack`'s.
+
+    Deliberately built as the payload `_music_track` parses rather than as the dataclass
+    it returns: the mapping is where a schema change would break, so a mock that skipped
+    it would leave the one fragile piece of this adapter unexercised offline.
+    """
+    return {
+        "recording": {
+            "id": entry["id"],
+            "title": entry["title"],
+            "bpm": entry["bpm"],
+            "coverArtUrl": "",
+            "audioFile": {
+                "durationInMilliseconds": int(entry["seconds"] * 1000),
+                "lqmp3Url": "", "waveformUrl": "",
+            },
+            "stems": [
+                {"type": kind, "audioFile": {
+                    "durationInMilliseconds": int(entry["seconds"] * 1000),
+                    "lqmp3Url": "", "waveformUrl": ""}}
+                for kind in entry["stems"]
+            ],
+            "tags": (
+                [{"displayName": mood, "dimension": {"name": "mood"}}
+                 for mood in entry["moods"]]
+                + [{"displayName": genre, "dimension": {"name": "genre"}}
+                   for genre in entry["genres"]]
+            ),
+            "credits": [
+                {"role": "MAIN_ARTIST",
+                 "artist": {"name": "Offline Stand-in", "slug": "offline-stand-in"}},
+                {"role": "COMPOSER",
+                 "artist": {"name": "Not The Artist", "slug": "not-the-artist"}},
+            ],
+        }
+    }
+
+
+@dataclass
+class MockEpidemicMusic(MusicProvider):
+    """Epidemic Sound's music shapes without Epidemic Sound.
+
+    The filters are applied here rather than ignored, because what the sound stage does
+    with a search result — refuse the vocal track, prefer the tempo the reference measured
+    — is only demonstrable against a roster that answers a filter differently from an
+    unfiltered one.
+    """
+
+    name: str = "mock-epidemic-music"
+    api_key: str = ""
+    fetched: list[str] = field(default_factory=list)
+
+    def available(self) -> tuple[bool, str]:
+        return True, ""
+
+    async def search_tracks(
+        self, *, term: str = "", topic: str = "", moods: tuple[str, ...] = (),
+        genres: tuple[str, ...] = (), bpm_min: int = 0, bpm_max: int = 0,
+        seconds_min: float = 0.0, seconds_max: float = 0.0,
+        instrumental_only: bool = False, limit: int = 10,
+    ) -> list[MusicTrack]:
+        found: list[MusicTrack] = []
+        for entry in _MOCK_RECORDINGS:
+            if bpm_min and entry["bpm"] < bpm_min:
+                continue
+            if bpm_max and entry["bpm"] > bpm_max:
+                continue
+            if seconds_min and entry["seconds"] < seconds_min:
+                continue
+            if seconds_max and entry["seconds"] > seconds_max:
+                continue
+            if instrumental_only and {"VOCALS", "CLEAN_VOCALS"} & set(entry["stems"]):
+                continue
+            track = _music_track(_mock_recording(entry))
+            if track is not None:
+                found.append(track)
+        return found[:limit]
+
+    async def search_sound_effects(
+        self, *, term: str = "", tags: tuple[str, ...] = (),
+        seconds_max: float = 0.0, limit: int = 10,
+    ) -> list[SoundEffectAsset]:
+        # Matched word by word, because the live search is a relevance query and callers
+        # phrase one as "whoosh transition". Comparing the whole phrase to a tag matched
+        # nothing, which offline looked exactly like a catalogue with no whooshes in it.
+        wanted = {tag.lower() for tag in tags} | set(term.lower().split())
+        found: list[SoundEffectAsset] = []
+        for entry in _MOCK_EFFECTS:
+            if seconds_max and entry["seconds"] > seconds_max:
+                continue
+            if wanted and not wanted & set(entry["tags"]):
+                continue
+            effect = _sound_effect({"soundEffect": {
+                "id": entry["id"], "title": entry["title"],
+                "audioFile": {"durationInMilliseconds": int(entry["seconds"] * 1000),
+                              "lqmp3Url": "", "waveformUrl": ""},
+                "tags": [{"displayName": tag, "slug": tag} for tag in entry["tags"]],
+            }})
+            if effect is not None:
+                found.append(effect)
+        return found[:limit]
+
+    async def make_bed(
+        self, track_id: str, *, out_path: Path, seconds: float, stem: str = "",
+        hit_points: tuple[tuple[float, float, float], ...] = (),
+    ) -> MediaResult:
+        from ..render import ffmpeg as ff
+
+        entry = next((item for item in _MOCK_RECORDINGS if item["id"] == track_id), None)
+        if entry is None:
+            raise ProviderError(f"no offline track {track_id}", provider=self.name)
+
+        # A real file at the asked-for length, not a stub: the stage's whole job is to
+        # measure this and duck a voice against it, and neither is possible against a
+        # zero-byte placeholder. Pitched from the tempo so two mock beds differ audibly.
+        seconds = max(1.0, float(seconds))
+        path = ff.make_tone_audio(out_path.with_suffix(".m4a"), seconds,
+                                  frequency=int(entry["bpm"]))
+        self.fetched.append(track_id)
+        return MediaResult(
+            path=path, mime="audio/mp4", credits=0, provider=self.name,
+            duration_seconds=seconds,
+            meta={"track_id": track_id, "licence": LICENCE, "mock": True,
+                  "stem": stem.upper() if stem else "",
+                  "asked_seconds": round(seconds, 2),
+                  "hit_points": len(hit_points)},
+        )
+
+    async def fetch_sound_effect(self, effect_id: str, *, out_path: Path) -> MediaResult:
+        from ..render import ffmpeg as ff
+
+        entry = next((item for item in _MOCK_EFFECTS if item["id"] == effect_id), None)
+        if entry is None:
+            raise ProviderError(f"no offline sound effect {effect_id}",
+                                provider=self.name)
+        path = ff.make_tone_audio(out_path.with_suffix(".m4a"), entry["seconds"],
+                                  frequency=440)
+        self.fetched.append(effect_id)
+        return MediaResult(
+            path=path, mime="audio/mp4", credits=0, provider=self.name,
+            duration_seconds=entry["seconds"],
+            meta={"effect_id": effect_id, "licence": LICENCE, "mock": True},
         )

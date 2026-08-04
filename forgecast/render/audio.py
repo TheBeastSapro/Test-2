@@ -243,6 +243,113 @@ def duck_under(
     return out_path
 
 
+def bed_gain_for(
+    voice: Path,
+    music: Path,
+    *,
+    under_db: float,
+    floor_db: float = -30.0,
+    ceiling_db: float = 6.0,
+    timeout: float = 600.0,
+) -> tuple[float, Loudness, Loudness]:
+    """How far to trim a bed so it sits `under_db` below the narration.
+
+    Derived from what the two files measure, never from a constant. The failure that
+    forces this is recorded in the operator's own method and it is not subtle: library
+    tracks arrive at their own levels, about 12 dB apart across a palette, so one fixed
+    trim put every bed at -55 to -65 dBFS. Inaudible. Several renders shipped with a bed
+    nobody could hear, and nobody noticed, because silence is exactly what "no music"
+    sounds like — there is no symptom to spot.
+
+    `under_db` has no default here on purpose. The number belongs to the channel's sound
+    design and lives in `style.sound.BED_UNDER_VOICE_DB`; a default in this file would be
+    a second copy of it, and two copies of a measured figure drift.
+
+    Clamped at both ends. A silent or near-silent file measures about -99 LUFS here, which
+    would otherwise ask for eighty-odd dB of make-up gain — that is a noise floor
+    amplified into a hiss, on top of a bed that had nothing in it to amplify.
+
+    What this is *not*: the method specifies measuring the music stem inside the voice's
+    gaps against the voice stem during speech, and iterating after the ducking is applied.
+    This measures each whole stem once, before ducking. It is the coarser instrument, and
+    with dense narration the sidechain will pull the bed further down than this predicts.
+    Said here rather than hidden, because that document is the authority and this is the
+    part of it this file does not yet implement.
+    """
+    voice_level = measure(voice, timeout=timeout)
+    bed_level = measure(music, timeout=timeout)
+
+    if voice_level.silent or bed_level.silent:
+        # Nothing to place, or nothing to place it under. Returning a gain of zero leaves
+        # the caller's measurements intact so it can report which of the two was empty,
+        # which is the fact worth logging.
+        return 0.0, voice_level, bed_level
+
+    wanted = (voice_level.integrated_lufs - abs(under_db)) - bed_level.integrated_lufs
+    return max(floor_db, min(ceiling_db, wanted)), voice_level, bed_level
+
+
+def place_accents(
+    mix: Path,
+    out_path: Path,
+    cues: list[tuple[Path, float, float]],
+    *,
+    ceiling_db: float = -1.0,
+) -> Path:
+    """Lay one-shots on top of a finished voice-and-bed mix.
+
+    `cues` are `(file, at_seconds, gain_db)`.
+
+    On top, and that word is the whole function. Mixing effects into the bed before it is
+    ducked puts them under the music *and* under the voice — a measured -23.7 dB effects
+    bus against a -13 dB bed, which is how whole minutes of a render came out reading as
+    having no sound design at all. The bed is the layer that gets out of the way; these
+    are the layer it gets out of the way for.
+
+    `normalize=0` on the mix, because `amix` otherwise divides every input by the number
+    of inputs — twelve accents would drop the programme by more than 10 dB, silently, and
+    the more design you placed the quieter the video would get.
+
+    That leaves summing to clip, so the bus is limited explicitly rather than left to the
+    master. `loudnorm` does not hold its own ceiling in single-pass mode and the encoder
+    overshoots after it: a master asked for -1.0 dBTP came back at -0.2 once effects were
+    levelled as foreground.
+    """
+    usable = [(path, max(0.0, float(at)), float(gain))
+              for path, at, gain in cues if Path(path).exists()]
+    if not usable:
+        raise RenderError("no accent files to place")
+
+    inputs: list[str] = ["-i", str(mix)]
+    chains: list[str] = []
+    labels: list[str] = ["[0:a]"]
+    for index, (path, at, gain) in enumerate(usable):
+        inputs += ["-i", str(path)]
+        delay = round(at * 1000)
+        # Both channels, or `adelay` shifts the left and leaves the right where it was —
+        # which is not a quiet mistake, it is a hit that arrives twice.
+        chains.append(
+            f"[{index + 1}:a]adelay={delay}|{delay},volume={gain:.2f}dB[a{index}]"
+        )
+        labels.append(f"[a{index}]")
+
+    # Linear amplitude, which is what `alimiter` takes: -1 dBFS is 10 ** (-1/20).
+    limit = 10.0 ** (ceiling_db / 20.0)
+    graph = (
+        ";".join(chains)
+        + ";" + "".join(labels)
+        + f"amix=inputs={len(labels)}:duration=first:dropout_transition=0:normalize=0"
+        + f",alimiter=limit={limit:.4f}:level=disabled[out]"
+    )
+
+    run_ffmpeg(
+        [*inputs, "-filter_complex", graph, "-map", "[out]",
+         "-c:a", "aac", "-b:a", "320k", "-ar", "48000", str(out_path)],
+        label="place accents",
+    )
+    return out_path
+
+
 def loop_to_length(src: Path, out_path: Path, seconds: float) -> Path:
     """Loop a music bed to cover a duration, then cut it exactly.
 

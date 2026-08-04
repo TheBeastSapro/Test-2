@@ -92,6 +92,17 @@ async def render_node(ctx: NodeContext) -> NodeResult:
     rate = shots_per_minute(cuts)
 
     narration = Path(voice_output["narration_path"])
+    # The scored mix when the sound stage produced one — narration with the bed ducked
+    # under it and the accents on top. Checked on disk as well as in the output because a
+    # node that reported a path and a file that exists are two different claims, and
+    # silently rendering the dry narration under an output that names a track is the one
+    # way this stage can lie about what shipped.
+    scored = Path(str((ctx.upstream_outputs.get("sound") or {}).get("mixed_path") or ""))
+    audio_source = "voice"
+    if scored.name and scored.exists():
+        narration = scored
+        audio_source = "sound"
+
     avatar_output = ctx.upstream_outputs.get("avatar") or {}
     avatar_path = (
         Path(avatar_output["avatar_path"])
@@ -160,6 +171,10 @@ async def render_node(ctx: NodeContext) -> NodeResult:
             "width": width,
             "height": height,
             "size_bytes": out_path.stat().st_size,
+            # Which audio track went into the file: the scored mix, or the dry narration.
+            # Recorded rather than inferred, because "the sound node bought a bed" and
+            # "the video contains it" are two claims, and the gap between them is silent.
+            "audio_source": audio_source,
             "cutting": {
                 "shots": len(cuts),
                 "scenes": len(scenes),
