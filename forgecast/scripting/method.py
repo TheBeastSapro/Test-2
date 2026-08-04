@@ -486,13 +486,13 @@ HOOK_SHAPE = MethodBlock(
 Measured off this channel's own reference videos, not chosen. $sentence
 
 Write the first scene to that length and that pace: the opening beat ends where the
-narrator first stops, so scene 1 is one continuous run of speech that lands at about
-$hook_seconds seconds and $hook_words words. Everything after it is the setup and is not
-part of this.
+narrator first stops, so scene 1 is one continuous run of speech landing at about
+$hook_seconds seconds and $hook_words words. Whatever comes after that is the setup and
+is not part of this.
 
-The shape is all that is measured. $not_claimed — so nothing here says which opening to
-use, the rotation bank above still decides that, and none of the reference's own wording
-is available to borrow because none of it was kept.
+The shape is all that is measured: $not_claimed. So nothing here decides which opening to
+use — the rotation bank above still does that — and none of the reference's own wording is
+available to borrow, because none of it was kept.
 """,
 )
 

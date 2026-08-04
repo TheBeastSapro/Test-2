@@ -213,6 +213,17 @@ def create_run(
         # Read from the same profile as `sourcing` and for the same reason: the reserve
         # and the shots node have to price the run off one measurement.
         render_spec=(channel.style_profile or {}).get("render_spec"),
+        # How fast this channel's references talk and where their opening beat stops,
+        # which together decide the script's word count and the window the hook gate
+        # cuts. Absent on a channel with no learned style, which `writing_budget` reads
+        # as the shipped defaults.
+        #
+        # Here for the reason `sourcing` and `render_spec` are: the writer and the gate
+        # already read the measurement, so a reserve that did not would price a 1248-word
+        # script while the run wrote 1632 — the hold and the spend disagreeing by the
+        # exact factor the measurement found, which is the failure this file keeps
+        # closing rather than a new one.
+        narrative=(channel.style_profile or {}).get("narrative"),
     )
 
     run = Run(
