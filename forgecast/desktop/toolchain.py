@@ -45,6 +45,7 @@ for the agent to find it reliably.
 
 from __future__ import annotations
 
+import logging
 import os
 import platform
 import shutil
@@ -74,6 +75,9 @@ WEIGHT_CLI = 12
 # Heavier than the Claude CLI because the package carries a native build of the agent
 # rather than only JavaScript.
 WEIGHT_CODEX = 25
+
+
+log = logging.getLogger("forgecast.toolchain")
 
 
 def runtime_dir(root: Path) -> Path:
@@ -147,16 +151,53 @@ def run_watched(command: list[str], *, on_line=None, tick=None, timeout: float =
         return 1, f"{type(exc).__name__}: {exc}"
 
     collected: list[str] = []
+    # One-shot latch, so a callback failing on every line reports once.
+    swallowed: list[bool] = []
 
     def drain() -> None:
         # Its own thread because `readline` blocks, and blocking is the thing being
-        # avoided. Only appends and calls back; it never touches a widget.
+        # avoided.
+        #
+        # `on_line` therefore runs *off the main thread*, and every implementation of it
+        # has to be safe there. This comment used to assert that the callback "never
+        # touches a widget", which was not a fact about this function — it was a hope
+        # about its callers, and `setup_window.note` broke it by calling `.config()`
+        # directly. Tk raised `main thread is not in main loop`, the exception killed
+        # this thread at the first line npm printed, and the setup window sat frozen in
+        # front of an install that was still running.
+        #
+        # It is stated as a requirement now rather than as a claim, because a comment
+        # asserting an invariant nothing enforces is why nobody checked.
         assert process.stdout is not None
         for line in process.stdout:
             stripped = line.rstrip()
             collected.append(stripped)
             if on_line is not None and stripped:
-                on_line(stripped)
+                try:
+                    on_line(stripped)
+                except Exception:
+                    # A callback that raises must never stop the pipe being drained, and
+                    # this is not defensive tidiness — it is the difference between a
+                    # cosmetic failure and a hung install.
+                    #
+                    # `stdout` is a pipe with a buffer of about 64 KB. If this thread
+                    # dies, nobody reads it; npm and pip print far more than that, so the
+                    # child blocks on write and never exits, and the loop below spins
+                    # until the fifteen-minute timeout kills it. Every CLI install then
+                    # fails, a quarter of an hour apart, for a reason that has nothing to
+                    # do with npm.
+                    #
+                    # That happened: `SetupWindow.note` touched a Tk widget from here and
+                    # raised on the first line of output. The visible symptom was a
+                    # frozen setup window; the real one was a deadlocked installer.
+                    #
+                    # Reported once and then never again — a callback failing every line
+                    # would otherwise print thousands of identical tracebacks over the
+                    # output being collected.
+                    if not swallowed:
+                        swallowed.append(True)
+                        log.warning("a progress callback raised; output is still being "
+                                    "read", exc_info=True)
 
     reader = threading.Thread(target=drain, name="forgecast-child-output", daemon=True)
     reader.start()

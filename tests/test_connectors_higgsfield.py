@@ -101,11 +101,16 @@ def test_an_api_connector_is_never_handed_to_the_sdk(spec, tmp_path):
         key=spec.key, url=spec.default_url or "https://example.invalid/mcp",
         token="tok", enabled=True,
     )
-    if spec.kind == "api":
-        assert spec.key not in store.active()
-        assert store.api_credentials(spec.key) is not None
-    else:
+    # Keyed on `supports_mcp`, not on `kind == "api"`. There are three kinds now: the
+    # third is `account`, for a service authorised on the Claude account the agent signs
+    # in with rather than configured here at all. It has no URL of its own, so handing it
+    # to the SDK would be the same mis-wiring by a different route.
+    if spec.supports_mcp:
         assert spec.key in store.active()
+    else:
+        assert spec.key not in store.active()
+    if spec.kind == "api":
+        assert store.api_credentials(spec.key) is not None
 
 
 def test_an_api_row_is_not_asked_for_a_server_url(client: TestClient):

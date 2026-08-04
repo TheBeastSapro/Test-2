@@ -151,13 +151,17 @@ CATALOGUE: tuple[ConnectorSpec, ...] = (
         # The credential NexLev's own 401 asks for, quoted from it rather than guessed:
         # "Provide either: 1) OAuth Bearer token, or 2) API key in Authorization header
         # (Bearer nlv_...), x-api-key header, or api_key query parameter."
-        where="The URL is already filled in. Press Sign in: a terminal registers it with "
-              "the CLI the agent runs through, and you approve it there when `claude` "
-              "asks. If you would rather use a key, it is "
-              "a NexLev API key starting with `nlv_`, from your dashboard under API "
-              "access. A session cookie, a JWT or a password will be refused: NexLev "
-              "issues several kinds of credential and only the `nlv_` key works over "
-              "this endpoint.",
+        # Sign in first and alone. NexLev authorises this endpoint with a Google
+        # sign-in, and the API key the old copy pointed at is not something every
+        # account has — it was offered as the equal alternative, so an operator whose
+        # dashboard has no API section read the whole row as unavailable to them and
+        # said so. The key is still accepted and is now named as the exception it is.
+        where="The URL is already filled in and there is nothing to paste. Press Sign "
+              "in: a terminal opens, you approve it with the Google account you use for "
+              "NexLev, and the agent inherits that session through the same CLI it runs "
+              "through. Leave the token box empty. If your account does happen to issue "
+              "an API key — one starting with `nlv_`, under API access — that works too, "
+              "but a session cookie, a JWT or a password will all be refused.",
         docs="Once connected, ask for outliers in a niche and I will query NexLev "
              "directly instead of asking you to paste numbers. A 401 on Test means the "
              "connection reached NexLev and the credential was not the one it wanted; "
@@ -204,7 +208,26 @@ CATALOGUE: tuple[ConnectorSpec, ...] = (
         key="google_drive",
         label="Google Drive",
         gives="reading scripts, briefs and shot lists you keep in Drive",
-        where="A Drive MCP endpoint from your workspace administrator.",
+        # Authorised outside this app, and there is nothing here to fill in.
+        #
+        # This row used to ask for a server URL and a token, above the sentence "a Drive
+        # MCP endpoint from your workspace administrator". No such endpoint exists to be
+        # given. It was written from the shape of the other rows rather than from how
+        # Drive is actually connected, so it asked for two things that cannot be obtained
+        # and reported as unconfigured for ever — which is worse than not listing it,
+        # because an unlisted service is one you know to go and set up.
+        #
+        # Drive is a connector on the Claude account the agent signs in with: authorised
+        # once with a Google sign-in in that account's connector settings, and inherited
+        # here through the same CLI. So this row's job is to say where it is done and
+        # then get out of the way.
+        kind="account",
+        where="Not set up here. Add Google Drive to the Claude account this agent signs "
+              "in with — claude.ai, Settings, Connectors — and approve it with your "
+              "Google sign-in. The agent runs through that account and picks it up. "
+              "There is no URL and no token for this one.",
+        docs="Once it is on that account, ask for a document by name and I will read it "
+             "from Drive instead of asking you to paste it in.",
     ),
     ConnectorSpec(
         key="epidemic_sound",

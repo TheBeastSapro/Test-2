@@ -655,6 +655,22 @@ async def test_connector(key: str, _user: User = Depends(current_user)) -> dict:
     Deliberately a real request to the configured endpoint rather than a URL-shape
     check: the failure this catches is a token that was pasted with a trailing space,
     and no amount of validating the string finds that.
+
+    ## Why the CLI is asked first
+
+    A browser sign-in does not put a credential here. It registers the server with the
+    Claude CLI under user scope, and the agent inherits the grant by running through that
+    same CLI — which is the entire point of offering it. Forgecast's own request carries
+    no token in that case, so on an OAuth-only service it can only ever come back 401.
+
+    That is what happened: an operator pressed Sign in, completed it, pressed Test, and
+    was told the connection had been refused. Both statements were true of different
+    connections, and the page showed the one that does not matter. The row's own note
+    already said it "can be working with both boxes empty"; Test contradicted it.
+
+    So the question Test answers is "can the agent reach this", and the agent reaches it
+    through the CLI. The direct request is still made — it is the only thing that catches
+    a mistyped token — but only when there is a token for it to check.
     """
     import httpx
 
@@ -662,6 +678,15 @@ async def test_connector(key: str, _user: User = Depends(current_user)) -> dict:
     conn = store.connections.get(key)
     if conn is None or not conn.url:
         raise HTTPException(status_code=404, detail=f"{key} is not configured")
+
+    # The CLI's answer first, because a browser sign-in leaves its grant there and
+    # nowhere else. `cli_servers` already excludes registered-but-unauthorised entries,
+    # so a name in this set means authorised rather than merely added.
+    if not conn.token and key.lower() in connectors.cli_servers():
+        return {"ok": True, "via": "cli", "detail": (
+            "connected through the Claude CLI, which is where the browser sign-in put "
+            "it. The agent inherits that grant by running through the same CLI, so "
+            "there is nothing to paste here and nothing further to do.")}
 
     config = conn.as_mcp()
     body = {"jsonrpc": "2.0", "id": 1, "method": "initialize",
@@ -736,12 +761,24 @@ def _why_unauthorised(response, had_token: bool) -> str:
 
     oauth = "resource_metadata=" in challenge or "Bearer realm" in challenge
     if oauth and not had_token:
+        # Press the button that is already on this card.
+        #
+        # This used to say "This page cannot open one" and then print a `claude mcp add`
+        # command to run in a terminal. It was true when it was written and stopped being
+        # true when `start_browser_signin` landed and put a Sign in button on every
+        # connector with a server — so the page was telling an operator to do by hand the
+        # thing the button beside the message does for them. That is the homework this
+        # app exists to remove, and it was reported as exactly that.
+        #
+        # It also read as a dead end on the services where OAuth is the *only* way in.
+        # Several issue no API key at all, so "paste one if this service issues them" is
+        # the only instruction on screen and it cannot be followed.
         lines.append(
-            "That is an OAuth challenge, which means a browser sign-in rather than a "
-            "pasted key. This page cannot open one. Either paste an API key if this "
-            "service issues them, or connect it through the CLI: "
-            "`claude mcp add --transport http --scope user <name> <url>` and complete the "
-            "sign-in it opens — the agent runs through that CLI and inherits the session.")
+            "That is an OAuth challenge: this service wants a browser sign-in, not a "
+            "pasted key. Press Sign in at the top of this card — a terminal opens, you "
+            "approve it in your browser, and the agent inherits that session. Many "
+            "services issue no API key at all, so this is often the only way in and the "
+            "token box below can be left empty.")
     elif had_token:
         lines.append(
             "A token was sent and was not accepted. Check it is the kind of credential "

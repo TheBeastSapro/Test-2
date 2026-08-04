@@ -12,9 +12,17 @@
 '
 ' The failure case is the interesting one. A hidden window that fails is a
 ' double-click that does nothing at all, which is worse than a black box: there is no
-' error to read and nothing to report. So on a non-zero exit this re-runs the same
-' command *visibly* and leaves it open, which puts the operator in front of the real
-' message. `Forgecast.bat` is still there for anyone who wants the console every time.
+' error to read and nothing to report.
+'
+' The first answer to that was to re-run the same command *visibly* on a non-zero exit.
+' It worked and it was wrong: a crash then produced exactly the black console this file
+' exists to prevent, and two of them, because the visible re-run starts a child of its
+' own. The complaint was about the box, not about the error inside it.
+'
+' So every run is logged, and a failure opens a dialog naming what went wrong with the
+' log one click away. A message box is not a console: it says one thing, it is
+' dismissed, and it leaves nothing in the taskbar. `Forgecast.bat` is still there for
+' anyone who wants the console every time.
 
 Option Explicit
 
@@ -49,16 +57,48 @@ Else
   WScript.Quit 1
 End If
 
+Dim logPath, command
+logPath = here & "\forgecast-launch.log"
+
+' Through cmd so the output can be redirected to a file, and hidden so cmd's own window
+' is never drawn. /s makes cmd take everything between the outer quotes verbatim, which
+' is what allows two quoted paths and a quoted redirect target on one line.
+'
 ' 0 = hidden, True = wait for it. Waiting is what makes the exit code available, which
-' is what makes the visible retry below possible.
-status = shell.Run(python & " """ & here & "\launcher.py""", 0, True)
+' is what makes the dialog below possible at all.
+command = "cmd /s /c """ & python & " """ & here & "\launcher.py"" > """ & logPath & """ 2>&1"""
+status = shell.Run(command, 0, True)
 
 If status <> 0 Then
-  ' Second attempt, visible and paused, so the reason is on screen. Run through cmd
-  ' with python.exe rather than pythonw.exe — a console interpreter is the point here.
-  shell.Environment("PROCESS")("FORGECAST_NO_PAUSE") = ""
-  shell.Run "cmd /k """ & here & "\Forgecast.bat""", 1, False
+  ShowFailure logPath, status
 End If
+
+Sub ShowFailure(path, code)
+  ' The last few lines, not the whole log: a traceback's useful sentence is at the
+  ' bottom, and a message box holding four hundred lines is one nobody reads.
+  Dim body, text, parts, index, first
+  body = ""
+  If fso.FileExists(path) Then
+    On Error Resume Next
+    text = fso.OpenTextFile(path, 1).ReadAll()
+    On Error GoTo 0
+    parts = Split(Replace(text, vbCrLf, vbLf), vbLf)
+    first = UBound(parts) - 12
+    If first < 0 Then first = 0
+    For index = first To UBound(parts)
+      If Trim(parts(index)) <> "" Then body = body & parts(index) & vbCrLf
+    Next
+  End If
+  If Trim(body) = "" Then body = "It stopped with code " & code & " and wrote nothing."
+
+  If MsgBox("Forgecast could not start." & vbCrLf & vbCrLf & body & vbCrLf & _
+            "The full log is at:" & vbCrLf & path & vbCrLf & vbCrLf & _
+            "Open it now?", vbExclamation + vbYesNo, "Forgecast") = vbYes Then
+    ' Notepad, not a console. It is on every Windows install, and it closes like a
+    ' document rather than sitting in the taskbar as a terminal.
+    shell.Run "notepad.exe """ & path & """", 1, False
+  End If
+End Sub
 
 Function ExistsOnPath(sh, exeName)
   ' `where` is the only reliable answer: PATH is per-process, and testing well-known

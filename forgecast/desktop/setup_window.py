@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import queue
 import sys
 from collections.abc import Sequence
 
@@ -67,6 +68,9 @@ class SetupWindow:
         self._done: set[str] = set()
         self._current = ""
         self._failed: set[str] = set()
+        # Lines from a child process, waiting to be drawn by whoever owns the main
+        # thread. See `note` for why they cannot be drawn where they arrive.
+        self._lines: queue.Queue[str] = queue.Queue()
 
     # ------------------------------------------------------------------ the surface
 
@@ -110,9 +114,23 @@ class SetupWindow:
 
         One line, replaced, not appended. A scrolling log is what the console already
         was; the value here is knowing it is still moving and roughly where.
+
+        **This is the one method on this class called from another thread**, and it must
+        not touch a widget. `toolchain.run_watched` reads a child process on a reader
+        thread because `readline` blocks, and hands each line here. Tk is not thread-safe:
+        every widget call has to happen on the thread running the mainloop, and one made
+        anywhere else raises `RuntimeError: main thread is not in main loop`.
+
+        It did. This method used to call `.config()` directly, so the first line npm or
+        pip printed killed the reader thread — and with it every further line, leaving a
+        window that had stopped updating in front of an install that was still running.
+        The reader thread's own comment claimed it "never touches a widget"; the wiring
+        made that false, and the assertion is why nobody looked.
+
+        So the line is queued and `_pump` draws it, on the main thread, where `tick`
+        already calls twelve times a second for the whole life of the child process.
         """
-        self._w["detail"].config(text=line.strip()[:110])
-        self._pump()
+        self._lines.put(line.strip()[:110])
 
     def finish(self, step: str, *, ok: bool = True) -> None:
         (self._done if ok else self._failed).add(step)
@@ -151,8 +169,24 @@ class SetupWindow:
         self._pump()
 
     def _pump(self) -> None:
-        """Draw now. The install owns the main thread, so nothing else will."""
+        """Draw now, on the main thread, which is the only thread that may.
+
+        Every caller of this is on the main thread — the install owns it — which is what
+        makes it the right place to drain the lines `note` queued from the reader thread.
+        """
         try:
+            # The most recent line wins. This is a single replaced line rather than a
+            # log, so drawing every queued one would be several `config` calls the eye
+            # cannot separate, at twelve redraws a second.
+            latest = ""
+            while True:
+                try:
+                    latest = self._lines.get_nowait()
+                except queue.Empty:
+                    break
+            if latest:
+                self._w["detail"].config(text=latest)
+
             if self._w["bar"]["mode"] == "indeterminate":
                 self._w["bar"].step(4)
             self._root.update_idletasks()

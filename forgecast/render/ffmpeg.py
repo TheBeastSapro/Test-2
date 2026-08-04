@@ -147,7 +147,14 @@ def _encodes(spec: dict) -> bool:
              "-f", "lavfi", "-i", "color=c=black:s=32x32:d=0.04",
              "-c:v", spec["codec"], *spec["quality"],
              "-frames:v", "1", "-f", "null", "-"],
-            capture_output=True, text=True, timeout=30)
+            capture_output=True, text=True, timeout=30,
+            # ffmpeg reads stdin for its interactive keys, and an inherited stdin is
+            # whatever the parent had. In a process whose stdin is a live protocol
+            # stream — the agent's stdio MCP server is exactly that — it swallows the
+            # first bytes of the next message and the peer sees a truncated line. That
+            # is not hypothetical: adding this probe broke the MCP handshake test, and
+            # the failure looked like a JSON parse error a long way from the cause.
+            stdin=subprocess.DEVNULL)
     except (OSError, subprocess.SubprocessError):  # pragma: no cover
         return False
     # Both, because ffmpeg has been seen to exit 0 on an encoder that could not open —
@@ -255,8 +262,13 @@ def _is_video(path: Path) -> bool:
 
 
 def run_ffmpeg(args: list[str], *, label: str = "ffmpeg") -> None:
-    cmd = [FFMPEG, "-hide_banner", "-loglevel", "error", "-y", *args]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    # `-nostdin` and a closed stdin, belt and braces. ffmpeg reads stdin for interactive
+    # keys, so a render started from a process whose stdin carries a protocol stream will
+    # eat bytes out of it — see `_encodes` for the case that caught this. The flag covers
+    # ffmpeg's own reading; DEVNULL covers anything else the child does with the handle.
+    cmd = [FFMPEG, "-hide_banner", "-nostdin", "-loglevel", "error", "-y", *args]
+    proc = subprocess.run(cmd, capture_output=True, text=True,
+                          stdin=subprocess.DEVNULL)
     if proc.returncode != 0:
         tail = (proc.stderr or "").strip().splitlines()[-12:]
         raise RenderError(f"{label} failed (exit {proc.returncode}):\n" + "\n".join(tail))
@@ -276,6 +288,7 @@ def ffprobe_duration(path: Path) -> float:
         ],
         capture_output=True,
         text=True,
+        stdin=subprocess.DEVNULL,
     )
     if proc.returncode != 0:
         raise RenderError(f"ffprobe failed for {path}: {proc.stderr.strip()}")

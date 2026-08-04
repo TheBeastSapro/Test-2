@@ -123,15 +123,25 @@ ENV_FIELDS = [
     # folder above: a channel restored onto a second computer must not arrive asking for
     # a GPU that computer does not have. `Channel` is what the cloud backup copies;
     # `.env` is not.
+    # Three fixed words, so a list rather than a text box. This shipped once as a key
+    # field reading "paste the key", which asks for a credential that does not exist and
+    # sends somebody looking for a code to obtain. Worse, a typed "nvidea" is silently
+    # valid — `resolve_encoder` falls back to the CPU — so the render would just be slow
+    # and nothing would say why.
     {"key": "FORGECAST_VIDEO_ENCODER", "label": "Video encoder",
-     "unlocks": "hardware-accelerated rendering — cpu, nvidia or intel. An NVIDIA or "
-                "Intel GPU encodes far faster than the processor does, including small "
-                "cards that cannot generate video at all, because encoding is a "
-                "fixed-function block. Slightly larger files for the same picture. "
-                "Leave empty for the CPU; anything this machine cannot run falls back "
-                "to it rather than failing a paid render",
-     "where": "this machine — see /api/encoders for what it can actually do",
-     "secret": False},
+     "unlocks": "hardware-accelerated rendering. An NVIDIA or Intel GPU encodes far "
+                "faster than the processor does — including small cards that cannot "
+                "generate video at all, because encoding is a fixed-function block — "
+                "for a slightly larger file at the same picture quality. Anything this "
+                "machine cannot actually run falls back to the CPU rather than failing "
+                "a render that has already been paid for",
+     "where": "this machine, not your account",
+     "secret": False,
+     "choices": [
+         {"value": "", "label": "CPU — always works, best quality per byte (default)"},
+         {"value": "nvidia", "label": "NVIDIA GPU — much faster, if this machine has one"},
+         {"value": "intel", "label": "Intel Quick Sync — faster on Intel graphics"},
+     ]},
 ]
 
 _SECRET_LINE = re.compile(r"^([A-Z0-9_]+)\s*=\s*(.*)$")

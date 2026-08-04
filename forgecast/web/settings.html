@@ -137,21 +137,33 @@
                  gets pasted into the URL box — and the page then stored it, reported
                  the service as connected, and there was nothing to reach. So the box
                  only exists for the kind of connector that actually has an address. #}
-              {% if item.kind != 'api' %}
+              {% if item.kind not in ('api', 'account') %}
                 <div>
                   <label for="url-{{ item.key }}">Server URL</label>
                   <input id="url-{{ item.key }}" value="{{ item.url }}"
                          placeholder="https://…/mcp">
                 </div>
               {% endif %}
-              <div>
-                <label for="tok-{{ item.key }}">
-                  {{ 'API key' if item.kind == 'api' else 'Token' }}</label>
-                <input id="tok-{{ item.key }}" type="password"
-                       placeholder="{{ item.token or ('paste the API key' if item.kind == 'api' else 'paste the token') }}">
-              </div>
-              <button class="primary" onclick="saveConnector('{{ item.key }}')">
-                {{ 'Update' if item.connected else 'Connect' }}</button>
+              {#- An `account` connector is authorised on the Claude account the agent
+                  signs in with, so there is nothing here to fill in and no button that
+                  could do it. A row that asks anyway is a row that reports itself
+                  unconfigured for ever — worse than not listing the service, because an
+                  unlisted one is at least known to need setting up. -#}
+              {% if item.kind != 'account' %}
+                <div>
+                  <label for="tok-{{ item.key }}">
+                    {{ 'API key' if item.kind == 'api' else 'Token' }}</label>
+                  <input id="tok-{{ item.key }}" type="password"
+                         {#- Optional wherever a browser sign-in exists, and said so. A
+                             box reading "paste the token" on a service that issues no
+                             token is a required-looking field with nothing to put in it. -#}
+                         placeholder="{{ item.token or ('paste the API key' if item.kind == 'api'
+                                         else ('optional — press Sign in instead' if item.browser_signin
+                                               else 'paste the token')) }}">
+                </div>
+                <button class="primary" onclick="saveConnector('{{ item.key }}')">
+                  {{ 'Update' if item.connected else 'Connect' }}</button>
+              {% endif %}
             </div>
             <div class="muted" style="font-size:12.5px;margin-top:8px" id="test-{{ item.key }}">
               {{ item.note }}</div>
@@ -305,8 +317,30 @@
             </div>
             <div class="setting-why">Unlocks {{ field.unlocks }}.</div>
             <div class="keyrow" style="margin-top:10px">
-              <input type="password" name="value" autocomplete="off"
-                     placeholder="{{ env_values.get(field.key) or 'paste the key' }}">
+              {#- Three shapes, because these are not all keys. A fixed set of words is a
+                  select — typing "nvidea" into a text box silently falls back to the CPU
+                  and nothing says why. A path or a plain value is a readable text field:
+                  masking it means an operator cannot tell a saved setting from a typo'd
+                  one, which the scripting folder was reported as. Only an actual secret
+                  gets a password box, and `secret` in ENV_FIELDS is what says which —
+                  this template used to ignore that flag and mask all three. -#}
+              {% if field.choices %}
+                <select name="value" aria-label="{{ field.label }}">
+                  {% for choice in field.choices %}
+                    <option value="{{ choice.value }}"
+                            {{ 'selected' if choice.value == env_values.get(field.key, '') }}>
+                      {{ choice.label }}
+                    </option>
+                  {% endfor %}
+                </select>
+              {% elif field.get('secret', True) %}
+                <input type="password" name="value" autocomplete="off"
+                       placeholder="{{ env_values.get(field.key) or 'paste the key' }}">
+              {% else %}
+                <input type="text" name="value" autocomplete="off"
+                       value="{{ env_values.get(field.key) or '' }}"
+                       placeholder="{{ field.hint or '' }}">
+              {% endif %}
               <button class="primary">Save</button>
             </div>
           </form>
