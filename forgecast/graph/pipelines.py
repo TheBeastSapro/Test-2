@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from ..credits import PER_UNIT_COSTS
 from ..providers.media import HERO_TIER, STANDARD_TIER, model_for_tier, video_reserve_credits
-from ..render.cutting import estimate_plates, max_scenes, plates_for
+from ..render.cutting import estimate_plates, max_scenes, plates_for, spec_for
 from ..skills.gates import MAX_SETUPS
 from ..style.sourcing import budgets as style_budgets
 from .spec import NodeSpec, PipelineSpec
@@ -34,7 +34,7 @@ STILL_CREDITS = PER_UNIT_COSTS["thumbnail"][1]
 
 def animation_reserve(
     target_seconds: float, *, standard: str = "", hero: str = "",
-    sourcing: dict | None = None,
+    sourcing: dict | None = None, render_spec: dict | None = None,
 ) -> tuple[int, int]:
     """Credits to hold for `sample` and `shots` on this channel's chosen models.
 
@@ -57,10 +57,19 @@ def animation_reserve(
     one plate — so which split is dearest is not something to reason about in a comment.
     Enumerate them and take the maximum. The ceiling comes from `max_scenes`, i.e. from the
     scripting cadence that tells the model how many beats to write.
+
+    `render_spec` is the channel's cutting rhythm and it is here because a measured
+    channel now buys plates per shot rather than per second — so how fast it cuts is part
+    of what it spends, and a reserve priced at the default 3.5s rhythm would be short by
+    the ratio on any channel that cuts faster than that. It travels beside `sourcing`
+    because both are read off the same learned style and neither means much without the
+    other: variety says how often the picture changes, the rhythm says how often there is
+    a cut for it to change on.
     """
     total = max(0.0, float(target_seconds or 0.0))
     hero_slug = model_for_tier(HERO_TIER, standard=standard, hero=hero)
     batch_slug = model_for_tier(STANDARD_TIER, standard=standard, hero=hero)
+    spec = spec_for({"render_spec": render_spec} if render_spec else None)
 
     worst_shots = 0
     worst_setups = 0
@@ -73,7 +82,7 @@ def animation_reserve(
         # An animated beat buys one plate and one clip; every other beat buys stills, and
         # a still is the cheap half of this. Maps buy one plate and no clip, so counting
         # every non-animated beat as stills is the dearer reading and the right one here.
-        plates = clips + (scenes - clips) * plates_for(seconds)
+        plates = clips + (scenes - clips) * plates_for(seconds, spec, sourcing=sourcing)
         worst_shots = max(worst_shots, plates * STILL_CREDITS
                           + heroes * video_reserve_credits(hero_slug, seconds)
                           + (clips - heroes) * video_reserve_credits(batch_slug, seconds))
@@ -91,6 +100,7 @@ def animation_reserve(
 def faceless_longform(
     *, target_seconds: int = 480, use_avatar: bool = False, publish: bool = True,
     standard_model: str = "", hero_model: str = "", sourcing: dict | None = None,
+    render_spec: dict | None = None,
 ) -> PipelineSpec:
     words = int(target_seconds * WORDS_PER_SECOND)
     # The shots node buys *plates*, not shots: one image carries several shots at
@@ -98,9 +108,11 @@ def faceless_longform(
     # 8-minute video against the eight the node then spent, wrong by an order of
     # magnitude in the safe direction. Deriving it from the same constants the node uses
     # means the reserve now tracks the spend instead of guessing at it.
-    shots = estimate_plates(target_seconds)
+    shots = estimate_plates(target_seconds, sourcing=sourcing,
+                            spec=spec_for({"render_spec": render_spec} if render_spec else None))
     sample_credits, shots_credits = animation_reserve(
-        target_seconds, standard=standard_model, hero=hero_model, sourcing=sourcing)
+        target_seconds, standard=standard_model, hero=hero_model, sourcing=sourcing,
+        render_spec=render_spec)
 
     nodes: list[NodeSpec] = [
         NodeSpec(
@@ -301,13 +313,16 @@ def faceless_longform(
 
 def faceless_shorts(*, target_seconds: int = 45, publish: bool = True,
                     standard_model: str = "", hero_model: str = "",
-                    sourcing: dict | None = None, **_) -> PipelineSpec:
+                    sourcing: dict | None = None, render_spec: dict | None = None,
+                    **_) -> PipelineSpec:
     words = int(target_seconds * WORDS_PER_SECOND)
     # A short is mostly floor rather than rate: its beats are too brief to want a second
     # plate, so the reserve is one per scene and the runtime term barely contributes.
-    shots = estimate_plates(target_seconds)
+    shots = estimate_plates(target_seconds, sourcing=sourcing,
+                            spec=spec_for({"render_spec": render_spec} if render_spec else None))
     sample_credits, shots_credits = animation_reserve(
-        target_seconds, standard=standard_model, hero=hero_model, sourcing=sourcing)
+        target_seconds, standard=standard_model, hero=hero_model, sourcing=sourcing,
+        render_spec=render_spec)
 
     nodes: list[NodeSpec] = [
         NodeSpec(

@@ -25,6 +25,13 @@ not edge-weighted. That distinction is the whole animation budget.
 one near-neutral colour with cut-out subjects on it, which a palette measurement sees
 plainly.
 
+**Whether consecutive shots are the same picture** — yes, and this is what decides how
+many pictures a scene has to buy. A crop of one plate keeps that plate's colours: the
+shares move as the framing tightens, but nothing enters the frame that was not already
+in it. A cut to a different picture brings colour that was not there before. Measuring
+the arriving colour rather than the moved colour is the whole distinction, and it is why
+`_new_colour_mass` is not a palette diff.
+
 **Whether a shot was licensed, generated, or lifted from somewhere** — *no*, and this
 module does not pretend otherwise. Nothing in a decoded frame says where it came from.
 What it reports is how long the moving shots run, which is the number that matters for
@@ -60,6 +67,41 @@ NEUTRAL_SPREAD = 28.0
 # stills, and inheriting 1.0 would put a whole video on the video endpoint.
 MIN_SHARE, MAX_SHARE = 0.0, 0.85
 
+# The largest RGB distance there is, sqrt(3 * 255^2). Every colour distance below is
+# divided by it, so the thresholds that follow are fractions of "as different as two
+# colours get" rather than raw channel counts.
+_MAX_RGB = 441.673
+
+# How far a palette colour may sit from the nearest colour in the shot before it counts
+# as new content rather than the same content requantised.
+#
+# `visual._palette` buckets at three bits per channel, so a colour that barely moves can
+# still land one bucket over — 32 levels — in every channel at once. That is a distance
+# of 55, or 0.125 normalised, and it is a quantisation artefact rather than a new object
+# in the frame. The threshold clears it and little else: the nearest *genuinely* new
+# colour a cut can bring is a bucket further out again, at 0.25.
+NEIGHBOUR = 0.14
+
+# How much arriving colour makes a cut a new picture rather than a new framing.
+#
+# Per-shot palettes hold three entries, so a subject that owns a tenth of the frame is
+# the third of them. A tenth is therefore roughly "one palette entry's worth of the frame
+# is something that was not on screen a moment ago" — which is the white-card explainer
+# case, where the background is shared across every shot in the video and the only thing
+# that ever changes is the cut-out on top of it. Weighing the change against the whole
+# frame would report that channel as never changing picture, because seven tenths of
+# every frame is the same white.
+NEW_CONTENT = 0.10
+
+# The most shots one plate may carry, whatever the measurement says.
+#
+# Not a cost bound — a viewer bound, and it is `render.cutting.SHOTS_PER_PLATE`'s reason
+# rather than a second opinion about it: `vision.apply.PUNCH_LEVELS` offers two clearly
+# separated framings, so four shots is A B A' B' and a fifth return to the same still is
+# where recognition beats the reframe. A reference that never changes picture cannot
+# argue the app past that, so a measured 0% variety lands here and stops.
+MAX_SHOTS_PER_PLATE = 4.0
+
 
 @dataclass
 class SourcingProfile:
@@ -82,6 +124,13 @@ class SourcingProfile:
     # already guarantees shots sum exactly to the narration; this says how many pieces
     # that scene should be cut into, which is the part the reference can answer.
     clip_seconds: float = 0.0
+    # Share of cuts that land on a different picture rather than a new framing of the
+    # one already on screen. 1.0 is a reference showing six photographs in four seconds;
+    # 0.0 is a documentary pushing around a single plate for a minute.
+    variety: float = 0.0
+    # How many shots one plate should carry for this channel, derived from `variety`.
+    # This is the field the run actually spends against — see `plate_carry`.
+    shots_per_plate: float = MAX_SHOTS_PER_PLATE
     # The white-card explainer look: subjects composited on a flat field.
     flat_background: bool = False
     background_colour: str = ""
@@ -131,6 +180,22 @@ def _moving(shot: dict) -> bool:
     if move == "zoom" and magnitude <= STILL_MAGNITUDE:
         return False
     return magnitude > STILL_MAGNITUDE
+
+
+def _seconds(shot: dict) -> float:
+    """How long this shot ran.
+
+    `duration` first, because that is the key `vision.shots.Shot.as_dict` actually
+    writes and this module read `seconds` for its whole first life — which meant
+    `clip_seconds` was measured as zero on every real reference and only ever came out
+    right in a test that had invented the shape. `seconds` stays as a fallback because
+    `vision.apply`'s planner shots use it and this is the obvious function to hand one.
+    """
+    for key in ("duration", "seconds"):
+        value = shot.get(key)
+        if isinstance(value, (int, float)) and value > 0:
+            return float(value)
+    return 0.0
 
 
 def _rgb(row: dict) -> tuple[float, float, float] | None:
@@ -195,6 +260,89 @@ def _flat(colour: dict) -> tuple[bool, str]:
     return False, ""
 
 
+def _palette_of(shot: dict) -> list[tuple[tuple[float, float, float], float]]:
+    """A shot's palette as `(rgb, share)` pairs, dropping rows that will not parse."""
+    rows = (shot.get("colour") or {}).get("palette") or []
+    out: list[tuple[tuple[float, float, float], float]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        rgb = _rgb(row)
+        if rgb is None:
+            continue
+        out.append((rgb, float(row.get("share") or 0.0)))
+    return out
+
+
+def _new_colour_mass(after: list, before: list) -> float:
+    """How much of `after` is colour that `before` did not have on screen.
+
+    The asymmetry is the point. A palette *diff* would report a punch-in as a large
+    change, because tightening on a subject can double that subject's share and halve
+    the background's — the numbers move a long way while the picture does not change at
+    all. What separates a reframe from a new picture is not whether the shares moved but
+    whether anything *arrived*: a crop can only ever show colours the wider frame already
+    contained, so every entry in `after` has a near neighbour in `before` and this
+    returns close to zero. Cut to a different photograph and its colours have nowhere to
+    match to.
+    """
+    if not after or not before:
+        return 0.0
+
+    mass = 0.0
+    for rgb, share in after:
+        nearest = min(
+            sum((a - b) ** 2 for a, b in zip(rgb, other)) ** 0.5 for other, _ in before
+        )
+        if nearest / _MAX_RGB > NEIGHBOUR:
+            mass += share
+    return mass
+
+
+def _changed(before: dict, after: dict) -> bool | None:
+    """Did this cut land on a different picture? `None` when there is nothing to read.
+
+    Measured both ways round and the larger reading kept, because a cut *away* from a
+    detailed picture onto a plain one brings little new colour while plainly being a new
+    picture. Asking only "what arrived" would score that boundary as a reframe.
+    """
+    first, second = _palette_of(before), _palette_of(after)
+    if not first or not second:
+        return None
+    return max(_new_colour_mass(second, first),
+               _new_colour_mass(first, second)) >= NEW_CONTENT
+
+
+def _variety(shots: list[dict]) -> tuple[float, int]:
+    """`(share of cuts landing on a new picture, cuts that could be read)`.
+
+    Boundaries, not shots — a run of *n* shots has *n-1* of them, and a reference with a
+    single shot has none, which is a thing to report rather than a zero to average in.
+    """
+    verdicts = [
+        verdict for verdict in (
+            _changed(before, after) for before, after in zip(shots, shots[1:])
+        ) if verdict is not None
+    ]
+    if not verdicts:
+        return 0.0, 0
+    return sum(verdicts) / len(verdicts), len(verdicts)
+
+
+def _shots_per_plate(variety: float) -> float:
+    """How many shots one plate carries, from the share of cuts that change picture.
+
+    The reciprocal, because that is what the share means once you read it as a rate: a
+    channel that changes picture on one cut in four holds each picture across four
+    shots, and one that changes on every cut holds each across one. There is no curve
+    fitted here and no constant to tune — the two ends are 1 and `MAX_SHOTS_PER_PLATE`
+    and the measurement decides where between them a channel sits.
+    """
+    if variety <= 0:
+        return MAX_SHOTS_PER_PLATE
+    return round(min(MAX_SHOTS_PER_PLATE, max(1.0, 1.0 / variety)), 2)
+
+
 def measure(per_shot: list[dict], *, colour: dict | None = None) -> SourcingProfile:
     """Read a learned reference's per-shot analysis into a sourcing profile.
 
@@ -209,11 +357,11 @@ def measure(per_shot: list[dict], *, colour: dict | None = None) -> SourcingProf
     moving = [shot for shot in shots if _moving(shot)]
     share = len(moving) / len(shots)
 
-    lengths = [float(shot.get("seconds") or 0.0) for shot in moving]
-    lengths = [value for value in lengths if value > 0]
+    lengths = [value for value in (_seconds(shot) for shot in moving) if value > 0]
     clip_seconds = round(statistics.median(lengths), 2) if lengths else 0.0
 
     flat, background = _flat(colour or {})
+    variety, boundaries = _variety(shots)
 
     notes: list[str] = []
     confidence = "high"
@@ -222,6 +370,12 @@ def measure(per_shot: list[dict], *, colour: dict | None = None) -> SourcingProf
         notes.append(f"only {len(shots)} shots — too few to generalise from")
     elif len(shots) < 25:
         confidence = "medium"
+
+    if not boundaries:
+        # Every shot carried a palette or none did. Either way there is nothing to say
+        # about how often the picture changes, and `MAX_SHOTS_PER_PLATE` is where an
+        # unmeasured channel already sits, so this costs nothing and is worth saying.
+        notes.append("no cut boundaries carried colour — plate reuse left at the default")
 
     # Bounded, and the clamp is reported. A share of 1.0 is far more likely to be a
     # decode that classified badly than a channel with no stills in it, and inheriting
@@ -239,12 +393,36 @@ def measure(per_shot: list[dict], *, colour: dict | None = None) -> SourcingProf
         # upgraded, which is the shot every viewer sees.
         hero_share=round(max(0.05, bounded * 0.25), 3),
         clip_seconds=clip_seconds,
+        variety=round(variety, 3),
+        shots_per_plate=_shots_per_plate(variety),
         flat_background=flat,
         background_colour=background,
         confidence=confidence,
         shots_measured=len(shots),
         notes=notes,
     )
+
+
+def plate_carry(profile: SourcingProfile | dict | None) -> float | None:
+    """How many shots one plate may carry, or `None` to leave the cost model alone.
+
+    `None` rather than `MAX_SHOTS_PER_PLATE` for an unmeasured channel, and the
+    difference is not cosmetic. `render.cutting.plates_for` buys plates per *second* when
+    there is nothing measured, deliberately: with no reference to read, letting the
+    cutting rate set the plate count means a channel that cuts fast pays twice for
+    pictures nobody asked it to change. A measured channel is the case where the cutting
+    rate does belong in the bill — because the measurement is what says the pictures
+    really are changing that fast. Returning a number here would collapse the two.
+
+    Unusable profiles are refused for the reason `budgets` refuses them: a variety read
+    off four shots is an anecdote, and an anecdote that says "every cut is a new picture"
+    buys a plate per shot for a whole video.
+    """
+    if isinstance(profile, dict):
+        profile = SourcingProfile.from_dict(profile)
+    if profile is None or not profile.usable:
+        return None
+    return max(1.0, min(MAX_SHOTS_PER_PLATE, float(profile.shots_per_plate or 0.0)))
 
 
 def budgets(profile: SourcingProfile | dict | None, scenes: int) -> tuple[int, int]:

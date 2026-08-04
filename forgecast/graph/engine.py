@@ -208,6 +208,11 @@ def create_run(
         # move — and therefore most of what the run costs. Absent on a channel with no
         # learned style, which `style.sourcing.budgets` reads as "use the defaults".
         sourcing=(channel.style_profile or {}).get("sourcing"),
+        # The channel's cutting rhythm, because a measured channel buys plates per shot
+        # rather than per second — so how fast it cuts is part of what it holds for.
+        # Read from the same profile as `sourcing` and for the same reason: the reserve
+        # and the shots node have to price the run off one measurement.
+        render_spec=(channel.style_profile or {}).get("render_spec"),
     )
 
     run = Run(

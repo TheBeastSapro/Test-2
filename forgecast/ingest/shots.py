@@ -51,7 +51,11 @@ def available() -> tuple[bool, str]:
     try:
         import scenedetect  # noqa: F401
     except ImportError:
-        return False, "shot detection needs the video editing tools"
+        # Names the fix rather than the missing import, and the fix is a button rather
+        # than a command: this app installs its own tooling, so an operator told to run
+        # `pip install scenedetect` has been handed the maintainer's job. Setup lists
+        # this exact row.
+        return False, "shot detection needs Video editing tools — install them in Setup"
     return True, ""
 
 

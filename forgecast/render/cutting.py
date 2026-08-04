@@ -58,13 +58,19 @@ DEFAULT_JITTER = 0.25
 # still also reads as a flicker rather than an edit.
 MIN_TARGET_SHOT_SECONDS = 1.0
 
-# How many shots one plate should carry before the viewer stops seeing cuts and starts
+# The most shots one plate should carry before the viewer stops seeing cuts and starts
 # seeing the same picture. `apply.PUNCH_LEVELS` offers two clearly separated framings, so
 # four shots is A B A' B' — each framing twice. A fifth return to the same still is where
 # recognition beats the reframe.
+#
+# A ceiling rather than a rate, now that `style.sourcing` measures how often a reference
+# actually changes picture. Four was read as "reframe everything four times", which is
+# right for the documentary it was chosen against and wrong for a reference showing six
+# different pictures in four seconds — that channel wants one plate per shot, and this
+# number was the reason it could not have one.
 SHOTS_PER_PLATE = 4
 
-# One plate per this much *scene*, which is the whole cost model in one number.
+# One plate per this much *scene*, for a channel with nothing measured.
 #
 # Note what it is not a function of: the style's cutting rate. A channel that cuts twice
 # as fast gets twice as many shots out of each plate, not twice the bill — the cutting
@@ -72,6 +78,12 @@ SHOTS_PER_PLATE = 4
 # drive the second is how an analysed reference with a 1.0s median would quietly turn a
 # $14 video into a $100 one. At 14s a 480-second video buys ~35 plates against the
 # ledger's existing 80-unit reserve, so the fix fits inside money already held.
+#
+# That reasoning survives a measurement, it does not outrank one. A fast cutting rate on
+# its own is no evidence the pictures change; the share of cuts that bring new content
+# is, and where `style.sourcing` has read one `plates_for` spends per shot instead. The
+# guard against the $100 video is that the reserve reads the same profile — see
+# `estimate_plates` — so the run is priced up front rather than discovering it midway.
 SECONDS_PER_PLATE = DEFAULT_SHOT_SECONDS * SHOTS_PER_PLATE
 
 # The most scenes a run of this length produces, which is what the reserve has to assume:
@@ -229,23 +241,50 @@ def shot_estimate(seconds: float, spec: RenderSpec) -> int:
     return max(1, round(max(0.0, seconds) / target))
 
 
-def plates_for(seconds: float, spec: RenderSpec | None = None, *, reusable: bool = True) -> int:
+def plates_for(
+    seconds: float,
+    spec: RenderSpec | None = None,
+    *,
+    reusable: bool = True,
+    sourcing: dict | None = None,
+) -> int:
     """How many generated plates a scene buys.
-
-    `spec` is accepted and ignored: see `SECONDS_PER_PLATE` for why the budget must not
-    move with the cutting rate. It stays in the signature because every caller already
-    has one and a reader who assumed otherwise should find the answer at the call site.
 
     `reusable` is false for a visual whose own motion is the point — one clip, sliced.
     Buying a second animated clip for one scene is the most expensive thing this pipeline
     can do, and the punch-in already gives that scene its cuts.
+
+    Two budgets, and which one runs depends on whether anything was measured.
+
+    **Unmeasured** — plates per second of scene, from `SECONDS_PER_PLATE`, and `spec` is
+    ignored. See that constant: with no reference to read, letting the cutting rate drive
+    the plate count turns a fast-cutting style into a bill nobody chose.
+
+    **Measured** — plates per *shot*, at the rate `style.sourcing` read off the reference.
+    Here the cutting rate does belong in the number, because the same measurement that
+    made it fast is the one saying the pictures genuinely change that often. Four shots a
+    plate was right for the documentary it was chosen against and wrong for a reference
+    showing six different pictures in four seconds: that channel needs six plates, and no
+    amount of reframing one image will look like it.
     """
     if not reusable:
         return 1
-    return max(1, math.ceil(max(0.0, seconds) / SECONDS_PER_PLATE))
+
+    from ..style.sourcing import plate_carry
+
+    carry = plate_carry(sourcing)
+    if carry is None:
+        return max(1, math.ceil(max(0.0, seconds) / SECONDS_PER_PLATE))
+    return max(1, math.ceil(shot_estimate(seconds, spec or default_spec()) / carry))
 
 
-def estimate_plates(target_seconds: float, *, scenes: int = 0) -> int:
+def estimate_plates(
+    target_seconds: float,
+    *,
+    scenes: int = 0,
+    sourcing: dict | None = None,
+    spec: RenderSpec | None = None,
+) -> int:
     """The ledger's reserve for the shots node, in plates.
 
     The reserve has to cover whatever shape of script arrives, and the shape matters
@@ -259,12 +298,19 @@ def estimate_plates(target_seconds: float, *, scenes: int = 0) -> int:
 
     `scenes` is the ceiling to enumerate up to, and defaults to `max_scenes` for this
     runtime. It was a flat 12 until the beat count moved into the scripting cadence.
+
+    `sourcing` and `spec` are the channel's measured profile and cutting rhythm, and they
+    have to be here for the same reason the whole reserve is derived rather than typed: a
+    channel measured as changing picture on every cut buys several times the plates, and
+    a reserve that priced the default would be short by exactly that factor on exactly
+    the channels that cost the most.
     """
     total = max(0.0, float(target_seconds))
     ceiling = max(1, int(scenes) if scenes else max_scenes(total))
     return max(
         1,
-        max(count * plates_for(total / count) for count in range(1, ceiling + 1)),
+        max(count * plates_for(total / count, spec, sourcing=sourcing)
+            for count in range(1, ceiling + 1)),
     )
 
 

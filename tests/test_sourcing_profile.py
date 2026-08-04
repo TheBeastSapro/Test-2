@@ -19,17 +19,30 @@ from __future__ import annotations
 
 from forgecast.credits import estimate_run
 from forgecast.graph.pipelines import animation_reserve, get_pipeline
-from forgecast.render.cutting import hero_budget, video_budget
+from forgecast.render.cutting import (
+    SECONDS_PER_PLATE,
+    default_spec,
+    estimate_plates,
+    hero_budget,
+    plates_for,
+    video_budget,
+)
 from forgecast.style import editing
-from forgecast.style.sourcing import SourcingProfile, budgets, measure
+from forgecast.style.sourcing import SourcingProfile, budgets, measure, plate_carry
 
 # One shot of each kind, in the shape `vision.profile` emits.
-STILL = {"seconds": 5.0,
+#
+# `duration`, not `seconds`. These fixtures said `seconds` for their whole first life and
+# every assertion below passed, because the key is only ever read through `.get` — while
+# `vision.shots.Shot.as_dict` writes `duration` and always has. The measurement was
+# therefore zero on every real reference and correct only here, which is the exact defect
+# this suite exists to catch, committed inside the suite meant to catch it.
+STILL = {"duration": 5.0,
          "motion": {"magnitude": 0.02, "classification": "subtle", "camera_move": "zoom"}}
-FOOTAGE = {"seconds": 3.0,
+FOOTAGE = {"duration": 3.0,
            "motion": {"magnitude": 0.11, "classification": "moderate",
                       "camera_move": "pan_or_handheld"}}
-FROZEN = {"seconds": 4.0,
+FROZEN = {"duration": 4.0,
           "motion": {"magnitude": 0.001, "classification": "static", "camera_move": "static"}}
 
 WHITE_CARD = {"palette": [{"hex": "#f0f0f0", "share": 0.42}, {"hex": "#d0d0d0", "share": 0.25},
@@ -205,3 +218,129 @@ def test_a_channel_with_no_learned_style_runs_exactly_as_before():
     assert budgets(None, 12) == (video_budget(12), hero_budget(12))
     assert budgets({}, 12) == (video_budget(12), hero_budget(12))
     assert animation_reserve(480) == animation_reserve(480, sourcing=None)
+
+
+# ------------------------------------------------------------------------- shot variety
+
+
+def _shot(palette: list[tuple[str, float]], motion: dict | None = None) -> dict:
+    """A per-shot row in the shape `vision.engine` builds one."""
+    return {
+        "duration": 3.0,
+        "motion": dict(motion or STILL["motion"]),
+        "colour": {"palette": [{"hex": hexed, "share": share} for hexed, share in palette]},
+    }
+
+
+# One plate, reframed. The shares move a long way as the crop tightens on the subject and
+# the colours do not move at all, because a crop can only ever show what the wider frame
+# already contained. This is the sequence `SHOTS_PER_PLATE = 4` was chosen against.
+REFRAMED = [
+    _shot([("#3070b0", 0.50), ("#90b0d0", 0.30), ("#103050", 0.20)]),
+    _shot([("#3070b0", 0.22), ("#90b0d0", 0.58), ("#103050", 0.20)]),
+    _shot([("#3070b0", 0.36), ("#90b0d0", 0.24), ("#103050", 0.40)]),
+    _shot([("#3070b0", 0.61), ("#90b0d0", 0.19), ("#103050", 0.20)]),
+] * 8
+
+# Six different pictures in four seconds. Every cut brings colour that was not on screen
+# a moment earlier, which is the only thing that separates this from the sequence above.
+PICTURES = [
+    _shot([("#3070b0", 0.45), ("#90b0d0", 0.33), ("#103050", 0.22)]),
+    _shot([("#d05010", 0.45), ("#f09050", 0.33), ("#703010", 0.22)]),
+    _shot([("#10b070", 0.45), ("#70d0b0", 0.33), ("#105030", 0.22)]),
+] * 11
+
+# The white-background explainer: one background across the whole video, and the only
+# thing that ever changes is the cut-out standing on it.
+CUTOUTS = [
+    _shot([("#f0f0f0", 0.72), ("#d0d0d0", 0.16), ("#3070b0", 0.12)]),
+    _shot([("#f0f0f0", 0.72), ("#d0d0d0", 0.16), ("#d05010", 0.12)]),
+    _shot([("#f0f0f0", 0.72), ("#d0d0d0", 0.16), ("#10b070", 0.12)]),
+] * 11
+
+
+def test_reframing_one_plate_is_not_a_new_picture():
+    """The whole distinction. A punch-in doubles the subject's share and halves the
+    background's — the numbers move further than they do across some real cuts — so a
+    palette diff would call this six pictures and buy six of them."""
+    profile = measure(REFRAMED, colour=PHOTOGRAPHIC)
+    assert profile.variety == 0.0
+    assert profile.shots_per_plate == 4.0
+
+
+def test_a_reference_that_changes_picture_every_cut_is_measured_as_doing_so():
+    """The case the constant got wrong: a reference showing six different pictures in
+    four seconds needs six pictures, and no amount of reframing one will look like it."""
+    profile = measure(PICTURES, colour=PHOTOGRAPHIC)
+    assert profile.variety == 1.0
+    assert profile.shots_per_plate == 1.0
+
+
+def test_a_shared_background_does_not_hide_the_subject_changing():
+    """The white-card explainer, and the reason the threshold is a tenth of the frame
+    rather than a share of it. Seven tenths of every shot is the same white; weigh the
+    change against the whole frame and this channel reads as never cutting away."""
+    profile = measure(CUTOUTS, colour=WHITE_CARD)
+    assert profile.variety == 1.0
+    assert profile.shots_per_plate == 1.0
+
+
+def test_the_variety_measurement_changes_what_a_scene_buys():
+    """The assertion that matters, in this file's own words: measured, stored, shown, and
+    read by nothing is how three features have already been lost here."""
+    spec = default_spec()
+    varied = measure(PICTURES, colour=PHOTOGRAPHIC).as_dict()
+    reframed = measure(REFRAMED, colour=PHOTOGRAPHIC).as_dict()
+
+    scene = SECONDS_PER_PLATE  # exactly one plate's worth under the old constant
+    assert plates_for(scene, spec, sourcing=varied) == 4
+    assert plates_for(scene, spec, sourcing=reframed) == 1
+    assert plates_for(scene, spec, sourcing=None) == 1
+
+
+def test_the_reserve_moves_with_the_measurement_the_node_spends_against():
+    """Held and spent by one rule. A reserve priced at the default while the shots node
+    buys a plate a shot is short by exactly the factor the measurement found."""
+    varied = measure(PICTURES, colour=PHOTOGRAPHIC).as_dict()
+    assert estimate_plates(480, sourcing=varied) > estimate_plates(480)
+
+
+def test_a_thin_reference_does_not_get_to_buy_a_plate_a_shot():
+    """Same gate `budgets` uses, and the same reason. A variety read off four shots is an
+    anecdote, and this anecdote costs a plate on every shot of a whole video."""
+    thin = measure(PICTURES[:4], colour=PHOTOGRAPHIC)
+    assert not thin.usable
+    assert plate_carry(thin) is None
+    assert plates_for(SECONDS_PER_PLATE, default_spec(), sourcing=thin.as_dict()) == 1
+
+
+def test_a_channel_with_no_reference_is_left_where_it_was():
+    """Most channels have no learned style, and none of them should see a run's picture
+    count move because this was added."""
+    assert plate_carry(None) is None
+    assert plate_carry({}) is None
+    for seconds in (3.5, 14.0, 60.0, 240.0):
+        assert plates_for(seconds, default_spec()) == plates_for(seconds)
+    assert estimate_plates(480) == estimate_plates(480, sourcing=None)
+
+
+def test_an_unmeasured_channel_still_does_not_pay_for_cutting_fast():
+    """The rule `SECONDS_PER_PLATE` was written for, unchanged where nothing was
+    measured: a fast cutting rate on its own is no evidence the pictures change."""
+    from forgecast.vision.apply import spec_from_dict
+
+    fast = spec_from_dict({"render_spec": {"target_shot_seconds": 1.2}})
+    slow = spec_from_dict({"render_spec": {"target_shot_seconds": 6.0}})
+    assert plates_for(60.0, fast) == plates_for(60.0, slow)
+
+
+def test_the_measured_clip_length_reads_the_key_the_analysis_writes():
+    """`vision.shots.Shot.as_dict` writes `duration`. This read `seconds` for its whole
+    first life, so the number was right in a fixture and zero on every real reference."""
+    from forgecast.vision.shots import Shot
+
+    assert "duration" in Shot(index=0, start=0.0, end=3.0).as_dict()
+    assert measure([FOOTAGE] * 10, colour=PHOTOGRAPHIC).clip_seconds == 3.0
+    # The planner's own shots say `seconds`, and this is the obvious function to hand one.
+    seconds_shaped = [{"seconds": 3.0, "motion": FOOTAGE["motion"]}] * 10
+    assert measure(seconds_shaped, colour=PHOTOGRAPHIC).clip_seconds == 3.0

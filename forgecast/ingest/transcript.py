@@ -86,7 +86,8 @@ def available() -> tuple[bool, str]:
     try:
         import faster_whisper  # noqa: F401
     except ImportError:
-        return False, "transcription needs the video editing tools"
+        # See `ingest.shots.available` for why this names a button and not a pip command.
+        return False, "transcription needs Video editing tools — install them in Setup"
     return True, ""
 
 

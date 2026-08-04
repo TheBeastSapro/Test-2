@@ -417,7 +417,13 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
         planned_shots += shot_count
         # An animated clip and a map are bought once and sliced; only a still is cheap
         # enough that a second one is worth buying to break up a long beat.
-        plates = plates_for(seconds, spec, reusable=kind == "image")
+        #
+        # How many stills a beat is worth is the channel's own measurement: a reference
+        # that reframes one picture across four shots buys one plate here, and one that
+        # changes picture on every cut buys a plate a shot. Same profile the reserve was
+        # computed from, so the hold and the spend cannot disagree.
+        plates = plates_for(seconds, spec, reusable=kind == "image",
+                            sourcing=(ctx.channel.style_profile or {}).get("sourcing"))
 
         # The opening beat is hero whether or not the planner marked it. Position settles
         # that one on its own: it is the shot retention is won or lost on, and it is the
