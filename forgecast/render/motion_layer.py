@@ -92,6 +92,14 @@ def plan(scenes: list[RenderScene], *, preset: MotionPreset,
     narration. So: a title on the opening scene, a lower third on the scene after it
     when there is something to name, and kinetic type only where the preset is fast
     enough that staged lines match the cutting rhythm.
+
+    On the names. "Lower third" and "title card" are broadcast vocabulary — the caption
+    naming a person or place in the bottom third of the frame, and the full-frame card
+    between sections. They date from the 1950s, every newsroom and every editing suite
+    uses them, and After Effects, Premiere and Resolve all ship a preset by each name.
+    They were queried once as possibly borrowed from another product; they are not, and
+    they are recorded here because renaming them would leave a standard element with a
+    name nobody in video would recognise.
     """
     plans: list[MotionPlan] = []
     for position, scene in enumerate(scenes):
