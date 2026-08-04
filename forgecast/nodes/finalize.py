@@ -174,6 +174,10 @@ async def render_node(ctx: NodeContext) -> NodeResult:
     if captions.exists():
         ctx.emit_artifact("text", captions, "application/x-subrip", role="captions")
 
+    credits = _write_attribution(ctx, workdir)
+    if credits is not None:
+        ctx.emit_artifact("text", credits, "text/markdown", role="attribution")
+
     ctx.log(f"rendered {duration:.1f}s ({out_path.stat().st_size / 1_048_576:.1f} MB)")
     return NodeResult(
         output={
@@ -206,6 +210,61 @@ async def render_node(ctx: NodeContext) -> NodeResult:
         credits=0,
         provider="local-ffmpeg",
     )
+
+
+def _write_attribution(ctx: NodeContext, workdir) -> Path | None:
+    """The credit file the licences require, beside the video they belong to.
+
+    This is written because it was not. `stock.attribution_markdown` has been able to
+    produce this block since stock imagery was added and nothing has ever called it — so
+    every `by`-licensed photograph this app has ever used shipped without the credit its
+    licence obliges, which that module's own docstring calls out as not a technicality.
+    The code was there, the rule was written down, and the two were never connected.
+
+    Emitted as an artifact rather than left in the workdir, because a credit file that
+    does not travel with the video is the same failure one step later: the operator
+    uploads the render and the attribution stays on a machine.
+
+    Returns `None` when there is genuinely nothing to credit — a run made entirely of
+    generated plates owes no one a line, and writing an empty file would train an
+    operator to ignore the one that matters.
+    """
+    from ..providers.footage import FootageClip, attribution_markdown
+
+    clips: list[FootageClip] = []
+    for kind in ("image", "video"):
+        for ref in ctx.artifacts("shots", kind):
+            meta = ref.meta or {}
+            licence = str(meta.get("licence") or "")
+            attribution = str(meta.get("attribution") or "")
+            if not licence and not attribution:
+                continue  # a generated plate: nothing was licensed, nothing is owed
+            clips.append(FootageClip(
+                url=str(getattr(ref, "path", "") or ""),
+                title=str(meta.get("title") or meta.get("prompt") or "")[:120],
+                creator=str(meta.get("creator") or ""),
+                licence=licence,
+                source=str(meta.get("source") or "stock"),
+                landing_url=str(meta.get("landing_url") or ""),
+                attribution=attribution,
+                operator_directed=bool(meta.get("operator_directed")),
+                flag_reason=str(meta.get("flag_reason") or ""),
+            ))
+
+    body = attribution_markdown(clips)
+    if not body.strip():
+        return None
+
+    path = Path(workdir) / "attribution.md"
+    path.write_text(
+        f"# Credits for this video\n\n{body}\n", encoding="utf-8",
+    )
+    directed = sum(1 for clip in clips if clip.operator_directed)
+    ctx.log(
+        f"wrote credits for {len(clips)} sourced asset(s)"
+        + (f", {directed} operator-directed" if directed else "")
+    )
+    return path
 
 
 def _plates_by_scene(produced: list) -> dict[int, list[dict]]:
