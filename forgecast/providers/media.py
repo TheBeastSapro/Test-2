@@ -764,6 +764,7 @@ def model_for_tier(tier: str, *, standard: str = "", hero: str = "") -> str:
         return hero or standard or DEFAULT_VIDEO_MODEL
     return standard or DEFAULT_VIDEO_MODEL
 
+
 # What an unrecognised slug is priced at: the top of the observed range, not the middle
 # and certainly not the cheapest. An estimate that is too high is released back to the
 # operator when the node settles; one that is too low is a run that stops mid-batch with

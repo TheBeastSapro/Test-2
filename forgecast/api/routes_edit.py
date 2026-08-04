@@ -36,6 +36,14 @@ worker thread and streams its progress as NDJSON. That is the same shape `routes
 uses for learning a style and `routes_setup` uses for installing a toolchain, for the same
 reason, and it means a page reloaded mid-cut can rejoin rather than start a second one.
 
+## Where the cut ends up
+
+`storage/cuts/<plan_id>.mp4` — inside the browsable tree, so the Files page answers "did
+the approval produce anything" by opening a directory. Every answer here that names it
+also carries a signed media URL, because a path on the server's disk is not a video
+anybody can watch: `api.media` is what streams it, with range requests, an expiry and an
+owner in the link.
+
 ## Where the file comes from
 
 `POST /api/agent/attach` — the chat composer's uploader, already chunked, already size
@@ -215,6 +223,9 @@ def _cut_state(user_id: int) -> dict:
     operator's own file paths and a status endpoint is not the place to hand those over.
     """
     mine = int(CUT.get("user_id") or 0) == int(user_id)
+    result = dict(CUT["result"]) if mine else {}
+    if result.get("path") and not result.get("error"):
+        result["media_url"] = sign_url(result["path"], user_id)
     return {
         "running": bool(CUT["running"]),
         "mine": mine,
@@ -224,7 +235,7 @@ def _cut_state(user_id: int) -> dict:
         "seconds_elapsed": round(time.monotonic() - float(CUT["started"] or 0.0), 1)
                            if CUT["running"] else 0.0,
         "log": list(CUT["log"][-40:]) if mine else [],
-        "result": dict(CUT["result"]) if mine else {},
+        "result": result,
     }
 
 
@@ -358,13 +369,12 @@ async def cut_plan(plan_id: str, user: User = Depends(current_user)):
                               }) + "\n"
             await asyncio.sleep(0.5)
 
-        result = dict(CUT["result"])
-        # Minted here rather than in the studio: signing needs the account the link is
-        # for, and the studio is the layer that has no idea it is being reached over HTTP.
-        if result.get("path") and not result.get("error"):
-            result["media_url"] = sign_url(result["path"], user.id)
+        # Through `_cut_state` so the stream and the status endpoint hand back the same
+        # thing. The signed link is minted at this layer rather than in the studio:
+        # signing needs the account it is for, and the studio has no idea it is being
+        # reached over HTTP.
         yield json.dumps({"type": "done", "ok": bool(CUT["ok"]),
-                          "result": result}) + "\n"
+                          "result": _cut_state(user.id)["result"]}) + "\n"
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")
 

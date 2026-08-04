@@ -29,7 +29,7 @@ from forgecast.api.main import create_app
 from forgecast.edit import EditPlan, tighten
 from forgecast.edit.plan import Decision
 from forgecast.render import cut
-from forgecast.render.ffmpeg import RenderError
+from forgecast.render.ffmpeg import RenderError, vcodec
 
 # testsrc2 sits at a steady luma of ~121 and `color=black` at 16, so anything between
 # them separates the two without a tolerance argument. Loud is a 440 Hz tone at full
@@ -277,12 +277,13 @@ def test_the_cut_is_re_encoded_rather_than_stream_copied(storage_dir, monkeypatc
     cut.execute(plan, storage_dir / "cuts" / "encoded-cut.mp4")
 
     args = seen[0]
-    assert "libx264" in args, "the cut was not re-encoded"
     assert "copy" not in args, "a stream copy lands on the wrong frame"
-    # And through the pipeline's own encoder settings, because `concat_clips` stream-
-    # copies: a cut at a rate nothing else here uses cannot be joined to anything later
-    # without its timestamps drifting against its audio.
-    assert args[args.index("-r") + 1] == "30"
+    # And through the pipeline's own encoder settings rather than a second opinion about
+    # them, because `concat_clips` stream-copies: pieces from two encoders, or at two
+    # frame rates, join into a file whose timestamps drift against its audio.
+    settings = vcodec(30)
+    windows = [args[index:index + len(settings)] for index in range(len(args))]
+    assert settings in windows, f"the cut did not encode with {settings}: {args}"
 
 
 # ------------------------------------------------------------------- the awkward spans

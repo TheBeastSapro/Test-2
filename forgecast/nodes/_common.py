@@ -83,6 +83,32 @@ def target_seconds(ctx: NodeContext) -> int:
     )
 
 
+def tier_models(ctx: NodeContext) -> tuple[str, str]:
+    """The two image-to-video slugs this run's shot tiers render on: (standard, hero).
+
+    Here rather than in either node because three of them resolve it — the plan that
+    assigns a model per shot, the batch that submits to it, and the gate that samples
+    each endpoint in between — and if they disagreed the gate would approve one model
+    while the batch spent on another. That is the exact failure the Sample Gate exists
+    to prevent, so it must not be reachable by two node files drifting apart.
+
+    The standard slug is read off the registry first because that is where a per-run
+    override has already landed: the engine folds `provider_models` and the channel's
+    standing choice together before a node sees either, so re-reading the channel alone
+    would quietly ignore "render this one on the cheap model". The channel is still read
+    behind it, for a context built by hand — the CLI, a test — that never went through
+    that fold.
+
+    The hero slug is read off the channel, which is the asymmetry it looks like. There is
+    no per-run hero override today and this is not the place to invent one: a second
+    precedence chain that only one caller uses is how two settings come to disagree about
+    which run they applied to.
+    """
+    standard = str(ctx.registry.models.get("video", "")
+                   or getattr(ctx.channel, "video_model", "") or "")
+    return standard, str(getattr(ctx.channel, "video_model_hero", "") or "")
+
+
 #: Heights this pipeline will render at, shortest first.
 #:
 #: 720 is kept because it exists in stored runs and because it halves the encode time on

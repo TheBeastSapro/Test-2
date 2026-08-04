@@ -26,7 +26,7 @@ from ..providers.media import (
 )
 from ..render import ffmpeg as ff
 from ..render.cutting import plates_for, shot_estimate, spec_for
-from ._common import ask_json, dimensions, request_payload
+from ._common import ask_json, dimensions, request_payload, tier_models
 
 THUMBNAIL_INSTRUCTIONS = """Design thumbnail concepts for this video.
 
@@ -350,23 +350,6 @@ def _concat_audio(clips: list[Path], out_path: Path) -> Path:
 HERO_SHARE = 0.25
 
 
-def tier_models(ctx: NodeContext) -> tuple[str, str]:
-    """The two slugs this run's tiers render on, as (standard, hero).
-
-    The standard one is read off the registry rather than off the channel because that is
-    where a per-run override has already landed: the engine folds `provider_models` and
-    the channel's standing choice together before a node sees either, and re-reading the
-    channel here would quietly ignore "render this one on the cheap model".
-
-    The hero one is read off the channel, which is the asymmetry it looks like. There is
-    no per-run hero override today and this is not the file to invent one — a second
-    precedence chain that only one caller uses is how the two settings come to disagree
-    about which run they applied to.
-    """
-    standard = str(ctx.registry.models.get("video", "") or ctx.channel.video_model or "")
-    return standard, str(ctx.channel.video_model_hero or "")
-
-
 @node_handler("broll_plan")
 async def broll_plan_node(ctx: NodeContext) -> NodeResult:
     script = ctx.output("script")
@@ -567,6 +550,15 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
     width, height = dimensions(ctx)
     image_provider = ctx.registry.image()
 
+    # What a shot with no model recorded is priced and reported as. A plan made before
+    # shots carried one — a run paused at the sample gate across this upgrade — reaches
+    # here with an empty slug, which the registry resolves to exactly this endpoint. So
+    # the render is right either way and only the report is at risk: priced as an empty
+    # slug it lands on the unrecognised-model ceiling of $0.40 a second, and the log says
+    # five times what the batch actually cost.
+    standard_model, hero_model = tier_models(ctx)
+    batch_model = model_for_tier(STANDARD_TIER, standard=standard_model, hero=hero_model)
+
     # One provider per model the plan routed to, rather than one for the run. The plan
     # sends its hero beats to one endpoint and the rest to another, and a single provider
     # would render every shot on whichever slug happened to resolve — at that model's
@@ -693,9 +685,9 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                 provider = clip.provider or provider
                 final_path = clip.path
                 kind = "video"
-                animation_usd += video_usd(model, seconds)
-                clips_by_model[model or "(run default)"] = (
-                    clips_by_model.get(model or "(run default)", 0) + 1)
+                billed_on = model or batch_model
+                animation_usd += video_usd(billed_on, seconds)
+                clips_by_model[billed_on] = clips_by_model.get(billed_on, 0) + 1
                 ctx.emit_artifact(
                     "video", clip.path, clip.mime, scene_index=index,
                     plate_index=plate_index, role="shot", prompt=prompt[:300],

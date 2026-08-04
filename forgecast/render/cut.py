@@ -77,7 +77,7 @@ log = logging.getLogger("forgecast.render.cut")
 
 # Beyond this the filtergraph goes in a file rather than in an argument. Linux caps a
 # single argv entry at 128 KB (MAX_ARG_STRLEN) and a graph runs about 160 bytes per keep,
-# so a plan with roughly 800 cuts in it would fail with a errno nobody can read back to
+# so a plan with roughly 800 cuts in it would fail with an errno nobody can read back to
 # "your edit had too many cuts in it". `-filter_complex_script` has no such ceiling, and
 # the file is also the thing to look at when a graph misbehaves.
 GRAPH_IN_FILE_OVER = 2000

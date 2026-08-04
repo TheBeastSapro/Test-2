@@ -64,9 +64,9 @@ import json
 
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..providers import ProviderError, VideoProvider
-from ..providers.media import video_model
+from ..providers.media import STANDARD_TIER, model_for_tier, video_model
 from ..skills import gates, prompt_check
-from ._common import dimensions
+from ._common import dimensions, tier_models
 
 # What a shot with no stated camera is assumed to be doing. Matches the planner's own
 # default in `prompts/moves.py`, so a shot that never named a move groups with the others
@@ -122,17 +122,27 @@ async def sample_node(ctx: NodeContext) -> NodeResult:
         ctx.log("no generated-video shots in this plan, so there is nothing to sample")
         return NodeResult(output={"samples": [], "setups": 0, "skipped": "no video shots"})
 
+    # A plan made before shots carried a model has none to read, and that is a live case
+    # rather than a hypothetical: a run paused at this very gate across the upgrade comes
+    # back to a stored shot list with no `model` key. Filled in with the run's standing
+    # choice, which is the endpoint it would have rendered on anyway — left empty,
+    # `video_model("")` prices it at the unrecognised-model ceiling of $0.40 a second, and
+    # an approval recorded against no endpoint names nothing an audit could check.
+    standard_model, hero_model = tier_models(ctx)
+    batch_model = model_for_tier(STANDARD_TIER, standard=standard_model, hero=hero_model)
+    shots = [shot if shot.get("model") else {**shot, "model": batch_model}
+             for shot in shots]
+
     # One provider per model the plan routed to. Two tiers is two endpoints, and the
     # sample for each has to come off the endpoint that tier will actually render on —
     # a hero sample generated on the batch model approves a look nothing will produce.
     providers: dict[str, VideoProvider] = {}
-    for slug in sorted({str(shot.get("model") or "") for shot in shots}):
+    for slug in sorted({shot["model"] for shot in shots}):
         try:
             providers[slug] = ctx.registry.video(slug)
         except ProviderError as exc:
-            ctx.log(f"no video provider for {slug or 'the run default model'}, so "
-                    f"nothing will be generated at full cost on it either: {exc}",
-                    level="warning")
+            ctx.log(f"no video provider for {slug}, so nothing will be generated at "
+                    f"full cost on it either: {exc}", level="warning")
     if not providers:
         return NodeResult(output={"samples": [], "setups": 0,
                                   "skipped": "no video provider"})

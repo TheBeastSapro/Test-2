@@ -1557,7 +1557,6 @@ class Studio:
         """
         from ..edit import EditPlan
         from ..render import cut as cutter
-        from ..render.ffmpeg import RenderError
 
         with self._session() as session:
             user = self._user(session)
@@ -1589,7 +1588,10 @@ class Studio:
         try:
             made = cutter.execute(plan, target, source=source,
                                   fps=int(fps) or None, on_note=on_note)
-        except (RenderError, OSError) as exc:
+        except Exception as exc:
+            # Everything ffmpeg can do wrong ends up here as a sentence. A raise would
+            # cross the MCP boundary as a stack trace in a log file nobody opens, and it
+            # would leave the streaming route's worker thread with nothing to report.
             return {"error": f"Could not cut {source.name}: "
                              f"{type(exc).__name__}: {exc}"}
 

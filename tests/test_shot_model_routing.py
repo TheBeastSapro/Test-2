@@ -43,6 +43,7 @@ from forgecast.providers.media import (
     STANDARD_TIER,
     model_for_tier,
     video_blend,
+    video_catalogue,
     video_model,
     video_tier,
     video_usd,
@@ -134,6 +135,24 @@ def test_the_hero_shots_are_priced_as_the_long_ones():
     # Five shots, each at the longest duration Veo 3.1 will submit, at the difference
     # between the two rates. Any other choice of five shots produces a smaller number.
     assert upgrade == pytest.approx(5 * 8.0 * (0.20 - 0.03), abs=0.01)
+
+
+def test_a_hero_model_is_priced_for_the_hero_beats_rather_than_as_a_whole_video():
+    """$98.00 beside a pick that costs $8.00 talks an operator out of the split.
+
+    It is a true number answering a question the control does not ask: nobody is
+    proposing to run eighty shots on the hero model, and the whole argument for having
+    one is that you do not have to.
+    """
+    rows = {row["slug"]: row for row in video_catalogue()}
+    assert rows[VEO]["typical_video_usd"] == 98.00
+    assert rows[VEO]["hero_shots_usd"] == 8.00
+
+    # And both figures come off the same five shots, so a dropdown row and the blend
+    # printed under it cannot be arithmetic about two different videos.
+    blend = video_blend(LITE, VEO)
+    assert blend["usd"] == (blend["standard_only_usd"]
+                            + rows[VEO]["hero_shots_usd"] - rows[LITE]["hero_shots_usd"])
 
 
 def test_the_blend_is_billed_the_way_the_endpoints_bill():
@@ -456,6 +475,26 @@ async def test_a_clip_records_the_endpoint_it_came_off(tmp_path):
     assert {clip.meta["tier"] for clip in clips} == {HERO_TIER, STANDARD_TIER}
 
 
+@pytest.mark.asyncio
+async def test_a_plan_made_before_shots_carried_a_model_still_prices_correctly(tmp_path):
+    """A run paused at the sample gate across this upgrade is the live case.
+
+    It comes back to a stored shot list with no `model` key, and the registry resolves an
+    empty slug to the run's standing choice — so the render is right either way. The
+    report is what breaks: `video_model("")` prices at the unrecognised-model ceiling of
+    $0.40 a second, which is five times what that batch actually cost.
+    """
+    context = _batch_context(tmp_path)
+    for shot in context.upstream_outputs["broll_plan"]["shots"]:
+        del shot["model"]
+        shot["seconds"] = 6.0
+
+    result = await media_node.shots_node(context)
+
+    assert result.output["clips_by_model"] == {LITE: 3}
+    assert result.output["video_usd"] == pytest.approx(3 * 6 * 0.03, abs=0.01)
+
+
 # ------------------------------------------------------------------ the gate
 
 
@@ -491,6 +530,28 @@ async def test_each_sample_comes_off_the_endpoint_its_tier_will_render_on(tmp_pa
     registry = context.registry
     assert sorted(set(registry.asked)) == sorted([LITE, VEO])
     assert registry.videos[VEO].calls and registry.videos[LITE].calls
+
+
+@pytest.mark.asyncio
+async def test_the_gate_and_the_batch_resolve_a_legacy_plan_the_same_way(tmp_path):
+    """Three nodes read this setting, and they must all read it identically.
+
+    If the gate resolved an unmodelled shot differently from the batch, it would approve
+    one endpoint while the batch spent on another — the exact failure the Sample Gate
+    exists to prevent, reached not through a bug in the gate but through two node files
+    reading a channel field in two ways. They share one resolver for that reason.
+    """
+    context = _batch_context(tmp_path, node="sample")
+    for shot in context.upstream_outputs["broll_plan"]["shots"]:
+        del shot["model"]
+
+    result = await sample_node.sample_node(context)
+
+    assert result.output["models"] == [LITE]
+    assert context.registry.videos[LITE].calls
+    # And the approval names the endpoint rather than an empty string, which is what an
+    # audit has to match a charge against.
+    assert all(item["model"] == LITE for item in result.output["samples"])
 
 
 @pytest.mark.asyncio
