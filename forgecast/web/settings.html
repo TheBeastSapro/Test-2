@@ -225,6 +225,38 @@
 
     <!-- ══════════════════════════════════════════════════════ PROVIDERS -->
     <section data-panel="providers" hidden>
+      {# The subscription route to a voice vendor, above the key boxes on purpose.
+         Everything below this card bills per unit; this one does not, and a page that
+         offered only the key box was offering only the expensive half of a vendor whose
+         cheap half was already built and routed. Status is fetched by the browser rather
+         than rendered here, for the reason the connectors panel gives further down: a
+         subprocess during a page render lets one wedged CLI hold up every other panel,
+         and this one talks to the network too. #}
+      <div class="card" id="minimax-voice">
+        <h3 style="margin-top:0">MiniMax narration — on your plan</h3>
+        <p class="muted" style="font-size:13px;max-width:70ch">
+          Signs in with the MiniMax subscription you already pay for, so narration comes
+          out of that allowance instead of an API balance. The key box below does the
+          opposite: it bills per character. Set a channel's voice vendor to
+          <code>minimax-voice-cli</code> to use this route.
+        </p>
+        <div class="setting-top">
+          <span class="setting-name">
+            <span class="dot dot-idle" id="mmx-dot" style="margin-right:7px"></span>
+            <span id="mmx-headline">Checking…</span>
+          </span>
+        </div>
+        <div class="setting-why" id="mmx-detail"></div>
+        <div class="keyrow" style="margin-top:10px">
+          <button type="button" onclick="mmxCheck()">Check</button>
+          <button type="button" class="primary" id="mmx-login" hidden
+                  onclick="mmxLogin()">Sign in</button>
+          <button type="button" id="mmx-install" hidden onclick="mmxInstall()">
+            Install the CLI</button>
+          <span class="n" id="mmx-note"></span>
+        </div>
+      </div>
+
       <div class="card">
         <h3 style="margin-top:0">Provider keys</h3>
         <p class="muted" style="font-size:13px;max-width:70ch">
@@ -424,6 +456,63 @@
       body: JSON.stringify({engine: key})});
     toast((await r.json()).message);
   }
+
+  // MiniMax narration on the subscription. The same shape as the agent cards above —
+  // deliberately, because `MiniMaxStatus` was given the same field names as the two
+  // agent statuses so one reader could serve all three.
+  async function mmxCheck() {
+    const at = id => document.getElementById(id);
+    at('mmx-headline').textContent = 'Checking…';
+    let report;
+    try {
+      report = await (await fetch('/api/voice/minimax')).json();
+    } catch (e) {
+      at('mmx-headline').textContent = 'Could not check: ' + String(e.message || e);
+      return;
+    }
+    // Three states, not two. `with_api_key` means the CLI is signed in but with a key,
+    // which bills per character exactly like the HTTP route — showing that as connected
+    // would tell you narration is on the plan while it draws down a balance.
+    at('mmx-dot').className = 'dot ' +
+      (report.ok ? 'dot-ok' : (report.with_api_key ? 'dot-bad' : 'dot-warn'));
+    at('mmx-headline').innerHTML = `<b>${esc(report.headline)}</b>` +
+      (report.account ? ` <span class="muted">· ${esc(report.account)}</span>` : '');
+    at('mmx-detail').textContent = report.detail || '';
+    // Each button offered only where pressing it can finish the job: a sign-in with no
+    // CLI opens a terminal printing "command not found", which reads as a broken app
+    // rather than as a missing install.
+    at('mmx-login').hidden = !report.can_login;
+    at('mmx-install').hidden = report.cli_found;
+  }
+
+  async function mmxLogin() {
+    const r = await fetch('/api/voice/minimax/login', {method: 'POST'});
+    toast((await r.json()).message);
+  }
+
+  async function mmxInstall() {
+    const note = document.getElementById('mmx-note');
+    const button = document.getElementById('mmx-install');
+    button.disabled = true;
+    note.textContent = 'Installing…';
+    try {
+      const r = await fetch('/api/voice/minimax/install', {method: 'POST'});
+      // NDJSON: one object per line, so the last complete line is the outcome.
+      const text = await r.text();
+      const lines = text.trim().split('\n').filter(Boolean).map(JSON.parse);
+      const done = lines.reverse().find(row => row.type === 'done');
+      note.textContent = done
+        ? (done.ok ? 'Installed. Press Sign in.' : done.detail)
+        : 'The installer said nothing back.';
+      if (done && done.ok) mmxCheck();
+    } catch (e) {
+      note.textContent = 'Install failed: ' + String(e.message || e);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  if (document.getElementById('minimax-voice')) mmxCheck();
 
   async function useAgent(key) {
     const r = await fetch('/api/agent/prefs', {method: 'POST',
