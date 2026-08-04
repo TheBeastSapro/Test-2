@@ -90,6 +90,46 @@
   .methodwarn { color: var(--gate); font-size: 12.5px; margin: 8px 0 0; }
   .methodwarn li { margin: 2px 0; overflow-wrap: anywhere; }
 </style>
+<script>
+  /* The optional toolset, installed from the page that needs it.
+     A link to Settings would be a link to a page that does not offer this either, and
+     printing a command is the homework the toolchain module exists to remove. The
+     stream is the same NDJSON the setup page and the chat banner already read. */
+  async function installMotion(button) {
+    const say = document.getElementById('motion-install-note');
+    button.disabled = true;
+    button.textContent = 'Installing…';
+    say.textContent = 'Downloading — this takes a few minutes, once.';
+    try {
+      const response = await fetch('/api/setup/extras/motion', { method: 'POST' });
+      if (!response.ok) throw new Error(await response.text());
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          let event;
+          try { event = JSON.parse(line); } catch { continue; }
+          if (event.type === 'log') say.textContent = String(event.text).slice(0, 140);
+          /* Reloaded rather than repainted. What this page says about the renderer is
+             resolved on the server, so a card that redrew itself from the install's own
+             verdict would be a second opinion about which engine is going to run. */
+          if (event.type === 'done') { location.reload(); return; }
+        }
+      }
+    } catch (error) {
+      say.textContent = 'Could not install it — ' + String(error.message || error);
+    }
+    button.disabled = false;
+    button.textContent = 'Install';
+  }
+</script>
 {% endblock %}
 
 {% block body %}
@@ -262,6 +302,100 @@
   <p class="methodnote">{{ scripting_folder.note }}
     Your documents are read where they are and are never copied into Forgecast,
     committed, or included in a package.</p>
+</div>
+
+{# The renderer. It was read on every run and writable only from one command-line flag,
+   so anybody using the app rendered with ffmpeg for ever — including after installing
+   the alternative from inside the app. `will_use` is resolved on the server rather than
+   echoed back, because an engine that is not installed downgrades silently at render
+   time and the setting alone would not tell you that had happened. #}
+<h2>Motion renderer</h2>
+<div class="card">
+  <p class="muted" style="margin:0 0 12px;font-size:13px">
+    Which engine draws the titles, lower thirds and reveals over each shot. It changes
+    what motion graphics are possible on this channel, not what is written or narrated.
+  </p>
+  <form class="method" method="post" action="/c/{{ channel.id }}/motion-backend">
+    <select name="motion_backend" aria-label="Motion renderer for this channel">
+      {% for option in motion_backend.options %}
+        <option value="{{ option.key }}"
+                {{ 'selected' if option.key == motion_backend.asked_for }}>
+          {{ option.label }}{% if not option.available %} (not installed){% endif %}
+        </option>
+      {% endfor %}
+    </select>
+    <button class="primary">Save</button>
+    {% if saved == 'motion' %}<span class="n">Saved.</span>{% endif %}
+  </form>
+
+  {% if motion_backend.will_use != motion_backend.asked_for %}
+    {# The downgrade, said where the choice is made. It was a log warning, which meant
+       the operator's evidence that the renderer had fallen back was a video that looked
+       the same as before. #}
+    <p class="methodwarn" style="margin-top:12px">
+      This channel is set to <b>{{ motion_backend.asked_for }}</b>, which is not
+      installed here — {{ motion_backend.missing }} is missing, so renders fall back to
+      <b>{{ motion_backend.will_use }}</b> until it is.
+    </p>
+    <div class="method" style="margin-top:10px">
+      <button type="button" onclick="installMotion(this)">Install</button>
+      <span class="n" id="motion-install-note">{{ motion_backend.label }} —
+        about {{ motion_backend.megabytes }} MB, once.</span>
+    </div>
+  {% else %}
+    <p class="methodnote">
+      Renders use <b>{{ motion_backend.will_use }}</b>.
+      {% for option in motion_backend.options if option.key == motion_backend.asked_for %}
+        {{ option.note }}
+      {% endfor %}
+    </p>
+  {% endif %}
+</div>
+
+{# The most expensive setting on this page, and until now the only one with no control.
+   The registry built every video provider as `cls(api_key)`, so the slug the app shipped
+   with was the slug every render on every channel used, and the catalogue of eleven
+   alternatives beside it was a table nothing could read.
+
+   Priced per finished video rather than per second, because per-second rates rank these
+   models in the wrong order. Durations are enums: Kling offers five seconds or ten and
+   nothing between, so a six-second scene is billed at ten and over a third of the spend
+   never reaches the screen. On rate alone Kling looks mid-table. On what a video costs
+   it is near the top. #}
+<h2>Image-to-video model</h2>
+<div class="card">
+  <p class="muted" style="margin:0 0 12px;font-size:13px">
+    Which model animates this channel's shots. It is around 90% of what a video costs,
+    and the same script runs from about ${{ '%.0f'|format(video_models[0].typical_video_usd) }}
+    to ${{ '%.0f'|format(video_models[-1].typical_video_usd) }} depending on this one
+    choice. Figures are for a typical eighty-shot long-form video, not per second.
+  </p>
+  <form class="method" method="post" action="/c/{{ channel.id }}/video-model">
+    <select name="video_model" aria-label="Image-to-video model for this channel">
+      {% for row in video_models %}
+        <option value="{{ row.slug }}" {{ 'selected' if row.chosen }}>
+          {{ row.label }} — ${{ '%.2f'|format(row.typical_video_usd) }} a video
+          {%- if row.is_default %} (default){% endif %}
+        </option>
+      {% endfor %}
+    </select>
+    <button class="primary">Save</button>
+    {% if saved == 'video-model' %}<span class="n">Saved.</span>{% endif %}
+  </form>
+
+  {% set picked = video_models | selectattr('chosen') | list | first %}
+  {% if picked %}
+    <p class="methodnote">
+      ${{ '%.4f'|format(picked.usd_per_second) }} a second.
+      Clips come in {{ picked.durations | join('s, ') }}s
+      {%- if picked.billed_ratio > 1.15 %}, so a scene between those lengths is billed at
+      the next one up — about {{ ((picked.billed_ratio - 1) * 100) | round | int }}% of
+      what you pay is trimmed off in assembly{% endif %}.
+      The Sample Gate renders one clip on this model for
+      ${{ '%.2f'|format(picked.sample_usd) }} before the batch is authorised.
+    </p>
+    <p class="methodnote">{{ picked.note }}</p>
+  {% endif %}
 </div>
 
 <h2>Elsewhere</h2>

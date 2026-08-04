@@ -12,6 +12,7 @@ provider, so no code path can accidentally spend money in development.
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, field
 
 from sqlalchemy import select
@@ -25,11 +26,17 @@ from .base import (
     Capability,
     ImageProvider,
     LLMProvider,
+    MusicProvider,
     ProviderError,
     VideoProvider,
     VoiceProvider,
 )
-from .epidemic import EpidemicVoiceProvider, MockEpidemicVoice
+from .epidemic import (
+    EpidemicMusicProvider,
+    EpidemicVoiceProvider,
+    MockEpidemicMusic,
+    MockEpidemicVoice,
+)
 from .higgsfield import HiggsfieldProvider
 from .llm import AnthropicProvider, OpenAIProvider
 from .llm_cli import ClaudeCliProvider
@@ -59,6 +66,11 @@ CATALOGUE: dict[str, tuple[Capability, type, str]] = {
     # this vendor can serve a run. Giving it a key name would have made the registry
     # look for an `epidemic` provider key that nothing ever writes.
     "epidemic-sound": (Capability.voice, EpidemicVoiceProvider, ""),
+    # The same connector, the other half of the catalogue. A separate entry rather than
+    # one adapter serving two capabilities, because `resolve` keys on capability and a
+    # channel must be able to narrate on ElevenLabs while scoring on Epidemic — one entry
+    # would have made those two decisions the same decision.
+    "epidemic-music": (Capability.music, EpidemicMusicProvider, ""),
     "elevenlabs": (Capability.voice, ElevenLabsProvider, "elevenlabs"),
     "minimax-voice": (Capability.voice, MiniMaxVoiceProvider, "minimax"),
     # The same vendor, reached the other way. No key name, because this route takes no
@@ -110,6 +122,20 @@ DEFAULT_ROUTING: dict[Capability, list[str]] = {
     Capability.image: ["fal", "openverse"],
     Capability.video: ["fal-video", "runway"],
     Capability.avatar: ["heygen"],
+    # Empty on purpose, and it is the only entry here that is. Every other capability has
+    # a fallback because a run with no vendor for it produces no video at all; a run with
+    # no music vendor produces a finished video with no music, which is a smaller loss
+    # than the one this list would otherwise cause.
+    #
+    # `epidemic-music` is absent for both of the reasons `minimax-voice` and `higgsfield`
+    # are, and they compound. It draws on something the operator pays for — a subscription
+    # rather than a balance, but the direction is the same — so a channel that never asked
+    # for music must not start spending it because a connector happened to be configured
+    # for narration. And a download here is not only a cost: Epidemic's terms make
+    # exporting a track into published content a reportable event, so a bed fetched by
+    # fallback would put an untraceable track into a monetised render that nobody chose.
+    # Music is chosen per channel and never inherited.
+    Capability.music: [],
 }
 
 MOCKS: dict[Capability, type] = {
@@ -118,6 +144,10 @@ MOCKS: dict[Capability, type] = {
     Capability.image: MockImage,
     Capability.video: MockVideo,
     Capability.avatar: MockAvatar,
+    # The only music vendor there is, so the generic stand-in and the vendor-shaped one
+    # are the same class. It is still listed in both places: the day a second music vendor
+    # arrives, this line is what says which shape "the generic music mock" means.
+    Capability.music: MockEpidemicMusic,
 }
 
 # Vendor-shaped offline stand-ins, used in `mock` mode when an override names that vendor.
@@ -129,7 +159,23 @@ MOCKS: dict[Capability, type] = {
 # install. Naming the vendor now gets that vendor's shapes, still with no network.
 MOCK_VENDORS: dict[str, type] = {
     "epidemic-sound": MockEpidemicVoice,
+    "epidemic-music": MockEpidemicMusic,
 }
+
+
+def _takes_model(cls: type) -> bool:
+    """Does this adapter accept a model, as its second positional argument?
+
+    Asked rather than assumed. Most adapters here take `(api_key, model)` — the fal video
+    adapter serves six model families through one class — but several take only a key,
+    and handing one of those a second argument is a TypeError several minutes into a run
+    that has already paid for a script and a voiceover.
+    """
+    try:
+        parameters = inspect.signature(cls.__init__).parameters
+    except (TypeError, ValueError):  # pragma: no cover - builtins and C extensions
+        return False
+    return "model" in parameters
 
 
 def _availability(provider) -> tuple[bool, str]:
@@ -159,6 +205,13 @@ class ProviderRegistry:
     mode: str = "mock"
     user_keys: dict[str, str] = field(default_factory=dict)
     overrides: dict[str, str] = field(default_factory=dict)  # capability value -> vendor
+    # Capability value -> model slug, where the chosen vendor serves more than one model.
+    # Separate from `overrides` because a vendor and a model are different decisions: one
+    # fal key reaches Kling, Veo, Sora, WAN, LTX and Hailuo, and picking between those is
+    # the choice that moves a video's cost from $15 to $98. Until this existed every
+    # provider was built as `cls(api_key)` and the model catalogue beside it was
+    # unreachable — a table nothing could read.
+    models: dict[str, str] = field(default_factory=dict)
     _cache: dict[str, object] = field(default_factory=dict, repr=False)
 
     # -- key resolution ---------------------------------------------------------
@@ -211,6 +264,12 @@ class ProviderRegistry:
 
             api_key = self.key_for(key_name)
             if api_key:
+                model = self.models.get(capability.value, "")
+                if model and _takes_model(cls):
+                    # The model is in the cache key. Without it a second channel on the
+                    # same vendor would be handed the first channel's provider and render
+                    # on a model nobody chose — silently, and at the other model's price.
+                    return self._cached(f"{vendor}:{model}", cls, api_key, model)
                 return self._cached(f"{vendor}", cls, api_key)
             refused.append(f"{vendor}: no {key_name} key configured")
 
@@ -243,9 +302,27 @@ class ProviderRegistry:
     def avatar(self) -> AvatarProvider:
         return self.resolve(Capability.avatar)  # type: ignore[return-value]
 
+    def music(self, vendor: str = "") -> MusicProvider:
+        """The music vendor this channel chose. There is no default one.
+
+        `vendor` is how a channel's choice reaches a capability that has no routing to
+        fall back on — the caller passes what the channel or the run named, and with
+        nothing named `DEFAULT_ROUTING` has nothing to offer and this raises rather than
+        quietly picking a vendor that spends.
+
+        `setdefault`, not assignment, so a per-run override still wins over the channel's
+        standing choice. That is the same precedence the engine applies to narration, and
+        for the same reason: "render this one with the other bed" is the more specific
+        instruction and must not be silently ignored.
+        """
+        if vendor:
+            self.overrides.setdefault(Capability.music.value, vendor)
+        return self.resolve(Capability.music)  # type: ignore[return-value]
+
 
 def registry_for(
-    session: Session, user: User | int, *, overrides: dict[str, str] | None = None
+    session: Session, user: User | int, *, overrides: dict[str, str] | None = None,
+    models: dict[str, str] | None = None,
 ) -> ProviderRegistry:
     """Build a registry carrying this user's bring-your-own keys."""
     settings = get_settings()
@@ -263,5 +340,6 @@ def registry_for(
                 continue
 
     return ProviderRegistry(
-        mode=settings.provider_mode, user_keys=user_keys, overrides=overrides or {}
+        mode=settings.provider_mode, user_keys=user_keys, overrides=overrides or {},
+        models=models or {},
     )

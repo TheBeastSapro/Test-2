@@ -225,3 +225,105 @@ async def test_a_dearer_model_costs_more_credits_for_the_same_shot(tmp_path, mon
     ).generate_clip("x", out_path=tmp_path / "b", seconds=10.0)
 
     assert dear.credits > cheap.credits * 4
+
+
+# ---------------------------------------------------------------- the request shape
+#
+# Three separate ways one hardcoded request body cost money, each verified against the
+# endpoint's own published schema rather than assumed:
+#
+#   * `str(seconds)` served two of six model families. LTX wants an integer, Veo wants
+#     "6s", WAN has no duration field at all.
+#   * Durations are enums, not ranges. Six seconds sits inside Sora's 4-20 envelope and
+#     Sora rejects it.
+#   * Native audio defaults to *on* wherever it exists and is separately billed —
+#     double the rate on Kling and Veo — for a track this pipeline discards, because
+#     narration comes from the voice vendor and is mixed in the render.
+
+
+def test_each_family_spells_its_duration_the_way_its_endpoint_does():
+    """One convention would be convenient. There is not one."""
+    spelling = {slug: media.VIDEO_MODELS[slug].spelling for slug in media.VIDEO_MODELS}
+    assert spelling["fal-ai/kling-video/v2.6/pro/image-to-video"] == "string"
+    assert spelling["fal-ai/ltx-2.3/image-to-video"] == "integer"
+    assert spelling["fal-ai/veo3.1/lite/image-to-video"] == "suffixed"
+    assert spelling["fal-ai/sora-2/image-to-video"] == "integer"
+    assert spelling["fal-ai/wan/v2.2-a14b/image-to-video"] == "absent"
+
+
+@pytest.mark.parametrize(
+    "slug,expected",
+    [
+        ("fal-ai/kling-video/v2.6/pro/image-to-video", '"duration":"10"'),
+        ("fal-ai/ltx-2.3/image-to-video", '"duration":6'),
+        ("fal-ai/veo3.1/lite/image-to-video", '"duration":"6s"'),
+        ("fal-ai/sora-2/image-to-video", '"duration":8'),
+    ],
+)
+async def test_the_body_carries_the_duration_this_endpoint_accepts(
+    slug, expected, tmp_path, monkeypatch
+):
+    recorder: dict = {}
+    _stub_transport(monkeypatch, recorder)
+    await media.FalVideoProvider("key", model=slug).generate_clip(
+        "x", out_path=tmp_path / "c", seconds=6.0)
+    assert expected in recorder["body"]
+
+
+async def test_wan_is_sent_no_duration_at_all(tmp_path, monkeypatch):
+    """It has no such field, and an unknown key on a paid submission is not free."""
+    recorder: dict = {}
+    _stub_transport(monkeypatch, recorder)
+    await media.FalVideoProvider(
+        "key", model="fal-ai/wan/v2.2-a14b/image-to-video"
+    ).generate_clip("x", out_path=tmp_path / "c", seconds=6.0)
+    assert "duration" not in recorder["body"]
+
+
+async def test_native_audio_is_turned_off_wherever_the_endpoint_has_it(
+    tmp_path, monkeypatch
+):
+    """The rate in the catalogue is the audio-off rate. It has to be made true."""
+    # Installed once, not per model: the stub captures the real client when it patches,
+    # so patching twice makes it capture its own factory.
+    recorder: dict = {}
+    _stub_transport(monkeypatch, recorder)
+    checked = 0
+    for slug, model in media.VIDEO_MODELS.items():
+        if not model.audio_flag:
+            continue
+        recorder.clear()
+        await media.FalVideoProvider("key", model=slug).generate_clip(
+            "x", out_path=tmp_path / "c", seconds=6.0)
+        assert f'"{model.audio_flag}":false' in recorder["body"], slug
+        checked += 1
+    # The default is one of them, which is the whole reason this matters: leaving the
+    # flag off doubled the rate on every render the app has ever made.
+    assert media.VIDEO_MODELS[media.DEFAULT_VIDEO_MODEL].audio_flag
+    assert checked >= 8
+
+
+def test_a_duration_inside_the_range_but_off_the_list_is_snapped_up():
+    """Sora takes 4, 8, 12, 16, 20. Six is in range and is not an option."""
+    sora = media.FalVideoProvider("key", model="fal-ai/sora-2/image-to-video")
+    assert sora.clamp_seconds(6) == 8
+    assert sora.clamp_seconds(9) == 12
+    # Past the ceiling it stops at the ceiling rather than inventing one.
+    assert sora.clamp_seconds(30) == 20
+
+
+def test_rounding_up_rather_than_down_because_short_clips_are_seen():
+    """A clip longer than its scene is trimmed. A shorter one freezes under narration."""
+    veo = media.FalVideoProvider("key", model="fal-ai/veo3.1/lite/image-to-video")
+    assert veo.clamp_seconds(5) == 6
+    assert veo.clamp_seconds(4.1) == 6
+    assert veo.clamp_seconds(4) == 4
+
+
+def test_an_unknown_variant_keeps_its_familys_call_shape():
+    """A blended spelling is a request no endpoint accepts."""
+    unknown = media.video_model("fal-ai/veo3.1/ultra/image-to-video")
+    assert unknown.spelling == "suffixed"
+    assert unknown.audio_flag == "generate_audio"
+    # Still priced from the dearest known sibling, which is the existing rule.
+    assert unknown.usd_per_second == 0.20

@@ -52,6 +52,7 @@ from ..auth import current_user, optional_user
 from ..db import get_session
 from ..graph import formats
 from ..models import Channel, Run, RunStatus, User
+from ..providers.media import VIDEO_MODELS, video_catalogue
 from .routes_analytics import spend_report
 
 router = APIRouter(include_in_schema=False)
@@ -67,6 +68,48 @@ ALL_RUNS = 200
 PRODUCING = "producing"
 WAITING = "waiting"
 IDLE = "idle"
+
+# What each render backend is, in the words a picker needs. Kept here rather than in the
+# template because the sentence that matters — which one is actually going to run — is
+# resolved in Python, and splitting the two across files is how a label and its state
+# come to say different things.
+BACKEND_LABELS = {
+    "ffmpeg": ("ffmpeg", "One filtergraph. Needs nothing that is not already installed."),
+    "remotion": ("Remotion", "Real text layout, blurred shadows, masks and nesting, "
+                             "rendered in a headless browser. Slower per frame, and it "
+                             "carries its own licence terms."),
+}
+
+
+def motion_backend_state(channel: Channel) -> dict:
+    """Which engine will draw this channel's motion graphics, and which was asked for.
+
+    `will_use` is resolved rather than echoed back. `backends.backend_for` downgrades an
+    unavailable engine to ffmpeg and says so only in a log line, so a page printing the
+    stored word would agree with the setting and disagree with the finished video. That
+    is most of how the Remotion renderer came to ship in every archive for months —
+    installable, unselectable outside one CLI flag, and silent about which one ran.
+    """
+    from ..desktop import toolchain
+    from ..render.backends import BACKENDS, backend_for
+
+    asked = str((channel.style_profile or {}).get("motion_backend") or "ffmpeg")
+    installed, absent = toolchain.extra_installed("motion")
+    spec = toolchain.EXTRAS["motion"]
+    options = []
+    for key, cls in BACKENDS.items():
+        label, note = BACKEND_LABELS.get(key, (key, ""))
+        options.append({"key": key, "label": label, "note": note,
+                        "available": bool(cls().available())})
+    return {
+        "asked_for": asked,
+        "will_use": backend_for(asked).name,
+        "options": options,
+        "installed": bool(installed),
+        "missing": absent,
+        "label": spec["label"],
+        "megabytes": spec["megabytes"],
+    }
 
 
 def owned_channel(session: Session, user: User, channel_id: int) -> Channel:
@@ -174,6 +217,18 @@ def _context(session: Session, user: User, channel: Channel, view: str) -> dict:
         # setting the channel does not have — which the next save makes true.
         "scripting_styles": scripting.selection(channel.scripting_style),
         "scripting_folder": scripting.folder_status(),
+        # The renderer this channel's motion graphics are drawn with. It was readable by
+        # `finalize` and writable by nothing but one CLI flag, so anybody not using the
+        # command line rendered with ffmpeg for ever — including after installing the
+        # alternative from inside the app.
+        "motion_backend": motion_backend_state(channel),
+        # Which image-to-video model this channel's shots are generated on. Every entry
+        # was already in the catalogue and none of them was reachable: the registry built
+        # every video provider as `cls(api_key)`, so the slug the app shipped with was the
+        # slug every render on every channel used. Priced per finished video rather than
+        # per second, because per-second rates rank these models in the wrong order — see
+        # `video_catalogue`.
+        "video_models": video_catalogue(channel.video_model),
     }
 
 
@@ -226,6 +281,67 @@ def save_scripting_style(
     channel.scripting_style = wanted
     session.commit()
     return RedirectResponse(f"/c/{channel_id}?saved=scripting", 303)
+
+
+@router.post("/c/{channel_id}/video-model")
+def save_video_model(
+    channel_id: int,
+    # Defaulted rather than required, because empty is a meaningful value here: it means
+    # "use the app default". `Form(...)` rejected the one submission that expresses it.
+    video_model: str = Form(""),
+    user: User = Depends(current_user),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    """Set which image-to-video model this channel's shots are generated on.
+
+    An unknown slug is refused rather than stored, and unlike the scripting method there
+    is no "unavailable but keep it" case: a slug that is not in the catalogue is priced
+    from its family at the *dearest* known sibling, so storing one silently moves a
+    channel onto the conservative estimate for every future run. Empty is allowed and
+    means the app default — that is a choice, not a missing value.
+
+    This is the single most expensive setting on the page. The same eighty-shot script is
+    $14.70 on one of these models and $98 on another, and until this route existed the
+    answer was always whichever slug the app shipped with.
+    """
+    channel = owned_channel(session, user, channel_id)
+    wanted = (video_model or "").strip()
+    if wanted and wanted not in VIDEO_MODELS:
+        raise HTTPException(status_code=400, detail=f"unknown video model {wanted!r}")
+
+    channel.video_model = wanted
+    session.commit()
+    return RedirectResponse(f"/c/{channel_id}?saved=video-model", 303)
+
+
+@router.post("/c/{channel_id}/motion-backend")
+def save_motion_backend(
+    channel_id: int,
+    motion_backend: str = Form(...),
+    user: User = Depends(current_user),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    """Set which engine draws this channel's motion graphics.
+
+    The write goes through `Studio` rather than assigning here, because the chat can set
+    the same thing and two writers of one key is how a panel and a transcript come to
+    disagree about what a channel is set to. `owned_channel` still does the lookup, so
+    this page keeps its own 404-for-everything doctrine.
+
+    An engine that is not installed is *stored* rather than refused. Refusing it would
+    mean the choice cannot be recorded until the toolset is present — and the failure
+    being fixed here is not that somebody picked something unavailable, it is that
+    nobody was ever told the renderer had quietly fallen back.
+    """
+    from ..agent.studio import Studio
+    from ..db import SessionLocal
+
+    channel = owned_channel(session, user, channel_id)
+    result = Studio(SessionLocal, user_id=user.id).set_motion_backend(
+        channel.id, motion_backend)
+    if result.get("error"):
+        raise HTTPException(status_code=400, detail=result["error"])
+    return RedirectResponse(f"/c/{channel_id}?saved=motion", 303)
 
 
 @router.get("/c/{channel_id}/runs", response_class=HTMLResponse)

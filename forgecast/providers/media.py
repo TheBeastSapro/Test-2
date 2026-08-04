@@ -344,7 +344,7 @@ class MiniMaxVoiceProvider(VoiceProvider):
             # request that can fail on its own, for a file this already has in hand.
             "output_format": "hex",
             "voice_setting": {"voice_id": voice_id,
-                              # 0.5–2.0. Clamped rather than passed through, because
+                              # 0.5 to 2.0. Clamped rather than passed through, because
                               # out-of-range is a rejected request and the caller's speed
                               # comes from a style profile that knows nothing about it.
                               "speed": min(2.0, max(0.5, speed)),
@@ -574,16 +574,69 @@ PRICES_CHECKED = "2026-08-03"
 
 @dataclass(frozen=True)
 class VideoModel:
-    """One i2v endpoint's price and duration envelope.
+    """One i2v endpoint's price, duration envelope, and how to spell a request to it.
 
     `sample_seconds` is the shortest submittable duration, not a recommendation: it is
     what the sample gate costs on this model, and the gate is priced before it runs.
+
+    ## Why the call shape lives beside the price
+
+    There is no convention across these endpoints and assuming one costs money three
+    separate ways. Verified against each endpoint's own OpenAPI schema on the date in
+    `PRICES_CHECKED`:
+
+    * Kling wants `"5"`, LTX wants `6`, Veo wants `"6s"`, WAN takes no duration at all.
+      One hardcoded `str(seconds)` served exactly two of the six families.
+    * Durations are an **enum**, not a range. Six seconds is inside Sora's 4–20 envelope
+      and Sora rejects it, because Sora accepts 4, 8, 12, 16, 20 and nothing between.
+      Clamping to the ends of a range is not the same as choosing a value the endpoint
+      will take.
+    * Native audio defaults to **on** everywhere it exists, and it is separately billed —
+      double the rate on Kling and Veo. This pipeline records narration on its own vendor
+      and mixes it in the render, so every one of those seconds was paid for and
+      discarded. The flag has to be sent; not sending it is not "leaving the default".
+
+    So the table carries all three facts together. Whoever next re-checks a price is
+    already looking at the row where the call shape lives.
     """
 
     usd_per_second: float
-    sample_seconds: float
-    max_seconds: float
+    # Every duration this endpoint accepts, ascending. Not a range — see the class
+    # docstring. Where an endpoint takes no duration, its single natural clip length.
+    durations: tuple[float, ...]
     note: str = ""
+    # How this endpoint spells a duration in the request body:
+    #   "string"   — "5"      (Kling, Hailuo)
+    #   "integer"  — 6        (LTX, Sora)
+    #   "suffixed" — "6s"     (Veo 3 and 3.1)
+    #   "absent"   — the endpoint has no duration field, and sending one is an unknown
+    #                key on a paid submission (WAN)
+    spelling: str = "string"
+    # The request field that turns native audio off, where the endpoint has one. Empty
+    # means it has none and the quoted rate is already the only rate.
+    audio_flag: str = ""
+
+    @property
+    def sample_seconds(self) -> float:
+        """The shortest clip this endpoint will make, which is what a sample costs."""
+        return min(self.durations)
+
+    @property
+    def max_seconds(self) -> float:
+        return max(self.durations)
+
+    def submittable(self, seconds: float) -> float:
+        """The nearest duration this endpoint accepts, rounding up.
+
+        Up rather than down, and it is not a close call. A shot rendered shorter than
+        its scene leaves the timeline holding a frozen frame under live narration, which
+        a viewer sees; a shot rendered longer is trimmed in assembly and costs the
+        difference, which nobody sees. Content loss is the more expensive of the two
+        even when it is the cheaper one.
+        """
+        wanted = float(seconds or 0.0)
+        longer = [option for option in self.durations if option >= wanted]
+        return longer[0] if longer else self.max_seconds
 
 
 # Keyed by the fal slug. Resolutions matter to the price on several of these, so the tier
@@ -593,30 +646,69 @@ VIDEO_MODELS: dict[str, VideoModel] = {
     # Kling. The workhorse for B-roll and dialogue close-ups; audio off, which is how
     # this pipeline uses it — narration is recorded separately and mixed in the render.
     "fal-ai/kling-video/v2.6/pro/image-to-video": VideoModel(
-        0.07, 5.0, 10.0, "audio off; $0.14/s with native audio"),
+        0.07, (5.0, 10.0), "audio off; $0.14/s with native audio",
+        audio_flag="generate_audio"),
+    # No audio on this one, so its rate has no second tier and no flag to send.
     "fal-ai/kling-video/v2.5-turbo/pro/image-to-video": VideoModel(
-        0.07, 5.0, 10.0, "$0.35 for the first 5s, then $0.07/s"),
+        0.07, (5.0, 10.0), "$0.35 for the first 5s, then $0.07/s"),
+    # The only model here that takes an arbitrary whole number of seconds, and the only
+    # one that will go past ten — up to fifteen.
     "fal-ai/kling-video/v3/pro/image-to-video": VideoModel(
-        0.112, 5.0, 10.0, "audio off; $0.168/s with audio, $0.196/s with voice control"),
+        0.112, tuple(float(n) for n in range(3, 16)),
+        "audio off; $0.168/s with audio, $0.196/s with voice control",
+        audio_flag="generate_audio"),
     # WAN, open weights. Priced per resolution tier; 720p is what this app renders at.
+    # It has no duration field at all: the clip length is a property of the model, and a
+    # `duration` key on the submission is an unrecognised field on a paid request.
     "fal-ai/wan/v2.2-a14b/image-to-video": VideoModel(
-        0.08, 5.0, 10.0, "720p; $0.06/s at 580p, $0.04/s at 480p, seconds at 16fps"),
-    # Hailuo. Cheapest credible i2v here, and the reason `sample_seconds` exists: its
-    # shortest generation is six seconds, so its sample costs six seconds, not five.
+        0.08, (5.0,), "720p; $0.06/s at 580p, $0.04/s at 480p, seconds at 16fps. "
+                      "Fixed clip length — the endpoint takes no duration",
+        spelling="absent"),
+    # Hailuo. The reason `sample_seconds` exists: its shortest generation is six
+    # seconds, so its sample costs six seconds, not five.
     "fal-ai/minimax/hailuo-2.3-fast/standard/image-to-video": VideoModel(
-        0.0317, 6.0, 10.0, "768p; $0.19 per 6s clip, $0.32 per 10s clip"),
-    # LTX, the volume workhorse. Also a six-second floor.
+        0.0317, (6.0, 10.0), "768p; $0.19 per 6s clip, $0.32 per 10s clip"),
+    # LTX, the volume workhorse. Integer durations, not strings, and the fast variant
+    # will run to twenty seconds where the standard one stops at ten.
     "fal-ai/ltx-2.3/image-to-video": VideoModel(
-        0.06, 6.0, 10.0, "1080p; $0.12/s at 1440p, $0.24/s at 2160p"),
+        0.06, (6.0, 8.0, 10.0), "1080p; $0.12/s at 1440p, $0.24/s at 2160p",
+        spelling="integer", audio_flag="generate_audio"),
     "fal-ai/ltx-2.3/image-to-video/fast": VideoModel(
-        0.04, 6.0, 10.0, "1080p; $0.08/s at 1440p, $0.16/s at 2160p"),
-    # The premium edge cases. Veo for physics and realism, Sora for coherence.
+        0.04, tuple(float(n) for n in range(6, 21, 2)),
+        "1080p; $0.08/s at 1440p, $0.16/s at 2160p",
+        spelling="integer", audio_flag="generate_audio"),
+    # Veo 3.1 — the model under Google Flow, which has no API of its own. Flow is a web
+    # product; asking how to call it is the wrong question, and the right one is which
+    # endpoint serves the same engine. These are it, and the rates are the audio-off ones
+    # because this pipeline records narration separately and mixes it in the render.
+    "fal-ai/veo3.1/lite/image-to-video": VideoModel(
+        0.03, (4.0, 6.0, 8.0),
+        "720p audio off; $0.05/s with audio, $0.05/s at 1080p audio off. Cheaper per "
+        "second than every other model here, Hailuo included",
+        spelling="suffixed", audio_flag="generate_audio"),
+    "fal-ai/veo3.1/fast/image-to-video": VideoModel(
+        0.10, (4.0, 6.0, 8.0),
+        "720p/1080p audio off; $0.15/s with audio, $0.30/s at 4K audio off",
+        spelling="suffixed", audio_flag="generate_audio"),
+    "fal-ai/veo3.1/image-to-video": VideoModel(
+        0.20, (4.0, 6.0, 8.0),
+        "720p/1080p audio off; $0.40/s with audio, $0.40/s at 4K audio off",
+        spelling="suffixed", audio_flag="generate_audio"),
+    # The 3.0 endpoints, kept because runs made on them are still in the database and
+    # their costs have to price correctly when a run is re-read. Not worth choosing: 3.1
+    # lite is a fifth of the standard 3.0 rate and a later model.
     "fal-ai/veo3/image-to-video": VideoModel(
-        0.20, 8.0, 8.0, "audio off; $0.40/s with audio. Duration not re-verified"),
+        0.20, (4.0, 6.0, 8.0), "superseded by veo3.1; audio off, $0.40/s with audio",
+        spelling="suffixed", audio_flag="generate_audio"),
     "fal-ai/veo3/fast/image-to-video": VideoModel(
-        0.10, 8.0, 8.0, "audio off; $0.15/s with audio. Duration not re-verified"),
+        0.10, (4.0, 6.0, 8.0),
+        "superseded by veo3.1/fast; audio off, $0.15/s with audio",
+        spelling="suffixed", audio_flag="generate_audio"),
+    # Sora. The widest envelope here and the sparsest — twenty seconds available, but
+    # only at 4, 8, 12, 16 and 20. Six seconds is inside the range and is rejected.
     "fal-ai/sora-2/image-to-video": VideoModel(
-        0.10, 4.0, 12.0, "720p standard; Pro is $0.30-$0.70/s. Duration not re-verified"),
+        0.10, (4.0, 8.0, 12.0, 16.0, 20.0),
+        "720p standard; Pro is $0.30-$0.70/s", spelling="integer"),
 }
 
 # Kling v2.6 Pro rather than the v1 *text*-to-video slug this defaulted to before. Two
@@ -631,7 +723,7 @@ DEFAULT_VIDEO_MODEL = "fal-ai/kling-video/v2.6/pro/image-to-video"
 # operator when the node settles; one that is too low is a run that stops mid-batch with
 # work already paid for, which no later correction recovers.
 UNPRICED_MODEL = VideoModel(
-    0.40, 8.0, 10.0,
+    0.40, (8.0, 10.0),
     f"unrecognised model — reserved at the ceiling of the range priced on "
     f"{PRICES_CHECKED}")
 
@@ -658,11 +750,19 @@ def video_model(slug: str) -> VideoModel:
         # The dearest sibling's rate, the longest sample, the shortest ceiling: three
         # conservative picks rather than one sibling's row, because guessing which
         # sibling an unknown variant resembles is how the guess comes in under cost.
+        #
+        # The call shape is taken from the dearest sibling rather than being mixed the
+        # same way, because spelling is not a quantity — a new Veo variant spells
+        # durations the way the other Veo variants do, and blending "suffixed" with
+        # "integer" produces a request no endpoint accepts.
+        dearest = max(siblings, key=lambda model: model.usd_per_second)
         return VideoModel(
-            max(model.usd_per_second for model in siblings),
-            max(model.sample_seconds for model in siblings),
-            min(model.max_seconds for model in siblings),
+            dearest.usd_per_second,
+            tuple(sorted({max(model.sample_seconds for model in siblings),
+                          min(model.max_seconds for model in siblings)})),
             f"unrecognised {family} variant — priced from the dearest known {family}",
+            spelling=dearest.spelling,
+            audio_flag=dearest.audio_flag,
         )
     return UNPRICED_MODEL
 
@@ -679,6 +779,71 @@ def video_reserve_credits(model: str, seconds: float, *, samples: int = 0) -> in
     total = priced.usd_per_second * (
         max(0.0, float(seconds)) + priced.sample_seconds * max(0, int(samples)))
     return _credits(total)
+
+
+# A shot list shaped like a real long-form video: eighty shots, scenes running three to
+# nine seconds and clustering around five or six. Used only to price the catalogue for
+# whoever is choosing from it.
+#
+# The per-second rate on its own is misleading and the size of the error is not small.
+# Durations are enums, so a model's granularity decides how much of each billed second
+# survives into the video: Kling offers five seconds or ten and nothing between, so a
+# six-second scene is billed at ten and 36% of the spend never reaches the screen. Ranked
+# on rate alone Kling looks like the middle of this table. Ranked on what a video costs it
+# is near the top.
+_TYPICAL_SHOTS: tuple[float, ...] = tuple(
+    float(n) for n in [3, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 8, 9] * 5)
+
+
+def video_catalogue(chosen: str = "") -> list[dict]:
+    """Every selectable i2v model, priced as a whole video rather than per second.
+
+    For the channel settings page and for the agent, from one function, so the operator
+    and the assistant cannot be looking at two different tables. Cheapest first — the
+    order the decision is usually made in.
+    """
+    rows: list[dict] = []
+    for slug, model in VIDEO_MODELS.items():
+        if "superseded" in model.note:
+            # Kept in the table so old runs still price correctly when they are re-read,
+            # but not offered: choosing one is choosing an older model at a higher rate.
+            continue
+        billed = sum(model.submittable(shot) for shot in _TYPICAL_SHOTS)
+        rows.append({
+            "slug": slug,
+            "label": _video_label(slug),
+            "usd_per_second": model.usd_per_second,
+            "typical_video_usd": round(model.usd_per_second * billed, 2),
+            # How much of what this model bills for survives into the finished video.
+            # 1.00 means its durations match how scenes actually run.
+            "billed_ratio": round(billed / sum(_TYPICAL_SHOTS), 2),
+            "durations": [int(option) for option in model.durations],
+            "sample_usd": round(model.usd_per_second * model.sample_seconds, 2),
+            "note": model.note,
+            "chosen": slug == (chosen or DEFAULT_VIDEO_MODEL),
+            "is_default": slug == DEFAULT_VIDEO_MODEL,
+        })
+    return sorted(rows, key=lambda row: row["typical_video_usd"])
+
+
+def _video_label(slug: str) -> str:
+    """A name an operator recognises, from a slug written for a URL router."""
+    known = {
+        "fal-ai/kling-video/v2.6/pro/image-to-video": "Kling 2.6 Pro",
+        "fal-ai/kling-video/v2.5-turbo/pro/image-to-video": "Kling 2.5 Turbo Pro",
+        "fal-ai/kling-video/v3/pro/image-to-video": "Kling 3 Pro",
+        "fal-ai/wan/v2.2-a14b/image-to-video": "WAN 2.2 (open weights)",
+        "fal-ai/minimax/hailuo-2.3-fast/standard/image-to-video": "Hailuo 2.3 Fast",
+        "fal-ai/ltx-2.3/image-to-video": "LTX 2.3",
+        "fal-ai/ltx-2.3/image-to-video/fast": "LTX 2.3 Fast",
+        # Named for what it is rather than for its slug. An operator looking for the
+        # thing they saw in Google Flow will not search for "veo3.1/lite".
+        "fal-ai/veo3.1/lite/image-to-video": "Veo 3.1 Lite (Google Flow's model)",
+        "fal-ai/veo3.1/fast/image-to-video": "Veo 3.1 Fast (Google Flow's model)",
+        "fal-ai/veo3.1/image-to-video": "Veo 3.1 (Google Flow's model)",
+        "fal-ai/sora-2/image-to-video": "Sora 2 (OpenAI)",
+    }
+    return known.get(slug, slug.rsplit("/", 2)[0].split("/")[-1].replace("-", " ").title())
 
 
 class FalVideoProvider(VideoProvider):
@@ -715,13 +880,15 @@ class FalVideoProvider(VideoProvider):
     def clamp_seconds(self, seconds: float) -> int:
         """The duration this endpoint will actually accept, nearest to what was asked.
 
-        Clamped per model rather than to a hard 5-10: submitting five seconds to a
-        six-second minimum is a rejected request, and submitting ten to an eight-second
-        ceiling is either rejected or silently truncated after being billed for ten.
+        Snapped to the model's own set of durations rather than clamped into its range.
+        Those are different operations and only one of them works: six seconds is inside
+        Sora's four-to-twenty envelope and Sora rejects it, because the durations it
+        accepts are 4, 8, 12, 16 and 20 with nothing in between. Clamping produced a
+        number that was in range and not on the list.
         """
         priced = self.pricing
-        wanted = round(float(seconds) or priced.sample_seconds)
-        return int(max(priced.sample_seconds, min(priced.max_seconds, wanted)))
+        wanted = float(seconds) or priced.sample_seconds
+        return int(priced.submittable(wanted))
 
     def reserve_credits(self, seconds: float, *, samples: int = 0) -> int:
         return video_reserve_credits(self.model, self.clamp_seconds(seconds),
@@ -755,11 +922,30 @@ class FalVideoProvider(VideoProvider):
         key = self._require_key()
         out_path = out_path.with_suffix(".mp4")
         billed_seconds = self.clamp_seconds(seconds)
+        priced = self.pricing
         body: dict = {
             "prompt": prompt,
-            "duration": str(billed_seconds),
             "aspect_ratio": "16:9" if width >= height else "9:16",
         }
+        # Spelled the way this endpoint spells it. There is no convention — see
+        # `VideoModel` — and a duration in the wrong shape is a 422 on a submission that
+        # has already been queued, or worse, silently replaced by the endpoint's default,
+        # which on Veo is eight seconds and twice what most shots asked for.
+        if priced.spelling == "integer":
+            body["duration"] = billed_seconds
+        elif priced.spelling == "suffixed":
+            body["duration"] = f"{billed_seconds}s"
+        elif priced.spelling == "string":
+            body["duration"] = str(billed_seconds)
+
+        # Native audio is on by default on every endpoint that has it, and it is billed
+        # separately — double the rate on Kling and on Veo. This pipeline narrates on its
+        # own voice vendor and mixes in the render, so a generated audio track is paid
+        # for and then discarded. Turning it off is not an optimisation; leaving it on
+        # was the quoted rate being wrong by 100% on the default model.
+        if priced.audio_flag:
+            body[priced.audio_flag] = False
+
         if image_path and Path(image_path).exists():
             body["image_url"] = _data_uri(Path(image_path))
         try:

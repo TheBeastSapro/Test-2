@@ -164,6 +164,21 @@ class Channel(Base):
     # application import; `tests/test_scripting.py` asserts it equals `HOUSE_SLUG`.
     scripting_style: Mapped[str] = mapped_column(String(64), default="house")
 
+    # Which image-to-video model this channel's shots are generated on — a slug from
+    # `providers.media.VIDEO_MODELS`. Empty means `DEFAULT_VIDEO_MODEL`.
+    #
+    # A column for the same reason the two above are, and more sharply: image-to-video is
+    # about 90% of a long-form video's cost, and the models this app can route to span
+    # $0.03 to $0.20 a second. On a real eighty-shot video that is $14.70 against $98 for
+    # the same script — a factor of six decided by one field.
+    #
+    # Until this existed the registry built every video provider as `cls(api_key)`, so
+    # every render on every channel used the default slug and the catalogue beside it was
+    # decoration. A per-shot choice would be better still and is what the skills describe;
+    # per channel is what a style lock actually wants, because mixing models inside one
+    # project is the anti-pattern those same skills name.
+    video_model: Mapped[str] = mapped_column(String(128), default="")
+
     avatar_id: Mapped[str] = mapped_column(String(128), default="")
     aspect_ratio: Mapped[str] = mapped_column(String(16), default="16:9")
     target_duration_seconds: Mapped[int] = mapped_column(Integer, default=480)

@@ -71,6 +71,9 @@ class ChannelSnapshot:
     # method, which is what `scripting.prompt_block` falls back to anyway — so a snapshot
     # built by an older caller produces a script written to a method rather than to none.
     scripting_style: str = ""
+    # Which image-to-video model this channel's shots are generated on. Empty means the
+    # app default, which is what every run got before the choice existed.
+    video_model: str = ""
 
 
 @dataclass
@@ -520,6 +523,7 @@ class GraphEngine:
                 youtube_refresh_token=refresh_token,
                 voice_vendor=channel.voice_vendor or "",
                 scripting_style=channel.scripting_style or "",
+                video_model=channel.video_model or "",
             )
 
             upstream_outputs: dict[str, dict] = {}
@@ -552,6 +556,15 @@ class GraphEngine:
             # a one-off "render this in the other voice" must not be silently ignored.
             if snapshot.voice_vendor and not overrides.get("voice"):
                 overrides["voice"] = snapshot.voice_vendor
+
+            # And the channel's chosen i2v model, on the same precedence: a run that names
+            # one has already made the more specific decision. This is the only capability
+            # where the model rather than the vendor is the expensive choice — one fal key
+            # reaches models spanning $15 to $98 for the same eighty shots — so it is
+            # carried separately from the vendor overrides above.
+            models = dict((run.options or {}).get("provider_models") or {})
+            if snapshot.video_model and not models.get("video"):
+                models["video"] = snapshot.video_model
             context = NodeContext(
                 run_id=run_id,
                 topic=run.topic,
@@ -561,7 +574,8 @@ class GraphEngine:
                 params=dict(node.params or {}),
                 attempts=node.attempts,
                 channel=snapshot,
-                registry=registry_for(session, run.user_id, overrides=overrides),
+                registry=registry_for(session, run.user_id, overrides=overrides,
+                                      models=models),
                 workdir=settings.run_dir(run_id),
                 upstream_outputs=upstream_outputs,
                 upstream_artifacts=artifacts_by_node,
