@@ -1,18 +1,22 @@
 /**
- * The element vocabulary, matching `forgecast/motion/compose.py`.
+ * The element vocabulary a scene plan can contain: Text and Band.
  *
- * Text, Band and ImageCard exist in both backends and take the same fields. What
- * differs is everything the browser gives away for free and ffmpeg cannot do at all:
- * text wraps on word boundaries with real font metrics, shadows are actually blurred
- * rather than a displaced dark copy, and a card can be scaled and rotated in one
- * transform instead of a chain of filters that each fix the frame size.
+ * Both exist in the ffmpeg backend too and take the same fields. What differs is what
+ * the browser gives away for free and `drawtext` cannot do at all — text wraps on word
+ * boundaries with real font metrics, and a shadow is actually blurred rather than a
+ * displaced dark copy.
+ *
+ * This is narrower than `forgecast/motion/compose.py`, which is a general animation
+ * toolkit and can also draw an image card. The plan is the contract, not that module,
+ * and the plan has no card in it — see `forgecast/render/scene_plan.py` for why one was
+ * removed rather than left here waiting for an emitter.
  */
 
 import React from "react";
-import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 
 import { between, envelope } from "./easing";
-import type { BandElement, CardElement, TextElement } from "./types";
+import type { BandElement, TextElement } from "./types";
 
 /** Horizontal travel for an entry, as a fraction of the frame. */
 const TRAVEL: Record<string, number> = { slide: 0.16, wipe: 0.3, pop: 0, rise: 0 };
@@ -125,50 +129,5 @@ export const Band: React.FC<{ element: BandElement }> = ({ element }) => {
         opacity: element.opacity * envelope(local, element.duration, 0.2, 0.2),
       }}
     />
-  );
-};
-
-export const Card: React.FC<{ element: CardElement }> = ({ element }) => {
-  const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
-  const local = frame / fps - element.start;
-  if (local < 0 || local > element.duration) return null;
-
-  const opacity = envelope(local, element.duration, element.fadeIn, element.fadeOut);
-  // Grow *through* the resting scale, so the card is never smaller than intended at
-  // the moment it becomes readable — same rule as the Python preset.
-  const zoom = between(
-    local,
-    0,
-    element.duration,
-    1 / element.zoom,
-    element.zoom,
-    element.easing,
-  );
-  const tilt = between(
-    local,
-    0,
-    Math.min(element.duration, element.fadeIn * 2.2 + 0.2),
-    element.tilt,
-    0,
-    element.easing,
-  );
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: element.x * width,
-        top: element.y * height,
-        width: element.scale * width,
-        transform: `translate(-50%, -50%) scale(${zoom}) rotate(${tilt}rad)`,
-        opacity,
-        // A real blurred shadow. The ffmpeg backend approximates this with a
-        // displaced dark copy because blurring an alpha matte there is too slow.
-        filter: element.shadow ? "drop-shadow(0 18px 34px rgba(0,0,0,0.45))" : undefined,
-      }}
-    >
-      <Img src={staticFile(element.src)} style={{ width: "100%", display: "block" }} />
-    </div>
   );
 };

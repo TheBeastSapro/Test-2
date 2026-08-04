@@ -52,27 +52,13 @@ export interface BandElement {
   heightFraction: number;
 }
 
-export interface CardElement {
-  kind: "card";
-  start: number;
-  duration: number;
-  /** Filename relative to the public directory the CLI was pointed at. */
-  src: string;
-  /** Resting width as a fraction of frame width. */
-  scale: number;
-  x: number;
-  y: number;
-  /** End scale divided by start scale over the card's life. 1 = no move. */
-  zoom: number;
-  /** Radians the card settles through. */
-  tilt: number;
-  shadow: boolean;
-  fadeIn: number;
-  fadeOut: number;
-  easing: Easing;
-}
-
-export type SceneElement = TextElement | BandElement | CardElement;
+/**
+ * Text and Band, and nothing else. There was a `card` element — one still, tilted with
+ * a shadow — and it was removed from both sides at once; `forgecast/render/scene_plan.py`
+ * records why. Re-adding one here without a Python builder to emit it is how it came to
+ * ship in every build with no run able to produce it.
+ */
+export type SceneElement = TextElement | BandElement;
 
 export interface Background {
   kind: "video" | "image" | "colour";

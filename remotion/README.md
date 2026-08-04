@@ -40,8 +40,8 @@ must be split by hand in Python; shadows are a displaced dark copy because blurr
 alpha matte is too slow; and every filter that touches frame size fights an animated
 `scale`.
 
-A browser brings a layout engine. Text wraps on word boundaries with real font
-metrics, shadows are actually blurred, and a card scales and rotates in one transform.
+A browser brings a layout engine. Text wraps on word boundaries with real font metrics,
+and shadows are actually blurred rather than displaced.
 
 ## The contract
 
@@ -60,7 +60,7 @@ and this project only draws it. Two rules keep the two backends honest:
 |---|---|
 | `src/types.ts` | the plan contract, mirroring the Python dataclasses |
 | `src/easing.ts` | the five curves, matching `motion/keyframe.py` |
-| `src/elements.tsx` | Text, Band, Card — the same vocabulary as `motion/compose.py` |
+| `src/elements.tsx` | Text and Band — every element a plan can contain |
 | `src/MotionScene.tsx` | background bed plus timed elements |
 | `src/Root.tsx` | the composition; size and duration come from the plan |
 

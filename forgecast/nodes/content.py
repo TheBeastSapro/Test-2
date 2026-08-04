@@ -8,14 +8,20 @@ generated costs hundreds.
 from __future__ import annotations
 
 import json
+from string import Template
 
 from .. import scripting
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..prompts import cast
 from ..providers import ProviderError
+from ..scripting.method import hook_shape
+from ..style.editing import WORDS_PER_SECOND, writing_budget
 from ._common import ask_json, request_payload, target_seconds
 
-WORDS_PER_SECOND = 2.6
+# `WORDS_PER_SECOND` is imported rather than declared: it is the rate a script is written
+# at when nothing has been learned, and `style.editing.writing_budget` is what chooses
+# between it and the channel's measured one. It stays a name in this module because
+# `_normalise_scenes` needs a rate for a caller that has no channel in hand.
 
 BRIEF_INSTRUCTIONS = """Produce a production brief for one video.
 
@@ -33,7 +39,17 @@ Return JSON with exactly these keys:
 Beats must be a real outline: each one advances the argument. Do not write
 "introduction / body / conclusion"."""
 
-SCRIPT_INSTRUCTIONS = """Write the complete narration script from the approved brief.
+# The rate is a `$placeholder` rather than a literal, and the reason is the one this
+# file's own brief stage already learned the hard way. `2.6 words per second` was written
+# into this paragraph while `_normalise_scenes` divided by a constant, and the moment a
+# channel's measured rate reached one of them but not the other, the prompt would be two
+# instructions that disagree — which `scripting.method` names precisely: the model resolves
+# that by ignoring both. One rate, substituted into the sentence the writer reads and used
+# by the arithmetic that checks them.
+#
+# `string.Template` rather than `str.format` because this text is full of braces — the JSON
+# shapes it is describing — and a formatting pass over them raises at the top of a run.
+SCRIPT_INSTRUCTIONS = Template("""Write the complete narration script from the approved brief.
 
 Return JSON with exactly these keys:
   title        string, final video title, max 100 characters
@@ -50,9 +66,10 @@ Rules for scenes:
     logos, watermarks, or a recognisable real person's face.
   - `visual_kind` is "video" for shots that need motion, "image" otherwise. Prefer
     "image" — it is roughly ten times cheaper.
-  - `seconds` is the narration length at 2.6 words per second, rounded to 0.1.
-  - Total narration must land within 10% of target_duration_seconds.
-  - Cover every beat from the brief, in order."""
+  - `seconds` is the narration length at $rate words per second, rounded to 0.1.
+  - Total narration must land within 10% of target_duration_seconds, which at that rate
+    is about $words words of narration across the whole script.
+  - Cover every beat from the brief, in order.""")
 
 
 def scripting_block(ctx: NodeContext, seconds: int, *, only: tuple[str, ...] = ()) -> str:
@@ -134,12 +151,33 @@ async def script_node(ctx: NodeContext) -> NodeResult:
     seconds = int(brief.get("target_duration_seconds") or target_seconds(ctx))
     payload = request_payload(ctx, target_duration_seconds=seconds, brief=brief)
 
+    # How fast this channel's own references talk, and where their opening beat stops.
+    # This is the number that turns "eight minutes" into a word count, and it was 2.6 for
+    # every channel — a documentary's pace handed to a shorts creator who says four words
+    # a second, which comes back a third short and gets padded by the model. The same call
+    # `graph.pipelines` reserves against and `nodes.hook` cuts the opening to.
+    budget = writing_budget((ctx.channel.style_profile or {}).get("narrative"))
+    ctx.log(budget.note)
+
     # The channel's scripting method, in full: this is the stage that writes sentences,
     # so the banned constructions and the rotation banks apply here as well as the
     # structure. Appended as a hard constraint for the same reason the research block
     # below is — a method offered as background is a method the model agrees with and
     # then does not follow.
-    instructions = f"{SCRIPT_INSTRUCTIONS}\n\n{scripting_block(ctx, seconds)}"
+    instructions = (
+        f"{SCRIPT_INSTRUCTIONS.safe_substitute(rate=f'{budget.words_per_second:.2f}', words=budget.words_for(seconds))}"
+        f"\n\n{scripting_block(ctx, seconds)}"
+    )
+
+    # How this channel opens, when a reference has been measured — the length and the pace
+    # of its first beat, which is the one thing about the script the Hook Gate downstream
+    # then judges it on. Empty for an unmeasured channel rather than a paragraph of
+    # hedging: an instruction that says there is no measurement spends tokens telling the
+    # model to ignore it, and a model told to ignore one numbered rule reads the rest as
+    # negotiable.
+    opening = hook_shape(budget.hook)
+    if opening:
+        instructions = f"{instructions}\n\n{opening}"
 
     # The cast comes out of this call rather than a second one. The stage that wrote the
     # script has the whole script in front of it and knows who recurs; asking again later
@@ -165,7 +203,7 @@ async def script_node(ctx: NodeContext) -> NodeResult:
         temperature=0.8,
     )
 
-    scenes = _normalise_scenes(data.get("scenes"))
+    scenes = _normalise_scenes(data.get("scenes"), rate=budget.words_per_second)
     data["scenes"] = scenes
 
     # Who has to look the same in every shot they appear in. Built here rather than in
@@ -224,7 +262,15 @@ async def script_node(ctx: NodeContext) -> NodeResult:
     return NodeResult(output=data, credits=credits, provider=provider)
 
 
-def _normalise_scenes(raw) -> list[dict]:
+def _normalise_scenes(raw, *, rate: float = WORDS_PER_SECOND) -> list[dict]:
+    """The scenes as the rest of the run reads them, timed at this channel's own rate.
+
+    `rate` defaults to the shipped figure so a caller with no channel in hand — a test, a
+    tool re-reading a stored script — gets the arithmetic the app has always done. It is a
+    parameter and not a lookup because a scene length derived from a different rate than
+    the prompt asked for is the disagreement the prompt's own `$rate` exists to prevent,
+    one stage later and invisible.
+    """
     if not isinstance(raw, list) or not raw:
         raise ProviderError("script came back with no scenes")
 
@@ -242,7 +288,7 @@ def _normalise_scenes(raw) -> list[dict]:
         except (TypeError, ValueError):
             seconds = 0.0
         # Trust the word count over the model's arithmetic.
-        computed = words / WORDS_PER_SECOND
+        computed = words / (rate or WORDS_PER_SECOND)
         if seconds <= 0.5 or abs(seconds - computed) > max(2.0, computed * 0.5):
             seconds = computed
         scenes.append(

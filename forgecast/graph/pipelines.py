@@ -15,17 +15,36 @@ from ..credits import PER_UNIT_COSTS
 from ..providers.media import HERO_TIER, STANDARD_TIER, model_for_tier, video_reserve_credits
 from ..render.cutting import estimate_plates, max_scenes, plates_for, spec_for
 from ..skills.gates import MAX_SETUPS
+from ..style.editing import HOOK_SECONDS, WORDS_PER_SECOND, writing_budget
 from ..style.sourcing import budgets as style_budgets
 from .spec import NodeSpec, PipelineSpec
 
-WORDS_PER_SECOND = 2.6
-
-# The hook window, repeated rather than imported from `nodes.hook`. Importing it would
-# close a cycle — `nodes/__init__` imports `hook`, `hook` imports `graph.engine`, and
-# `graph.engine` imports this module — and the same trick `models.py` uses for
-# `HOUSE_SLUG` applies: state the literal, and let a test assert the two agree.
-# `tests/test_hook_gate.py` does.
-HOOK_SECONDS = 15.0
+# Both of these were literals here, and the hook window was a literal here *and* in
+# `nodes/hook.py` with a test holding the two together — the trick `models.py` uses for
+# `HOUSE_SLUG`, adopted because importing from `nodes.hook` would close a cycle
+# (`nodes/__init__` imports `hook`, `hook` imports `graph.engine`, `graph.engine` imports
+# this module).
+#
+# There is no cycle through `style.editing`, so the copies are gone. They live beside the
+# measurement that overrides them, because a shipped default kept somewhere else from its
+# override is the one that goes stale without anybody finding out. `writing_budget` is the
+# single function that chooses between the two, and it is the same one `nodes.content`
+# writes the script with and `nodes.hook` cuts the opening to — a reserve priced off one
+# rate while the script is written at another is a hold that does not cover its own run.
+#
+# Both names are re-exported rather than merely imported: `pipelines.WORDS_PER_SECOND` is
+# what the pricing tests read, and the shipped rate is a fact about this module's estimates
+# whichever file now holds the literal.
+__all__ = [
+    "HOOK_SECONDS",
+    "PIPELINES",
+    "PIPELINE_META",
+    "WORDS_PER_SECOND",
+    "animation_reserve",
+    "faceless_longform",
+    "faceless_shorts",
+    "get_pipeline",
+]
 
 # What one generated plate costs, from the row that prices the same vendor call for the
 # thumbnail node. Read rather than restated so a change to the image rate moves both.
@@ -100,9 +119,14 @@ def animation_reserve(
 def faceless_longform(
     *, target_seconds: int = 480, use_avatar: bool = False, publish: bool = True,
     standard_model: str = "", hero_model: str = "", sourcing: dict | None = None,
-    render_spec: dict | None = None,
+    render_spec: dict | None = None, narrative: dict | None = None,
 ) -> PipelineSpec:
-    words = int(target_seconds * WORDS_PER_SECOND)
+    # How fast this channel talks and how long its opening beat runs, from the same
+    # learned style `sourcing` comes from. Absent on a channel with no reference, which
+    # `writing_budget` reads as "use the shipped rate and the shipped window" — so an
+    # unmeasured channel reserves exactly what it reserved before this existed.
+    budget = writing_budget(narrative)
+    words = budget.words_for(target_seconds)
     # The shots node buys *plates*, not shots: one image carries several shots at
     # different crops. This used to reserve `target_seconds / 6` units — about 80 for an
     # 8-minute video against the eight the node then spent, wrong by an order of
@@ -171,10 +195,13 @@ def faceless_longform(
             # fifteen seconds fail does not get watched however good minute four is.
             depends_on=("script", "voice_casting"),
             requires_approval=True,
-            # Roughly fifteen seconds of narration. Stills are the node's own cost and
-            # are small beside it — see `nodes/hook.py` on why this gate uses stills and
-            # not generated video.
-            estimated_units=HOOK_SECONDS * WORDS_PER_SECOND * 5.5,
+            # The window this channel's gate actually cuts, at the rate this channel
+            # actually writes. Stills are the node's own cost and are small beside it —
+            # see `nodes/hook.py` on why this gate uses stills and not generated video.
+            # Both terms come off `budget` rather than off the constants, because the node
+            # cuts to `budget.hook_seconds` too: a hold priced on fifteen seconds for a
+            # gate that cuts three is a hold nobody can reconcile against the bill.
+            estimated_units=budget.hook_seconds * budget.words_per_second * 5.5,
         ),
         NodeSpec(
             key="voice",
@@ -314,8 +341,12 @@ def faceless_longform(
 def faceless_shorts(*, target_seconds: int = 45, publish: bool = True,
                     standard_model: str = "", hero_model: str = "",
                     sourcing: dict | None = None, render_spec: dict | None = None,
-                    **_) -> PipelineSpec:
-    words = int(target_seconds * WORDS_PER_SECOND)
+                    narrative: dict | None = None, **_) -> PipelineSpec:
+    # The format this matters most for. A shorts creator reads breathlessly and opens in
+    # three seconds, and both of those were being priced — and written — at a documentary's
+    # pace. See `faceless_longform` for why it is a parameter rather than a lookup.
+    budget = writing_budget(narrative)
+    words = budget.words_for(target_seconds)
     # A short is mostly floor rather than rate: its beats are too brief to want a second
     # plate, so the reserve is one per scene and the runtime term barely contributes.
     shots = estimate_plates(target_seconds, sourcing=sourcing,
@@ -361,7 +392,7 @@ def faceless_shorts(*, target_seconds: int = 45, publish: bool = True,
             # sixty-second video the first fifteen seconds are a quarter of the video
             # rather than a thirtieth.
             depends_on=("script", "voice_casting"), requires_approval=True,
-            estimated_units=HOOK_SECONDS * WORDS_PER_SECOND * 5.5,
+            estimated_units=budget.hook_seconds * budget.words_per_second * 5.5,
         ),
         NodeSpec(
             key="voice", type="voice", title="Narrate script",

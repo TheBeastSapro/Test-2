@@ -20,6 +20,28 @@ drive a 30fps render without rewriting a single number.
 **Positions are fractions of the frame, not pixels.** The same plan renders at
 1280x720 and 1080x1920. A preset learned from a landscape reference is still usable on
 a Short, which is the whole point of learning it.
+
+## Every element here is type, and the card is why that is worth saying
+
+A plan could describe a `card` — one still, centred and tilted with a shadow — until it
+was removed here and in `remotion/src`. Three renderers drew one and no builder anywhere
+emitted one, so no run could produce it; the reason was structural rather than a caller
+somebody forgot to write. (The third renderer, the branch in `web/preview.html`, is now
+unreachable and wants deleting with it.)
+
+A plan describes one scene, and by the time one is built that scene's picture is already
+a finished clip: `render.cutting` has subdivided the narration into shots and
+`ffmpeg._build_scene_clip` has cut between a plate per shot. A card could therefore only
+hold one still for a whole scene — and on the very format it was meant for, the
+white-background explainer, that is the wrong number. `style.sourcing` measures that
+channel as changing picture on nearly every cut, `plate_carry` consequently buys a plate
+per shot, and a card would have hidden the four pictures the run just paid for behind one
+of them.
+
+The flat field that format wants is a property of the plate, not of a graphic laid over
+one: `flat_background` and `background_colour` want reading where plates are commissioned
+and where the colour bed is chosen. Neither is here. This layer draws type over a picture
+it does not own, which is what every element below has in common.
 """
 
 from __future__ import annotations
@@ -64,23 +86,6 @@ class BandItem:
     widthFraction: float
     heightFraction: float
     kind: str = "band"
-
-
-@dataclass
-class CardItem:
-    src: str
-    start: float
-    duration: float
-    scale: float
-    x: float
-    y: float
-    zoom: float
-    tilt: float
-    shadow: bool
-    fadeIn: float
-    fadeOut: float
-    easing: str
-    kind: str = "card"
 
 
 @dataclass
@@ -146,19 +151,6 @@ def caption_items(
         bandOpacity=preset.band_opacity,
     ))
     return items
-
-
-def card_item(preset: MotionPreset, src: str, *, start: float,
-              duration: float) -> CardItem:
-    return CardItem(
-        src=src, start=start, duration=duration,
-        scale=preset.card_scale, x=0.5, y=0.44,
-        zoom=preset.card_zoom, tilt=preset.card_tilt,
-        shadow=preset.card_shadow,
-        fadeIn=preset.entry_duration * 0.7,
-        fadeOut=preset.exit_duration,
-        easing=preset.easing,
-    )
 
 
 def plan_from(

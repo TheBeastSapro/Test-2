@@ -18,6 +18,15 @@ technique, not a workaround — it is how a single camera angle becomes four sho
 
 Everything here is pure and deterministic: same profile and same duration produce
 the same plan, so a render is reproducible and a diff is meaningful.
+
+There was also a `render_kwargs(spec)` here that packed grade, captions, Ken Burns,
+zoom rate and transition into a dict "the renderer takes directly". It never had a
+caller and it could not have had one: no function in `render.ffmpeg` accepts those
+names together, so it could not be splatted into anything. The settings reach the
+renderer through the profile instead — `style.editing.to_render_spec` writes them into
+`channel.style_profile["render_spec"]` and `render.cutting.spec_for` reads them back —
+which that method's own docstring names as the single path, on the grounds that a second
+one would mean two places deciding how a video is cut. This was that second place.
 """
 
 from __future__ import annotations
@@ -310,18 +319,6 @@ def caption_margin(position: str, height: int) -> int:
         "centre": max(int(height * 0.45), 40),
         "top_third": max(int(height * 0.78), 60),
     }.get(position, max(int(height * 0.12), 20))
-
-
-def render_kwargs(spec: RenderSpec) -> dict:
-    """The subset of a spec that the renderer takes directly."""
-    return {
-        "grade_filter": spec.grade_filter or None,
-        "subtitles": spec.captions,
-        "caption_position": spec.caption_position,
-        "ken_burns": spec.ken_burns,
-        "zoom_rate": spec.zoom_rate,
-        "transition": spec.transition,
-    }
 
 
 def spec_from_dict(payload: dict) -> RenderSpec:

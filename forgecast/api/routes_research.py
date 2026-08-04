@@ -23,6 +23,14 @@ it, whether or not it produced a single row. A channel that could not be read an
 pasted video that turned out to be ordinary both have to be visible as *fetched*, or
 the operator is left comparing a set they think they assembled against the one they
 actually got.
+
+`synthesis` is the third of those obligations and the reason several channels are read
+at once. The outlier table answers one question per video; nobody pastes five
+competitors for five separate verdicts. It is computed from the scored list rather than
+from a second pass over the videos, so what the synthesis calls an outlier and what the
+table shows as one cannot drift apart — and it ships in every response, including the
+one where nothing scored, because a key a page has to test for is a key that eventually
+goes unrendered.
 """
 
 from __future__ import annotations
@@ -50,6 +58,7 @@ from ..research.outliers import (
     find_outliers,
     summarise,
 )
+from ..research.synthesis import synthesise
 from ..research.titles import TITLE_INSTRUCTIONS, parse_ideas
 
 log = logging.getLogger("forgecast.api.research")
@@ -274,6 +283,10 @@ def score(
             "summary": summarise([]),
             "channels": [row.as_dict() for row in readout.channels],
             "priority": _priority_rows(readout, [], [], now),
+            # Present even here, and empty rather than absent. A page that reads
+            # `payload.synthesis.findings` must not have to check whether the key exists
+            # — an optional key is one that eventually is not rendered at all.
+            "synthesis": synthesise([], [], now=now).as_dict(),
             "skipped": readout.skipped, "via": readout.via,
             "note": "nothing scoreable — each row needs at least a title, a view count "
                     "and a publish date",
@@ -304,6 +317,11 @@ def score(
         },
         "channels": [row.as_dict() for row in readout.channels],
         "priority": _priority_rows(readout, found, videos, now),
+        # What the videos have in common, which is the question a fetch of five
+        # competitors was asking and the per-video table cannot answer. Computed from
+        # the same scored list rather than re-scored, so the synthesis and the rows
+        # beneath it can never disagree about which videos were the outliers.
+        "synthesis": synthesise(videos, found, now=now).as_dict(),
         "summary": summarise(found),
         "skipped": readout.skipped[:20],
         "via": readout.via,

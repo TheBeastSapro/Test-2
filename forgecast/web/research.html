@@ -47,6 +47,29 @@
   .tag.pasted { color: var(--accent); border-color: var(--accent-dim);
                 background: var(--accent-dim); }
   .tag.miss { color: var(--warn); }
+  /* The cross-video pass. One finding per row, and the scope pill leads the row rather
+     than trailing it: "three of four channels" and "one channel only" are the difference
+     between a niche convention and one competitor's tic, and a reader who reaches that
+     distinction after the sentence has already read the sentence as a trend. */
+  .synth li { padding: 9px 0; border-bottom: 1px dashed var(--line); }
+  .synth li:last-child { border-bottom: 0; }
+  .synth ul { list-style: none; margin: 6px 0 0; padding: 0; }
+  .synth .s { font-size: 13.5px; }
+  .synth .d { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .scope { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;
+           border: 1px solid var(--line); white-space: nowrap; margin-right: 7px;
+           color: var(--muted); background: var(--raise-2); }
+  /* Three colours for three claims, because they are not degrees of the same thing.
+     Convention is a finding about the niche; shared is two channels agreeing; channel is
+     one channel's habit and is deliberately the quietest of the three. */
+  .scope.convention { color: var(--ok); border-color: #1f4b38; background: #10201a; }
+  .scope.shared { color: var(--warn); border-color: #5c4a1e; background: #241f10; }
+  .scope.picks { color: var(--accent); border-color: var(--accent-dim);
+                 background: var(--accent-dim); }
+  .synth details { margin-top: 10px; }
+  .synth details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  .synth details ul { margin-top: 6px; }
+  .synth details li { font-size: 12.5px; color: var(--muted); }
   .base-strip { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
   /* Grows to share a row with the other cohort, but does not stretch to 1100px to
      hold three words when a channel only has one. */
@@ -250,6 +273,56 @@ function fetched(payload) {
     <ul>${rows.join("")}</ul></div>`;
 }
 
+// What the fetched videos have in common. This is the answer a fetch of five competitors
+// was asking for, and the table below cannot give it: every row there is a statement
+// about one video, and a pattern is a statement about a set.
+//
+// The scope pill leads every row and is not decoration. "3 of 4 channels" and "1 channel"
+// cost different amounts of money to act on, and a reader who meets that distinction
+// after the sentence has already read the sentence as a trend.
+function synthesis(payload) {
+  const synth = payload.synthesis;
+  if (!synth || !synth.headline) return "";
+  const findings = synth.findings || [];
+  const thin = synth.thin || [];
+  const missing = synth.not_assessed || [];
+
+  const label = (item) => item.scope === "picks" ? "your picks"
+    : item.channel_count <= 1 ? "1 channel"
+    : `${item.channel_count} of ${item.of_channels} channels`;
+
+  // Support, what it was measured against, and how confident that makes it — on every
+  // row, next to the claim rather than behind a hover. A finding whose sample size is
+  // one click away is a finding read without its sample size.
+  const row = (item) => `<li>
+    <div class="s"><span class="scope ${esc(item.scope)}">${esc(label(item))}</span>${esc(item.headline)}</div>
+    ${item.detail ? `<div class="d">${esc(item.detail)}</div>` : ""}
+    <div class="d">${esc(item.scope_note)}</div>
+    <div class="d">${item.support} ${esc(item.support_unit)}${item.compared_with
+      ? ` against ${item.compared_with}` : ""} · ${esc(item.confidence)} confidence</div>
+    ${(item.notes || []).map((n) => `<div class="d">— ${esc(n)}</div>`).join("")}
+  </li>`;
+
+  const parts = [`<div class="card synth"><strong>What they have in common</strong>
+    <div class="muted" style="font-size:12.5px;margin-top:4px">${esc(synth.headline)}</div>`];
+
+  if (findings.length) {
+    parts.push(`<ul>${findings.map(row).join("")}</ul>`);
+  }
+  // Kept and shown, not dropped. "Three of them did this, which is not enough to call it
+  // a pattern" is worth reading; the same three silently missing is indistinguishable
+  // from a pass that looked and found nothing.
+  if (thin.length) {
+    parts.push(`<details><summary>${thin.length} more, too thin to call a pattern
+      (fewer than 4 videos behind it)</summary><ul>${thin.map(row).join("")}</ul></details>`);
+  }
+  if (missing.length) {
+    parts.push(`<details><summary>What this could not check (${missing.length})</summary>
+      <ul>${missing.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></details>`);
+  }
+  return parts.join("") + "</div>";
+}
+
 function render(payload) {
   const parts = [];
 
@@ -261,6 +334,10 @@ function render(payload) {
   }
 
   parts.push(fetched(payload));
+  // Before the baselines and the table, because it is the answer to the question that
+  // made somebody paste several channels — and because a section placed after a long
+  // table of per-video rows is a section that gets scrolled past.
+  parts.push(synthesis(payload));
 
   // Baselines next. The multiple below means nothing without the number it is a
   // multiple *of*, and how many videos that number was computed from.

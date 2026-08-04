@@ -1,4 +1,4 @@
-"""The Hook Gate: watch the first fifteen seconds before buying the other eight minutes.
+"""The Hook Gate: watch the opening before buying the other eight minutes.
 
 ## Why this node exists
 
@@ -10,6 +10,29 @@ does not land. By then the whole video is paid for.
 Fifteen seconds is not an arbitrary window. It is where a viewer decides, and a video
 whose first fifteen seconds fail does not get watched however good minute four is. So it
 is the one part of a video worth seeing before the rest is commissioned.
+
+## Why fifteen seconds is now only the *default* window
+
+It was fifteen for every channel, and fifteen is where a viewer decides on a channel
+nobody has measured. `vision.semantic` reads where a learned reference's opening beat
+actually stops — the instant the narrator first pauses for longer than they pause inside
+a beat — and a channel whose references stop at 3.2s was having its opening judged on five
+times the video it opens with. That judged the setup as part of the hook, which is the one
+thing this gate must not do: the failure it exists to catch is a slow open, and a window
+that swallows the setup cannot tell a slow open from a normal one.
+
+So the window is `style.editing.writing_budget`'s, which is the same function `nodes/content`
+writes the script with and `graph/pipelines` reserves against. An unmeasured channel gets
+fifteen seconds, exactly as before, and the gate says so.
+
+## What the gate holds it against
+
+The opening was previously judged against nothing at all — cut, surfaced, and approved on
+a feeling. It now carries what the references do: how long their opening beat runs, how
+fast it is read, and whether that is faster than the rest of their video. Those are
+comparisons and never a verdict, because a verdict needs to know whether the promise
+landed and nothing in a timing carries that. What the measurement declines to claim
+travels with it, so "no hook type" reads as a refusal rather than as a finding.
 
 ## Why this is a separate gate from the Sample Gate, and not a duplicate of it
 
@@ -54,17 +77,27 @@ from pathlib import Path
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..providers import ProviderError
 from ..render import ffmpeg as ff
+from ..style.editing import HOOK_SECONDS, WritingBudget, writing_budget
 from ._common import dimensions
 
-# The window a viewer decides in. Scenes are taken whole until this is covered rather
-# than cut at exactly fifteen seconds — half a sentence tests nothing, and a hook judged
-# on a truncated clause is judged on an artefact of the cut.
-HOOK_SECONDS = 15.0
+# `HOOK_SECONDS` — the window a viewer decides in on a channel with no learned reference —
+# is imported rather than declared here now, because it is the fallback half of a decision
+# `style.editing.writing_budget` makes and a default that lives away from its override is
+# the one that goes stale. Scenes are still taken whole until the window is covered rather
+# than cut at exactly it: half a sentence tests nothing, and a hook judged on a truncated
+# clause is judged on an artefact of the cut.
 
 # However short the opening scenes are, more than this is not a hook any more, it is the
 # first act. The gate exists to be cheap; a "hook" running to forty seconds because the
 # script opens with five short scenes is a gate that costs what it is guarding.
 MAX_HOOK_SCENES = 4
+
+# How far the written opening has to sit from the references' before the difference is
+# worth a sentence at the gate. An opening length is a choice a creator makes within a
+# range and not to a stopwatch, so their own references disagree by a fifth without
+# meaning anything by it — and a gate that remarks on every run is one the operator stops
+# reading, which costs more than saying nothing.
+NOTABLE_DRIFT = 0.35
 
 
 def hook_scenes(scenes: list[dict], *, seconds: float = HOOK_SECONDS) -> list[dict]:
@@ -85,6 +118,66 @@ def hook_scenes(scenes: list[dict], *, seconds: float = HOOK_SECONDS) -> list[di
     return taken
 
 
+def measured_against(budget: WritingBudget, *, seconds: float, words: int) -> dict:
+    """What the opening the app just wrote looks like beside the ones it learned from.
+
+    Comparisons, never a verdict. Whether a hook *works* is whether it made a promise the
+    viewer wants kept, and nothing in a duration or a word rate carries that — which is
+    why this returns sentences an operator can check against the clip in front of them
+    rather than a score. The gate is still theirs; this is what they were previously
+    asked to decide without.
+
+    A channel with nothing learned gets one finding saying exactly that, rather than an
+    empty block. An absent comparison that looks like a passed comparison is how a
+    measurement stops being read.
+    """
+    rate = round(words / seconds, 2) if seconds > 0 else 0.0
+    wrote = {"seconds": round(float(seconds), 2), "words": int(words),
+             "words_per_second": rate}
+    findings: list[str] = []
+    learned = dict(budget.hook)
+
+    if not budget.hook_measured:
+        findings.append(
+            f"nothing is measured about how this channel opens, so this is judged on the "
+            f"shipped {budget.hook_seconds:.0f}s window with nothing to hold it against — "
+            f"{budget.note}")
+        return {"window_seconds": round(budget.hook_seconds, 2), "measured": False,
+                "learned": learned, "wrote": wrote, "findings": findings,
+                "note": budget.note}
+
+    reference = float(learned.get("seconds") or 0.0)
+    drift = (wrote["seconds"] - reference) / reference if reference > 0 else 0.0
+    if drift > NOTABLE_DRIFT:
+        findings.append(
+            f"this opening runs {wrote['seconds']:.1f}s against references that stop "
+            f"their opening beat at {reference:.1f}s — {drift:.0%} longer, which is the "
+            f"slow open this gate exists to catch")
+    elif drift < -NOTABLE_DRIFT:
+        findings.append(
+            f"this opening runs {wrote['seconds']:.1f}s against references that stop "
+            f"their opening beat at {reference:.1f}s — {abs(drift):.0%} shorter, so it "
+            f"has less room to make a promise than the references take")
+    else:
+        findings.append(
+            f"this opening runs {wrote['seconds']:.1f}s, about the {reference:.1f}s the "
+            f"references stop their opening beat at")
+
+    reference_rate = float(learned.get("words_per_second") or 0.0)
+    if reference_rate > 0 and rate > 0:
+        change = (rate - reference_rate) / reference_rate
+        if abs(change) > NOTABLE_DRIFT:
+            findings.append(
+                f"read at {rate:.1f} words a second against the references' "
+                f"{reference_rate:.1f} — {'denser' if change > 0 else 'sparser'} than "
+                f"this channel opens, and the voice cannot fix a word count")
+    findings.append(learned.get("sentence", ""))
+
+    return {"window_seconds": round(budget.hook_seconds, 2), "measured": True,
+            "learned": learned, "wrote": wrote,
+            "findings": [line for line in findings if line], "note": budget.note}
+
+
 @node_handler("hook")
 async def hook_node(ctx: NodeContext) -> NodeResult:
     """Narrate and cut the opening, then stop for approval."""
@@ -93,7 +186,13 @@ async def hook_node(ctx: NodeContext) -> NodeResult:
     if not scenes:
         raise ProviderError("cannot cut a hook from a script with no scenes")
 
-    opening = hook_scenes(scenes)
+    # How this channel opens, if anybody has measured it. The same call `script_node`
+    # writes to and `graph.pipelines` reserves against, so the window this gate cuts is
+    # the window the ledger paid for — see `style.editing.writing_budget`.
+    budget = writing_budget((ctx.channel.style_profile or {}).get("narrative"))
+    ctx.log(budget.note)
+
+    opening = hook_scenes(scenes, seconds=budget.hook_seconds)
     width, height = dimensions(ctx)
     fps = int(ctx.params.get("fps") or getattr(ctx.channel, "video_fps", 0) or 0) or None
 
@@ -201,6 +300,10 @@ async def hook_node(ctx: NodeContext) -> NodeResult:
         "seconds": round(length, 2),
         "scenes": [scene.index for scene in built],
         "words": words,
+        # What the opening was cut to, and what it looks like beside the references it was
+        # supposed to be modelled on. Before this the gate surfaced a clip and a cost and
+        # asked for a decision with nothing on the other side of the scales.
+        "measured_against": measured_against(budget, seconds=length, words=words),
         # What proceeding commits to, so the approval is made against a number rather
         # than against a feeling. The same shape the Sample Gate surfaces, and for the
         # same reason: an approval with no cost beside it is a formality.
@@ -219,10 +322,16 @@ async def hook_node(ctx: NodeContext) -> NodeResult:
     ctx.emit_artifact("json", readable, "application/json")
 
     ctx.log(
-        f"cut a {length:.1f}s hook from {len(built)} scene(s), {words} words — "
-        f"approving commits the remaining {output['commits']['remaining_scenes']} "
-        f"scenes ({output['commits']['remaining_seconds']:.0f}s)"
+        f"cut a {length:.1f}s hook from {len(built)} scene(s), {words} words, against a "
+        f"{budget.hook_seconds:.1f}s window — approving commits the remaining "
+        f"{output['commits']['remaining_scenes']} scenes "
+        f"({output['commits']['remaining_seconds']:.0f}s)"
     )
+    for finding in output["measured_against"]["findings"]:
+        # On the run log as well as in the output, because the output is read at the gate
+        # and the log is where somebody looks afterwards to find out why a video opened
+        # the way it did.
+        ctx.log(finding)
     return NodeResult(output=output, credits=credits, provider=provider)
 
 

@@ -9,7 +9,7 @@
 import React from "react";
 import { AbsoluteFill, Img, OffthreadVideo, staticFile } from "remotion";
 
-import { Band, Card, Text } from "./elements";
+import { Band, Text } from "./elements";
 import { DEFAULT_PLAN, type ScenePlan } from "./types";
 
 export const MotionScene: React.FC<{ plan?: ScenePlan }> = ({ plan }) => {
@@ -39,10 +39,7 @@ export const MotionScene: React.FC<{ plan?: ScenePlan }> = ({ plan }) => {
         if (element.kind === "text") {
           return <Text key={key} element={element} fontFamily={scene.fontFamily} />;
         }
-        if (element.kind === "band") {
-          return <Band key={key} element={element} />;
-        }
-        return <Card key={key} element={element} />;
+        return <Band key={key} element={element} />;
       })}
     </AbsoluteFill>
   );

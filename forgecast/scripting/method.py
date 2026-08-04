@@ -469,6 +469,56 @@ BLOCKS: tuple[MethodBlock, ...] = tuple(METHOD.values())
 STRUCTURE_IDS: tuple[str, ...] = ("dopamine_ladder", "curiosity_loops", "but_therefore")
 
 
+# ----------------------------------------------------------------- the measured opening
+
+
+# Deliberately not in `METHOD`, and that is the whole point of it. Every block above is
+# Forgecast's own craft: it is true of every script this app writes and it needs nothing
+# but a runtime. This one is a *measurement* of one channel's reference videos and says
+# nothing at all until one has been learned — so folding it into `METHOD` would put a bare
+# `$hook_seconds` in front of the model on every unmeasured channel, since `body` renders
+# an unfilled placeholder rather than raising. That is the right failure everywhere except
+# inside the prompt itself.
+HOOK_SHAPE = MethodBlock(
+    id="hook_shape",
+    title="How this channel opens",
+    prose="""
+Measured off this channel's own reference videos, not chosen. $sentence
+
+Write the first scene to that length and that pace: the opening beat ends where the
+narrator first stops, so scene 1 is one continuous run of speech that lands at about
+$hook_seconds seconds and $hook_words words. Everything after it is the setup and is not
+part of this.
+
+The shape is all that is measured. $not_claimed — so nothing here says which opening to
+use, the rotation bank above still decides that, and none of the reference's own wording
+is available to borrow because none of it was kept.
+""",
+)
+
+
+def hook_shape(pattern: dict | None) -> str:
+    """The opening block for a channel with a measured reference, or `""` for one without.
+
+    Empty rather than a paragraph explaining that nothing was measured. An instruction
+    whose content is "disregard this" spends tokens on every run teaching the model that
+    the numbered rules are negotiable, and the rule it decides to skip next is not this
+    one. The stage that would have appended it says so on the run log instead.
+    """
+    if not pattern or not pattern.get("seconds"):
+        return ""
+    return HOOK_SHAPE.text({
+        "sentence": str(pattern.get("sentence") or ""),
+        "hook_seconds": f"{float(pattern.get('seconds') or 0.0):.1f}",
+        "hook_words": int(pattern.get("words") or 0),
+        # The refusal travels with the numbers. Without it the block reads as a complete
+        # description of this channel's hook, and the first thing a reader does with a
+        # complete description is ask why it does not say what *kind* of hook it is.
+        "not_claimed": " ".join(str(value) for value in
+                                (pattern.get("not_claimed") or {}).values()),
+    })
+
+
 def render(*, target_seconds: int, only: tuple[str, ...] = ()) -> str:
     """The method as prompt text, numbered, with its cadence resolved.
 

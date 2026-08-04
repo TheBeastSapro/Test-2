@@ -18,9 +18,24 @@ Two rules do the work:
 2. **Unsupported is a valid, reportable outcome.** A research brief that says "no
    source found for the market-size figure" is far more useful than one that supplies a
    plausible number, because the first can be acted on and the second ships.
+
+The research *desk* — `sources`, `outliers`, `synthesis` — is the other half of this
+package and runs on the same second rule. `synthesise` is exported here because it is
+the pass that answers the question a multi-channel fetch was actually asking: not what
+each video did, but what the ones that won have in common, and on how many different
+channels. Its `not_assessed` list is the "no source found" of that side of the desk.
 """
 
 from .brief import Claim, ResearchBrief, Source
 from .engine import research_topic
+from .synthesis import Finding, Synthesis, synthesise
 
-__all__ = ["Claim", "ResearchBrief", "Source", "research_topic"]
+__all__ = [
+    "Claim",
+    "Finding",
+    "ResearchBrief",
+    "Source",
+    "Synthesis",
+    "research_topic",
+    "synthesise",
+]
