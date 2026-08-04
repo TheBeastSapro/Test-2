@@ -296,6 +296,38 @@ def torn_edge_filter(*, seed: int = 5, bite: int = 7) -> str:
     )
 
 
+def torn_rect_filter(width: int, height: int, *, seed: int = 5, bite: int = 9) -> str:
+    """Tear the edges *into* a rectangle that does not have any yet.
+
+    `torn_edge_filter` displaces an edge that already exists in an alpha channel, which
+    is the right tool for a matte and the wrong one for a sheet of paper: a rectangle's
+    alpha is opaque everywhere, so there is no boundary to push around and the filter
+    does nothing but speckle the middle. The first polished render of this style put a
+    clean-cornered rectangle on screen for exactly that reason.
+
+    So the boundary is built rather than found. Distance to the nearest edge is compared
+    against a threshold that wanders — two sine products at incommensurate frequencies,
+    which is a cheap deterministic substitute for noise and, unlike `noise`, is available
+    inside `geq` where the per-pixel decision has to happen. Two octaves: one for the
+    coarse rip, one for the fibre.
+    """
+    reach = max(2, int(bite))
+    phase = (int(seed) % 97) * 0.37
+    return (
+        "format=yuva444p,"
+        "geq="
+        f"r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':"
+        "a='"
+        # Distance from this pixel to whichever edge is nearest.
+        "st(0, min(min(X, W-1-X), min(Y, H-1-Y)));"
+        # A threshold that wanders along the border instead of running straight.
+        f"st(1, {reach} * (0.55"
+        f" + 0.30*sin(X*0.075 + Y*0.021 + {phase:.3f})"
+        f" + 0.15*sin(X*0.31 - Y*0.27 + {phase * 2:.3f})));"
+        "if(gt(ld(0), ld(1)), 255, 0)'"
+    )
+
+
 def cutout_filtergraph(*, cell: int = DEFAULT_CELL, tear: int = 7,
                        seed: int = 5, gain: float = DOT_GAIN) -> str:
     """Screen a cut-out's colour and tear its alpha, in one pass.
@@ -307,12 +339,166 @@ def cutout_filtergraph(*, cell: int = DEFAULT_CELL, tear: int = 7,
     like something torn out of a newspaper.
     """
     return (
-        "[0:v]format=yuva420p,split=2[colour][matte];"
+        "[0:v]format=yuva444p,split=2[colour][matte];"
         f"[matte]alphaextract,{torn_edge_filter(seed=seed, bite=tear)}[torn];"
-        f"[colour]{halftone_filter(cell=cell, gain=gain)},format=gray,format=yuva420p"
+        f"[colour]{halftone_filter(cell=cell, gain=gain)},format=gray,format=yuva444p"
         "[screened];"
         "[screened][torn]alphamerge[out]"
     )
+
+
+#: How far a layer's shadow falls, as a fraction of the frame height, and how soft.
+#: Small on purpose: these are sheets of paper resting on other sheets, a millimetre or
+#: two apart, not objects floating above a table. A long shadow reads as a web page.
+SHADOW_OFFSET = 0.006
+SHADOW_BLUR = 5
+SHADOW_ALPHA = 0.42
+
+
+def shadow_chain(label: str, out: str, *, blur: int = SHADOW_BLUR,
+                 alpha: float = SHADOW_ALPHA) -> str:
+    """A soft dark copy of a layer, to sit under it.
+
+    The single biggest difference between a collage and a pile of clip-art, and the
+    cheapest to add. Paper laid on paper casts a shadow; without one every layer looks
+    printed onto the sheet below rather than resting on it, and no amount of texture
+    elsewhere recovers that.
+
+    Built from the layer's own alpha, so a torn edge casts a torn shadow. Colouring the
+    RGB to black *before* blurring matters: blurring first and darkening after drags the
+    subject's own colours out past its edge and fringes the shadow.
+    """
+    return (
+        f"[{label}]format=yuva444p,"
+        "colorchannelmixer=rr=0:rg=0:rb=0:gr=0:gg=0:gb=0:br=0:bg=0:bb=0"
+        f":aa={max(0.0, min(1.0, alpha)):.2f},"
+        f"boxblur=luma_radius={max(1, int(blur))}:chroma_radius={max(1, int(blur))}"
+        f":alpha_radius={max(1, int(blur))}:luma_power=1[{out}]"
+    )
+
+
+#: The finishing pass over the assembled frame. Every layer arrives from a different
+#: source — a generated still, a procedural sheet, rendered type — and until they share a
+#: grain and a grade they read as three things pasted together rather than as one
+#: photographed desk. This is the pass that makes them one object.
+FINISH_GRAIN = 6
+
+
+def finish_chain(source: str, out: str, *, grain: int = FINISH_GRAIN,
+                 warmth: float = 0.03) -> str:
+    """Grain and a shared cast over the whole composite.
+
+    Applied once at the end rather than per layer, which is the point: a grain that is
+    *identical across every layer* is the evidence the eye uses to decide it is looking
+    at one photograph. Per-layer grain does the opposite and makes the seams more
+    visible, not less.
+    """
+    return (
+        f"[{source}]"
+        f"colorbalance=rs={warmth:.3f}:gs={warmth / 3:.3f}:bs={-warmth:.3f},"
+        "eq=contrast=1.04:saturation=0.94,"
+        f"noise=alls={max(0, int(grain))}:allf=t+u:all_seed=99,"
+        f"format=yuv420p[{out}]"
+    )
+
+
+#: Fonts to set typewritten strips in, best first. Monospace throughout, because the
+#: element being imitated is a line typed on a machine and cut out — proportional type
+#: says "designed in software", which is the thing this style is pretending not to be.
+_TYPE_FONTS = (
+    "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeMono.ttf",
+    "/System/Library/Fonts/Menlo.ttc",
+    "C:/Windows/Fonts/consola.ttf",
+)
+
+
+def type_font() -> str:
+    """The first monospace face present on this machine, or empty if none is."""
+    return next((path for path in _TYPE_FONTS if Path(path).exists()), "")
+
+
+def _escape_drawtext(text: str) -> str:
+    """Escape for drawtext, which parses its own value.
+
+    Colons separate options and single quotes end the literal, so a strip reading
+    "16:9 — it's the wrong crop" silently truncates or fails the whole graph.
+    """
+    return (str(text).replace("\\", "\\\\").replace(":", r"\:")
+            .replace("'", r"\'").replace("%", r"\%"))
+
+
+def render_strip(text: str, out_path: Path, *, width: int = 900,
+                 seed: int = 31, tone: str = "bone", tear: int = 4,
+                 point: int = 34) -> Path:
+    """A line of type on a torn strip of paper.
+
+    The element the first render of this style got most wrong: it composited a blank
+    cream bar, because the strip was made by the paper generator and nothing ever put
+    words on it. A typewritten strip with no typing on it is a rectangle.
+
+    Sized from the text rather than given a fixed width, so a three-word strip is a
+    three-word strip and not a short phrase adrift in a wide band — the giveaway that a
+    template made it.
+    """
+    font = type_font()
+    if not font:
+        raise RuntimeError(
+            "no monospace font was found for typewritten strips — install one "
+            "(on Debian and Ubuntu: fonts-liberation) and the strips will set")
+
+    body = " ".join(str(text).split())
+    # Roughly the advance width of a monospace glyph at this size, plus a margin either
+    # side wide enough to look cut rather than cropped.
+    span = max(120, round(len(body) * point * 0.62) + point * 2)
+    tall = round(point * 2.1)
+
+    out_path = Path(out_path).with_suffix(".png")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    _run(
+        ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+         *paper_inputs(span, tall, seed),
+         "-filter_complex",
+         paper_filtergraph(span, tall, seed=seed, tone=tone, grain=7, vignette=False)
+         + ",format=yuva420p,"
+         # Ink, not black: type struck through a ribbon onto absorbent paper is never
+         # fully dense, and pure black over a warm sheet is the tell that it was drawn.
+         f"drawtext=fontfile={font}:text='{_escape_drawtext(body)}'"
+         f":fontcolor=0x241f1a@0.88:fontsize={point}:x=(w-text_w)/2:y=(h-text_h)/2,"
+         # Torn on all four sides, like the scraps, so a strip and a sheet look cut by
+         # the same hand. Shallower, because a strip is narrow and a deep tear would eat
+         # the type.
+         + torn_rect_filter(span, tall, seed=seed + 3, bite=max(2, tear)) + "[out]",
+         "-map", "[out]", "-frames:v", "1", str(out_path)],
+        "setting a typewritten strip",
+    )
+    return out_path
+
+
+def render_scrap(out_path: Path, *, width: int = 700, height: int = 480,
+                 seed: int = 22, tone: str = "kraft", tear: int = 9) -> Path:
+    """A torn piece of paper to lay under things.
+
+    The same generator as the base sheet, with its edges torn and no vignette. Torn is
+    the whole difference: an untorn scrap is a rectangle of flat colour, which is what
+    the first render of this style put on screen and is the reason it read as clip-art.
+    """
+    out_path = Path(out_path).with_suffix(".png")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    _run(
+        ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+         *paper_inputs(width, height, seed),
+         "-filter_complex",
+         paper_filtergraph(width, height, seed=seed, tone=tone, grain=9, vignette=False)
+         # Torn *into* the rectangle rather than displaced along an edge it does not
+         # have — see `torn_rect_filter` for why the other filter is the wrong tool here.
+         + "," + torn_rect_filter(width, height, seed=seed, bite=tear * 2) + "[out]",
+         "-map", "[out]", "-frames:v", "1", str(out_path)],
+        "tearing a paper scrap",
+    )
+    return out_path
 
 
 def render_cutout(src: Path, out_path: Path, *, cell: int = DEFAULT_CELL,
@@ -612,16 +798,21 @@ class Placement:
 
 
 def shot_filtergraph(rows: list[dict], placements: dict, *,
-                     width: int, height: int, fps: int) -> str:
+                     width: int, height: int, fps: int,
+                     shadows: bool = True, finish: bool = True) -> str:
     """The filter_complex that assembles one beat.
 
     `rows` is a `PaperShot.timeline()`. `placements` maps a layer key to a `Placement`,
     or to a bare (x, y) pair, so a composition is described once and renders at any size.
+
+    `shadows` and `finish` are the two passes that decide whether the result looks like a
+    collage or like clip-art, and both default on. They are switchable only because a
+    test that is checking placement arithmetic should not have to read past them.
     """
     chains: list[str] = []
     # Input 0 is the base sheet, scaled to fill. Everything else overlays onto it in the
     # order the timeline already sorted them into.
-    chains.append(f"[0:v]scale={width}:{height},setsar=1,format=yuva420p[canvas0]")
+    chains.append(f"[0:v]scale={width}:{height},setsar=1,format=yuva444p[canvas0]")
 
     canvas = "canvas0"
     overlay_index = 0
@@ -653,7 +844,11 @@ def shot_filtergraph(rows: list[dict], placements: dict, *,
             # underneath shows through where this one does not cover it.
             prepare.append(f"rotate={math.radians(spot.rotate):.5f}"
                            ":fillcolor=none:ow=rotw(iw):oh=roth(ih)")
-        prepare.append("format=yuva420p")
+        # 444, not 420. A hard alpha edge over subsampled chroma puts a coloured fringe
+        # along the boundary — visibly green along the top of a torn scrap — because the
+        # colour planes are half resolution and bleed across the cut. Every layer in this
+        # style has a hard torn edge, so this is the whole frame, not a corner case.
+        prepare.append("format=yuva444p")
         chains.append(f"[{source}]{','.join(prepare)}[{label}]")
 
         if entry == "draw":
@@ -675,15 +870,39 @@ def shot_filtergraph(rows: list[dict], placements: dict, *,
 
         # `enable` rather than trusting the position: an element parked off-frame is
         # still composited every frame, and eighty of those is real encode time.
+        gate = f":enable='gte(t,{round(float(row['start']), 4)})'"
+
+        if shadows and entry != "hold":
+            # `split` first: a filtergraph stream can only be consumed once, and the
+            # shadow needs the same pixels the layer itself is about to use.
+            front, behind = f"{moving}f", f"{moving}s"
+            chains.append(f"[{moving}]split=2[{front}][{behind}]")
+            shade = f"S{overlay_index}"
+            chains.append(shadow_chain(behind, shade))
+
+            # The shadow travels with the layer, at its position plus the drop. One
+            # pinned to the resting position while the sheet is still moving is worse
+            # than no shadow at all: it reads as a hole in the paper.
+            drop = max(1.0, height * SHADOW_OFFSET)
+            shaded = f"canvas{overlay_index}s"
+            chains.append(
+                f"[{canvas}][{shade}]overlay=x='{x_expr}+{drop:.1f}':"
+                f"y='{y_expr}+{drop:.1f}'{gate}:eval=frame:format=auto[{shaded}]"
+            )
+            canvas = shaded
+            moving = front
+
         out = f"canvas{overlay_index}"
         chains.append(
             f"[{canvas}][{moving}]overlay=x='{x_expr}':y='{y_expr}'"
-            f":enable='gte(t,{round(float(row['start']), 4)})'"
-            f":eval=frame:format=auto[{out}]"
+            f"{gate}:eval=frame:format=auto[{out}]"
         )
         canvas = out
 
-    chains.append(f"[{canvas}]format=yuv420p[out]")
+    if finish:
+        chains.append(finish_chain(canvas, "out"))
+    else:
+        chains.append(f"[{canvas}]format=yuv420p[out]")
     return ";".join(chains)
 
 

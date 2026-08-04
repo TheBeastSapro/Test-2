@@ -58,6 +58,8 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import terminal
+
 log = logging.getLogger("forgecast.agent.minimax_auth")
 
 PACKAGE = "mmx-cli"
@@ -268,29 +270,17 @@ def start_login(root: Path | None = None) -> tuple[bool, str]:
     if not cli:
         return False, f"The MiniMax CLI was not found. Install it: {INSTALL_HINT}"
 
-    command = [cli, "auth", "login", "--recommend"]
-    try:
-        if os.name == "nt":
-            # A real console, so the URL and the prompt are readable. `start` returns
-            # immediately, which is wanted: the browser step is the operator's, not ours.
-            subprocess.Popen(["cmd", "/c", "start", "MiniMax sign-in", *command],
-                             creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0))
-        elif os.uname().sysname == "Darwin":
-            script = " ".join(f'"{part}"' for part in command)
-            subprocess.Popen(["osascript", "-e",
-                              f'tell app "Terminal" to do script "{script}"'])
-        else:
-            opened = False
-            for terminal in ("x-terminal-emulator", "gnome-terminal", "konsole", "xterm"):
-                if shutil.which(terminal):
-                    subprocess.Popen([terminal, "-e", *command])
-                    opened = True
-                    break
-            if not opened:
-                return False, ("No terminal emulator was found. Run this yourself:  "
-                               + " ".join(command))
-    except OSError as exc:
-        return False, f"Could not open a terminal: {exc}"
-
-    return True, ("A terminal is opening. Complete the MiniMax sign-in in your browser, "
-                  "then press Check again.")
+    # Through `terminal.open_terminal` rather than launching here. This function used to
+    # build its own launcher and carried two faults the shared one exists to remove: it
+    # interpolated the command into an AppleScript string, where quoting each argument is
+    # not protection because AppleScript is not a shell and a path containing the right
+    # characters escapes the literal outright; and it passed `-e` to Linux terminals,
+    # which several read as "the next word only" and then run the wrong thing. The shared
+    # launcher writes the command to a file and points the terminal at the file, so
+    # nothing is ever parsed as a command line.
+    return terminal.open_terminal(
+        [cli, "auth", "login", "--recommend"],
+        done=("A terminal is opening. Complete the MiniMax sign-in in your browser, "
+              "then press Check again."),
+        manual="No terminal emulator was found. Run this yourself:",
+    )

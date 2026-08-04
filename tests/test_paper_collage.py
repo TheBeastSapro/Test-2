@@ -332,7 +332,8 @@ def test_each_layer_reads_its_own_input():
 
 
 def test_the_base_is_the_canvas_and_never_overlays():
-    graph = paper.shot_filtergraph(_rows(), {}, width=1280, height=720, fps=30)
+    graph = paper.shot_filtergraph(_rows(), {}, width=1280, height=720, fps=30,
+                                   shadows=False)
     # Three layers over the base means three overlays, not four.
     assert graph.count("overlay=") == 3
 
@@ -499,3 +500,156 @@ def test_a_shot_with_no_base_is_refused_with_a_sentence(tmp_path):
     with pytest.raises(ValueError, match="base"):
         paper.render_shot(shot, {"subject": tmp_path / "nothing.png"},
                           tmp_path / "beat")
+
+
+# ------------------------------------------------------------------- the polish
+#
+# The first assembled frame this style produced was technically correct and looked
+# cheap. Four things were missing, and each of them is the difference between a collage
+# and a pile of clip-art rather than a refinement of one.
+
+
+def test_every_moving_layer_casts_a_shadow():
+    """Paper laid on paper casts one. Without it each layer looks printed onto the sheet
+    below rather than resting on it, and no amount of texture elsewhere recovers that."""
+    graph = paper.shot_filtergraph(_rows(), {}, width=1280, height=720, fps=30)
+    # One shadow overlay and one layer overlay for each of the three moving layers.
+    assert graph.count("overlay=") == 6
+    assert graph.count("split=2") >= 3
+
+
+def test_the_base_sheet_casts_no_shadow():
+    """It is the desk. A shadow under the bottom layer has nothing to fall on."""
+    graph = paper.shot_filtergraph(
+        _rows(layers=("base", "subject")), {}, width=1280, height=720, fps=30)
+    assert graph.count("overlay=") == 2  # one shadow, one subject
+
+
+def test_the_shadow_travels_with_the_layer():
+    """One pinned to the resting position while the sheet is still moving reads as a
+    hole in the paper."""
+    graph = paper.shot_filtergraph(_rows(), {}, width=1280, height=720, fps=30)
+    shadow_overlay = next(line for line in graph.split(";")
+                          if "overlay=" in line and "[S1]" in line)
+    # The same stepped progress expression the layer itself uses.
+    assert "floor(" in shadow_overlay
+
+
+def test_the_shadow_is_blackened_before_it_is_blurred():
+    """Blurring first and darkening after drags the subject's own colours out past its
+    edge and fringes the shadow."""
+    chain = paper.shadow_chain("L1", "S1")
+    assert chain.index("colorchannelmixer") < chain.index("boxblur")
+
+
+def test_the_shadow_is_built_from_the_layers_own_alpha():
+    """So a torn edge casts a torn shadow rather than a rectangular one."""
+    chain = paper.shadow_chain("L1", "S1")
+    assert "aa=" in chain
+    assert "alpha_radius" in chain
+
+
+def test_grain_is_applied_once_over_the_whole_composite():
+    """Identical grain across every layer is the evidence the eye uses to decide it is
+    looking at one photograph. Per-layer grain makes the seams more visible, not less."""
+    graph = paper.shot_filtergraph(_rows(), {}, width=1280, height=720, fps=30)
+    assert graph.count("noise=alls") == 1
+    # And it is last, after everything has been assembled.
+    assert graph.rindex("noise=alls") > graph.rindex("overlay=")
+
+
+def test_nothing_in_the_graph_subsamples_chroma_before_the_final_encode():
+    """A hard alpha edge over 4:2:0 puts a coloured fringe along the boundary — visibly
+    green along the top of a torn scrap — because the colour planes are half resolution
+    and bleed across the cut. Every layer in this style has a hard torn edge."""
+    graph = paper.shot_filtergraph(_rows(), {}, width=1280, height=720, fps=30)
+    assert "yuva420p" not in graph
+    assert graph.count("yuva444p") >= 4
+    # yuv420p is fine at the very end: that is the delivery format, after compositing.
+    assert graph.rindex("yuv420p") > graph.rindex("yuva444p")
+
+
+def test_a_rectangle_is_torn_by_building_an_edge_not_by_displacing_one():
+    """`torn_edge_filter` pushes an existing boundary around, which is right for a matte
+    and does nothing to a rectangle — its alpha is opaque everywhere, so there is no
+    boundary to push and the filter only speckles the middle. That is exactly what put a
+    clean-cornered rectangle on screen."""
+    graph = paper.torn_rect_filter(600, 400, seed=5, bite=9)
+    # Distance to the nearest edge, compared against a threshold that wanders.
+    assert "min(min(X, W-1-X), min(Y, H-1-Y))" in graph
+    assert "sin(" in graph
+    # No noise filter: `geq` is where the per-pixel decision has to happen and `noise`
+    # is not available inside it.
+    assert "noise=" not in graph
+
+
+def test_the_tear_is_the_same_every_time_for_a_seed():
+    assert (paper.torn_rect_filter(600, 400, seed=5)
+            == paper.torn_rect_filter(600, 400, seed=5))
+    assert (paper.torn_rect_filter(600, 400, seed=5)
+            != paper.torn_rect_filter(600, 400, seed=6))
+
+
+def test_a_typewritten_strip_is_set_in_monospace():
+    """Proportional type says "designed in software", which is the thing this style is
+    pretending not to be."""
+    font = paper.type_font()
+    assert font, "no monospace font on this machine"
+    assert "mono" in font.lower()
+
+
+def test_strip_text_is_escaped_for_drawtext():
+    """drawtext parses its own value: a colon separates options and a quote ends the
+    literal, so a strip reading "16:9 — it's the wrong crop" truncates or fails the whole
+    graph."""
+    assert paper._escape_drawtext("16:9 it's") == r"16\:9 it\'s"
+    assert paper._escape_drawtext("100%") == r"100\%"
+
+
+def test_a_strip_is_sized_from_its_text(tmp_path):
+    """A three-word strip should be a three-word strip, not a short phrase adrift in a
+    wide band — which is the giveaway that a template made it."""
+    import subprocess
+
+    short = paper.render_strip("NO", tmp_path / "short", point=24)
+    long = paper.render_strip("A CONSIDERABLY LONGER LINE", tmp_path / "long", point=24)
+
+    def width(path):
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=width", "-of", "csv=p=0", str(path)],
+            capture_output=True, text=True, timeout=60, check=True)
+        return int(out.stdout.strip())
+
+    assert width(long) > width(short) * 2
+
+
+def test_a_strip_actually_has_ink_on_it(tmp_path):
+    """The first assembled frame composited a blank cream bar, because the strip was made
+    by the paper generator and nothing ever put words on it."""
+    import subprocess
+
+    strip = paper.render_strip("THE CABLE WAS NEVER REPAIRED", tmp_path / "s", point=28)
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-f", "lavfi",
+         f"movie={strip},format=gray,signalstats",
+         "-show_entries", "frame_tags=lavfi.signalstats.YMIN",
+         "-of", "csv=p=0"],
+        capture_output=True, text=True, timeout=60, check=True)
+    # Ink is dark. A blank strip's darkest pixel is paper.
+    assert int(out.stdout.strip().splitlines()[0]) < 90
+
+
+def test_a_scrap_is_torn_on_every_side(tmp_path):
+    """Corners are the tell. An untorn scrap is a rectangle of flat colour."""
+    import subprocess
+
+    scrap = paper.render_scrap(tmp_path / "scrap", width=300, height=200, tear=9)
+    # The corners must be transparent — that is what "torn" means at a corner.
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-f", "lavfi",
+         f"movie={scrap},format=rgba,crop=8:8:0:0,alphaextract,signalstats",
+         "-show_entries", "frame_tags=lavfi.signalstats.YMAX",
+         "-of", "csv=p=0"],
+        capture_output=True, text=True, timeout=60, check=True)
+    assert int(out.stdout.strip().splitlines()[0]) == 0

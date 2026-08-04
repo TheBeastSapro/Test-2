@@ -785,6 +785,49 @@ def install_codex_cli(root: Path, on_progress=None, *, on_note=None,
     return True, found
 
 
+def install_npm_package(root: Path, package: str, *, on_note=None, on_tick=None,
+                        verify=None, timeout: float = 900.0) -> tuple[bool, str]:
+    """Any npm package into `runtime/node`, with the same guarantees as the two above.
+
+    `install_claude_cli` and `install_codex_cli` predate this and keep their own bodies,
+    because each has vendor-specific fallbacks — Windows has a real Claude installer, and
+    Codex's entry script is looked up in a particular place. This is for the packages
+    that need none of that, so a third CLI does not mean a third copy of the npm
+    plumbing.
+
+    `verify` is the part that matters and the reason this is not two lines. npm's exit
+    code says npm succeeded, not that this app can run what npm wrote — the failure
+    `install_codex_cli` documents, where a Windows shim lands somewhere the app does not
+    look. So the caller passes the same lookup the feature itself will use, and an
+    install that cannot be found afterwards is a failure however npm exited.
+    """
+    npm = npm_exe(root)
+    if not npm.exists():
+        system_npm = shutil.which("npm")
+        if not system_npm:
+            return False, (f"npm was not found — neither beside the bundled Node in "
+                           f"{node_bin(root)} nor on PATH — so {package} cannot be "
+                           "installed. Installing Node first provides it.")
+        npm = Path(system_npm)
+
+    code, output = run_watched(
+        [str(npm), "install", "-g", package, "--prefix", str(node_bin(root))],
+        on_line=on_note, tick=on_tick, timeout=timeout, env=_npm_env(root))
+
+    tail = "\n".join(output.strip().splitlines()[-6:])
+    if code != 0:
+        return False, f"npm failed:\n{tail}"
+
+    if verify is not None:
+        found = verify()
+        if not found:
+            return False, (f"npm exited 0 but no {package} this app can run was found "
+                           f"under {node_bin(root)}. Its own output:\n{tail}")
+        return True, str(found)
+
+    return True, f"{package} installed"
+
+
 def install_ffmpeg(root: Path, on_progress=None) -> tuple[bool, str]:
     """ffmpeg into `runtime/ffmpeg`. Windows only — elsewhere use the package manager."""
     if os.name != "nt":

@@ -31,6 +31,7 @@ from .routes_settings import router as settings_router
 from .routes_setup import router as setup_router
 from .routes_skills import router as skills_router
 from .routes_styles import router as styles_router
+from .routes_voice import router as voice_router
 from .routes_web import router as web_router
 
 log = logging.getLogger("forgecast.api")
@@ -107,6 +108,12 @@ def create_app() -> FastAPI:
     # the heavy readers are an optional extra, and every endpoint reports what it cannot
     # measure as something the app can install rather than failing.
     app.include_router(edit_router)
+
+    # Signing in to a voice vendor with a subscription rather than a key. The CLI
+    # adapter, the auth reader and the routing to it were all built and Settings offered
+    # exactly one thing for that vendor: a box to paste an API key — the route the CLI
+    # adapter exists to avoid, since a key bills per character and the plan does not.
+    app.include_router(voice_router)
 
     # The stylesheet and the chat's script. A real mount rather than a route per file:
     # these are the only static assets, they are part of the package, and they must
