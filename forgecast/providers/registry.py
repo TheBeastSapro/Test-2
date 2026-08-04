@@ -50,6 +50,7 @@ from .media import (
 )
 from .minimax_cli import MiniMaxCliVoiceProvider
 from .mock import MockAvatar, MockImage, MockLLM, MockVideo, MockVoice
+from .pollinations import PollinationsProvider
 from .stock import OpenverseProvider
 
 # vendor name -> (capability, class, env/key name)
@@ -60,6 +61,10 @@ CATALOGUE: dict[str, tuple[Capability, type, str]] = {
     # resolution treats them as always-available rather than always-unconfigured.
     "claude-cli": (Capability.llm, ClaudeCliProvider, ""),
     "openverse": (Capability.image, OpenverseProvider, ""),
+    # Keyless in the strongest sense in this table: no key, no connector, no account, no
+    # billing relationship. It is the only entry that lets a fresh install render an
+    # image on its first run, and the only one whose result costs literally nothing.
+    "pollinations": (Capability.image, PollinationsProvider, ""),
     # Keyless here means "no ProviderKey row", not "no credential". Epidemic Sound's
     # credential is a *connector* — the agent's connector store, not the Settings key
     # table — so the adapter fetches its own and `available()` is what decides whether
@@ -119,7 +124,14 @@ DEFAULT_ROUTING: dict[Capability, list[str]] = {
     # never fallen back to. What it is *for* is identity that holds across shots and across
     # episodes, which is a decision about a channel's look rather than a way to make a
     # picture when fal is unavailable.
-    Capability.image: ["fal", "openverse"],
+    # Paid generation, then free generation, then stock search. Pollinations sits above
+    # Openverse rather than below it because an image generated from the shot's own
+    # prompt is more likely to be the right picture than a stock search for keywords from
+    # it — `stock.py`'s own relaxation ladder documents serving "Blue Grass Chemical
+    # Agent-Destruction" for a film about undersea cables. It costs nothing either way,
+    # so the only thing traded is time: the free tier queues, and a long-form video on it
+    # takes tens of minutes it would not take on fal.
+    Capability.image: ["fal", "pollinations", "openverse"],
     Capability.video: ["fal-video", "runway"],
     Capability.avatar: ["heygen"],
     # Empty on purpose, and it is the only entry here that is. Every other capability has
