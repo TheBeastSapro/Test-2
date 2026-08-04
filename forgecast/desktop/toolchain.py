@@ -879,18 +879,39 @@ EXTRAS = {
         # starts the download now or later. OpenCV is ~60 MB, the transcription model
         # ~140 MB on first use, the matting model 176 MB.
         "megabytes": 400,
+        "kind": "python",
+    },
+    "motion": {
+        "label": "Layered motion graphics",
+        "gives": "the Remotion renderer — real layered motion graphics with staggered "
+                 "reveals and parallax, instead of text composited by ffmpeg",
+        "megabytes": 350,
+        "kind": "npm",
     },
 }
 
 
-def extra_installed(name: str) -> tuple[bool, str]:
-    """Whether an extra's packages import, and what is missing when they do not.
+def remotion_root(root: Path) -> Path:
+    return root / "remotion"
 
-    Asked by import rather than by consulting pip's metadata: a package recorded as
-    installed and not importable is the state that matters, and it is the one a stale
-    virtualenv produces.
+
+def extra_installed(name: str, root: Path | None = None) -> tuple[bool, str]:
+    """Whether an extra is actually usable, and what is missing when it is not.
+
+    Asked by import — or, for the npm one, by the presence of the package it resolves —
+    rather than by consulting a package manager's metadata. A thing recorded as
+    installed and not loadable is the state that matters, and it is the one a stale
+    virtualenv or an interrupted `npm install` produces.
     """
     import importlib.util
+
+    if name == "motion":
+        # The app root is this file's grandparent when nobody says otherwise, which is
+        # what every caller inside the running app means by it.
+        base = remotion_root(root or Path(__file__).resolve().parents[2])
+        if not (base / "node_modules" / "remotion").exists():
+            return False, "the Remotion renderer"
+        return True, ""
 
     wanted = {"edit": (("scenedetect", "shot detection"),
                        ("faster_whisper", "transcription"),
@@ -900,6 +921,59 @@ def extra_installed(name: str) -> tuple[bool, str]:
     if absent:
         return False, ", ".join(absent)
     return True, ""
+
+
+def install_remotion(root: Path, *, on_note=None, on_tick=None) -> tuple[bool, str]:
+    """`npm install` in the Remotion project, with this app's own Node.
+
+    Nothing has ever done this, and the consequence was the quietest kind of dead
+    feature: `RemotionBackend.available()` checks for `node_modules/remotion`, finds
+    nothing, and `backend_for` silently downgrades to ffmpeg. So the layered
+    motion-graphics engine shipped in every archive and could not run on any machine,
+    and the fallback meant nobody ever saw an error explaining why.
+    """
+    base = remotion_root(root)
+    if not (base / "package.json").is_file():
+        return False, f"there is no Remotion project at {base}"
+
+    npm = npm_exe(root)
+    command = [str(npm)] if npm.exists() else [shutil.which("npm") or ""]
+    if not command[0]:
+        # Node first, the way the CLI installers do it: npm is the only route and there
+        # is no vendor installer for this.
+        try:
+            install_node(root, None)
+        except Exception as exc:
+            return False, (f"Node.js could not be downloaded ({type(exc).__name__}: "
+                           f"{exc}), and npm is the only way this installs")
+        npm = npm_exe(root)
+        if not npm.exists():
+            return False, "npm is still not present after installing Node"
+        command = [str(npm)]
+
+    code, output = run_watched(
+        [*command, "install", "--no-audit", "--no-fund"],
+        on_line=on_note, tick=on_tick, timeout=1800, cwd=str(base),
+        env=_npm_env(root))
+
+    log_path = root / "runtime" / "npm-remotion.log"
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(output or "(npm produced no output)", encoding="utf-8")
+    except OSError:                                                   # pragma: no cover
+        log_path = None
+
+    if code != 0:
+        tail = "\n".join((output or "").strip().splitlines()[-6:])
+        return False, ("npm failed installing the Remotion renderer"
+                       + (f" — the whole log is at {log_path}" if log_path else "")
+                       + (f":\n{tail}" if tail else ""))
+
+    ok, absent = extra_installed("motion", root)
+    if not ok:
+        return False, (f"npm finished but {absent} is still not there — look in "
+                       f"{base / 'node_modules'}")
+    return True, "Layered motion graphics installed"
 
 
 def install_python_extra(root: Path, name: str, *, on_note=None,
@@ -920,6 +994,9 @@ def install_python_extra(root: Path, name: str, *, on_note=None,
         # Not an error worth failing on: a development checkout runs from whatever
         # interpreter started it, and that is the one to install into.
         python = Path(sys.executable)
+
+    if EXTRAS[name].get("kind") == "npm":
+        return install_remotion(root, on_note=on_note, on_tick=on_tick)
 
     argv = [str(python), "-m", "pip", "install", "--disable-pip-version-check",
             "-e", f".[{name}]"]

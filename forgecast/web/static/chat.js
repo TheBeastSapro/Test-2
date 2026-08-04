@@ -1166,9 +1166,38 @@ async function checkTools() {
     return;                     // Not a desktop install, or the route is not mounted.
   }
   const missing = (state.tools || []).filter(t => !t.present);
+
+  // The optional toolsets, offered in the same banner. They are deliberately not in
+  // `state.tools` — that list drives the install every operator sits through on first
+  // run, and these are 400 MB of editing tools and 350 MB of motion graphics that most
+  // people never need. But not-mandatory must not mean "print a command and give up":
+  // the Remotion renderer shipped in every archive for months and could never run,
+  // because nothing anywhere executed `npm install` in its folder and the backend
+  // silently fell back to ffmpeg rather than saying so.
+  let extras = [];
+  try {
+    extras = ((await api('/api/setup/extras')).extras || []).filter(e => !e.installed);
+  } catch { /* older build, or the route is not mounted */ }
+
   const banner = $('#toolbar-missing');
   if (!banner) return;
-  if (!missing.length) { banner.hidden = true; return; }
+  if (!missing.length && !extras.length) { banner.hidden = true; return; }
+
+  if (!missing.length) {
+    // Nothing is actually broken — these are capabilities to add, so the banner says
+    // what they unlock rather than reporting an absence.
+    const first = extras[0];
+    $('#missing-text').innerHTML =
+      `<b>${esc(first.label)}</b> <span class="muted">${esc(first.gives)} `
+      + `— about ${first.megabytes} MB.</span>`;
+    const button = $('#missing-install');
+    button.hidden = false;
+    button.textContent = 'Install';
+    button.onclick = () => installExtra(first.key, button);
+    $('#missing-bar').hidden = true;
+    banner.hidden = false;
+    return;
+  }
 
   // A tool carrying a `manual` line cannot be fetched for you — ffmpeg on macOS and
   // Linux belongs to a package manager. An Install button for those would be a button
@@ -1229,6 +1258,43 @@ async function installTools() {
   // Re-read the state rather than assuming success. The install reports per tool, and
   // one failing while another worked is a normal outcome worth showing accurately.
   $('#missing-bar').hidden = true;
+  button.disabled = false;
+  button.textContent = 'Install';
+  await checkTools();
+}
+
+async function installExtra(key, button) {
+  button.disabled = true;
+  button.textContent = 'Installing…';
+  $('#missing-text').textContent = 'Downloading — this takes a few minutes, once.';
+  try {
+    const response = await fetch(`/api/setup/extras/${key}`, { method: 'POST' });
+    if (!response.ok) throw new Error(await response.text());
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        let event;
+        try { event = JSON.parse(line); } catch { continue; }
+        if (event.type === 'log') {
+          $('#missing-text').textContent = String(event.text).slice(0, 140);
+        } else if (event.type === 'done') {
+          $('#missing-text').textContent = event.ok
+            ? String(event.detail || 'Installed.')
+            : `Could not install it — ${event.detail || 'no reason given'}`;
+        }
+      }
+    }
+  } catch (error) {
+    $('#missing-text').textContent = 'Could not install: ' + String(error.message || error);
+  }
   button.disabled = false;
   button.textContent = 'Install';
   await checkTools();

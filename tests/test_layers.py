@@ -178,3 +178,60 @@ def test_the_extras_are_not_in_the_mandatory_install():
     keys = {tool.key for tool in toolchain.inventory(__import__("pathlib").Path("/nowhere"))}
     assert "edit" not in keys
     assert "rembg" not in keys
+
+
+# ------------------------------------------------- the app installs what it needs
+
+
+def test_the_motion_renderer_can_install_itself():
+    """It never could, and that was the quietest kind of dead feature.
+
+    `RemotionBackend.available()` checks for `node_modules/remotion`, finds nothing,
+    and `backend_for` silently downgrades to ffmpeg — so the layered motion-graphics
+    engine shipped in every archive, could not run on any machine, and never produced
+    an error saying why.
+    """
+    from forgecast.desktop import toolchain
+
+    assert "motion" in toolchain.EXTRAS
+    assert toolchain.EXTRAS["motion"]["kind"] == "npm"
+    assert callable(toolchain.install_remotion)
+
+
+def test_an_extra_is_verified_by_loading_it_not_by_a_package_manager_exit_code():
+    """A resolver that succeeded while leaving the thing unimportable is the failure
+    this check exists for, and reporting success for it sends the operator back to a
+    feature that still does not work."""
+    from pathlib import Path
+
+    from forgecast.desktop import toolchain
+
+    body = Path(toolchain.__file__).read_text(encoding="utf-8")
+    assert "extra_installed(name)" in body or "extra_installed(\"motion\", root)" in body
+
+    # And the motion check looks for the resolved package rather than the lockfile.
+    ok, absent = toolchain.extra_installed("motion", Path("/nowhere"))
+    assert ok is False
+    assert absent
+
+
+def test_node_modules_can_never_reach_the_archive():
+    """355 MB of dependencies, and they are rebuilt by the installer on the machine
+    that needs them."""
+    from tools.package import excluded, files_to_ship
+
+    assert excluded("remotion/node_modules/remotion/index.js")
+    assert not any("node_modules" in member for _path, member in files_to_ship())
+
+
+def test_the_banner_offers_the_extras_rather_than_only_reporting_tools():
+    """Optional must not mean "print a command and give up" — which is the homework
+    this codebase already removed once for a CLI."""
+    from pathlib import Path
+
+    from forgecast import layers
+
+    chat_js = (Path(layers.__file__).resolve().parents[1] / "web" / "static"
+               / "chat.js").read_text(encoding="utf-8")
+    assert "/api/setup/extras" in chat_js
+    assert "installExtra" in chat_js
