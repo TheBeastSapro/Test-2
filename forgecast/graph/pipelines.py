@@ -16,6 +16,13 @@ from .spec import NodeSpec, PipelineSpec
 
 WORDS_PER_SECOND = 2.6
 
+# The hook window, repeated rather than imported from `nodes.hook`. Importing it would
+# close a cycle — `nodes/__init__` imports `hook`, `hook` imports `graph.engine`, and
+# `graph.engine` imports this module — and the same trick `models.py` uses for
+# `HOUSE_SLUG` applies: state the literal, and let a test assert the two agree.
+# `tests/test_hook_gate.py` does.
+HOOK_SECONDS = 15.0
+
 
 def faceless_longform(
     *, target_seconds: int = 480, use_avatar: bool = False, publish: bool = True
@@ -75,10 +82,29 @@ def faceless_longform(
             params={"shortlist": 3},
         ),
         NodeSpec(
+            key="hook",
+            type="hook",
+            title="Cut and approve the opening",
+            # The same argument as the Sample Gate, applied to a different failure. That
+            # one asks whether the *look* works before eighty clips are bought; this asks
+            # whether the *opening* works before the full narration and the whole batch
+            # are. Fifteen seconds is where a viewer decides, and a video whose first
+            # fifteen seconds fail does not get watched however good minute four is.
+            depends_on=("script", "voice_casting"),
+            requires_approval=True,
+            # Roughly fifteen seconds of narration. Stills are the node's own cost and
+            # are small beside it — see `nodes/hook.py` on why this gate uses stills and
+            # not generated video.
+            estimated_units=HOOK_SECONDS * WORDS_PER_SECOND * 5.5,
+        ),
+        NodeSpec(
             key="voice",
             type="voice",
             title="Narrate script",
-            depends_on=("script", "voice_casting"),
+            # On the hook, so that rejecting the opening saves the whole voiceover. A
+            # gate placed after this one would already have bought the narration for a
+            # script that is about to be rewritten.
+            depends_on=("script", "voice_casting", "hook"),
             estimated_units=words * 5.5,  # ≈ characters
         ),
         NodeSpec(
@@ -107,7 +133,12 @@ def faceless_longform(
             # per distinct style-and-motion setup — two or three on a normal video —
             # costs about a fiftieth of the batch it authorises, and the failure it
             # catches is not one bad clip but the same defect in all eighty at once.
-            depends_on=("broll_plan",),
+            #
+            # On the hook as well, so nothing that spends starts before the opening is
+            # approved. `broll_plan` deliberately still runs on the script alone —
+            # planning is free, costs nothing to throw away, and having the shot list in
+            # hand makes a rejected hook cheaper to act on rather than more expensive.
+            depends_on=("broll_plan", "hook"),
             requires_approval=True,
             # Priced as one setup rather than as the run's real count, which is not known
             # until `broll_plan` has produced its shots. The node settles on what it
@@ -231,8 +262,18 @@ def faceless_shorts(*, target_seconds: int = 45, publish: bool = True, **_) -> P
             params={"shortlist": 3},
         ),
         NodeSpec(
+            key="hook", type="hook", title="Cut and approve the opening",
+            # A short is mostly hook, so this covers a larger share of it than on
+            # long-form — which cuts both ways. It gates less spend, and it is a
+            # correspondingly better prediction of the finished thing, because on a
+            # sixty-second video the first fifteen seconds are a quarter of the video
+            # rather than a thirtieth.
+            depends_on=("script", "voice_casting"), requires_approval=True,
+            estimated_units=HOOK_SECONDS * WORDS_PER_SECOND * 5.5,
+        ),
+        NodeSpec(
             key="voice", type="voice", title="Narrate script",
-            depends_on=("script", "voice_casting"),
+            depends_on=("script", "voice_casting", "hook"),
             estimated_units=words * 5.5,
         ),
         NodeSpec(
@@ -250,7 +291,8 @@ def faceless_shorts(*, target_seconds: int = 45, publish: bool = True, **_) -> P
             # the batch: a camera move that melts faces is wrong in all eight clips of a
             # short exactly as it is wrong in all eighty of a long-form, and a short that
             # has to be regenerated has lost the whole render rather than a fraction.
-            depends_on=("broll_plan",), requires_approval=True, estimated_units=1,
+            depends_on=("broll_plan", "hook"), requires_approval=True,
+            estimated_units=1,
         ),
         NodeSpec(
             key="shots", type="shots", title="Generate vertical B-roll",

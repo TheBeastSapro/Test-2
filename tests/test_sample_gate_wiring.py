@@ -64,7 +64,13 @@ def test_the_batch_cannot_start_until_the_samples_are_approved():
 
 def test_it_sits_after_the_plan_and_before_the_batch():
     for name in PIPELINES:
-        assert _nodes(name)["sample"].depends_on == ("broll_plan",), name
+        deps = _nodes(name)["sample"].depends_on
+        assert "broll_plan" in deps, name
+        assert "shots" not in deps, name
+        # And behind the Hook Gate, which is upstream of everything that spends. The two
+        # gates ask different questions — this one about the look, that one about the
+        # opening — so neither replaces the other, and the cheaper one runs first.
+        assert "hook" in deps, name
 
 
 def test_the_gate_is_on_the_stage_that_determines_the_spend():

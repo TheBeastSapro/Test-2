@@ -879,3 +879,38 @@ def test_status_needs_no_network_and_leaks_nothing():
     assert payload["active"] is False
     assert "token" not in payload
     assert cloud.enabled() is False
+
+
+def test_a_snapshot_of_unchanged_work_is_byte_identical(storage: Path, tmp_path: Path):
+    """The manifest must not carry anything that moves on its own.
+
+    It carried `created_at`, so two builds a second apart produced two different
+    manifests and `Repository.commit` saw a change where nothing had been backed up —
+    the exact failure that method's own docstring describes guarding against, caused by a
+    field inside the snapshot rather than by the commit logic. When it happened to matter
+    was decided by whether the two builds straddled a second boundary, which is why it
+    surfaced as a test that passed alone and failed in a slow full run.
+
+    The time a backup was taken is not lost. It is the commit's author date, which is
+    where a reader would look for it and which git already keeps.
+    """
+    first = tmp_path / "a"
+    second = tmp_path / "b"
+    snapshot.build(first, storage_dir=storage, rows={}, machine="laptop")
+    snapshot.build(second, storage_dir=storage, rows={}, machine="laptop")
+
+    header = snapshot.HEADER
+    assert (first / header).read_bytes() == (second / header).read_bytes()
+    assert "created_at" not in json.loads((first / header).read_text())
+
+
+def test_the_manifest_still_says_who_wrote_it_and_in_what_format(storage: Path,
+                                                                 tmp_path: Path):
+    """Removing the timestamp must not take the identifying fields with it — a restore
+    refuses a newer schema, and cannot do that without reading one."""
+    staged = tmp_path / "staged"
+    snapshot.build(staged, storage_dir=storage, rows={}, machine="laptop")
+    header = json.loads((staged / snapshot.HEADER).read_text())
+    assert header["schema"] == snapshot.SCHEMA
+    assert header["machine"] == "laptop"
+    assert header["app_version"]

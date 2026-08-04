@@ -42,6 +42,7 @@ BASE_COSTS: dict[str, int] = {
     "script": 5,
     "thumbnail": 2,
     "voice": 2,
+    "hook": 3,           # a short narration, a couple of stills, one small render
     "broll_plan": 3,
     "sample": 2,          # one short clip per distinct setup; the clips are the cost
     "shots": 5,
@@ -60,6 +61,12 @@ PER_UNIT_COSTS: dict[str, tuple[str, int, int]] = {
     # node type -> (unit name, credits per unit, unit size)
     "script": ("words", 2, 250),        # LLM output tokens ≈ $0.045/1k words
     "voice": ("characters", 18, 1000),  # ElevenLabs $0.15/1k chars
+    # The hook's narration, at the same rate as the full one because it is the same
+    # vendor doing the same work — about fifteen seconds of it. The stills it also buys
+    # are inside the base fee rather than a second unit: two images at the thumbnail rate
+    # is 10 credits against the ~70 the narration costs, and a second unit on a node that
+    # already has one is arithmetic nobody can check against a bill.
+    "hook": ("characters", 18, 1000),
     "thumbnail": ("images", 5, 1),      # FAL $0.04/image
     "avatar": ("seconds", 12, 10),      # HeyGen $0.60/min
     # Blended: the B-roll planner caps animated shots at a third of the list, so a

@@ -4,7 +4,7 @@
 
 A directory that looks like this, and nothing cleverer:
 
-    snapshot.json          who wrote it, when, and in what format version
+    snapshot.json          who wrote it, and in what format version
     storage/...            the eligible files from storage_dir, at their own paths
     db/<table>.json        rows, with secret columns dropped
 
@@ -37,7 +37,7 @@ import json
 import logging
 import shutil
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
 from .. import __version__
@@ -259,11 +259,21 @@ def build(
     header = {
         "schema": SCHEMA,
         "app_version": __version__,
-        "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "machine": machine,
         "files": computed.file_count,
         "total_bytes": computed.total_bytes,
         "excluded": len(computed.excluded),
+        # No `created_at`. It used to be here, and it made every snapshot differ from the
+        # last one whether or not anything had been backed up: two builds a second apart
+        # produced two different manifests, so `Repository.commit` saw a change and made
+        # a commit. That is precisely the failure its own docstring describes guarding
+        # against — "a chain of empty commits makes the history unable to answer when
+        # anything actually did" change — and the field defeating it was inside the
+        # snapshot rather than in the commit logic.
+        #
+        # The time a backup was taken is not lost: it is the commit's own author date,
+        # which is where a reader would look for it and which git already keeps. A field
+        # duplicating it into the content is the content lying about having changed.
         # Recorded so a restore can say *why* something is missing without guessing, and
         # so a manifest change is visible in the diff of the next snapshot.
         "manifest": {
