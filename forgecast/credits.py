@@ -43,6 +43,7 @@ BASE_COSTS: dict[str, int] = {
     "thumbnail": 2,
     "voice": 2,
     "broll_plan": 3,
+    "sample": 2,          # one short clip per distinct setup; the clips are the cost
     "shots": 5,
     "avatar": 5,
     "render": 3,      # our own CPU, not a vendor
@@ -65,6 +66,17 @@ PER_UNIT_COSTS: dict[str, tuple[str, int, int]] = {
     # per-clip estimate of "all video" (≈55) would hold three times what a run spends.
     # 1/3 x 55 (video) + 2/3 x 5 (still) ≈ 22.
     "shots": ("clips", 22, 1),
+    # One sample per distinct style-and-motion setup, and unlike a shot it is always
+    # generated video — there is no still to blend down toward, so this is nearer the
+    # all-video figure above than to the blended 22. Five seconds at the default model's
+    # $0.07 is $0.35, doubled by the markup and divided by USD_PER_CREDIT: 43.
+    #
+    # It is a figure for the default model, which is the same weakness `shots` has and
+    # now a sharper one: the model is chosen per channel and they span $0.03 to $0.20 a
+    # second, so this estimate is right for one of eleven. It errs low on the dear ones,
+    # which the node's own settlement corrects — `FalVideoProvider.reserve_credits`
+    # prices the real model, and a reserve is released rather than kept.
+    "sample": ("setups", 43, 1),
     "research": ("pages", 4, 1),        # one LLM extraction call per page
     "voice_casting": ("auditions", 3, 1),
 }
