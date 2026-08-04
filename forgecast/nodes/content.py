@@ -11,6 +11,7 @@ import json
 
 from .. import scripting
 from ..graph.engine import NodeContext, NodeResult, node_handler
+from ..prompts import cast
 from ..providers import ProviderError
 from ._common import ask_json, request_payload, target_seconds
 
@@ -140,6 +141,12 @@ async def script_node(ctx: NodeContext) -> NodeResult:
     # then does not follow.
     instructions = f"{SCRIPT_INSTRUCTIONS}\n\n{scripting_block(ctx, seconds)}"
 
+    # The cast comes out of this call rather than a second one. The stage that wrote the
+    # script has the whole script in front of it and knows who recurs; asking again later
+    # is a second paid round trip to re-read what was just written, and it would be
+    # re-reading a summary rather than the reasoning that produced it.
+    instructions = f"{instructions}\n\n{cast.SCRIPT_INSTRUCTION}"
+
     # Research, when the pipeline ran it, is appended as a hard constraint rather than
     # background reading: it names exactly which facts are available and forbids the
     # rest. Without it the house rule against inventing statistics has nothing to
@@ -160,6 +167,25 @@ async def script_node(ctx: NodeContext) -> NodeResult:
 
     scenes = _normalise_scenes(data.get("scenes"))
     data["scenes"] = scenes
+
+    # Who has to look the same in every shot they appear in. Built here rather than in
+    # the shot planner because it is a fact about the script, and because the planner is
+    # downstream of a gate: an operator revising a script must see the cast change with
+    # it, not discover afterwards that the person they renamed is now two people.
+    company = cast.build(data.get("cast"), scenes)
+    data["cast"] = company.as_dict()
+    for member in company.characters:
+        thin = cast.thin_description(member.description)
+        if thin:
+            # Warned, never rewritten. A weak likeness is the planner's failure and the
+            # operator's decision — silently padding it would invent a face nobody chose
+            # and then lock every shot to it.
+            ctx.log(f"{member.name} is locked on a weak description: {thin}",
+                    level="warning")
+    if company:
+        ctx.log(f"cast locked: {len(company.characters)} recurring "
+                f"{'face' if len(company.characters) == 1 else 'faces'} across "
+                f"{sum(one.appearances for one in company.characters)} shots")
     data["word_count"] = sum(len(scene["narration"].split()) for scene in scenes)
     data["estimated_seconds"] = round(sum(scene["seconds"] for scene in scenes), 1)
     data.setdefault("title", brief.get("working_title", ctx.topic)[:100])
@@ -241,6 +267,24 @@ def _as_markdown(script: dict) -> str:
     lines.append(f"_{script.get('word_count', 0)} words · ~{total:.0f}s · "
                  f"{len(script['scenes'])} scenes_")
     lines.append("")
+
+    # The cast, above the scenes, because this document is what the script gate shows and
+    # a locked likeness is part of what is being approved. A description nobody read is a
+    # face that turns up identical in eighty shots and wrong in all of them — and the
+    # script gate is the last point where changing it costs nothing.
+    company = (script.get("cast") or {}).get("characters") or []
+    if company:
+        lines += ["## Cast", "",
+                  "_These people appear in more than one shot and are locked to one "
+                  "description, used word for word in every prompt they are in._", ""]
+        for member in company:
+            where = ", ".join(str(index + 1) for index in member.get("scenes", []))
+            lines.append(f"- **{member.get('name', '?')}** — {member.get('description', '')}")
+            lines.append(f"  <br>_scenes {where}_")
+        walk_ons = (script.get("cast") or {}).get("walk_ons") or []
+        if walk_ons:
+            lines += ["", f"_Appearing once, so not locked: {', '.join(walk_ons)}._"]
+        lines.append("")
     for scene in script["scenes"]:
         lines += [
             f"## Scene {scene['index'] + 1} · {scene['seconds']:.1f}s",
