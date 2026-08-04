@@ -15,6 +15,8 @@ while the samples are still being looked at.
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import forgecast.nodes  # noqa: F401  - importing registers every handler
 from forgecast.credits import estimate_node
 from forgecast.graph import pipelines
@@ -126,14 +128,14 @@ def test_style_comes_from_the_channel_and_motion_from_the_shot():
     """Two shots differing only in subject are the same setup. Treating them as different
     is the other way a gate ends up firing on every shot."""
 
-    class Channel:
-        style_profile = {"register": "plain", "grade": "cool", "lighting": "low-key"}
+    channel = SimpleNamespace(
+        style_profile={"register": "plain", "grade": "cool", "lighting": "low-key"})
 
     def setup_for(**shot):
         return sample_node._setup_for(
             {"model": "m", "motion": "push_in", "intensity": "subtle",
              "focal_verb": "looks", "seconds": 6, **shot},
-            Channel(), "16:9")
+            channel, "16:9")
 
     assert setup_for(scene_index=1).setup_id == setup_for(scene_index=2).setup_id
     # A different camera is a different setup, because motion is where melting happens.
@@ -141,5 +143,5 @@ def test_style_comes_from_the_channel_and_motion_from_the_shot():
     # And a different model is, because a model is the largest single difference there is.
     other = sample_node._setup_for(
         {"model": "other", "motion": "push_in", "intensity": "subtle",
-         "focal_verb": "looks", "seconds": 6}, Channel(), "16:9")
+         "focal_verb": "looks", "seconds": 6}, channel, "16:9")
     assert other.setup_id != setup_for().setup_id

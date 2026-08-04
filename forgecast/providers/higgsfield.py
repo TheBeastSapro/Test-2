@@ -336,15 +336,17 @@ def _suffix(url: str) -> str:
 
 
 async def _download(url: str, out_path: Path) -> None:
-    async with httpx.AsyncClient(timeout=SUBMIT_TIMEOUT, follow_redirects=True) as client:
-        async with client.stream("GET", url) as response:
-            if response.status_code >= 400:
-                raise ProviderError(
-                    f"the finished asset would not download ({response.status_code})",
-                    provider="higgsfield")
-            with out_path.open("wb") as handle:
-                async for chunk in response.aiter_bytes(65536):
-                    handle.write(chunk)
+    async with (
+        httpx.AsyncClient(timeout=SUBMIT_TIMEOUT, follow_redirects=True) as client,
+        client.stream("GET", url) as response,
+    ):
+        if response.status_code >= 400:
+            raise ProviderError(
+                f"the finished asset would not download ({response.status_code})",
+                provider="higgsfield")
+        with out_path.open("wb") as handle:
+            async for chunk in response.aiter_bytes(65536):
+                handle.write(chunk)
 
 
 def _credits(usd: float) -> int:

@@ -198,8 +198,8 @@ def test_the_model_table_in_the_i2v_skill_matches_the_code():
     import re
     from pathlib import Path
 
-    from forgecast.providers.media import VIDEO_MODELS
     from forgecast import skills
+    from forgecast.providers.media import VIDEO_MODELS
 
     doc = (Path(skills.__file__).resolve().parent / "data"
            / "image-to-video.md").read_text(encoding="utf-8")
