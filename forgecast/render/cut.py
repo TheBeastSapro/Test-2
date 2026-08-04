@@ -20,8 +20,10 @@ Cutting with `-c copy` cannot start a segment anywhere but a keyframe, so every 
 moves to the nearest one behind it. Measured on a 16-second test file whose plan asked for
 8.84 seconds out: the stream copy produced **14.93 seconds** — it kept nearly everything
 the plan removed — and its audio and video no longer described the same edit. That is not
-a tolerance, it is a different video. Re-encoding costs a generation and roughly a second
-of CPU per ten seconds of 1080p, and it lands on the frame the plan named.
+a tolerance, it is a different video. Re-encoding costs a generation and about half a
+second of CPU per second of finished 1080p — a 180-second source cut down to 120 across
+150 keeps took 59 seconds here — and it lands on the frame the plan named. That is why the
+approval releases the cut rather than waiting for it.
 
 The encode goes through `ffmpeg.vcodec()` for the same reason every other clip in this app
 does: `concat_clips` stream-copies, and a file at a rate nothing else uses is a file that
@@ -41,8 +43,10 @@ sound ended up **175 ms** ahead of the picture — a fifth of a second of lip sy
 command that looks completely reasonable.
 
 So: `trim`/`atrim` per keep and the **concat filter**, which joins the two streams at every
-seam and therefore cannot let them separate. The same measurement puts the worst skew at
-21 ms — under one audio packet, and it does not grow with the number of cuts.
+seam and therefore cannot let them separate. Over the same seams that produced 175 ms of
+drift, the worst skew here is 24 ms — inside one video frame, flat across every seam
+rather than growing with the number of cuts — and the finished file is the length the
+plan's arithmetic said to the millisecond.
 
 ## What it deliberately does not do
 
@@ -314,7 +318,12 @@ def execute(plan: Any, out_path: Path, *, source: Path | str | None = None,
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     graph = _graph(spans, audio=has_audio)
-    args = ["-i", str(origin)]
+    # `-nostdin` because this is reachable from the MCP stdio transport, where stdin *is*
+    # the JSON-RPC stream. ffmpeg reads a byte of stdin per run looking for interactive
+    # keys, and it inherits the parent's — so a cut run from `codex exec` would eat a byte
+    # out of the middle of a protocol frame and the CLI would drop the server with a parse
+    # error naming none of it.
+    args = ["-nostdin", "-i", str(origin)]
     if len(graph) > GRAPH_IN_FILE_OVER:
         script = out_path.with_suffix(".filtergraph.txt")
         script.write_text(graph, encoding="utf-8")

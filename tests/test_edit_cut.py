@@ -284,6 +284,11 @@ def test_the_cut_is_re_encoded_rather_than_stream_copied(storage_dir, monkeypatc
     settings = vcodec(30)
     windows = [args[index:index + len(settings)] for index in range(len(args))]
     assert settings in windows, f"the cut did not encode with {settings}: {args}"
+    # And it does not read the caller's stdin. This is reachable from the MCP stdio
+    # transport, where stdin is the JSON-RPC stream: ffmpeg takes a byte of it per run
+    # looking for interactive keys, and one byte out of the middle of a frame drops the
+    # whole server with a parse error that names nothing.
+    assert "-nostdin" in args
 
 
 # ------------------------------------------------------------------- the awkward spans
