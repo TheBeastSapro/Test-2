@@ -11,6 +11,7 @@ import logging
 from pathlib import Path
 
 from . import audio as audio_mod
+from . import semantic as semantic_mod
 from . import shots as shots_mod
 from . import visual as visual_mod
 from .acquire import Acquired, acquire
@@ -26,8 +27,28 @@ def analyse_file(
     sample_fps: float = visual_mod.SAMPLE_FPS,
     max_frames: int = visual_mod.MAX_FRAMES,
     semantic: dict | None = None,
+    narrative: bool = False,
     source_meta: dict | None = None,
 ) -> StyleProfile:
+    """Measure one video.
+
+    `semantic` and `narrative` fill the same field and are not the same offer.
+    `semantic` is the socket `profile.build` has always had: a block a vision provider
+    describing shot subjects and on-screen text would supply, passed in from outside.
+    Nothing in this tree has ever supplied one, which is how the profile came to print
+    "no semantic pass" on every reference ever learned.
+
+    `narrative=True` fills it from the reference's own audio instead — see
+    `vision.semantic`, which needs no provider and no key. An explicitly supplied
+    `semantic` still wins, because a caller that has a richer description of the video
+    should not have it overwritten by the poorer one this can derive.
+
+    Opt-in rather than always-on because it transcribes, which costs roughly the length
+    of the reference and downloads a speech model on a machine's first use. The paths
+    that re-measure a file to check an edit landed — `compare`, `restyle --verify` —
+    have no use at all for what the file said, and making them pay for it would turn a
+    verification into a wait.
+    """
     meta: VideoMeta = probe(path)
     log.info("analysing %s (%.1fs, %dx%d)", meta.path.name, meta.duration,
              meta.width, meta.height)
@@ -59,6 +80,20 @@ def analyse_file(
     alignment = audio_mod.beat_alignment(
         [boundary.time for boundary in shot_analysis.boundaries], audio_analysis
     )
+
+    if narrative and semantic is None:
+        # Last, and after the audio pass on purpose: this is the only step that can
+        # take minutes, and a caller that kills the run for being slow should still
+        # have had every cheap measurement done before it got here.
+        #
+        # `measure` never raises. A reference that cannot be transcribed returns a
+        # block saying which tool was missing — a learn that dies on the third of five
+        # references leaves the operator with nothing.
+        story = semantic_mod.measure(meta)
+        semantic = story.as_dict()
+        log.info("narrative: %s, %d sections, confidence %s",
+                 "sectioned" if story.sectioned else "not sectioned",
+                 len(story.sections), story.confidence)
 
     profile = build(
         meta, shot_analysis, whole_colour, per_shot, overlay,

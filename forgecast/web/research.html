@@ -26,8 +26,27 @@
   /* Nothing in app.css dims a disabled field, so the gated fetch box looked typeable
      and the explanation under it looked like an unrelated remark. Faded the way
      `button:disabled` already is, rather than a colour this page invents. */
-  input:disabled { background: var(--bg); border-color: var(--line);
+  input:disabled, textarea:disabled { background: var(--bg); border-color: var(--line);
                    opacity: .5; cursor: not-allowed; }
+  /* The links box and the videos box under it are one control with two halves, so the
+     second is inset against the first rather than floated as a separate field — the
+     sub-box takes what the box above it could not. */
+  .subbox { border-left: 2px solid var(--line-2); padding-left: 11px; margin-top: 12px; }
+  /* What a fetch actually pulled in, before any scoring. It reads as a receipt rather
+     than as a table because that is what it is: one line per reference asked for. */
+  .fetched li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap;
+                padding: 5px 0; border-bottom: 1px dashed var(--line);
+                font-size: 13.5px; }
+  .fetched li:last-child { border-bottom: 0; }
+  .fetched ul { list-style: none; margin: 8px 0 0; padding: 0; }
+  .tag { font-size: 11px; padding: 2px 7px; border-radius: 999px; font-weight: 600;
+         border: 1px solid var(--line); background: var(--raise-2);
+         color: var(--muted); white-space: nowrap; }
+  /* Accent, not another band colour: "you pasted this" is not a fifth grade of outlier,
+     it is the mark that says where the row came from. */
+  .tag.pasted { color: var(--accent); border-color: var(--accent-dim);
+                background: var(--accent-dim); }
+  .tag.miss { color: var(--warn); }
   .base-strip { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
   /* Grows to share a row with the other cohort, but does not stretch to 1100px to
      hold three words when a channel only has one. */
@@ -67,20 +86,34 @@
 <div class="card">
   <div class="grid two">
     <div>
-      <label for="channel">Fetch a channel</label>
-      <input id="channel" placeholder="@handle, channel URL, or UC… id"
-             {% if not can_fetch %}disabled{% endif %}>
+      <label for="channel">Fetch channels</label>
+      <textarea id="channel" {% if not can_fetch %}disabled{% endif %} rows="3"
+                style="min-height:0;font-size:13px"
+                placeholder="@handle, channel URL or UC… id — one per line for several"></textarea>
       {% if not can_fetch %}
         <p class="muted" style="font-size:12.5px;margin:6px 0 0">
           {{ fetch_note }} Or paste the numbers below — they score the same way.
         </p>
       {% else %}
         <p class="muted" style="font-size:12.5px;margin:6px 0 0">
-          A link works here too, and a link pasted into the box below is read as a
-          channel rather than as a failed table.
+          Several competitors are read in one go and each is scored against its own
+          median, never a shared one.
           {% if fetch_note %}<br>{{ fetch_note }}{% endif %}
         </p>
       {% endif %}
+
+      <div class="subbox">
+        <label for="videos">…and specific videos</label>
+        <textarea id="videos" {% if not can_fetch %}disabled{% endif %} rows="3"
+                  style="min-height:0;font-size:13px"
+                  placeholder="video links you already think are the ones worth copying — one per line"></textarea>
+        <p class="muted" style="font-size:12.5px;margin:6px 0 0">
+          Fetched alongside the channels above, and listed by name in the results so you
+          can see they were. They are kept out of the medians — a video you picked
+          because it outperformed would otherwise help set the bar it is measured
+          against — and they rank above the channel's own at the same multiple.
+        </p>
+      </div>
     </div>
     <div>
       <label for="limit">How many recent uploads</label>
@@ -103,7 +136,8 @@
       loosely — <code>views</code>/<code>viewCount</code>/<code>plays</code> all work,
       as do <code>1.2M</code> and <code>3 weeks ago</code>. Every row needs a title, a
       view count and a publish date; a duration lets Shorts be scored separately from
-      long-form.
+      long-form. A paste that is nothing but links is read as links, and they go to the
+      two boxes above by kind rather than being read as a failed table.
     </p>
     <pre>[{"title": "Why cables keep breaking", "views": "240K",
   "publishedAt": "2026-05-02", "duration": "PT10M12S"}]</pre>
@@ -141,6 +175,7 @@ $("score").addEventListener("click", async () => {
       body: JSON.stringify({
         pasted: $("pasted").value,
         channel: $("channel").value,
+        videos: $("videos").value,
         limit: Number($("limit").value) || 50,
         include_unreliable: $("unreliable").checked,
       }),
@@ -159,6 +194,55 @@ $("score").addEventListener("click", async () => {
   }
 });
 
+// One line per reference the fetch was given, whether or not it produced anything.
+// The pasted videos are the reason this exists: the operator asked for them by name,
+// and a video that arrives among forty others with nothing marking it is on screen
+// indistinguishable from a box that quietly ignored what was typed into it.
+function fetched(payload) {
+  const channels = payload.channels || [];
+  const priority = payload.priority || [];
+  if (!channels.length && !priority.length) return "";
+
+  const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const headline = [
+    channels.length ? count(channels.length, "channel", "channels") : "",
+    priority.length ? count(priority.length, "video you pasted", "videos you pasted") : "",
+  ].filter(Boolean).join(" and ");
+
+  const rows = [];
+  for (const item of channels) {
+    rows.push(`<li><span>${esc(item.name)}</span>${item.error
+      ? `<span class="tag miss">not read</span><span class="muted">${esc(item.error)}</span>`
+      : `<span class="muted">${item.count} upload${item.count === 1 ? "" : "s"}</span>`}</li>`);
+  }
+  for (const item of priority) {
+    const label = esc(item.title || item.reference);
+    let state;
+    if (item.scored) {
+      // The multiple is repeated here rather than left to the table below, because the
+      // question "what did the ones I picked actually do" is answered by this line.
+      state = `<span class="multiple">${item.multiple.toFixed(1)}×</span>
+        <span class="band ${item.band}">${esc(item.band)}</span>
+        ${item.reliable ? "" : '<span class="tag miss">unreliable</span>'}`;
+    } else if (item.fetched) {
+      state = `<span class="muted">${esc(item.why || "fetched, not scored")}</span>`;
+    } else {
+      state = `<span class="tag miss">not read</span>
+        <span class="muted">${esc(item.error || "could not be read")}</span>`;
+    }
+    rows.push(`<li><span class="tag pasted">pasted</span>
+      <span>${label}</span>
+      ${item.channel ? `<span class="muted">${esc(item.channel)}</span>` : ""}
+      ${state}</li>`);
+  }
+
+  return `<div class="card fetched"><strong>Fetched ${headline}</strong>
+    ${priority.length ? `<div class="muted" style="font-size:12.5px;margin-top:4px">
+      The pasted ones are scored against their own channel's median, kept out of it, and
+      ranked above the channel's own at the same multiple.</div>` : ""}
+    <ul>${rows.join("")}</ul></div>`;
+}
+
 function render(payload) {
   const parts = [];
 
@@ -169,20 +253,36 @@ function render(payload) {
     parts.push(`<p class="muted" style="margin:0 0 14px;font-size:13px">${esc(payload.via)}</p>`);
   }
 
-  // Baselines first. The multiple below means nothing without the number it is a
+  parts.push(fetched(payload));
+
+  // Baselines next. The multiple below means nothing without the number it is a
   // multiple *of*, and how many videos that number was computed from.
-  parts.push('<h2 style="margin-top:0">Baseline</h2><div class="base-strip">');
-  for (const [name, base] of Object.entries(payload.baselines || {})) {
-    if (!base.sample_size) continue;
-    parts.push(`<div class="base-card ${base.reliable ? "" : "unreliable"}">
-      <b>${name === "short" ? "Shorts" : "Long-form"} median</b>
-      <span class="n">${Math.round(base.median_views_per_day).toLocaleString()}</span>
-      <span class="muted"> views/day</span>
-      <div class="muted" style="font-size:12px;margin-top:3px">
-        ${base.sample_size} video${base.sample_size === 1 ? "" : "s"}${base.note ? " · " + esc(base.note) : ""}
-      </div></div>`);
+  //
+  // Per channel when there is more than one, because that is what the scoring did: a
+  // single strip over three competitors would read as a median they share, which is the
+  // one thing the arithmetic is careful never to compute.
+  const perChannel = Object.entries(payload.channel_baselines || {});
+  const groups = perChannel.length > 1
+    ? perChannel
+    : [["", payload.baselines || {}]];
+  parts.push('<h2 style="margin-top:22px">Baseline</h2>');
+  for (const [channel, cohorts] of groups) {
+    if (channel) {
+      parts.push(`<div class="muted" style="font-size:12.5px;margin:10px 0 5px">${esc(channel)}</div>`);
+    }
+    parts.push('<div class="base-strip">');
+    for (const [name, base] of Object.entries(cohorts)) {
+      if (!base.sample_size) continue;
+      parts.push(`<div class="base-card ${base.reliable ? "" : "unreliable"}">
+        <b>${name === "short" ? "Shorts" : "Long-form"} median</b>
+        <span class="n">${Math.round(base.median_views_per_day).toLocaleString()}</span>
+        <span class="muted"> views/day</span>
+        <div class="muted" style="font-size:12px;margin-top:3px">
+          ${base.sample_size} video${base.sample_size === 1 ? "" : "s"}${base.note ? " · " + esc(base.note) : ""}
+        </div></div>`);
+    }
+    parts.push("</div>");
   }
-  parts.push("</div>");
 
   const outliers = payload.outliers || [];
   if (!outliers.length) {
@@ -193,9 +293,12 @@ function render(payload) {
       ${payload.note ? esc(payload.note) : ""}</p></div>`);
   } else {
     const s = payload.summary || {};
+    // The pasted ones are counted out of the total rather than folded into it: "9
+    // outliers" where 3 are the operator's own picks is a different report from 9 the
+    // desk went and found.
     parts.push(`<h2>${outliers.length} outlier${outliers.length === 1 ? "" : "s"}
       <span class="muted" style="text-transform:none;letter-spacing:0">
-      of ${payload.count} scored</span></h2>`);
+      of ${payload.count} scored${s.priority ? `, ${s.priority} of them yours` : ""}</span></h2>`);
     parts.push('<div class="card" style="padding:0;overflow:hidden">' +
       '<div class="tscroll"><table><thead><tr>' +
       "<th>Video</th><th>Multiple</th><th>Views/day</th><th>Age</th><th>Engagement</th><th></th>" +
@@ -206,8 +309,9 @@ function render(payload) {
       const [low, high] = spread ? widest(item.multiple_low, item.multiple_high) : [];
       parts.push(`<tr class="out" id="row-${index}">
         <td>
-          <div>${esc(item.title)}</div>
+          <div>${item.priority ? '<span class="tag pasted">pasted</span> ' : ""}${esc(item.title)}</div>
           <div class="muted" style="font-size:12px">
+            ${item.channel ? esc(item.channel) + " · " : ""}
             ${item.cohort === "short" ? "Short" : "Long-form"} ·
             ${item.views.toLocaleString()} views
             ${item.reliable ? "" : ' · <span style="color:var(--warn)">unreliable</span>'}

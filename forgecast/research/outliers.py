@@ -47,6 +47,30 @@ month of error is enough to drop its multiple below the threshold it was include
 the number is reported with the range it could actually be in, and marked unreliable.
 That is a per-video test rather than an age cutoff, because it is the arithmetic that
 decides whether the error matters, and for a two-year-old video it never does.
+
+## Several channels at once, and why they never share a median
+
+The desk reads more than one competitor in a fetch, and the tempting shortcut — pool
+everything and take one median — is the age mistake again in a different costume. A
+50k-a-day channel and a 500-a-day channel pooled together produce a median neither of
+them has ever been near: every video on the small channel scores under 1x and every
+second video on the big one clears 3x. So the median is per channel, always, and a
+video is only ever measured against its own channel's cohort.
+
+## The videos the operator picked out by hand
+
+The desk also takes specific video links alongside the channels — the ones somebody
+already believes are the outliers worth copying. Those carry `is_priority` and are
+treated differently in exactly two places:
+
+* **They are kept out of every median.** Hand-picked hits dragged into the baseline
+  raise the bar they are then measured against, so pasting your five best videos makes
+  all five look average — and lowers every other video's multiple at the same time.
+  That is a self-defeating merge, and `baselines` refuses it rather than trusting each
+  caller to filter first.
+* **They rank above the channel's own at the same multiple**, by `PRIORITY_RANK_WEIGHT`
+  and no more. The multiple itself is never touched: it is measured, and a weighted
+  number printed as a measurement would be a lie in the one column that has to be true.
 """
 
 from __future__ import annotations
@@ -79,6 +103,18 @@ STRONG_OUTLIER = 10.0
 # the uncertainty below is computed from.
 APPROXIMATE_DATE_ERROR_DAYS = 15.0
 
+# What an operator's own pick is worth when ordering the list, and nothing else.
+#
+# It never touches the multiple, which stays measured. It exists because a video only
+# gets into the priority box when somebody looked at it and decided it was the thing
+# worth copying, and that decision is evidence the arithmetic does not have: a 4x they
+# chose is a better next thing to study than a 6x nobody did.
+#
+# Two, specifically. Anything larger buries the channel's own strongest video under
+# whatever was pasted — and the reason to paste a video is to compare it against that
+# channel's best, not to hide it.
+PRIORITY_RANK_WEIGHT = 2.0
+
 
 @dataclass
 class VideoStat:
@@ -97,6 +133,11 @@ class VideoStat:
     # measured. A fact about where the row came from, not a judgement about whether it
     # matters — `find_outliers` decides that per video, from the arithmetic.
     date_is_approximate: bool = False
+    # True when the operator pasted this video's link themselves rather than it arriving
+    # in a channel's listing. Also a fact about where the row came from: it says the
+    # video was chosen, which is why it is kept out of the median and ranked above the
+    # channel's own at the same multiple.
+    is_priority: bool = False
 
     @property
     def cohort(self) -> str:
@@ -161,6 +202,20 @@ class Outlier:
     # bracket where it could really be. A UI can print a range instead of a point.
     multiple_low: float = 0.0
     multiple_high: float = 0.0
+    # The operator pasted this one. Carried onto the row so a UI can say so — a pasted
+    # video that arrives silently among the channel's own is the merge this feature
+    # exists to avoid.
+    priority: bool = False
+
+    @property
+    def rank_score(self) -> float:
+        """What this sorts on. The multiple is what it *measured*; these differ.
+
+        Kept apart deliberately, and kept off `as_dict`'s `multiple`: the weight is a
+        judgement about whose attention picked the video, and printing a judgement in
+        the column that reports arithmetic is how a number stops being trustworthy.
+        """
+        return self.multiple * (PRIORITY_RANK_WEIGHT if self.priority else 1.0)
 
     def as_dict(self) -> dict:
         return {
@@ -175,6 +230,8 @@ class Outlier:
             "multiple_low": round(self.multiple_low or self.multiple, 2),
             "multiple_high": round(self.multiple_high or self.multiple, 2),
             "date_is_approximate": self.video.date_is_approximate,
+            "priority": self.priority,
+            "rank_score": round(self.rank_score, 2),
             "band": self.band,
             "engagement_rate": round(self.engagement_rate, 4),
             # A source that carries no like or comment counts computes 0.0, which in a
@@ -224,6 +281,31 @@ def band_for(multiple: float) -> str:
     return "normal"
 
 
+def _channel_key(video: VideoStat) -> str:
+    """What counts as "the same channel" when grouping.
+
+    Case- and space-folded because the name arrives as a string from whichever source
+    read it, and a channel listing read with the API and a single video read from its
+    own page must land in one group — otherwise the pasted video is measured against a
+    baseline built from an empty set, which is to say against nothing.
+    """
+    return (video.channel or "").strip().casefold()
+
+
+def _by_channel(videos: list[VideoStat]) -> dict[str, tuple[str, list[VideoStat]]]:
+    """key -> (name as it should be printed, that channel's videos)."""
+    grouped: dict[str, tuple[str, list[VideoStat]]] = {}
+    for video in videos:
+        key = _channel_key(video)
+        name, rows = grouped.setdefault(key, (video.channel or "", []))
+        rows.append(video)
+        # The first non-empty name wins: a pasted table can carry the channel on some
+        # rows and not others, and "" as a heading is not a channel anybody recognises.
+        if not name and video.channel:
+            grouped[key] = (video.channel, rows)
+    return grouped
+
+
 def baselines(
     videos: list[VideoStat], *, now: datetime | None = None,
     min_age_days: float = MIN_AGE_DAYS, min_cohort: int = MIN_COHORT,
@@ -234,12 +316,20 @@ def baselines(
     channel with one 10-million-view video has a mean that no video will ever beat, so
     a mean-based score would report that the channel has never had an outlier. The
     median is unmoved by the outliers it is being used to find.
+
+    Videos the operator pasted by hand are excluded, here rather than in each caller.
+    They are picked *because* somebody thinks they outperformed, so letting them into
+    the median raises the bar they are about to be measured against — five pasted hits
+    on a 40-video channel make all five look average and quietly demote every other
+    video on the channel at the same time. A filter one caller can forget is a filter
+    that will be forgotten.
     """
     out: dict[str, Baseline] = {}
     for cohort in ("short", "long"):
         rates = [
             video.views_per_day(now) for video in videos
             if video.cohort == cohort and video.age_days(now) >= min_age_days
+            and not video.is_priority
         ]
         if not rates:
             out[cohort] = Baseline(cohort, 0.0, 0, False, "no videos in this cohort")
@@ -256,6 +346,24 @@ def baselines(
     return out
 
 
+def baselines_by_channel(
+    videos: list[VideoStat], *, now: datetime | None = None,
+    min_age_days: float = MIN_AGE_DAYS, min_cohort: int = MIN_COHORT,
+) -> dict[str, dict[str, Baseline]]:
+    """One set of cohort medians per channel, keyed by the name to print.
+
+    What a UI needs when a fetch read several competitors: a multiple means nothing
+    without the number it is a multiple *of*, and with two channels on screen there are
+    two such numbers. Showing one pooled figure over a strip of channels is the pooled
+    median mistake with a label on it.
+    """
+    return {
+        name or "(unnamed)": baselines(rows, now=now, min_age_days=min_age_days,
+                                       min_cohort=min_cohort)
+        for name, rows in _by_channel(videos).values()
+    }
+
+
 def find_outliers(
     videos: list[VideoStat],
     *,
@@ -270,33 +378,66 @@ def find_outliers(
     Returns strongest first. Videos too young to score are dropped, and videos whose
     cohort is too small to have a baseline are dropped unless `include_unreliable`
     asks for them — in which case they carry a note saying why the number is soft.
+
+    Each video is measured against *its own channel's* median, so a fetch covering
+    several competitors does not compare a small channel to a large one. Videos the
+    operator pasted by hand are the two exceptions: they are kept whatever they
+    measure — a pick that turns out to be a 1.4x is the answer to the question they
+    asked, and dropping it silently is not — and they sort by `rank_score`.
     """
     if not videos:
         return []
 
-    bases = baselines(videos, now=now, min_age_days=min_age_days,
-                      min_cohort=min_cohort)
+    per_channel = {
+        key: baselines(rows, now=now, min_age_days=min_age_days, min_cohort=min_cohort)
+        for key, (_, rows) in _by_channel(videos).items()
+    }
+    # Only ever reached by a pasted video whose own channel was not among the ones
+    # fetched. Not a substitute for that channel's median and never used as one — a
+    # video scored against it says so on the row and is marked unreliable.
+    pooled = baselines(videos, now=now, min_age_days=min_age_days,
+                       min_cohort=min_cohort)
 
     found: list[Outlier] = []
     for video in videos:
         age = video.age_days(now)
         if age < min_age_days:
             continue
-        base = bases[video.cohort]
-        if base.median_views_per_day <= 0:
+
+        base = per_channel.get(_channel_key(video), {}).get(video.cohort)
+        borrowed = False
+        if (base is None or base.median_views_per_day <= 0) and video.is_priority:
+            base, borrowed = pooled[video.cohort], True
+        if base is None or base.median_views_per_day <= 0:
             continue
-        if not base.reliable and not include_unreliable:
+        # A pasted video is scored against whatever baseline exists, soft or not: it was
+        # asked about by name, so "here is the number, and here is why it is soft" beats
+        # an empty row that reads as the link having failed.
+        if not base.reliable and not include_unreliable and not video.is_priority:
             continue
 
         rate = video.views_per_day(now)
         multiple = rate / base.median_views_per_day
-        if multiple < threshold:
+        if multiple < threshold and not video.is_priority:
             continue
 
         notes: list[str] = []
         reliable = base.reliable
         if not base.reliable:
             notes.append(base.note)
+        if borrowed:
+            reliable = False
+            notes.append(
+                "you pasted this one and its channel is not in this fetch, so it is "
+                "measured against the median of the channels that are — add its "
+                "channel above for a multiple that means something"
+            )
+        elif video.is_priority and multiple < threshold:
+            notes.append(
+                f"you pasted this one, so it is here whatever it measured: "
+                f"{multiple:.1f}x, under the {threshold:g}x the rest of this list "
+                f"had to clear"
+            )
 
         low, high = multiple, multiple
         if video.date_is_approximate:
@@ -334,10 +475,10 @@ def find_outliers(
             video=video, multiple=multiple, baseline=base, age_days=age,
             views_per_day=rate, band=band_for(multiple),
             engagement_rate=engagement, reliable=reliable, notes=notes,
-            multiple_low=low, multiple_high=high,
+            multiple_low=low, multiple_high=high, priority=video.is_priority,
         ))
 
-    found.sort(key=lambda item: item.multiple, reverse=True)
+    found.sort(key=lambda item: item.rank_score, reverse=True)
     return found
 
 
@@ -399,5 +540,8 @@ def summarise(found: list[Outlier]) -> dict:
         "count": len(found),
         "by_band": by_band,
         "unreliable": sum(1 for item in found if not item.reliable),
+        # Counted separately from the total: "9 outliers" over a list where 3 of them
+        # are the operator's own picks is a different report from 9 the desk found.
+        "priority": sum(1 for item in found if item.priority),
         "strongest": found[0].as_dict() if found else None,
     }

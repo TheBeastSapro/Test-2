@@ -830,13 +830,20 @@ class Studio:
             try:
                 local, why = self._supplied(reference)
                 if local is not None:
-                    profiles.append(analyse_file(local).as_dict(include_shots=False))
+                    # `narrative=True` is what makes this a learn rather than an
+                    # analyse: it transcribes the reference and sections what it says
+                    # into hook, beats and close. Off by default in `analyse_file`
+                    # because it costs about the length of the video — which is a price
+                    # worth paying exactly once per reference, here, and never on the
+                    # paths that re-measure a file to check an edit landed.
+                    profiles.append(
+                        analyse_file(local, narrative=True).as_dict(include_shots=False))
                 elif "://" in reference:
                     # A link is acquired first. Kept separate from the local path so a
                     # mistyped filename is reported as a missing file rather than
                     # attempted as a download and reported as a network failure.
                     measured, _got = analyse_reference(
-                        reference, workdir,
+                        reference, workdir, narrative=True,
                         max_seconds=float(max_seconds) if max_seconds else None)
                     profiles.append(measured.as_dict(include_shots=False))
                 else:

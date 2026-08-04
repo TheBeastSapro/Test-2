@@ -241,6 +241,14 @@ def _profile_from(reference: str, *, workdir: str = "", max_seconds: int = 0) ->
     Accepting a previously-saved profile JSON matters more than it looks: measuring a
     ten-minute reference costs minutes, and learning a style from five of them would
     otherwise mean half an hour of re-measuring things already measured.
+
+    `narrative=True` is passed here and nowhere else in this file, and that is the
+    whole distinction between the two things this CLI does with a reference. `analyse`
+    answers "what does this edit do"; learning a style is the operator deciding to work
+    from this creator, which is the one occasion the several minutes of transcription
+    buys something — what the reference *says*, and how it is structured, which the
+    edit measurements cannot reach. A `compare` or a `restyle --verify` re-measures a
+    file to check an edit landed and would only be paying for the wait.
     """
     source = Path(reference)
     if source.suffix.lower() == ".json" and source.exists():
@@ -248,8 +256,9 @@ def _profile_from(reference: str, *, workdir: str = "", max_seconds: int = 0) ->
 
     folder = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="fcvision-"))
     if source.exists() and not max_seconds:
-        return analyse_file(source).as_dict(include_shots=False)
-    profile, acquired = analyse_reference(reference, folder, max_seconds=max_seconds)
+        return analyse_file(source, narrative=True).as_dict(include_shots=False)
+    profile, acquired = analyse_reference(reference, folder, max_seconds=max_seconds,
+                                          narrative=True)
     if acquired.title:
         print(f"# {acquired.title}", file=sys.stderr)
     return profile.as_dict(include_shots=False)
