@@ -1,5 +1,11 @@
 {
   "extraKnownMarketplaces": {
+    "thedotmack": {
+      "source": {
+        "source": "github",
+        "repo": "thedotmack/claude-mem"
+      }
+    },
     "superpowers-dev": {
       "source": {
         "source": "github",
@@ -8,6 +14,7 @@
     }
   },
   "enabledPlugins": {
+    "claude-mem@thedotmack": true,
     "superpowers@superpowers-dev": true
   }
 }
