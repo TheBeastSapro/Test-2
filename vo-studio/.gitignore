@@ -1,0 +1,21 @@
+# What the app makes on the machine it runs on. None of it is source, and most
+# of it cannot be recovered if a checkout ever walks over it.
+#
+# (No trailing comments below: git reads them as part of the pattern.)
+
+# Python, PyTorch, ffmpeg, espeak, node, model weights
+runtime/
+# rendered audio
+projects/
+# the voice reference and its tuned profiles
+voices/
+# transcripts — what was said, and about which take
+conversations/
+# files dropped into the chat
+attachments/
+# this machine's dials
+settings.json
+
+dist/
+build/
+*.spec
