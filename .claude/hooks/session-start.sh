@@ -1,11 +1,12 @@
 #!/bin/bash
-# Reinstall Agent Reach in each fresh Claude Code on the web container.
-# Containers are ephemeral, so the CLI and its upstream tools have to be
-# rebuilt every session. Safe to run repeatedly: every step is a no-op once
-# the tool is already present.
+# Rebuild everything a fresh Claude Code on the web container needs: Agent Reach
+# and its upstream tools, then the audio toolchain the voiceover and
+# sound-design skills depend on. Containers are ephemeral, so both have to be
+# reinstalled every session. Safe to run repeatedly: every step is a no-op once
+# what it installs is already present.
 set -euo pipefail
 
-# Local machines keep their own install; only rebuild in the remote container.
+# Local machines keep their own environments; only rebuild in the container.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
@@ -88,3 +89,8 @@ if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
 fi
 
 agent-reach doctor || true
+
+# The audio toolchain the base branch installs here too. REPO_DIR rather than
+# the base branch's ${CLAUDE_PROJECT_DIR:-.}, so it still resolves when the hook
+# is run by hand from another directory.
+bash "$REPO_DIR/.claude/scripts/install-audio-tools.sh"
