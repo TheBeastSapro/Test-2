@@ -1,0 +1,188 @@
+{
+  "schema_version": "1.0",
+  "analysed_at": "2026-08-05T00:00:00Z",
+
+  "source": {
+    "url": "https://www.instagram.com/reel/DboqOSvEj_b/",
+    "platform": "instagram",
+    "video_id": "DboqOSvEj_b",
+    "creator_handle": null,
+    "creator_followers": null,
+    "status": "analysed",
+    "watched_span": "full",
+    "unavailable_reason": null
+  },
+
+  "metrics": {
+    "duration_seconds": 73.0,
+    "word_count": 241,
+    "words_per_minute": 198,
+    "pace_band": "fast",
+    "hook_duration_seconds": 3.0,
+    "hook_share_of_runtime": 0.041,
+    "cuts_per_minute": 0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "engagement_rate": null
+  },
+
+  "transcript": {
+    "full_text": "Jarvis call the restaurant make a reservation for three people at 7:00 PM tonight. Ringing the restaurant now sir. I'll report back the moment the call ends. Hi this is Jarvis, Zubair's assistant. I'd like to make a booking. Do you have a quick moment? Uh sure. I'd like a table for three tonight at seven under the name Zubair. Does it matter if it's inside or outside? Whatever works best on your end. Okay so unfortunately we don't have availability at 7:00 PM but we can do 8:00 PM for three people. Does that work? Eight tonight. Got it. Let me check with my boss and I'll call you right back. Thank you I appreciate it. Goodbye. Seven o'clock is fully booked sir but they can seat three at eight tonight under your name. I told them I'd call back to confirm. Shall I take the eight or shall we court a rival establishment? Yeah 8:00 PM works Jarvis. That's fine go ahead and book it. Ringing the restaurant now sir. I'll report back the moment the call ends. Yes hello? Hi this is Jarvis, Zubair's assistant. I called a little earlier about a table. I've checked with my boss and 8:00 PM works. Can we go ahead and book it? Okay awesome. Confirmed with the restaurant sir. The 8:00 PM table is booked under Zubair. They took the reservation without protest which I shall count as a small victory.",
+    "segments": [
+      { "start": 0, "end": 3, "text": "Jarvis call the restaurant make a reservation for three people at 7:00 PM tonight." },
+      { "start": 4, "end": 8, "text": "Ringing the restaurant now sir. I'll report back the moment the call ends." },
+      { "start": 8, "end": 13, "text": "Hi this is Jarvis, Zubair's assistant. I'd like to make a booking. Do you have a quick moment?" },
+      { "start": 13, "end": 14, "text": "Uh sure." },
+      { "start": 14, "end": 17, "text": "I'd like a table for three tonight at seven under the name Zubair." },
+      { "start": 18, "end": 20, "text": "Does it matter if it's inside or outside?" },
+      { "start": 20, "end": 22, "text": "Whatever works best on your end." },
+      { "start": 22, "end": 27, "text": "Okay so unfortunately we don't have availability at 7:00 PM but we can do 8:00 PM for three people. Does that work?" },
+      { "start": 28, "end": 33, "text": "Eight tonight. Got it. Let me check with my boss and I'll call you right back. Thank you I appreciate it. Goodbye." },
+      { "start": 34, "end": 42, "text": "Seven o'clock is fully booked sir but they can seat three at eight tonight under your name. I told them I'd call back to confirm. Shall I take the eight or shall we court a rival establishment?" },
+      { "start": 43, "end": 46, "text": "Yeah 8:00 PM works Jarvis. That's fine go ahead and book it." },
+      { "start": 47, "end": 50, "text": "Ringing the restaurant now sir. I'll report back the moment the call ends." },
+      { "start": 51, "end": 51, "text": "Yes hello?" },
+      { "start": 52, "end": 60, "text": "Hi this is Jarvis, Zubair's assistant. I called a little earlier about a table. I've checked with my boss and 8:00 PM works. Can we go ahead and book it?" },
+      { "start": 60, "end": 61, "text": "Okay awesome." },
+      { "start": 61, "end": 68, "text": "Confirmed with the restaurant sir. The 8:00 PM table is booked under Zubair. They took the reservation without protest which I shall count as a small victory." }
+    ]
+  },
+
+  "format": {
+    "primary": "product_demo",
+    "secondary": "screen_recording",
+    "delivery": "dialogue",
+    "production_tier": "produced",
+    "aspect_ratio": "9:16",
+    "evidence": "Split-screen: custom branded AI dashboard (top) live-updating call status/transcription over a real phone call, with the creator's camera feed (bottom); no cuts within the live action, indicating a real-time capture rather than an edited talking-head piece."
+  },
+
+  "topic_and_angle": {
+    "topic": "An autonomous AI voice agent (\"Jarvis\") that places real phone calls to complete a task",
+    "angle": "Show the agent handling an unscripted real-world complication (no 7pm availability) rather than a clean scripted demo",
+    "claim": "An AI assistant running on \"OPUS-5\" (the dashboard's on-screen label for what reads as Claude's Opus model) can independently call a business, negotiate around a scheduling conflict, check back with the user, and confirm a booking",
+    "audience": "AI/agentic-tooling enthusiasts and developers interested in voice-agent capabilities",
+    "desire": "To see or build an AI agent that performs real-world tasks autonomously, not just chat",
+    "why_now": "none stated explicitly; framed as ongoing capability demonstration via an \"AI Workshop\" series"
+  },
+
+  "storytelling_structure": {
+    "framework": "7_section",
+    "completeness": "5/7",
+    "missing_sections": ["credibility", "context_stakes"],
+    "absence_looks_deliberate": true,
+    "sections": [
+      {
+        "name": "hook_promise",
+        "start": 0,
+        "end": 3,
+        "transcript_span": "Jarvis call the restaurant make a reservation for three people at 7:00 PM tonight.",
+        "function": "Opens mid-action with the command itself, establishing the demo's premise instantly.",
+        "strength": "strong"
+      },
+      {
+        "name": "mechanism",
+        "start": 4,
+        "end": 33,
+        "transcript_span": "Hi this is Jarvis, Zubair's assistant. I'd like to make a booking...",
+        "function": "Shows the AI placing the first call and conducting the actual negotiation live.",
+        "strength": "strong"
+      },
+      {
+        "name": "objection",
+        "start": 34,
+        "end": 42,
+        "transcript_span": "Seven o'clock is fully booked sir... Shall I take the eight or shall we court a rival establishment?",
+        "function": "Surfaces the unscripted complication (no 7pm slot) and hands the decision back to the user, proving the agent isn't scripted.",
+        "strength": "strong"
+      },
+      {
+        "name": "proof",
+        "start": 43,
+        "end": 68,
+        "transcript_span": "Confirmed with the restaurant sir. The 8:00 PM table is booked under Zubair.",
+        "function": "Second call closes the loop and delivers the confirmed outcome the hook promised.",
+        "strength": "strong"
+      },
+      {
+        "name": "cta",
+        "start": 69,
+        "end": 73,
+        "transcript_span": "AI WORKSHOP Watch the full Video Link in the description",
+        "function": "Redirects to a longer video for the full build/demo.",
+        "strength": "adequate"
+      }
+    ]
+  },
+
+  "hook": {
+    "verbatim": "Jarvis call the restaurant make a reservation for three people at 7:00 PM tonight.",
+    "duration_seconds": 3.0,
+    "types": ["in_medias_res", "capability_reveal"],
+    "pattern": "<AI ASSISTANT NAME>, call <BUSINESS> and do <REAL-WORLD TASK> — no setup, straight into the command",
+    "promise": "Watch an AI agent actually place and handle a real phone call end-to-end",
+    "payoff_alignment": {
+      "score": 5,
+      "reasoning": "The hook promises the AI will call and book the reservation; the video not only shows it doing that but shows it handling an unplanned complication (no 7pm slot), checking back with the user, and confirming the final booking — delivering more than the flat premise implied."
+    },
+    "visual_hook": "Split-screen cut straight to the branded J.A.R.V.I.S. dashboard mid-idle plus the creator speaking the command into a studio mic, no preamble or intro card",
+    "text_hook": "none — no title card at open, only persistent UI labels (Notes 49, Files 135, J.A.R.V.I.S., OPUS-5)",
+    "rewrite_templates": [
+      "<ASSISTANT>, call <BUSINESS> and <TASK> — then watch it talk its way through a real objection"
+    ]
+  },
+
+  "visual_layout": {
+    "framing": "mixed",
+    "subject": "screen and face",
+    "captions": {
+      "style": "none",
+      "position": "none",
+      "treatment": "none — no burned-in speech captions",
+      "burned_in": false
+    },
+    "on_screen_text": [
+      { "text": "Notes 49 / Files 135 / J.A.R.V.I.S. / OPUS-5", "role": "label", "start": 0, "end": 68 },
+      { "text": "LISTENING / SPEAKING / ONLINE", "role": "label", "start": 0, "end": 68 },
+      { "text": "DIALING / ON THE CALL / ENDED + restaurant name + (510) 709-5913 + live transcription", "role": "metric", "start": 4, "end": 68 },
+      { "text": "restaurant phone number lookup logic", "role": "label", "start": 65, "end": 65 },
+      { "text": "AI WORKSHOP — Watch the full Video Link in the description", "role": "title_card", "start": 69, "end": 73 }
+    ],
+    "cuts_per_minute": 0,
+    "zoom_pattern": "static",
+    "transitions": ["hard_cut"],
+    "b_roll_ratio": 0.0,
+    "colour": "graded",
+    "lighting": "softbox",
+    "branding": "\"J.A.R.V.I.S.\" branded dashboard throughout; \"AI WORKSHOP\" logo on end card"
+  },
+
+  "cta": {
+    "present": true,
+    "verbatim": "AI WORKSHOP Watch the full Video Link in the description",
+    "placement_seconds": 69.0,
+    "type": "watch_next",
+    "friction": "medium"
+  },
+
+  "replication": {
+    "what_to_steal": [
+      "Open with the command itself, zero setup — the premise IS the hook",
+      "Show a real, unscripted complication (denied request) instead of a clean happy-path demo; the friction is what makes it feel real",
+      "Persistent live-status UI overlay (call state, transcription) makes an otherwise invisible AI process visually legible for 73 seconds straight"
+    ],
+    "what_not_to_steal": [
+      "The custom branded J.A.R.V.I.S. dashboard, which requires real product/UI build work to replicate credibly",
+      "A synthesized voice convincing enough to run an unscripted live phone call — depends on a specific voice-agent stack, not just editing"
+    ],
+    "effort": "high"
+  },
+
+  "confidence": {
+    "transcript": "high",
+    "visual": "medium",
+    "metrics": "medium",
+    "notes": "No local visual-measurement engine (forgecast) available in this environment, so cuts_per_minute (0) and transitions are vision-model observations, not frame-counted — treat as estimates. Creator handle and engagement numbers (views/likes/comments) are not exposed by the Instagram watch tool. Whether the restaurant call is live/real vs. staged/re-enacted is unclear. The UI badge reads 'OPUS-5', which on a Claude-branded dashboard most plausibly indicates the agent runs on Anthropic's Claude Opus model, but the reel itself never states this outright, so it is inferred from the label, not confirmed by narration."
+  }
+}
