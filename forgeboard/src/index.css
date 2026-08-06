@@ -13,6 +13,16 @@
     'Helvetica Neue', Arial, sans-serif;
 }
 
+/*
+ * The interface commits to a light ground on purpose — it mirrors the product
+ * it was reverse-engineered from. Declaring the scheme stops Chrome's
+ * auto-dark-mode from inverting it into something muddier than either theme,
+ * and keeps form controls painted to match.
+ */
+:root {
+  color-scheme: light;
+}
+
 html,
 body,
 #root {
