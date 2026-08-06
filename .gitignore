@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 
+# local-setup/install-skills-local.sh builds the skill toolchain here
+.venv/
+
 # sound-designer working files (per-video, not source)
 assets/
 stems/

@@ -118,3 +118,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a rule to the inventory procedure: never recommend deleting or consolidating a path without first establishing what references it. Concretely — resolve symlinks (`find -type l` plus `readlink`) before comparing directory trees; grep the repo for the path; and check whether anything resolves *into* the candidate. State the evidence for "unreferenced" alongside the recommendation, so a wrong call is visible rather than implicit. Treat "these look like duplicates" as a hypothesis requiring a reachability check, never as a finding.
 
 **Principle:** Deletion advice needs positive evidence that nothing references the target, not the absence of evidence that something does. Two paths can be indistinguishable in a listing and opposite in consequence — the observable surface of a filesystem hides exactly the relationship that makes removal safe or catastrophic.
+
+### Observation 8: `cmd && ok "..."` makes an installer report success it never had
+
+**Status:** OPEN
+**Date:** 2026-08-06
+**Session context:** An installer script whose stated design goal, in its own comment, was "track what could not be done so the summary is honest." Three install sites were written as `npm install -g defuddle && ok "installed"`, with no failure branch. Adversarial testing with a deliberately failing `npm` and `pipx` on PATH showed the script printing "Done." and exiting 0 while installing neither tool. The same file's `pkg_install` helper handled the identical situation correctly, so the bug was inconsistency within one script rather than ignorance of the pattern.
+**Skill:** New skill candidate: cross-environment-handoff
+**Type:** open-source
+**Phase/Area:** Shipped-script correctness — reporting
+
+**Issue:** `set -e` does not abort on the left side of an `&&` list, which is exactly why the idiom is convenient — and exactly why a failure there vanishes. No success message prints, but nothing else does either: no warning, no entry in the skipped list, no non-zero exit. The user is told the install succeeded, and the failure only resurfaces later as a skill that mysteriously does not work. This is worse than crashing, because the false success is durable and misattributed. Notably, the happy path and the "tool already present" path both behaved perfectly; only the failing-install path was wrong, and it is the path least likely to be exercised, since testing an installer usually means testing that it installs.
+
+**Suggested improvement:** Add a rule: any command whose failure should be reported must be the *condition* of an `if`, never the left operand of `&&`. Add a self-check to the shipped-script checklist — for each thing the script claims to install, force it to fail and confirm three outcomes: a warning printed, the item in the skipped list, and a non-zero exit. Related: a partial install should exit non-zero, since callers and CI read the exit code, not the prose.
+
+**Principle:** A script's honesty is a property of its failure paths, not its success paths, and `&&` is where failure paths go to die under `set -e`. Verify a reporting mechanism by forcing the failures it claims to report — a summary that has never seen a failure has never been tested.

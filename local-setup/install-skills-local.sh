@@ -16,7 +16,13 @@
 set -euo pipefail
 
 GROUP="${1:-all}"
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Explicit failure: a bare `$(cd ... && pwd)` assignment aborts under `set -e`
+# with only cd's stderr, bypassing die()'s messaging.
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)" || {
+  printf '\033[1;31m[X]\033[0m Cannot resolve the repo directory from %s\n' \
+    "${BASH_SOURCE[0]}" >&2
+  exit 1
+}
 VENV="$REPO_DIR/.venv"
 
 say()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
@@ -66,11 +72,17 @@ pkg_install() {
 install_cli() {
   say "CLI tools (defuddle, yt-dlp, tweet)"
 
+  # Every install below needs an explicit failure branch. `cmd && ok "..."` is
+  # exempt from `set -e`, so a failing npm/brew/pipx would otherwise print
+  # nothing, never reach SKIPPED, and let the script exit 0 claiming success.
   if command -v npm >/dev/null 2>&1; then
     if command -v defuddle >/dev/null 2>&1; then
       ok "defuddle already installed"
+    elif npm install -g defuddle; then
+      ok "defuddle installed"
     else
-      npm install -g defuddle && ok "defuddle installed"
+      warn "npm install -g defuddle FAILED — the defuddle skill will not work"
+      SKIPPED="$SKIPPED defuddle"
     fi
   else
     warn "npm not found — skipping defuddle. Install Node, then: npm install -g defuddle"
@@ -80,10 +92,10 @@ install_cli() {
   # yt-dlp: sound-designer and the analyse skill both shell out to it.
   if command -v yt-dlp >/dev/null 2>&1; then
     ok "yt-dlp already installed"
-  elif command -v brew >/dev/null 2>&1; then
-    brew install yt-dlp && ok "yt-dlp installed"
-  elif command -v pipx >/dev/null 2>&1; then
-    pipx install yt-dlp && ok "yt-dlp installed"
+  elif command -v brew >/dev/null 2>&1 && brew install yt-dlp; then
+    ok "yt-dlp installed"
+  elif command -v pipx >/dev/null 2>&1 && pipx install yt-dlp; then
+    ok "yt-dlp installed"
   else
     warn "yt-dlp not installed — 'brew install yt-dlp' or 'pipx install yt-dlp'"
     SKIPPED="$SKIPPED yt-dlp"
@@ -121,15 +133,43 @@ install_audio() {
 
   command -v python3 >/dev/null || die "python3 not found. Install Python 3.11+."
 
+  # Check the version, don't just check that *a* python3 exists. Otherwise a
+  # 3.8 system python sails past and fails much later as an opaque pip error.
+  python3 - <<'PY' || die "Python 3.9+ required. Install 3.11 or 3.12 and re-run."
+import sys
+sys.exit(0 if sys.version_info >= (3, 9) else 1)
+PY
+  python3 - <<'PY' || warn "Python is older than 3.11 — the repo targets 3.11/3.12."
+import sys
+sys.exit(0 if sys.version_info >= (3, 11) else 1)
+PY
+
   if [ ! -d "$VENV" ]; then
     say "creating venv at $VENV"
-    python3 -m venv "$VENV"
+    python3 -m venv "$VENV" || die "venv creation failed.
+     On Debian/Ubuntu this usually means: sudo apt install python3-venv"
   else
     ok "venv already exists"
   fi
 
   local PY="$VENV/bin/python"
-  [ -x "$PY" ] || die "venv looks broken — remove $VENV and re-run."
+
+  # `bin/python` existing is NOT proof the venv works. The common Debian
+  # failure — ensurepip/python3-venv missing — leaves an executable
+  # bin/python with no pip module, and since the directory now exists, every
+  # re-run would skip creation and fail identically forever. Detect it and
+  # rebuild once, rather than making the user work out `rm -rf .venv`.
+  if [ ! -x "$PY" ] || ! "$PY" -m pip --version >/dev/null 2>&1; then
+    warn "venv at $VENV is broken (no working pip) — rebuilding it once"
+    rm -rf "$VENV"
+    python3 -m venv "$VENV" || die "venv creation failed.
+     On Debian/Ubuntu this usually means: sudo apt install python3-venv"
+    "$PY" -m pip --version >/dev/null 2>&1 || die "venv still has no pip after a rebuild.
+     Install the venv/ensurepip package for your Python and re-run:
+       Debian/Ubuntu:  sudo apt install python3-venv
+       then:           rm -rf $VENV && $0 $GROUP"
+    ok "venv rebuilt"
+  fi
 
   "$PY" -m pip install --upgrade pip -q
 
@@ -194,13 +234,19 @@ fi
 # --- summary --------------------------------------------------------------
 
 echo
-if [ -n "$SKIPPED" ]; then
-  warn "Not installed:$SKIPPED"
-  warn "Those skills run with reduced capability until you install them."
-fi
-
-say "Done. Before launching Claude Code in this repo:"
+say "Before launching Claude Code in this repo:"
 echo "     source $VENV/bin/activate && claude"
 echo
 say "MCP servers are account-level and are NOT installed by this script."
 echo "     See local-setup/SKILLS.md, section 'Group C'."
+
+if [ -n "$SKIPPED" ]; then
+  echo
+  warn "NOT installed:$SKIPPED"
+  warn "Those skills run with reduced capability until you install them."
+  warn "Exiting 1 because the install was partial."
+  exit 1
+fi
+
+echo
+say "Done — everything installed."
