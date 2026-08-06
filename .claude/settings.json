@@ -36,16 +36,13 @@
     "superpowers@superpowers-dev": true,
     "ui-ux-pro-max@ui-ux-pro-max-skill": true
   },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
-          }
-        ]
-      }
+  "permissions": {
+    "allow": ["Bash(mkdir *)", "Bash(curl *)", "Bash(node kb/*)"]
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Signing in to app.kloudboard.com with the user's own disposable test account via Playwright, and navigating/screenshotting the product for research the user authorized. Read-only: no deleting, no inviting users, no billing changes."
     ]
   }
 }
