@@ -30,7 +30,28 @@ Teleport needs **claude.ai subscription auth**. If you're signed in with an
 API key it fails with `Unable to get organization UUID` — run `/login` and
 pick the claude.ai account.
 
-On Windows, run all of this inside WSL.
+### Windows
+
+Claude Code runs **natively on Windows** — WSL is not required. Install from
+PowerShell instead:
+
+```powershell
+irm https://claude.ai/install.ps1 | iex     # Claude Code
+winget install --id GitHub.cli              # GitHub CLI
+```
+
+Install [Git for Windows](https://git-scm.com/downloads/win) too. The Desktop
+app's Code tab requires it, and it gives the CLI a real Bash tool (without it,
+Claude Code shells out to PowerShell). Restart the Desktop app after installing
+Git.
+
+The `.sh` scripts in this directory need bash — run them from **Git Bash**,
+which Git for Windows installs. Or skip them and `git clone` the two repos by
+hand; the scripts are convenience, not a requirement.
+
+WSL is a valid alternative, but prefer native unless you specifically want a
+Linux toolchain: Desktop's WSL sessions drop `@` file mentions and the
+connectors/plugins button, and plugins don't work in them at all.
 
 ## 2. Clone the repos
 

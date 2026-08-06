@@ -133,3 +133,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a rule: any command whose failure should be reported must be the *condition* of an `if`, never the left operand of `&&`. Add a self-check to the shipped-script checklist — for each thing the script claims to install, force it to fail and confirm three outcomes: a warning printed, the item in the skipped list, and a non-zero exit. Related: a partial install should exit non-zero, since callers and CI read the exit code, not the prose.
 
 **Principle:** A script's honesty is a property of its failure paths, not its success paths, and `&&` is where failure paths go to die under `set -e`. Verify a reporting mechanism by forcing the failures it claims to report — a summary that has never seen a failure has never been tested.
+
+### Observation 9: Platform requirements stated from memory go stale silently
+
+**Status:** OPEN
+**Date:** 2026-08-06
+**Session context:** A setup guide asserted "On Windows, run all of this inside WSL" — written from recall, never checked. When the user turned out to be on Windows and new to all of it, reading the official setup page showed Claude Code installs natively on Windows via a PowerShell one-liner, WSL explicitly optional. The recalled requirement had been true at some point and had silently stopped being true. Acting on it would have sent a beginner through an unnecessary WSL install and into a *worse* configuration, since the desktop app's WSL sessions drop file mentions, connectors and plugins entirely.
+**Skill:** source-driven-development
+**Type:** open-source
+**Phase/Area:** Trigger conditions — platform and prerequisite claims
+
+**Issue:** This is the same failure the same session already logged as Observation 3, recurring in a different form and getting further: it reached a written deliverable and a user-facing message before being caught. Platform support is the most perishable category of fact — it changes without any signal in the artefact that repeats it, no compiler rejects it, and it reads as settled background knowledge rather than as a claim needing a citation. The cost is asymmetric: an unnecessary prerequisite is invisible as an error, because the user completes the extra work and everything appears to function. Nothing about the outcome reveals that the requirement was never real.
+
+**Suggested improvement:** Extend the skill's grounding rule to name platform requirements and prerequisites explicitly — "requires WSL", "needs Xcode", "only on 64-bit", "install Node first" — as claims to verify rather than recall, with the same standing as API signatures. Add the asymmetry as the reason: a *missing* prerequisite fails loudly at the user's first command, while a *fabricated* one costs time silently and can leave the user in a worse configuration than the correct path. When a guide targets a platform the author is not on, verifying its prerequisites is not optional diligence — it is the only check available.
+
+**Principle:** Prerequisites are perishable facts that decay without notice and cannot be falsified by the artefact working. A superfluous requirement is invisible to the person who follows it, so it must be caught by verification before shipping — it will never be caught by use.
