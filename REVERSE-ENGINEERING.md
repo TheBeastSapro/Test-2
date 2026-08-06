@@ -181,10 +181,40 @@ The most differentiated part, and the hardest to copy:
 - **Payment requests** — freelancers can request payment, labelled as
   freelancer-created.
 
-### 2.5 Review / annotation — the Frame.io replacement
+### 2.5 Review / annotation — the Frame.io replacement *(verified)*
 
-Timestamped annotation on video assets, triggered by a Review button on a
-card's attachment. **This is the module excluded from the build** (see §5).
+**Review is not a rail app — it is a mode of Drive.** Route:
+`app.kloudboard.com/drive?review=<uuid>`, opened from a **Review** button that
+appears on a file row on hover. That is a meaningful architectural choice: the
+reviewable thing is a *file*, and the board card links to it, rather than review
+being its own destination.
+
+**Left panel**
+- Header: `VERSION v1` with a **New version** upload button — versions stack on
+  the same review, exactly as modelled.
+- **Comments** with a live count, plus filter, sort, search and overflow
+  controls.
+- Empty state: *"Draw on the media or leave a comment to start reviewing."*
+- Composer: `Add a comment…`, a **microphone** button (voice notes), the
+  timecode the comment will pin to — shown as `0:02.86` — and **Send**.
+
+**Transport bar**
+Download · fit · comment · play/pause · **previous frame** · **next frame** ·
+volume · **playback speed (1x)** · `0:02 / 0:24` · **zoom (100%)** · fullscreen.
+
+**Annotation toolbar** — *"Pick a tool to annotate"*: select, **pin**, **arrow**,
+**line**, **rectangle**, **freehand**, then **undo** and **redo**.
+
+Two details worth noting against my build:
+
+- They show time as **decimal seconds** (`0:02.86`), not SMPTE `HH:MM:SS:FF`,
+  even though frame-step buttons exist. Decimal is friendlier to the client
+  leaving the note; SMPTE is friendlier to the editor receiving it. I chose
+  SMPTE deliberately — it is the unit an editor scrubs in — but the original's
+  choice is the more defensible one for a tool whose whole pricing model is
+  "clients are free", because the person commenting is usually not an editor.
+- A **microphone** in the comment composer. Voice notes on a frame is a smart
+  fit for feedback that is hard to type ("the cut feels a beat late *here*").
 
 ### 2.6 MCP server — `https://api.kloudboard.com/api/mcp`
 

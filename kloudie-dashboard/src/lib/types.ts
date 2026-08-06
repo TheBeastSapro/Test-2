@@ -172,12 +172,22 @@ export interface ReviewAsset {
   at: string
 }
 
-/** A normalised rectangle drawn on the frame, 0–1 in both axes. */
+/** The annotation tools the real product offers, minus plain select. */
+export type ReviewTool = 'pin' | 'arrow' | 'line' | 'rect' | 'draw'
+
+/**
+ * A mark on the frame, normalised 0–1 in both axes so it stays correct at any
+ * player size. `rect` uses x/y/w/h; `arrow` and `line` treat x,y as the start
+ * and x+w,y+h as the end (w/h may be negative); `pin` uses x/y only; `draw`
+ * carries a normalised point path.
+ */
 export interface ReviewRegion {
+  tool: ReviewTool
   x: number
   y: number
   w: number
   h: number
+  points?: { x: number; y: number }[]
 }
 
 /**

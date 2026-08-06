@@ -22,7 +22,23 @@ import {
   Panel,
   cx,
 } from '../components/ui'
-import type { ReviewAsset, ReviewComment, ReviewRegion } from '../lib/types'
+import type {
+  ReviewAsset,
+  ReviewComment,
+  ReviewRegion,
+  ReviewTool,
+} from '../lib/types'
+
+/** The tool palette the real product ships, minus plain select. */
+const TOOLS: { id: ReviewTool; label: string; glyph: string }[] = [
+  { id: 'pin', label: 'Pin', glyph: '◎' },
+  { id: 'arrow', label: 'Arrow', glyph: '↗' },
+  { id: 'line', label: 'Line', glyph: '╱' },
+  { id: 'rect', label: 'Rectangle', glyph: '▭' },
+  { id: 'draw', label: 'Freehand', glyph: '✎' },
+]
+
+const SPEEDS = [0.5, 1, 1.5, 2]
 
 /**
  * The Frame.io-style review module.
@@ -72,7 +88,8 @@ export default function Review() {
   const [playing, setPlaying] = useState(false)
   const [draft, setDraft] = useState('')
   /** Drawing mode: the next drag on the frame becomes the comment's region. */
-  const [drawing, setDrawing] = useState(false)
+  const [tool, setTool] = useState<ReviewTool | null>(null)
+  const [rate, setRate] = useState(1)
   const [pending, setPending] = useState<ReviewRegion | null>(null)
   const [dragFrom, setDragFrom] = useState<{ x: number; y: number } | null>(null)
   const [showResolved, setShowResolved] = useState(false)
@@ -125,7 +142,7 @@ export default function Review() {
     setTime(0)
     setPlaying(false)
     setPending(null)
-    setDrawing(false)
+    setTool(null)
   }, [asset?.id])
 
   // J/K/L-adjacent shortcuts. Editors expect arrows to step frames.
@@ -184,7 +201,7 @@ export default function Review() {
     })
     setDraft('')
     setPending(null)
-    setDrawing(false)
+    setTool(null)
   }
 
   const decide = (status: 'approved' | 'changes requested') => {
@@ -253,16 +270,34 @@ export default function Review() {
         <div
           ref={stageRef}
           onPointerDown={(e) => {
-            if (!drawing) return
+            if (!tool) return
             e.currentTarget.setPointerCapture(e.pointerId)
             const p = pointFrom(e)
             setDragFrom(p)
-            setPending({ x: p.x, y: p.y, w: 0, h: 0 })
+            setPending(
+              tool === 'draw'
+                ? { tool, x: p.x, y: p.y, w: 0, h: 0, points: [p] }
+                : { tool, x: p.x, y: p.y, w: 0, h: 0 },
+            )
+            // A pin is a single click, so it is complete on press.
+            if (tool === 'pin') setDragFrom(null)
           }}
           onPointerMove={(e) => {
-            if (!drawing || !dragFrom) return
+            if (!tool || !dragFrom) return
             const p = pointFrom(e)
+            if (tool === 'draw') {
+              setPending((r) =>
+                r ? { ...r, points: [...(r.points ?? []), p] } : r,
+              )
+              return
+            }
+            if (tool === 'arrow' || tool === 'line') {
+              // Direction matters, so keep the raw delta rather than normalising.
+              setPending({ tool, x: dragFrom.x, y: dragFrom.y, w: p.x - dragFrom.x, h: p.y - dragFrom.y })
+              return
+            }
             setPending({
+              tool,
               x: Math.min(dragFrom.x, p.x),
               y: Math.min(dragFrom.y, p.y),
               w: Math.abs(p.x - dragFrom.x),
@@ -272,7 +307,7 @@ export default function Review() {
           onPointerUp={() => setDragFrom(null)}
           className={cx(
             'relative aspect-video w-full overflow-hidden rounded-xl bg-black select-none',
-            drawing && 'cursor-crosshair',
+            tool && 'cursor-crosshair',
           )}
         >
           {/*
@@ -292,7 +327,7 @@ export default function Review() {
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
             onClick={() => {
-              if (drawing) return
+              if (tool) return
               const v = videoRef.current!
               v.paused ? void v.play() : v.pause()
             }}
@@ -309,9 +344,11 @@ export default function Review() {
             ))}
           {pending && <Region region={pending} pendingLabel />}
 
-          {drawing && !pending && (
+          {tool && !pending && (
             <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-[12px] font-medium text-white/90">
-              Drag on the frame to mark the area
+              {tool === 'pin'
+                ? 'Click the frame to drop a pin'
+                : 'Drag on the frame to mark it'}
             </p>
           )}
         </div>
@@ -356,17 +393,57 @@ export default function Review() {
             </span>
 
             <span className="ml-auto flex items-center gap-1.5">
-              <Button
-                size="sm"
-                variant={drawing ? 'primary' : 'default'}
-                onClick={() => {
-                  setDrawing((d) => !d)
-                  setPending(null)
-                }}
-              >
-                <Pencil size={13} />
-                {drawing ? 'Drawing' : 'Draw'}
-              </Button>
+              <span className="flex items-center gap-0.5 rounded-lg border border-line p-0.5">
+                <span className="px-1.5 text-[11px] text-subtle">Annotate</span>
+                {TOOLS.map((t) => (
+                  <button
+                    key={t.id}
+                    title={t.label}
+                    aria-label={t.label}
+                    aria-pressed={tool === t.id}
+                    onClick={() => {
+                      setTool((cur) => (cur === t.id ? null : t.id))
+                      setPending(null)
+                    }}
+                    className={cx(
+                      'grid h-6 w-6 place-items-center rounded text-[13px] transition-colors',
+                      tool === t.id
+                        ? 'bg-brand text-white'
+                        : 'text-subtle hover:bg-zinc-100 hover:text-ink',
+                    )}
+                  >
+                    {t.glyph}
+                  </button>
+                ))}
+                <button
+                  title="Undo mark"
+                  aria-label="Undo mark"
+                  disabled={!pending}
+                  onClick={() => setPending(null)}
+                  className="grid h-6 w-6 place-items-center rounded text-[13px] text-subtle hover:bg-zinc-100 hover:text-ink disabled:opacity-40"
+                >
+                  ↶
+                </button>
+              </span>
+
+              <label className="flex items-center gap-1 text-[11px] text-subtle">
+                <span className="sr-only">Playback speed</span>
+                <select
+                  value={rate}
+                  onChange={(e) => {
+                    const r = Number(e.target.value)
+                    setRate(r)
+                    if (videoRef.current) videoRef.current.playbackRate = r
+                  }}
+                  className="rounded-md border border-line px-1.5 py-1 text-[11px]"
+                >
+                  {SPEEDS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}x
+                    </option>
+                  ))}
+                </select>
+              </label>
               <Button size="sm" variant="primary" onClick={() => decide('approved')}>
                 <Check size={13} />
                 Approve
@@ -497,6 +574,10 @@ export default function Review() {
   )
 }
 
+/**
+ * One mark on the frame. Rendered in a normalised 0–1 SVG viewBox so every
+ * shape scales with the player without recomputing coordinates.
+ */
 function Region({
   region,
   label,
@@ -506,26 +587,97 @@ function Region({
   label?: string
   pendingLabel?: boolean
 }) {
+  const stroke = pendingLabel ? 'var(--color-brand)' : '#fbbf24'
+  const fill = pendingLabel ? 'rgba(47,107,255,0.15)' : 'rgba(251,191,36,0.15)'
+  const { tool, x, y, w, h } = region
+
   return (
-    <div
+    <svg
       aria-hidden
-      className={cx(
-        'pointer-events-none absolute rounded-md border-2',
-        pendingLabel ? 'border-brand bg-brand/15' : 'border-amber-400 bg-amber-300/15',
-      )}
-      style={{
-        left: `${region.x * 100}%`,
-        top: `${region.y * 100}%`,
-        width: `${region.w * 100}%`,
-        height: `${region.h * 100}%`,
-      }}
+      viewBox="0 0 1 1"
+      preserveAspectRatio="none"
+      className="pointer-events-none absolute inset-0 h-full w-full"
     >
-      {label && (
-        <span className="absolute -top-2 -left-2 grid h-5 w-5 place-items-center rounded-full bg-amber-400 text-[9px] font-bold text-ink">
-          {label}
-        </span>
+      <defs>
+        <marker
+          id={`head-${pendingLabel ? 'p' : 'a'}`}
+          markerWidth="6"
+          markerHeight="6"
+          refX="5"
+          refY="3"
+          orient="auto"
+        >
+          <path d="M0,0 L6,3 L0,6 Z" fill={stroke} />
+        </marker>
+      </defs>
+
+      {tool === 'rect' && (
+        <rect
+          x={x}
+          y={y}
+          width={w}
+          height={h}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={2}
+          vectorEffect="non-scaling-stroke"
+          rx={0.01}
+        />
       )}
-    </div>
+
+      {(tool === 'arrow' || tool === 'line') && (
+        <line
+          x1={x}
+          y1={y}
+          x2={x + w}
+          y2={y + h}
+          stroke={stroke}
+          strokeWidth={2}
+          vectorEffect="non-scaling-stroke"
+          strokeLinecap="round"
+          markerEnd={tool === 'arrow' ? `url(#head-${pendingLabel ? 'p' : 'a'})` : undefined}
+        />
+      )}
+
+      {tool === 'pin' && (
+        <>
+          <circle cx={x} cy={y} r={0.018} fill={stroke} />
+          <circle
+            cx={x}
+            cy={y}
+            r={0.038}
+            fill="none"
+            stroke={stroke}
+            strokeWidth={2}
+            vectorEffect="non-scaling-stroke"
+          />
+        </>
+      )}
+
+      {tool === 'draw' && region.points && region.points.length > 1 && (
+        <polyline
+          points={region.points.map((p) => `${p.x},${p.y}`).join(' ')}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={2}
+          vectorEffect="non-scaling-stroke"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+
+      {label && (
+        <text
+          x={x}
+          y={Math.max(0.03, y - 0.012)}
+          fill={stroke}
+          fontSize={0.035}
+          fontWeight="700"
+        >
+          {label}
+        </text>
+      )}
+    </svg>
   )
 }
 
@@ -571,7 +723,13 @@ function Timeline({
           className="pointer-events-none absolute inset-y-0 w-0.5 bg-brand"
           style={{ left: `${pct}%` }}
         />
-        {comments.map((c) => (
+        {comments.map((c, i) => {
+          // Notes within ~0.4s land on the same pixel; stagger so each stays
+          // clickable instead of the last one swallowing the others' clicks.
+          const cluster = comments
+            .slice(0, i)
+            .filter((o) => Math.abs(o.timecodeSec - c.timecodeSec) < 0.4).length
+          return (
           <button
             key={c.id}
             title={`${timecode(c.timecodeSec, fps)} — ${c.body}`}
@@ -580,13 +738,17 @@ function Timeline({
               e.stopPropagation()
               onSeek(c.timecodeSec)
             }}
-            style={{ left: `${(c.timecodeSec / duration) * 100}%` }}
+            style={{
+              left: `${(c.timecodeSec / duration) * 100}%`,
+              top: 6 + (cluster % 3) * 8,
+            }}
             className={cx(
-              'absolute top-1.5 -ml-1.5 h-3 w-3 rounded-full border-2 border-white shadow',
+              'absolute -ml-1.5 h-3 w-3 rounded-full border-2 border-white shadow',
               c.resolved ? 'bg-zinc-400' : 'bg-amber-400',
             )}
           />
-        ))}
+          )
+        })}
       </div>
     </div>
   )

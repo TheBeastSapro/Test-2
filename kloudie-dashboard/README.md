@@ -18,7 +18,7 @@ No backend, no API keys, no network calls. State lives in `localStorage` under
 
 ## What's in it
 
-**Ten apps in the rail**
+**Eleven apps in the rail**
 
 | App | What works |
 |---|---|
@@ -27,9 +27,10 @@ No backend, no API keys, no network calls. State lives in `localStorage` under
 | **Boards** | Kanban with real drag-and-drop between stages, per-stage quick add, card drawer with stage/due/assignees, live checklist, comments, attachments, card-linked payout. |
 | **Calendar** | Month grid of every card with a due date. Drag a card to a new day to reschedule it — it writes to the same card the board reads. |
 | **Chat** | Channels and DMs, live message send. |
-| **Files** | Asset library, type filters, storage total, links back to the card each asset belongs to. |
+| **Drive** | File library, type filters, storage total, links back to the card each file belongs to. |
 | **Review** | Frame-accurate video review (below). |
-| **Economy** | Payouts linked to the cards they paid for, "Pay now" generates an invoice number, team roster with guest flags, contracts. |
+| **Pay** | Payouts linked to the cards they paid for, with Paid / Pending approval / Queued tiles. "Pay now" generates an invoice. Team roster with guest flags, contracts. |
+| **Invoices** | Its own app, as in the original — derived from paid payouts, each naming the cards it paid for. |
 | **Client portal** | The guest-facing view. Approve or request changes on shared deliverables; the decision lands as a card comment *and* an Inbox item. |
 | **kloudie** | The agent (below). |
 
@@ -52,7 +53,7 @@ Library, and an "Ask kloudie" omnibox that routes into a new agent conversation.
 ## The two ideas worth keeping
 
 **1. One card, every view.** `src/lib/types.ts` defines a single `Card`, and
-Boards, Calendar, Dashboard counts, Files, Economy payouts, the Client Portal
+Boards, Calendar, Dashboard counts, Drive, Pay payouts, the Client Portal
 and the agent all read and write *that same record*. Reschedule on the Calendar
 and the board moves. Approve in the portal and a comment appears on the card and
 an item appears in the Inbox. Payouts can reference the cards they paid for
@@ -102,9 +103,12 @@ Open it from the rail, or from **Review** on a cut in any card's drawer.
 - **Notes pinned to a frame.** Every note anchors to an exact timecode — that
   same anchor is the marker on the timeline, the seek target when clicked, and
   the frame its drawing belongs to.
-- **Drawn regions.** Hit **Draw**, drag a box on the frame, write the note. The
-  box reappears over the picture when playback reaches that timecode. Regions
-  are stored normalised (0–1), so they stay correct at any player size.
+- **Five annotation tools**, matching the original: **pin, arrow, line,
+  rectangle, freehand**, plus undo. Pick one, mark the frame, write the note.
+  The mark reappears over the picture when playback reaches that timecode.
+  Everything is stored normalised (0–1) and rendered in a unit SVG viewBox, so
+  marks stay correct at any player size.
+- **Playback speed** — 0.5x to 2x.
 - **Resolve / reopen**, with an open-note count and a resolved filter.
 - **Versions.** v1 / v2 of the same deliverable, each with its own note set,
   hanging off the card the board already tracks.
@@ -115,6 +119,11 @@ Two encodes ship per clip (H.264 `.mp4` and VP9 `.webm`, ~600 KB total,
 generated locally with ffmpeg). Safari and most Chrome builds take the mp4;
 Chromium builds without proprietary codecs — including the one the verify
 script drives — take the webm.
+
+**One deliberate divergence:** the original displays decimal seconds
+(`0:02.86`); this shows SMPTE `MM:SS:FF`. SMPTE is the unit an editor scrubs
+in, but the original's choice is arguably better for a product whose pricing
+model makes clients free — the person leaving the note usually isn't an editor.
 
 **What this deliberately is not:** an editor. There is no timeline, no cutting,
 no rendering — because kloudboard doesn't ship those either. It owns the

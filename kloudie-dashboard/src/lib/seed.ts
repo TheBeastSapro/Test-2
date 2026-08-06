@@ -161,12 +161,12 @@ export const reviewAssets: ReviewAsset[] = [
 ]
 
 export const reviewComments: ReviewComment[] = [
-  { id: 'rc-1', assetId: 'rv-1', authorId: 'm-1', timecodeSec: 2.4, body: 'Cold open runs long — cut this to under 12 seconds per the voice SOP.', region: { x: 0.06, y: 0.1, w: 0.4, h: 0.3 }, resolved: true, at: at(-4, 15) },
-  { id: 'rc-2', assetId: 'rv-1', authorId: 'm-1', timecodeSec: 9.8, body: 'Lower third sits over the horizon line. Drop it 40px.', region: { x: 0.55, y: 0.62, w: 0.35, h: 0.18 }, resolved: true, at: at(-4, 15) },
+  { id: 'rc-1', assetId: 'rv-1', authorId: 'm-1', timecodeSec: 2.4, body: 'Cold open runs long — cut this to under 12 seconds per the voice SOP.', region: { tool: 'rect', x: 0.06, y: 0.1, w: 0.4, h: 0.3 }, resolved: true, at: at(-4, 15) },
+  { id: 'rc-2', assetId: 'rv-1', authorId: 'm-1', timecodeSec: 9.8, body: 'Lower third sits over the horizon line. Drop it 40px.', region: { tool: 'arrow', x: 0.55, y: 0.62, w: 0.35, h: 0.18 }, resolved: true, at: at(-4, 15) },
   { id: 'rc-3', assetId: 'rv-1', authorId: 'm-2', timecodeSec: 17.2, body: 'VO and picture drift apart here — about half a second late.', region: null, resolved: false, at: at(-4, 16) },
-  { id: 'rc-4', assetId: 'rv-2', authorId: 'm-1', timecodeSec: 5.0, body: 'Much better. One more: hold this shot two beats longer before the cut.', region: { x: 0.3, y: 0.28, w: 0.3, h: 0.34 }, resolved: false, at: at(-1, 11) },
+  { id: 'rc-4', assetId: 'rv-2', authorId: 'm-1', timecodeSec: 5.0, body: 'Much better. One more: hold this shot two beats longer before the cut.', region: { tool: 'rect', x: 0.3, y: 0.28, w: 0.3, h: 0.34 }, resolved: false, at: at(-1, 11) },
   { id: 'rc-5', assetId: 'rv-2', authorId: 'm-5', timecodeSec: 12.6, body: 'Colour is warmer than the Bermuda upload. Match the grade.', region: null, resolved: false, at: at(-1, 12) },
-  { id: 'rc-6', assetId: 'rv-3', authorId: 'm-1', timecodeSec: 3.1, body: 'Missing the map beat that made Bermuda work. Add it before the reveal.', region: { x: 0.12, y: 0.3, w: 0.26, h: 0.3 }, resolved: false, at: at(0, 9) },
+  { id: 'rc-6', assetId: 'rv-3', authorId: 'm-1', timecodeSec: 3.1, body: 'Missing the map beat that made Bermuda work. Add it before the reveal.', region: { tool: 'pin', x: 0.12, y: 0.3, w: 0, h: 0 }, resolved: false, at: at(0, 9) },
 ]
 
 export const assets: Asset[] = [

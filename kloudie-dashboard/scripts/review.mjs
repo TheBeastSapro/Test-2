@@ -34,7 +34,7 @@ log.push('after clicking first timeline marker: ' + (await tc()))
 await p.screenshot({ path: 'screenshots/review.png' })
 
 // 3. A drawn region + note must persist and appear in the rail.
-await p.getByRole('button', { name: 'Draw' }).click()
+await p.getByRole('button', { name: 'Rectangle' }).click()
 const stage = await p.locator('video').boundingBox()
 await p.mouse.move(stage.x + 260, stage.y + 140)
 await p.mouse.down()
