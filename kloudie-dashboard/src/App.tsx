@@ -8,6 +8,7 @@ import CalendarApp from './apps/CalendarApp'
 import ChatApp from './apps/ChatApp'
 import FilesApp from './apps/FilesApp'
 import EconomyApp from './apps/EconomyApp'
+import Review from './apps/Review'
 import ClientPortal from './apps/ClientPortal'
 import KloudieLayout from './apps/kloudie/KloudieLayout'
 import KloudieChat from './apps/kloudie/KloudieChat'
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/calendar" element={<CalendarApp />} />
             <Route path="/chat" element={<ChatApp />} />
             <Route path="/files" element={<FilesApp />} />
+            <Route path="/review" element={<Review />} />
             <Route path="/economy" element={<EconomyApp />} />
             <Route path="/portal" element={<ClientPortal />} />
             <Route path="/kloudie" element={<KloudieLayout />}>

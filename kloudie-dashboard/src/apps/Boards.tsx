@@ -1,6 +1,13 @@
 import { useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Calendar as CalIcon, MessageSquare, Paperclip, Plus, X } from 'lucide-react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import {
+  Calendar as CalIcon,
+  Clapperboard,
+  MessageSquare,
+  Paperclip,
+  Plus,
+  X,
+} from 'lucide-react'
 import { useStore } from '../lib/store'
 import { assets } from '../lib/seed'
 import { isOverdue, member, money, relative, shortDate } from '../lib/format'
@@ -220,11 +227,21 @@ function BoardCard({
 }
 
 function CardDrawer({ card, onClose }: { card: Card; onClose: () => void }) {
-  const { boards, toggleChecklistItem, addComment, updateCard } = useStore()
+  const {
+    boards,
+    reviewAssets,
+    reviewComments,
+    toggleChecklistItem,
+    addComment,
+    updateCard,
+  } = useStore()
   const [draft, setDraft] = useState('')
   const board = boards.find((b) => b.id === card.boardId)!
   const done = card.checklist.filter((i) => i.done).length
   const attached = assets.filter((a) => card.attachmentIds.includes(a.id))
+  const cuts = reviewAssets
+    .filter((a) => a.cardId === card.id)
+    .sort((a, b) => b.version - a.version)
 
   return (
     <div
@@ -329,6 +346,37 @@ function CardDrawer({ card, onClose }: { card: Card; onClose: () => void }) {
               </ul>
             )}
           </section>
+
+          {cuts.length > 0 && (
+            <section>
+              <h3 className="mb-2 text-[12px] font-semibold">Cuts in review</h3>
+              <ul className="space-y-1.5">
+                {cuts.map((cut) => {
+                  const open = reviewComments.filter(
+                    (rc) => rc.assetId === cut.id && !rc.resolved,
+                  ).length
+                  return (
+                    <li
+                      key={cut.id}
+                      className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5"
+                    >
+                      <Clapperboard size={12} className="shrink-0 text-subtle" />
+                      <span className="min-w-0 flex-1 truncate text-[12px]">
+                        v{cut.version} · {cut.status}
+                        {open > 0 && ` · ${open} open`}
+                      </span>
+                      <Link
+                        to={`/review?asset=${cut.id}`}
+                        className="shrink-0 rounded-md bg-brand px-2 py-1 text-[11px] font-medium text-white hover:bg-brand/90"
+                      >
+                        Review
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          )}
 
           {attached.length > 0 && (
             <section>

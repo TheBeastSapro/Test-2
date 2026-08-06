@@ -1,7 +1,7 @@
 # kloudie-dashboard
 
-A working clone of the Kloudboard / kloudie workspace — every module except
-video editing. The teardown it was built from is in
+A working clone of the Kloudboard / kloudie workspace, Review module included.
+The teardown it was built from is in
 [`../REVERSE-ENGINEERING.md`](../REVERSE-ENGINEERING.md).
 
 ```bash
@@ -18,7 +18,7 @@ No backend, no API keys, no network calls. State lives in `localStorage` under
 
 ## What's in it
 
-**Nine apps in the rail**
+**Ten apps in the rail**
 
 | App | What works |
 |---|---|
@@ -28,6 +28,7 @@ No backend, no API keys, no network calls. State lives in `localStorage` under
 | **Calendar** | Month grid of every card with a due date. Drag a card to a new day to reschedule it — it writes to the same card the board reads. |
 | **Chat** | Channels and DMs, live message send. |
 | **Files** | Asset library, type filters, storage total, links back to the card each asset belongs to. |
+| **Review** | Frame-accurate video review (below). |
 | **Economy** | Payouts linked to the cards they paid for, "Pay now" generates an invoice number, team roster with guest flags, contracts. |
 | **Client portal** | The guest-facing view. Approve or request changes on shared deliverables; the decision lands as a card comment *and* an Inbox item. |
 | **kloudie** | The agent (below). |
@@ -90,12 +91,42 @@ RPM can't drift apart.
 
 ---
 
+## Review — the Frame.io module
+
+Open it from the rail, or from **Review** on a cut in any card's drawer.
+
+- **Frame-accurate transport.** SMPTE timecode (`MM:SS:FF`), single-frame
+  stepping, `←`/`→` for one frame, `shift` for one second, `space` to play. The
+  clips carry a burned-in timecode so stepping can be checked against the frame
+  itself.
+- **Notes pinned to a frame.** Every note anchors to an exact timecode — that
+  same anchor is the marker on the timeline, the seek target when clicked, and
+  the frame its drawing belongs to.
+- **Drawn regions.** Hit **Draw**, drag a box on the frame, write the note. The
+  box reappears over the picture when playback reaches that timecode. Regions
+  are stored normalised (0–1), so they stay correct at any player size.
+- **Resolve / reopen**, with an open-note count and a resolved filter.
+- **Versions.** v1 / v2 of the same deliverable, each with its own note set,
+  hanging off the card the board already tracks.
+- **Approve / Request changes** — writes a comment on the card *and* an item to
+  the Inbox, the same way the Client Portal does.
+
+Two encodes ship per clip (H.264 `.mp4` and VP9 `.webm`, ~600 KB total,
+generated locally with ffmpeg). Safari and most Chrome builds take the mp4;
+Chromium builds without proprietary codecs — including the one the verify
+script drives — take the webm.
+
+**What this deliberately is not:** an editor. There is no timeline, no cutting,
+no rendering — because kloudboard doesn't ship those either. It owns the
+feedback loop around the edit, not the edit.
+
+---
+
 ## Excluded
 
-Per the brief — everything except video editing:
-
-- **Review / annotation** — the Frame.io-style timestamped video markup.
-- **Video generation** in the Playground; *Image & Video* is Image only.
+- **Video generation** in the Playground; *Image & Video* is Image only. That's
+  generative video rather than video editing, and the only surface that would
+  need a real model endpoint to be anything but a mock.
 
 ---
 
@@ -105,7 +136,10 @@ React 19 · TypeScript · Vite 8 · Tailwind v4 · react-router · lucide-react.
 No state library — a context + `useState` store in `src/lib/store.tsx` is
 enough at this size. No charting library — the one chart is 30 lines of SVG.
 
-`npm run verify` drives the built app in headless Chromium: every route asserted
-free of console errors, then the primary state loop driven end to end
-(agent proposes → approve → records appear in another app → credits decrement →
-survives reload).
+`npm run verify` drives the built app in headless Chromium. It clears
+`localStorage` first, so runs are repeatable rather than accumulating. It
+asserts every route is free of console errors, then drives the real loops end to
+end: agent proposes → approve → records appear in another app → credits
+decrement → survives reload; and in Review, frame stepping lands on the exact
+frame, a drawn note pins to its timecode and persists, versions swap both source
+and note set, and a decision reaches both the card and the Inbox.

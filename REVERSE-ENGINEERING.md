@@ -270,15 +270,25 @@ Not visible in the recording, but documented:
 
 ---
 
-## 6. Scope of this build — what was excluded
+## 6. Scope of this build
 
-The request was *"all except video editing."* Excluded accordingly:
+Originally scoped as *"all except video editing"*, then extended to include the
+Review module. **Everything documented above is now implemented** in
+`kloudie-dashboard/` — ten apps in the rail, including Review and the Client
+Portal found on the product pages.
 
-- **Review / annotation module** (§2.5) — the Frame.io-style timestamped video
-  markup. This is the video-editing-adjacent surface in the product.
-- **Video generation** in the Playground's *Image & Video* module — kept as
-  **Image** generation only.
+The one remaining gap is **video generation** in the Playground's *Image &
+Video* module, kept as **Image** only. That is generative video, not video
+editing, and it is the one surface where a convincing implementation would
+require a real model endpoint rather than a UI.
 
-Everything else is implemented in `kloudie-dashboard/`, including the Client
-Portal found on the product pages. See that directory's README for what is real
-behaviour versus seeded data.
+Note on what "review" means here — it is worth being precise, because the
+distinction is the product: kloudboard does **not** ship a video *editor*. There
+is no timeline, no cutting, no rendering. It ships frame-accurate *review* —
+scrub, step, mark a region, pin a note to an exact frame, approve or send back.
+The editing happens in Premiere or Resolve; kloudboard owns the feedback loop
+around it, which is the part that is actually painful to coordinate across a
+freelance team. Building an editor would have been a different, much larger
+product, and not the one being reverse-engineered.
+
+See the directory's README for what is real behaviour versus seeded data.

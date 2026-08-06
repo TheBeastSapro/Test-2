@@ -20,6 +20,8 @@ import type {
   InboxItem,
   Payout,
   PlaygroundModuleId,
+  ReviewAsset,
+  ReviewComment,
 } from './types'
 
 const STORAGE_KEY = 'kloudboard.workspace.v1'
@@ -36,6 +38,8 @@ interface State {
   automations: Automation[]
   competitors: Competitor[]
   conversations: Conversation[]
+  reviewAssets: ReviewAsset[]
+  reviewComments: ReviewComment[]
   credits: number
 }
 
@@ -51,6 +55,8 @@ const initial = (): State => ({
   automations: seed.automations,
   competitors: seed.competitors,
   conversations: seed.conversations,
+  reviewAssets: seed.reviewAssets,
+  reviewComments: seed.reviewComments,
   credits: seed.CREDITS_START,
 })
 
@@ -85,6 +91,10 @@ interface Store extends State {
   toggleAutomation(id: string): void
   spendCredits(n: number): void
   upsertConversation(c: Conversation): void
+  addReviewComment(c: Omit<ReviewComment, 'id' | 'at' | 'resolved'>): void
+  toggleReviewComment(id: string): void
+  deleteReviewComment(id: string): void
+  setReviewStatus(assetId: string, status: ReviewAsset['status']): void
   reset(): void
 }
 
@@ -233,6 +243,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               : [c, ...s.conversations],
           }
         }),
+
+      addReviewComment: (c) =>
+        patch((s) => ({
+          reviewComments: [
+            ...s.reviewComments,
+            { ...c, id: nextId('rc'), resolved: false, at: new Date().toISOString() },
+          ],
+        })),
+
+      toggleReviewComment: (id) =>
+        patch((s) => ({
+          reviewComments: s.reviewComments.map((c) =>
+            c.id === id ? { ...c, resolved: !c.resolved } : c,
+          ),
+        })),
+
+      deleteReviewComment: (id) =>
+        patch((s) => ({
+          reviewComments: s.reviewComments.filter((c) => c.id !== id),
+        })),
+
+      setReviewStatus: (assetId, status) =>
+        patch((s) => ({
+          reviewAssets: s.reviewAssets.map((a) =>
+            a.id === assetId ? { ...a, status } : a,
+          ),
+        })),
 
       reset: () => {
         try {

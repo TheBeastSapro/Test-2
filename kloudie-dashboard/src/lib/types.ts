@@ -16,6 +16,7 @@ export type AppId =
   | 'chat'
   | 'files'
   | 'economy'
+  | 'review'
   | 'portal'
   | 'kloudie'
 
@@ -149,6 +150,49 @@ export interface InboxItem {
   cardRef: string | null
   at: string
   read: boolean
+}
+
+/**
+ * A cut submitted for review. Versions of the same deliverable share a
+ * `cardId`, so the review history hangs off the card the board already tracks.
+ */
+export interface ReviewAsset {
+  id: string
+  cardId: string
+  title: string
+  version: number
+  /** Base path without extension — the player offers mp4 and webm. */
+  src: string
+  durationSec: number
+  /** Needed for frame-accurate stepping and SMPTE-style timecode. */
+  fps: number
+  status: 'in review' | 'approved' | 'changes requested'
+  uploadedBy: string
+  at: string
+}
+
+/** A normalised rectangle drawn on the frame, 0–1 in both axes. */
+export interface ReviewRegion {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/**
+ * A note pinned to an exact frame. `timecodeSec` is the anchor: the marker on
+ * the timeline, the seek target when clicked, and the frame the drawing
+ * belongs to.
+ */
+export interface ReviewComment {
+  id: string
+  assetId: string
+  authorId: string
+  timecodeSec: number
+  body: string
+  region: ReviewRegion | null
+  resolved: boolean
+  at: string
 }
 
 /** A Brain entry: the browsable, curatable memory the agent grounds on. */

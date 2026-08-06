@@ -6,6 +6,9 @@ const errs = []
 p.on('pageerror', (e) => errs.push('PAGEERROR: ' + e.message))
 p.on('console', (m) => m.type() === 'error' && errs.push(m.text()))
 
+await p.goto('http://localhost:4173/', { waitUntil: 'domcontentloaded' })
+await p.evaluate(() => localStorage.clear())
+
 await p.goto('http://localhost:4173/#/portal', { waitUntil: 'networkidle' })
 await p.waitForTimeout(400)
 await p.screenshot({ path: 'screenshots/portal.png' })

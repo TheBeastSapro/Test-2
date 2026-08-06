@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "verify": "node scripts/shot.mjs && node scripts/flow.mjs && node scripts/portal.mjs"
+    "verify": "node scripts/shot.mjs && node scripts/flow.mjs && node scripts/portal.mjs && node scripts/review.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.28.0",
