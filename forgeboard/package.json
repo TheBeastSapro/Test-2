@@ -11,7 +11,8 @@
     "verify": "node scripts/shot.mjs && node scripts/flow.mjs && node scripts/portal.mjs && node scripts/review.mjs",
     "server": "node server/index.js",
     "test:server": "node --experimental-sqlite server/test.mjs",
-    "test:e2e": "npm run build && node scripts/e2e.mjs"
+    "test:e2e": "npm run build && node scripts/e2e.mjs",
+    "start": "npm run build && node --no-warnings server/index.js"
   },
   "dependencies": {
     "lucide-react": "^1.28.0",
@@ -30,5 +31,8 @@
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.2.0"
+  },
+  "engines": {
+    "node": ">=22.5"
   }
 }

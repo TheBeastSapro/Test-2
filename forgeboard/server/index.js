@@ -15,6 +15,7 @@ import {
 } from './auth.js'
 import { agentProvider, askForge } from './agent.js'
 import { generate } from './generate.js'
+import { banner, preflight } from './preflight.js'
 
 const PORT = Number(process.env.PORT ?? 8787)
 const UPLOADS = resolve(process.env.FORGEBOARD_UPLOADS ?? 'data/uploads')
@@ -769,7 +770,15 @@ export const server = createServer(async (req, res) => {
 })
 
 if (process.env.FORGEBOARD_NO_LISTEN !== '1') {
-  server.listen(PORT, () => {
-    console.log(`ForgeBoard on http://localhost:${PORT}  (agent: ${agentProvider()})`)
+  preflight()
+  server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+      console.error(
+        `\n  Port ${PORT} is already in use.\n  Start on another one:  PORT=8080 npm start\n`,
+      )
+      process.exit(1)
+    }
+    throw e
   })
+  server.listen(PORT, () => banner(PORT, agentProvider()))
 }
