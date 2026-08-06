@@ -103,3 +103,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a rule to the shipped-script checklist: never use `a || b && c` for dispatch — write an explicit `if`, because the C-like precedence readers expect is not what the shell does, and `set -e` converts the misreading into a wrong exit status rather than a visible error. More generally, when a script has selectable modes, exercise every mode, not just the default; the default is the path most likely to mask a dispatch bug.
 
 **Principle:** Under `set -e`, any bare and-or list is also a conditional exit. Constructs whose value is discarded in ordinary shell become control flow under `set -e`, and the failure mode is a wrong exit status rather than an error message — so the default code path passing proves the least about the branches.
+
+### Observation 7: A directory listing cannot tell you whether a directory is load-bearing
+
+**Status:** OPEN
+**Date:** 2026-08-06
+**Session context:** Documenting a repo's skills for local use. Two sibling directories, `.agents/skills/` and `agent/skills/`, held near-identical names to `.claude/skills/`. On the strength of `ls` output alone this was written up as duplicate dead weight the user should clean up. A later check showed 26 of the 36 entries in `.claude/skills/` are symlinks into `.agents/skills/` — so that directory is the storage backing most of the skill set, and deleting it would have broken 26 skills. `agent/skills/` genuinely is unreferenced; the two look identical from a listing and could not be more different in consequence.
+**Skill:** New skill candidate: cross-environment-handoff
+**Type:** open-source
+**Phase/Area:** Repository inventory — before recommending deletion
+
+**Issue:** The advice was destructive, confidently stated, and derived from a listing that could not support it. `ls` renders a symlink and a real directory near-identically, and `find -type d` skips symlinked directories entirely, so a naive comparison shows "same names in both places" and reads as duplication. Nothing about the observable surface distinguished the load-bearing directory from the dead one. The error was not a missing check so much as a category error: a name comparison was used to answer a reachability question.
+
+**Suggested improvement:** Add a rule to the inventory procedure: never recommend deleting or consolidating a path without first establishing what references it. Concretely — resolve symlinks (`find -type l` plus `readlink`) before comparing directory trees; grep the repo for the path; and check whether anything resolves *into* the candidate. State the evidence for "unreferenced" alongside the recommendation, so a wrong call is visible rather than implicit. Treat "these look like duplicates" as a hypothesis requiring a reachability check, never as a finding.
+
+**Principle:** Deletion advice needs positive evidence that nothing references the target, not the absence of evidence that something does. Two paths can be indistinguishable in a listing and opposite in consequence — the observable surface of a filesystem hides exactly the relationship that makes removal safe or catastrophic.

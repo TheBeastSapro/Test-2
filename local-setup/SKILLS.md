@@ -1,7 +1,7 @@
 # Which skills need a local install, and how
 
-Short version: **29 of your 37 repo skills work the moment you clone.** Eight
-need something installed. The reason is one line in your own hook.
+Short version: **29 of the 36 skills in this repo work the moment you clone.**
+Seven need something installed. The reason is one line in your own hook.
 
 ## Why anything is missing at all
 
@@ -18,6 +18,24 @@ mutates your system the way it rebuilds a throwaway container. Everything it
 installs in the cloud (Agent Reach, yt-dlp, the `tweet` shim, and the whole
 audio toolchain) is therefore absent locally until you install it once by
 hand. Once. It persists; containers are what needed it every session.
+
+## Read this before you tidy anything
+
+`.claude/skills/` holds 36 entries, but only **10 are real directories**. The
+other **26 are symlinks into `.agents/skills/`**:
+
+```
+.claude/skills/interview-me -> ../../.agents/skills/interview-me
+```
+
+So `.agents/skills/` is **load-bearing**. Deleting it breaks 26 of your 36
+skills. All 26 links currently resolve.
+
+`agent/skills/` — same name, no dot, 24 directories — is the one that is
+genuinely unreferenced: nothing symlinks to it, and it's already drifted (it's
+missing `frontend-design` and `web-design-guidelines`, and no file in it is
+byte-identical to its `.agents/skills/` counterpart). That's the one to clean
+up, and only that one.
 
 ---
 
@@ -36,18 +54,36 @@ Pure instruction skills. `git clone` is the install.
 · `source-driven-development` · `spec-driven-development` · `task-observer`
 · `test-driven-development` · `using-agent-skills` · `web-design-guidelines`
 
-## Group B — need a local install (8)
+## Group B — need a local install (7)
 
-| Skill | What's missing locally | Install |
+Dependencies below are what each skill's **code actually imports or shells
+out to**, not what the shared installer happens to install.
+
+| Skill | What it actually needs | Install |
 |---|---|---|
 | `defuddle` | `defuddle` CLI | `npm install -g defuddle` |
-| `tweet` | the `tweet` shim the hook symlinks | symlink `.claude/tools/tweet-read.py` onto your PATH — the installer does it |
-| `explaintory-vo-master` | numpy, scipy, torch, torchaudio, faster-whisper, ffmpeg | installer, group `audio` |
-| `explaintory-voiceover` | all of the above + elevenlabs, jiwer, whisper-normalizer, spacy + model, espeak-ng, phonemizer, panphon, allosaurus | installer, group `audio` |
-| `sound-designer` | audio stack + scenedetect, librosa, silero-vad, opencv + yt-dlp + Epidemic Sound MCP | installer, group `audio`; MCP below |
+| `tweet` | the `tweet` shim the hook symlinks | installer, group `cli` |
+| `explaintory-vo-master` | numpy, scipy, torch, torchaudio (`MMS_FA` forced alignment), ffmpeg | installer, group `audio` |
+| `explaintory-voiceover` | elevenlabs, faster-whisper, jiwer, whisper-normalizer, spacy + `en_core_web_sm`, numpy, scipy, torch, torchaudio, ffmpeg | installer, group `audio` |
+| `sound-designer` | scenedetect, librosa, opencv, ffmpeg, yt-dlp, Epidemic Sound MCP | installer, group `audio`; MCP below |
 | `browser-testing-with-devtools` | chrome-devtools MCP server | `claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest --isolated` |
-| `obsidian-cli` | the Obsidian desktop app, running | install Obsidian, enable its CLI; the skill drives a **running** instance |
-| `analyse` (plugin) | NexLev MCP + yt-dlp | MCP below |
+| `obsidian-cli` | the Obsidian desktop app, running | install Obsidian; the skill drives a **running** instance |
+
+Three notes on that table, because the shared installer is broader than the
+skills are:
+
+- **`faster-whisper` belongs to `explaintory-voiceover` only.** Its
+  `readcheck.py` and `orphans.py` import it. `explaintory-vo-master` never
+  does — `humanize.py` is its only file and it uses torchaudio for alignment.
+- **espeak-ng, phonemizer, panphon and allosaurus are not used by any skill.**
+  They belong to `vo-studio/vostudio/pronounce_check.py`, a separate tool.
+  `explaintory-voiceover`'s own `pronounce.py` deliberately rejects the
+  phoneme approach in favour of respelling. `HANDOFF.md` still lists the
+  pronunciation check under "Still broken / not built" — install them for
+  vo-studio, not expecting the voiceover skill to use them.
+- **silero-vad is not used by `sound-designer`.** `analyze.py` detects speech
+  with ffmpeg's `silencedetect` filter. It's in the package list because the
+  repo's `install-audio-tools.sh` verification block requires all 17 imports.
 
 ### The one-shot installer
 
@@ -58,9 +94,10 @@ cd ~/claude-repos/Test-2
 ./local-setup/install-skills-local.sh cli      # just defuddle, yt-dlp, tweet
 ```
 
-It is idempotent — re-running skips what's present. Python packages go into a
-project `.venv`, not your system Python; `torch` comes from the CPU wheel index
-(~200 MB, not the 2.5 GB CUDA build).
+It installs the same 17 packages as `.claude/scripts/install-audio-tools.sh`,
+so that script's own verification block passes. Idempotent — re-running skips
+what's present. Python goes into a project `.venv`, not your system Python;
+`torch` comes from the CPU wheel index (~200 MB, not the 2.5 GB CUDA build).
 
 **Activate the venv before launching Claude Code**, or the skill scripts'
 `python3` will resolve to your system Python and report the packages missing:
@@ -79,10 +116,10 @@ brew install ffmpeg espeak-ng          # macOS
 sudo apt install ffmpeg espeak-ng      # Debian/Ubuntu
 ```
 
-`ffmpeg` is **hard-required** — `install-audio-tools.sh` aborts without it, and
-every measurement in the sound-design and mastering pipeline is an ffmpeg call.
-`espeak-ng` is soft: without it only the pronunciation check goes dark, which is
-the check that would have caught "Quito" (see `HANDOFF.md`).
+`ffmpeg` is **hard-required** — `install-audio-tools.sh` exits 1 without it,
+and every measurement in the sound-design and mastering pipeline is an ffmpeg
+call. `espeak-ng` is soft: it only warns, and only vo-studio's pronunciation
+check is affected.
 
 ### API keys
 
@@ -91,7 +128,21 @@ export ELEVENLABS_API_KEY="..."     # explaintory-voiceover; generation only
 ```
 
 Put it in your shell profile, not in the repo. `.gitignore` already blocks
-`voiceover_profile.json` because a profile can carry a key.
+`**/voiceover_profile.json` because a profile can carry a key.
+
+## Not in this repo: your personal skills
+
+`analyse` is **not a repo skill** — it lives in your global
+`~/.claude/skills/`, alongside `pdf`, `docx`, `canvas-design`, `morning` and
+the rest of your personal set. Cloning this repo does not bring it, and none
+of the above installs it. If you want those on the new machine too, copy your
+global `~/.claude/skills/` across separately. (`analyse` additionally wants
+the NexLev MCP and yt-dlp.)
+
+Worth knowing: `.claude/skills/explaintory-vo-master/` in this repo contains
+only `scripts/humanize.py` — no `SKILL.md`. The description lives in your
+global copy. Locally, the repo alone gives you the script but not the skill
+definition.
 
 ## Group C — MCP servers (account-level, not repo-level)
 
@@ -118,24 +169,25 @@ Two caveats worth knowing before you spend time on it:
 - **The URLs aren't recoverable from inside a container.** Read them off
   claude.ai → Settings → Connectors, where you added them.
 - **OAuth connectors re-authenticate per machine.** Google Drive and anything
-  you signed into interactively will prompt again locally. That's expected, not
-  a broken setup.
+  you signed into interactively will prompt again locally. That's expected,
+  not a broken setup.
 - `github` is redundant locally — use `gh`, which the CLI already prefers.
 
 ## Group D — plugins
 
 `.claude/settings.json` enables three: `claude-mem@thedotmack`,
-`superpowers@superpowers-dev`, `ui-ux-pro-max@ui-ux-pro-max-skill`. They install
-from their marketplaces on your first local `claude` run in this repo.
+`superpowers@superpowers-dev`, `ui-ux-pro-max@ui-ux-pro-max-skill`. They
+install from their marketplaces on your first local `claude` run in this repo.
 
-These get **better** locally: `/plugin` is one of the commands that doesn't run
-in cloud sessions at all, so managing them is only possible from a terminal.
+These get **better** locally: `/plugin` is one of the commands that doesn't
+run in cloud sessions at all, so managing them is only possible from a
+terminal.
 
 ## Verify
 
 ```bash
 source .venv/bin/activate
-bash .claude/scripts/install-audio-tools.sh    # its own import check, 17 packages
+bash .claude/scripts/install-audio-tools.sh    # its own import check
 ```
 
 Ending in `[audio-tools] all 17 packages present` means the voiceover and
@@ -148,12 +200,9 @@ the skills actually loaded.
 sessions. It's the bridge *to* the cloud, so it has no local equivalent beyond
 `claude --cloud`. Nothing else in your setup is cloud-locked.
 
-## Two things to fix while you're in there
+## One thing to fix while you're in there
 
-- `.claude/settings.json` declares `"hooks"` **twice**. Both blocks are
-  identical so nothing breaks today — the second silently wins — but the first
-  edit to that file that changes only one block will produce a confusing
-  no-op. Collapse them.
-- `.agents/skills/` and `agent/skills/` are near-duplicate copies of the same
-  skill set as `.claude/skills/`. Only `.claude/skills/` is loaded. The other
-  two are dead weight that will drift out of sync.
+`.claude/settings.json` declares `"hooks"` **twice**. Both blocks are
+identical so nothing breaks today — the second silently wins — but the first
+edit that changes only one block will produce a confusing no-op. Collapse
+them.
