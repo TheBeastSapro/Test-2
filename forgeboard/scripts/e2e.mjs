@@ -59,9 +59,10 @@ await p.goto(base + '/#/boards', { waitUntil: 'networkidle' })
 await p.waitForTimeout(600)
 ok('starter board from the server', await p.getByText('Content Pipeline').first().isVisible())
 
-p.once('dialog', (d) => d.accept('Svalbard: Where Dying Is Against the Law'))
 await p.getByLabel('Add a card to Idea').click()
-await p.waitForTimeout(900)
+await p.getByLabel('New card title').fill('Svalbard: Where Dying Is Against the Law')
+await p.getByRole('button', { name: 'Add card' }).click()
+await p.waitForTimeout(1200)
 ok('card created', await p.getByText('Svalbard: Where Dying').first().isVisible())
 
 console.log('\nreload proves it is in the database, not memory')

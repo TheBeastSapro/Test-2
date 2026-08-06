@@ -2,7 +2,19 @@ import { useState } from 'react'
 import { CheckCircle2, MessageCircleWarning, ShieldCheck } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { relative, shortDate } from '../lib/format'
-import { Badge, Button, Empty, PageHeader, Panel, Progress, Tag, cx } from '../components/ui'
+import {
+  Badge,
+  Button,
+  Empty,
+  Field,
+  Modal,
+  PageHeader,
+  Panel,
+  Progress,
+  Tag,
+  cx,
+  fieldCls,
+} from '../components/ui'
 
 /**
  * The guest-facing view of a board.
@@ -17,6 +29,8 @@ export default function ClientPortal() {
   const { boards, cards, addComment, addInboxItem } = useStore()
   const [boardId, setBoardId] = useState(boards[0]?.id ?? '')
   const [decided, setDecided] = useState<Record<string, 'approved' | 'changes'>>({})
+  const [asking, setAsking] = useState<string | null>(null)
+  const [reason, setReason] = useState('')
 
   const board = boards.find((b) => b.id === boardId) ?? boards[0]
   if (!board) return <Empty title="No boards to share" />
@@ -27,14 +41,9 @@ export default function ClientPortal() {
     (c) => c.boardId === board.id && reviewable.includes(c.stageId),
   )
 
-  const decide = (cardId: string, verdict: 'approved' | 'changes') => {
+  const decide = (cardId: string, verdict: 'approved' | 'changes', note: string) => {
     const card = cards.find((c) => c.id === cardId)
-    if (!card) return
-    const note =
-      verdict === 'approved'
-        ? 'Approved by the client.'
-        : window.prompt('What needs to change?')?.trim()
-    if (!note) return
+    if (!card || !note) return
 
     addComment(cardId, note)
     addInboxItem({
@@ -136,11 +145,17 @@ export default function ClientPortal() {
                           <Button
                             size="sm"
                             variant="primary"
-                            onClick={() => decide(c.id, 'approved')}
+                            onClick={() => decide(c.id, 'approved', 'Approved by the client.')}
                           >
                             Approve
                           </Button>
-                          <Button size="sm" onClick={() => decide(c.id, 'changes')}>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setAsking(c.id)
+                              setReason('')
+                            }}
+                          >
                             Request changes
                           </Button>
                         </>
@@ -153,6 +168,44 @@ export default function ClientPortal() {
           </ul>
         )}
       </Panel>
+
+      {asking && (
+        <Modal
+          title="Request changes"
+          onClose={() => setAsking(null)}
+          footer={
+            <>
+              <Button size="sm" onClick={() => setAsking(null)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                disabled={!reason.trim()}
+                onClick={() => {
+                  decide(asking, 'changes', reason.trim())
+                  setAsking(null)
+                }}
+              >
+                Send to the team
+              </Button>
+            </>
+          }
+        >
+          <Field
+            label="What needs to change?"
+            hint="Lands on the card and in the team's Inbox."
+          >
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={4}
+              placeholder="The cold open runs long — cut it to under 12 seconds."
+              className={fieldCls + ' resize-y'}
+            />
+          </Field>
+        </Modal>
+      )}
     </div>
   )
 }

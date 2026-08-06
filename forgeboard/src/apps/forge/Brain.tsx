@@ -3,7 +3,17 @@ import { useSearchParams } from 'react-router-dom'
 import { FileText, Link2, NotebookPen, Search } from 'lucide-react'
 import { useStore } from '../../lib/store'
 import { relative } from '../../lib/format'
-import { Badge, Button, Empty, PageHeader, Panel, cx } from '../../components/ui'
+import {
+  Badge,
+  Button,
+  Empty,
+  Field,
+  Modal,
+  PageHeader,
+  Panel,
+  cx,
+  fieldCls,
+} from '../../components/ui'
 import type { BrainDoc } from '../../lib/types'
 
 const KIND_ICON: Record<BrainDoc['kind'], typeof FileText> = {
@@ -17,6 +27,9 @@ export default function Brain() {
   const { brain, addBrainDoc } = useStore()
   const [params, setParams] = useSearchParams()
   const [q, setQ] = useState('')
+  const [composing, setComposing] = useState(false)
+  const [noteTitle, setNoteTitle] = useState('')
+  const [noteBody, setNoteBody] = useState('')
 
   const results = useMemo(() => {
     const n = q.trim().toLowerCase()
@@ -28,12 +41,6 @@ export default function Brain() {
 
   const selected = brain.find((d) => d.id === params.get('doc')) ?? results[0] ?? null
 
-  const addNote = () => {
-    const title = window.prompt('Note title')?.trim()
-    if (!title) return
-    const body = window.prompt('What should Forge remember?')?.trim() ?? ''
-    addBrainDoc({ title, kind: 'note', source: 'Written by you', body })
-  }
 
   return (
     <div className="mx-auto max-w-5xl p-6">
@@ -41,7 +48,7 @@ export default function Brain() {
         title="Brain"
         subtitle="What Forge grounds on. Pasted links are transcribed on ingest, then searchable."
         action={
-          <Button size="sm" variant="primary" onClick={addNote}>
+          <Button size="sm" variant="primary" onClick={() => setComposing(true)}>
             Add note
           </Button>
         }
@@ -110,6 +117,59 @@ export default function Brain() {
           </Panel>
         )}
       </div>
+
+      {composing && (
+        <Modal
+          title="Add to the Brain"
+          onClose={() => setComposing(false)}
+          footer={
+            <>
+              <Button size="sm" onClick={() => setComposing(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                disabled={!noteTitle.trim()}
+                onClick={() => {
+                  void addBrainDoc({
+                    title: noteTitle.trim(),
+                    kind: 'note',
+                    source: 'Written by you',
+                    body: noteBody.trim(),
+                  })
+                  setNoteTitle('')
+                  setNoteBody('')
+                  setComposing(false)
+                }}
+              >
+                Save to Brain
+              </Button>
+            </>
+          }
+        >
+          <Field label="Title">
+            <input
+              value={noteTitle}
+              onChange={(e) => setNoteTitle(e.target.value)}
+              placeholder="Channel voice & style"
+              className={fieldCls}
+            />
+          </Field>
+          <Field
+            label="What should Forge remember?"
+            hint="Grounding for every script and post it writes."
+          >
+            <textarea
+              value={noteBody}
+              onChange={(e) => setNoteBody(e.target.value)}
+              rows={6}
+              placeholder="Cold open under 12 seconds. One concrete number in the first sentence. Never open with 'Imagine'."
+              className={fieldCls + ' resize-y'}
+            />
+          </Field>
+        </Modal>
+      )}
     </div>
   )
 }

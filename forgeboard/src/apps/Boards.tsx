@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   Calendar as CalIcon,
@@ -31,6 +31,8 @@ export default function Boards() {
   const [params, setParams] = useSearchParams()
   const [dragging, setDragging] = useState<string | null>(null)
   const [over, setOver] = useState<string | null>(null)
+  /** Which column currently has its composer open. */
+  const [composing, setComposing] = useState<string | null>(null)
 
   const board = boards.find((b) => b.id === boardId) ?? boards[0]
   const openCard = cards.find((c) => c.id === params.get('card')) ?? null
@@ -43,12 +45,6 @@ export default function Boards() {
     if (dragging) void moveCard(dragging, stageId)
     setDragging(null)
     setOver(null)
-  }
-
-  const quickAdd = (stageId: string) => {
-    const title = window.prompt('Card title')?.trim()
-    if (!title) return
-    void addCard({ boardId: board.id, stageId, title })
   }
 
   return (
@@ -100,7 +96,7 @@ export default function Boards() {
                 </h2>
                 <Badge>{stageCards.length}</Badge>
                 <button
-                  onClick={() => quickAdd(stage.id)}
+                  onClick={() => setComposing(composing === stage.id ? null : stage.id)}
                   aria-label={`Add a card to ${stage.name}`}
                   className="ml-auto grid h-6 w-6 place-items-center rounded text-subtle hover:bg-zinc-100 hover:text-ink"
                 >
@@ -119,6 +115,28 @@ export default function Boards() {
                     />
                   </li>
                 ))}
+
+                {composing === stage.id && (
+                  <li>
+                    <CardComposer
+                      onCancel={() => setComposing(null)}
+                      onSubmit={(title) => {
+                        void addCard({ boardId: board.id, stageId: stage.id, title })
+                      }}
+                    />
+                  </li>
+                )}
+
+                {stageCards.length === 0 && composing !== stage.id && (
+                  <li>
+                    <button
+                      onClick={() => setComposing(stage.id)}
+                      className="w-full rounded-lg border border-dashed border-line px-3 py-6 text-[12px] text-subtle transition-colors hover:border-brand hover:text-brand"
+                    >
+                      Add a card
+                    </button>
+                  </li>
+                )}
               </ul>
             </section>
           )
@@ -126,6 +144,66 @@ export default function Boards() {
       </div>
 
       {openCard && <CardDrawer card={openCard} onClose={() => setParams({})} />}
+    </div>
+  )
+}
+
+/**
+ * Inline card composer.
+ *
+ * Adding a card is the most repeated action on this screen, so it stays in
+ * place: the input appears where the card will land, Enter commits and keeps
+ * the composer open for the next one, Escape closes it. Nothing about that is
+ * possible with a native prompt, which also blocks the whole page.
+ */
+function CardComposer({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (title: string) => void
+  onCancel: () => void
+}) {
+  const [value, setValue] = useState('')
+  const ref = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => ref.current?.focus(), [])
+
+  const commit = () => {
+    const title = value.trim()
+    if (!title) return onCancel()
+    onSubmit(title)
+    setValue('')
+    ref.current?.focus()
+  }
+
+  return (
+    <div className="rounded-lg border border-brand bg-white p-2 shadow-sm">
+      <textarea
+        ref={ref}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            commit()
+          }
+          if (e.key === 'Escape') onCancel()
+        }}
+        onBlur={() => !value.trim() && onCancel()}
+        rows={2}
+        placeholder="What needs making?"
+        aria-label="New card title"
+        className="w-full resize-none bg-transparent text-[13px] leading-snug outline-none placeholder:text-subtle"
+      />
+      <div className="mt-1.5 flex items-center gap-1.5">
+        <Button size="sm" variant="primary" onClick={commit} disabled={!value.trim()}>
+          Add card
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+        <span className="ml-auto text-[10px] text-subtle">Enter to add</span>
+      </div>
     </div>
   )
 }

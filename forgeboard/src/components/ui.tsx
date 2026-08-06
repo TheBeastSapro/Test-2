@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { X } from 'lucide-react'
 import { member } from '../lib/format'
 
 export function cx(...parts: (string | false | null | undefined)[]) {
@@ -187,5 +188,93 @@ export function PageHeader({
       </div>
       {action}
     </div>
+  )
+}
+
+/**
+ * A modal that behaves like one: Escape closes it, the backdrop closes it,
+ * focus lands inside on open, and the body cannot scroll behind it.
+ */
+export function Modal({
+  title,
+  onClose,
+  children,
+  footer,
+}: {
+  title: string
+  onClose: () => void
+  children: ReactNode
+  footer?: ReactNode
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    ref.current?.querySelector<HTMLElement>('input, textarea, button')?.focus()
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-ink/25 p-4"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="kb-in w-full max-w-md overflow-hidden rounded-xl border border-line bg-white shadow-2xl"
+      >
+        <header className="flex items-center justify-between border-b border-line px-4 py-3">
+          <h2 className="text-[14px] font-semibold">{title}</h2>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="grid h-7 w-7 place-items-center rounded-lg text-subtle hover:bg-zinc-100 hover:text-ink"
+          >
+            <X size={16} />
+          </button>
+        </header>
+        <div className="p-4">{children}</div>
+        {footer && (
+          <footer className="flex justify-end gap-2 border-t border-line bg-zinc-50 px-4 py-3">
+            {footer}
+          </footer>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** The text input a field uses. One definition so they cannot drift apart. */
+export const fieldCls = cx(
+  'w-full rounded-lg border border-line px-2.5 py-2 text-[13px] outline-none',
+  'focus:border-brand',
+)
+
+export function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string
+  hint?: string
+  children: ReactNode
+}) {
+  return (
+    <label className="mb-3 block">
+      <span className="mb-1 block text-[11px] font-semibold tracking-wide text-subtle uppercase">
+        {label}
+      </span>
+      {children}
+      {hint && <span className="mt-1 block text-[11px] text-subtle">{hint}</span>}
+    </label>
   )
 }
