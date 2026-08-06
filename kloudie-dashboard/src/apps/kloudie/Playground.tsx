@@ -21,9 +21,31 @@ const VOICES = [
 ]
 
 const MODELS = [
-  { id: 'multilingual-v2', name: 'Multilingual v2', hint: 'The most expressive' },
-  { id: 'turbo-v2.5', name: 'Turbo v2.5', hint: 'Fast, high quality' },
+  { id: 'multilingual-v2', name: 'Eleven Multilingual v2', hint: 'The most expressive Text to Speech' },
+  { id: 'turbo-v2.5', name: 'Eleven Turbo v2.5', hint: 'Fast, high quality' },
 ]
+
+/**
+ * Prompt starters, verified in-app. They do more work than they look like:
+ * they teach the module's grammar without documentation, and they seed the
+ * empty state with the vocabulary of the niche.
+ */
+const STARTERS: Record<PlaygroundModuleId, string[]> = {
+  tts: ['Faceless video narration', 'Short-form hook', 'Video call to action', 'Documentary style', 'Podcast intro'],
+  sfx: ['Whoosh transition', 'Rain on a tent', 'Retro game power-up', 'Crowd cheering in a stadium', 'Cinematic impact hit'],
+  music: ['Lofi study beat', 'Epic orchestral trailer', 'Warm acoustic folk', 'Synthwave night drive', 'Ambient meditation pad'],
+  image: ['High-contrast thumbnail', 'Aerial island establishing shot', 'Arrow and circle treatment'],
+  script: ['Faceless YouTube video', '60-second reel from my niche', 'Remake my best performer', 'Talking-head tutorial'],
+  social: ['Repurpose my latest video', 'Thread in my niche', 'Behind-the-scenes post', 'Audience question post'],
+}
+
+/** Per-model pricing shown at the point of choice, as the original does. */
+const IMAGE_MODELS = [
+  { id: 'nb2', name: 'Nano Banana 2', credits: 48 },
+  { id: 'nb-pro', name: 'Nano Banana Pro', credits: 96 },
+]
+
+const SOCIAL_PLATFORMS = ['X', 'LinkedIn', 'Instagram', 'TikTok', 'YouTube']
 
 const PLACEHOLDER: Record<PlaygroundModuleId, string> = {
   tts: 'Paste your script. This is Bermuda, a lonely rock in the middle of the ocean with no fresh water, no rivers, and virtually no natural resources…',
@@ -42,12 +64,22 @@ export default function Playground() {
   const [model, setModel] = useState(MODELS[0].id)
   const [speed, setSpeed] = useState(1)
   const [stability, setStability] = useState(0.5)
+  const [similarity, setSimilarity] = useState(0.75)
+  const [style, setStyle] = useState(0)
+  const [imageModel, setImageModel] = useState(IMAGE_MODELS[0].id)
+  const [seconds, setSeconds] = useState(3)
+  const [groundOnBrain, setGroundOnBrain] = useState(true)
+  const [platforms, setPlatforms] = useState<string[]>(['X', 'LinkedIn'])
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<string | null>(null)
 
   const meta = MODULE_META[module]
   const cost =
-    module === 'tts' ? Math.max(1, Math.ceil(text.length / 10)) : CREDIT_COST[module]
+    module === 'tts'
+      ? Math.max(1, Math.ceil(text.length / 10))
+      : module === 'image'
+        ? (IMAGE_MODELS.find((m) => m.id === imageModel)?.credits ?? 48)
+        : CREDIT_COST[module]
   const affordable = credits >= cost && text.trim().length > 0
 
   const history = creations.filter((c) => c.module === module)
@@ -147,10 +179,23 @@ export default function Playground() {
                   onClick={() => void generate()}
                 >
                   <Sparkles size={13} />
-                  {busy ? 'Generating…' : 'Generate'}
+                  {busy ? 'Generating…' : module === 'tts' ? 'Generate speech' : 'Generate'}
                 </Button>
               </div>
             </Panel>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] text-subtle">Get started with</span>
+              {STARTERS[module].map((chip) => (
+                <button
+                  key={chip}
+                  onClick={() => setText((t) => (t ? `${t} ${chip}` : chip))}
+                  className="rounded-full border border-line bg-white px-2.5 py-1 text-[11px] text-subtle transition-colors hover:border-brand hover:text-brand"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
 
             {result && (
               <Panel title="Result" className="kb-in">
@@ -226,6 +271,109 @@ export default function Playground() {
 
                 <Slider label="Speed" min="Slower" max="Faster" value={speed} onChange={setSpeed} lo={0.5} hi={1.5} step={0.05} />
                 <Slider label="Stability" min="More variable" max="More stable" value={stability} onChange={setStability} lo={0} hi={1} step={0.05} />
+                <Slider label="Similarity" min="Low" max="High" value={similarity} onChange={setSimilarity} lo={0} hi={1} step={0.05} />
+                <Slider label="Style Exaggeration" min="None" max="Exaggerated" value={style} onChange={setStyle} lo={0} hi={1} step={0.05} />
+              </Panel>
+            )}
+
+            {(module === 'sfx' || module === 'music') && (
+              <Panel title="Settings">
+                <Slider
+                  label={module === 'sfx' ? 'Duration' : 'Length'}
+                  min="0:01"
+                  max={module === 'sfx' ? '0:22' : '5:00'}
+                  value={seconds}
+                  onChange={setSeconds}
+                  lo={1}
+                  hi={module === 'sfx' ? 22 : 300}
+                  step={1}
+                />
+                <p className="text-[11px] text-subtle tabular-nums">
+                  {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}
+                </p>
+              </Panel>
+            )}
+
+            {module === 'image' && (
+              <Panel title="Settings">
+                <fieldset>
+                  <legend className="mb-1 block text-[11px] font-semibold tracking-wide text-subtle uppercase">
+                    Model
+                  </legend>
+                  <div className="space-y-1.5">
+                    {IMAGE_MODELS.map((m) => (
+                      <label
+                        key={m.id}
+                        className={cx(
+                          'flex cursor-pointer items-center gap-2 rounded-lg border p-2',
+                          imageModel === m.id ? 'border-brand bg-brand-soft/50' : 'border-line',
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="imageModel"
+                          checked={imageModel === m.id}
+                          onChange={() => setImageModel(m.id)}
+                          className="accent-[var(--color-brand)]"
+                        />
+                        <span className="flex-1 text-[12px] font-medium">{m.name}</span>
+                        <Badge>{m.credits} cr</Badge>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </Panel>
+            )}
+
+            {module === 'script' && (
+              <Panel title="Settings">
+                <label className="flex cursor-pointer items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={groundOnBrain}
+                    onChange={() => setGroundOnBrain((v) => !v)}
+                    className="mt-0.5 h-3.5 w-3.5 accent-[var(--color-brand)]"
+                  />
+                  <span>
+                    <span className="block text-[12px] font-medium">
+                      Ground on workspace Brain
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-subtle">
+                      Scripts pick up your voice, your audience, and what you have
+                      already published.
+                    </span>
+                  </span>
+                </label>
+              </Panel>
+            )}
+
+            {module === 'social' && (
+              <Panel title="Settings">
+                <fieldset>
+                  <legend className="mb-1.5 block text-[11px] font-semibold tracking-wide text-subtle uppercase">
+                    Platforms
+                  </legend>
+                  <div className="space-y-1">
+                    {SOCIAL_PLATFORMS.map((pf) => (
+                      <label key={pf} className="flex cursor-pointer items-center gap-2 text-[12px]">
+                        <input
+                          type="checkbox"
+                          checked={platforms.includes(pf)}
+                          onChange={() =>
+                            setPlatforms((v) =>
+                              v.includes(pf) ? v.filter((x) => x !== pf) : [...v, pf],
+                            )
+                          }
+                          className="h-3.5 w-3.5 accent-[var(--color-brand)]"
+                        />
+                        {pf}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[11px] text-subtle">
+                    Each platform gets its own version.
+                  </p>
+                </fieldset>
               </Panel>
             )}
 

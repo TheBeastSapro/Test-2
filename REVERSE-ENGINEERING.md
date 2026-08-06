@@ -127,17 +127,46 @@ inside the product, and new users adopt a proven pipeline on day one.
 
 ### 2.3 Playground — the generation modules
 
-Sub-nav, grouped by medium, with a live credit meter at the bottom
-(observed: `64,653 credits`):
+**Fully verified in-app.** Six modules in three groups, exactly as inferred,
+with a live credit meter at the bottom. Every module has **Settings / History**
+tabs and a row of prompt-starter chips.
 
-| Group | Module | Notes |
-|---|---|---|
-| **AUDIO** | Text to Speech | ElevenLabs-backed. Voice picker (e.g. *"Steve — Deep & Authoritative"*), model choice (**Eleven Multilingual v2** / **Eleven Turbo v2.5**), Speed + Stability sliders, 5,000-character limit, inline waveform player, Settings / History tabs |
-| | Sound Effects | |
-| | Music | |
-| **VISUALS** | Image & Video | |
-| **WRITING** | Script Writing | |
-| | Social Posts | |
+| Group | Module | Settings | Prompt starters |
+|---|---|---|---|
+| **AUDIO** | **Text to Speech** | Voice (*Workspace default*), Model — **Eleven Multilingual v2** *"the most expressive"* / **Eleven Turbo v2.5** *"fast, high quality"* — and four sliders: **Speed** (Slower↔Faster), **Stability** (More variable↔More stable), **Similarity** (Low↔High), **Style Exaggeration** (None↔Exaggerated). 5,000-char limit, button reads *Generate speech* | Faceless video narration · Short-form hook · Video call to action · Documentary style · Energetic shorts opener · Podcast intro |
+| | **Sound Effects** | **Duration** slider | Whoosh transition · Rain on a tent · Retro game power-up · Crowd cheering in a stadium · Sci-fi door hiss · Cinematic impact hit |
+| | **Music** | **Length** slider | Lofi study beat · Epic orchestral trailer · Warm acoustic folk · Synthwave night drive · Uplifting corporate intro · Ambient meditation pad |
+| **VISUALS** | **Image & Video** | One module, two composer tabs (**Image** / **Video**) plus an **Explore** gallery and a search bar. Model picker with per-model pricing — **Nano Banana 2 (48 credits)** / **Nano Banana Pro (96 credits)** — and an aspect-ratio control (16:9). Video generation runs ~300 credits | — |
+| **WRITING** | **Script Writing** | A **"Ground on workspace Brain"** toggle: *"Scripts are grounded on your workspace Brain, so they pick up your voice, your audience, and what you have already published"* | Faceless YouTube video · 60-second reel from my niche · Remake my best performer · Talking-head tutorial |
+| | **Social Posts** | **Platforms** multi-select — X, LinkedIn, Instagram, TikTok, YouTube — *"pick where the posts will go; each platform gets its own version"* | Repurpose my latest video · Take thread in my niche · Behind-the-scenes post · Audience question post |
+
+Two things worth stealing. **Per-model pricing shown at the point of choice** —
+Nano Banana 2 at 48 credits sits next to Pro at 96, so the cost/quality
+trade-off is made by the user, at the moment it matters, not discovered on a
+bill. And the **Ground-on-Brain toggle is per-module**, not a global setting:
+grounding is a property of the generation, which is the same design as the
+chat's context-scope selector.
+
+### 2.3b Brain and Automations *(verified)*
+
+**Brain** opens as a modal over the workspace. Controls: search, **+ New doc**,
+**Upload files**, **Add from channels**, **System prompt**. Folders down the
+left. Empty state: *"Add a doc, upload files (CSV, PDF, sheets…), SOPs, import
+from your channels, or connect a tool."* The **System prompt** button is the
+notable one — the workspace's standing instructions are a first-class, editable
+object sitting next to the documents.
+
+**Automations**: *"Recreate kloudie runs for you: a trigger, then the steps you
+chain behind it. **Approvals arrive as kloudie DMs**."* Tabs: **Automations** /
+**Runs**. Empty state offers **New automation** or **Ask kloudie to build one**.
+
+That approval-routing detail closes the loop on §2.1: kloudie is a DM
+participant in Chat *because* automations need somewhere to ask permission.
+The approval gate and the chat app are the same mechanism.
+
+**Library** empty state: *"Ask kloudie to write a script, design a thumbnail, or
+narrate something and it lands here. You can also pull thumbnails from any
+YouTube channel as references."*
 
 ### 2.4 Economy — the money layer
 
