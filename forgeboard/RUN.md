@@ -16,11 +16,15 @@ nvm: `nvm install 22 && nvm use 22`.
 ## Start it
 
 ```bash
-git clone https://github.com/TheBeastSapro/Test-2.git
+git clone -b claude/kloudie-dashboard-reverse-engineer-ixfyc4 https://github.com/TheBeastSapro/Test-2.git
 cd Test-2/forgeboard
 npm install
 npm start
 ```
+
+The `-b` matters: ForgeBoard lives on that branch, and the repository's default
+branch is a different one. Cloning without it gets you a checkout with no
+`forgeboard/` directory.
 
 Then open **http://localhost:8787** and click **Create one** to make your
 account. It's local to your machine — no email confirmation, nothing sent
