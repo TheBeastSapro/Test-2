@@ -71,3 +71,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a verification rule to the skill: UI work is not done at a green build. Require (a) a headless pass over every route asserting no console/page errors, (b) at least one end-to-end drive of the app's primary state loop across more than one screen, and (c) a visual read of the rendered screenshots — including a check that displayed figures are mutually consistent, since seed and mock data drift silently and only ever fails in the rendered output.
 
 **Principle:** A compiler validates the code you wrote; only execution validates the thing the user sees. For any visual deliverable, the definition of done must include looking at it.
+
+### Observation 5: A repo-root .gitignore silently excluded a required source asset
+
+**Status:** OPEN
+**Date:** 2026-08-06
+**Session context:** Added a video review module to a sub-project. Ships two encodes per clip as source assets. The repo root's `.gitignore` carried `*.mp4` (intended for media artifacts from an unrelated sub-project), so `git add -A` staged the `.webm` files and silently skipped every `.mp4`. Nothing errored. The app would have shipped with the H.264 encode missing, 404ing for exactly the browsers that need it, while passing CI — because the verify browser can only play the `.webm` that did get committed.
+**Skill:** git-workflow-and-versioning
+**Type:** open-source
+**Phase/Area:** Staging / pre-commit verification
+
+**Issue:** `git add -A` reports success whether or not a file was ignored. The failure is invisible at commit time and at build time, and here it was also invisible to the test suite, because the one artifact the test browser could consume was the one that got through. It surfaced only from reading `git diff --cached --stat` and noticing a file count that did not match what was on disk. In a monorepo or any repo with sub-projects, a root ignore rule written for one sub-project applies to all of them, and a broad extension glob is exactly the kind of rule that ages into a trap.
+
+**Suggested improvement:** Add a staging check to the skill: when a commit introduces binary or non-source assets, diff the staged file list against what is on disk in the added directories (`git status --ignored`, or compare `git ls-files <dir>` to `ls <dir>`) before committing. Recommend `git check-ignore -v <path>` as the one-command diagnosis. Note that the fix belongs in the sub-project's own `.gitignore` as a scoped negation, not in the root rule, so the original intent stays intact.
+
+**Principle:** Tooling that silently skips work reports the same success as tooling that did the work. When an operation can partially no-op without erroring — staging under ignore rules, copying with filters, selective sync — verify the output set, not the exit code.
+
+### Observation 6: Test environment codec gaps mislead unless the fix is the portable one
+
+**Status:** OPEN
+**Date:** 2026-08-06
+**Session context:** A `<video>` element would not load under the verify browser. Diagnosis: Playwright's bundled Chromium is built without proprietary codecs, so `canPlayType('video/mp4; codecs="avc1.42E01E"')` returns empty — H.264 is unplayable there, though fine in real Chrome and Safari.
+**Skill:** browser-testing-with-devtools
+**Type:** open-source
+**Phase/Area:** Environment differences between test and production browsers
+
+**Issue:** The tempting responses are both wrong: re-encode everything to the format the test browser likes (which breaks Safari), or exclude the feature from automated checks (which abandons coverage of the highest-risk module). The correct response was to treat the gap as a genuine portability signal and ship both encodes behind `<source>` elements — which fixed real-browser portability *and* restored test coverage. Worth noting the general shape: a capability the test environment lacks is often a capability *some user's* environment also lacks.
+
+**Suggested improvement:** Add a note on test-vs-production browser capability gaps — bundled Chromium lacking proprietary codecs (H.264/AAC) is the common one, alongside missing fonts and disabled hardware acceleration. Recommend probing capability directly (`canPlayType`, feature detection) rather than inferring from a silent failure, and prefer fixes that make the artifact more portable over fixes that special-case the test environment. Note the React-specific trap that swapping `<source>` children does not re-run source selection — the element needs a `key` to remount.
+
+**Principle:** When the test environment can't do something production can, ask whether some real user shares that limitation before special-casing the test. The portable fix usually satisfies both, and a fix that only satisfies the test is coverage theatre.
