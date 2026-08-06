@@ -107,3 +107,7 @@ fi
 echo
 say "Next: pull your cloud sessions down with"
 echo "     $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/teleport.sh $TARGET/Test-2"
+
+# Exit non-zero if any repo failed, so a caller checking $? isn't told a
+# partial clone succeeded. The guidance above still prints either way.
+[[ -z "$FAILED" ]] || exit 1

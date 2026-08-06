@@ -84,13 +84,15 @@ which copies a ready-made command.
 
 ### Know this before you rely on it
 
-- **There is no bulk download.** Teleport is one session at a time, by
-  design. To get all of them locally, teleport each one. Do the sessions
-  you actually want to continue.
+- **Plan on one session at a time.** Teleport takes either a picker or a
+  single session id — the docs describe no batch or bulk-export mode. So
+  teleport the sessions you actually want to continue rather than expecting
+  to pull them all down in one go.
 - **It's one-way.** Work you do in the teleported local session stays local;
-  it does not flow back to the session on claude.ai. Run
-  `claude /remote-control` in the local session if you still want to steer
-  it from your phone.
+  it does not flow back to the session on claude.ai. To keep steering from
+  your phone, run `/remote-control` as a slash command *inside* the local
+  session once it's up. (Not `claude --remote-control` — that's a different,
+  unrelated mechanism for exposing a local session to the web.)
 - **Cloud sessions aren't deleted** by teleporting. They stay at
   claude.ai/code until you archive or delete them.
 - **Don't delete a cloud session you haven't teleported.** Deletion is
@@ -122,7 +124,12 @@ claude    # plugins in .claude/settings.json install on first run
 
 `.claude/settings.json` pulls three plugin marketplaces — `claude-mem`,
 `superpowers`, `ui-ux-pro-max` — and the skills under `.claude/skills/` load
-straight from the checkout. Nothing else to wire up.
+straight from the checkout.
+
+**Eight of those skills need more than the checkout** to reach full power —
+the audio toolchain, a couple of CLIs, and some MCP servers. `SKILLS.md` in
+this directory lists exactly which, and `install-skills-local.sh` installs
+them.
 
 Two notes on what you'll find there:
 
@@ -153,5 +160,12 @@ You can start cloud sessions from your terminal too:
 claude --cloud "Fix the flaky test in auth.spec.ts"
 ```
 
-It clones your current directory's GitHub remote at your current branch, so
-push local commits first — the VM clones from GitHub, not from your disk.
+When the repo has a GitHub remote, the VM clones from GitHub at your current
+branch — so push local commits first, or the cloud session won't see them.
+
+If the repo *isn't* connected to GitHub, Claude Code falls back to bundling
+your local repository and uploading it directly: full history across all
+branches, plus uncommitted changes to tracked files. Untracked files are
+never included. Force that path on a GitHub-connected repo with
+`CCR_FORCE_BUNDLE=1`. A session created from a bundle can't push back to a
+remote unless GitHub auth is also configured.
