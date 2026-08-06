@@ -28,3 +28,6 @@ screenshots/
 # ignores *.mp4, so re-include them explicitly or the H.264 encode ships
 # missing and Safari/Chrome get a 404.
 !public/clips/*.mp4
+
+# Local database and uploads — never commit these
+data/
