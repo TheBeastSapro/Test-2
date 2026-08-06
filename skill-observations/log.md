@@ -73,3 +73,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** In the cross-environment-handoff skill, add a target-compatibility checklist for shipped scripts: assume the oldest interpreter the target platform ships by default, not the authoring environment's; avoid bashisms newer than that baseline or declare the requirement in the shebang and fail fast with a clear message; treat error-handling paths as needing the same compatibility scrutiny as the happy path, since they are the least likely to be exercised in testing.
 
 **Principle:** A green test run in the authoring environment proves nothing about the target environment. For anything shipped to run elsewhere, compatibility is established by knowing the target's baseline, not by the artefact working where it was written — and error paths, being the least exercised, are where the incompatibility survives to production.
+
+### Observation 5: Environment-conditional setup scripts create an invisible capability gap on the other environment
+
+**Status:** OPEN
+**Date:** 2026-08-06
+**Session context:** User asked which of their installed skills need a local install to reach full power. The repo's `.claude/hooks/session-start.sh` opens with an early `exit 0` unless `CLAUDE_CODE_REMOTE=true`, so on a local machine it installs nothing — correctly, since it is written to rebuild a throwaway container and should not mutate a real system. The consequence is that eight skills silently run at reduced capability locally, and nothing anywhere tells the user which eight or why.
+**Skill:** New skill candidate: cross-environment-handoff
+**Type:** open-source
+**Phase/Area:** Capability inventory across environments
+
+**Issue:** A setup script guarded by an environment check is the standard, correct pattern — but it splits a project's capabilities into two tiers with no visible marker of which tier you are in. The skills all *load* in both places, because loading only requires the markdown file. They simply fail, or silently degrade, at the point of use. Answering "which of these work here" required reading the hook's guard, then the installer it calls, then every skill's own scripts for undeclared binary dependencies (ffmpeg, espeak-ng, yt-dlp, a CLI, an MCP server) — none of which is declared in any manifest. There is no way to answer the question by inspection of the skills alone.
+
+**Suggested improvement:** In the cross-environment-handoff skill, add a capability-inventory procedure: locate environment guards in setup scripts first, since they define the tier boundary; then resolve each skill to its concrete external dependencies (binaries, API keys, MCP servers, running applications) by reading its scripts rather than its description; then classify each as works-everywhere / needs-install / environment-locked, and state which tier the current environment is in. Recommend that projects declare per-skill external dependencies in a manifest so the inventory is readable rather than reconstructed.
+
+**Principle:** A conditional setup script partitions a project's capabilities into tiers that are invisible at load time and only surface at use time. Any skill that ships external dependencies needs those dependencies declared somewhere a reader can find them, or the only way to learn what is missing is to trigger the failure.
+
+### Observation 6: `set -e` turns a non-matching `[ a ] || [ b ] && fn` dispatch into a silent early exit
+
+**Status:** OPEN
+**Date:** 2026-08-06
+**Session context:** Writing an installer with selectable groups (`all`, `audio`, `cli`). The group dispatch was written as two lines of `[ "$G" = all ] || [ "$G" = cli ] && install_cli`.
+**Skill:** New skill candidate: cross-environment-handoff
+**Type:** open-source
+**Phase/Area:** Shipped-script correctness
+
+**Issue:** That line parses as `([ a ] || [ b ]) && fn`, so when the group does not match, the whole and-or list evaluates to false, and under `set -e` the script exits at that line. Running the installer with an explicit group would perform the requested work and then terminate before the summary, with exit status 1 — reporting failure after succeeding. The bug is invisible in the most-tested path: with the default group everything matches, every list is true, and the script runs to completion. It only fires on the explicitly-selected paths, which are the ones a hurried test skips. Caught by reading, not by running.
+
+**Suggested improvement:** Add a rule to the shipped-script checklist: never use `a || b && c` for dispatch — write an explicit `if`, because the C-like precedence readers expect is not what the shell does, and `set -e` converts the misreading into a wrong exit status rather than a visible error. More generally, when a script has selectable modes, exercise every mode, not just the default; the default is the path most likely to mask a dispatch bug.
+
+**Principle:** Under `set -e`, any bare and-or list is also a conditional exit. Constructs whose value is discarded in ordinary shell become control flow under `set -e`, and the failure mode is a wrong exit status rather than an error message — so the default code path passing proves the least about the branches.
