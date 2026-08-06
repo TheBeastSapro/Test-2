@@ -154,3 +154,57 @@ end: agent proposes → approve → records appear in another app → credits
 decrement → survives reload; and in Review, frame stepping lands on the exact
 frame, a drawn note pins to its timecode and persists, versions swap both source
 and note set, and a decision reaches both the card and the Inbox.
+
+---
+
+## The backend (real, and free)
+
+```bash
+npm run test:server   # 48 end-to-end assertions over real HTTP
+npm run server        # http://localhost:8787
+```
+
+Nothing here costs money and nothing needs an account:
+
+- **Database** — SQLite through `node:sqlite`, built into Node 22. No native
+  build, no server process, no hosting bill. The whole database is one file, so
+  backup is a copy and reset is a delete.
+- **Passwords** — scrypt from `node:crypto`. Memory-hard, standard library.
+- **Sessions** — opaque ids in an HttpOnly cookie with a row in the database, so
+  logging out actually revokes instead of dropping a token the server still
+  trusts.
+- **Files** — streamed to disk, served back with **HTTP range support**. Not
+  optional: without ranges the review player cannot seek and Safari refuses to
+  play the video at all.
+
+### Forge on a Claude subscription
+
+The agent shells out to the `claude` CLI, which authenticates with whatever the
+machine is already signed into. On a subscription that means **no API key and no
+per-token bill**. Verified working: Forge read the real board out of SQLite and
+returned a proposal carrying the correct board id.
+
+```bash
+FORGEBOARD_AGENT=cli   npm run server   # default — uses your subscription
+FORGEBOARD_AGENT=mock  npm run server   # deterministic, no model
+```
+
+**The caveat, stated plainly:** subscription auth is *per person*. Running
+ForgeBoard on your own machine is fine. Serving other people's requests through
+your subscription on a deployed multi-user instance is not — that needs an API
+key. `FORGEBOARD_AGENT=api` is the seam for when that day comes.
+
+### The write path
+
+The model never writes to the database. It returns a *proposal*; the user
+approves; the server executes and re-validates every id against the workspace
+before touching a row. A model-supplied `boardId` belonging to someone else's
+workspace is rejected, not trusted.
+
+### What the tests actually prove
+
+Real HTTP against a real SQLite file — no mocks. Byte-for-byte upload and
+download, `206` partial responses with correct `Content-Range`, `416` on an
+unsatisfiable range, propose → approve → row exists, double-approve rejected,
+and workspace isolation: a second account cannot read or modify the first's
+cards or files.

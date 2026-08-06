@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "verify": "node scripts/shot.mjs && node scripts/flow.mjs && node scripts/portal.mjs && node scripts/review.mjs"
+    "verify": "node scripts/shot.mjs && node scripts/flow.mjs && node scripts/portal.mjs && node scripts/review.mjs",
+    "server": "node server/index.js",
+    "test:server": "node --experimental-sqlite server/test.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.28.0",
