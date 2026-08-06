@@ -208,7 +208,7 @@ export const messages: ChatMessage[] = [
   { id: 'msg-2', channelId: 'ch-1', authorId: 'm-2', body: 'Tristan script is in the Brain, 1,480 words, same structure.', at: at(-3, 10) },
   { id: 'msg-3', channelId: 'ch-1', authorId: 'm-3', body: 'On it. Rough cut by Friday.', at: at(-3, 11) },
   { id: 'msg-4', channelId: 'ch-2', authorId: 'm-2', body: 'Keeping the cold open under 12 seconds from now on — retention held better on Bermuda.', at: at(-2, 15) },
-  { id: 'msg-5', channelId: 'ch-2', authorId: 'm-1', body: 'Agreed. Put that in the SOP so kloudie writes it that way by default.', at: at(-2, 16) },
+  { id: 'msg-5', channelId: 'ch-2', authorId: 'm-1', body: 'Agreed. Put that in the SOP so Forge writes it that way by default.', at: at(-2, 16) },
   { id: 'msg-6', channelId: 'ch-3', authorId: 'm-3', body: 'B-roll pack for Curaçao is uploaded, 1.2GB.', at: at(-1, 12) },
   { id: 'msg-7', channelId: 'ch-4', authorId: 'm-3', body: 'Payout for KB-27 — can you schedule it for the 9th?', at: at(0, 8) },
   { id: 'msg-8', channelId: 'ch-4', authorId: 'm-1', body: 'Scheduled. Invoice will generate automatically.', at: at(0, 8) },
@@ -217,8 +217,8 @@ export const messages: ChatMessage[] = [
 
 export const inbox: InboxItem[] = [
   { id: 'i-1', kind: 'payout', title: 'Rea Okafor requested a payout', body: '$90.00 for KB-34 — Channel teardown carousel.', cardRef: 'KB-34', at: at(0, 8), read: false },
-  { id: 'i-2', kind: 'approval', title: 'kloudie wants to create 3 cards', body: 'From "Q3 documentary slate" — Svalbard, Marshall Islands, Kerguelen.', cardRef: null, at: at(0, 7), read: false },
-  { id: 'i-3', kind: 'mention', title: 'Mira Holt mentioned you in #scripts', body: '"@Sapro put that in the SOP so kloudie writes it that way by default."', cardRef: null, at: at(-2, 16), read: false },
+  { id: 'i-2', kind: 'approval', title: 'Forge wants to create 3 cards', body: 'From "Q3 documentary slate" — Svalbard, Marshall Islands, Kerguelen.', cardRef: null, at: at(0, 7), read: false },
+  { id: 'i-3', kind: 'mention', title: 'Mira Holt mentioned you in #scripts', body: '"@Sapro put that in the SOP so Forge writes it that way by default."', cardRef: null, at: at(-2, 16), read: false },
   { id: 'i-4', kind: 'automation', title: 'Automation ran: Script ready → notify editor', body: 'KB-28 moved to Voiceover, Deniz Aksoy notified.', cardRef: 'KB-28', at: at(-1, 9), read: true },
   { id: 'i-5', kind: 'mention', title: 'Deniz Aksoy commented on KB-27', body: '"Rough cut at 11 min, trimming the intro."', cardRef: 'KB-27', at: at(-1, 16), read: true },
   { id: 'i-6', kind: 'automation', title: 'Weekly rollup is ready', body: '4 completed, 3 created, 6.2d median cycle time.', cardRef: null, at: at(-1, 6), read: true },

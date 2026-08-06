@@ -33,7 +33,7 @@ const APPS: { id: AppId; to: string; label: string; Icon: typeof Home }[] = [
   { id: 'pay', to: '/pay', label: 'Pay', Icon: CreditCard },
   { id: 'invoices', to: '/invoices', label: 'Invoices', Icon: FileText },
   { id: 'portal', to: '/portal', label: 'Client portal', Icon: ShieldCheck },
-  { id: 'kloudie', to: '/kloudie', label: 'kloudie', Icon: CloudLightning },
+  { id: 'forge', to: '/forge', label: 'Forge', Icon: CloudLightning },
 ]
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -121,7 +121,7 @@ function TopBar({
     const q = ask.trim()
     if (!q) return
     setAsk('')
-    navigate(`/kloudie?q=${encodeURIComponent(q)}`)
+    navigate(`/Forge?q=${encodeURIComponent(q)}`)
   }
 
   return (
@@ -164,8 +164,8 @@ function TopBar({
           <input
             value={ask}
             onChange={(e) => setAsk(e.target.value)}
-            placeholder="Ask kloudie"
-            aria-label="Ask kloudie"
+            placeholder="Ask Forge"
+            aria-label="Ask Forge"
             className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-subtle"
           />
         </div>
@@ -203,8 +203,8 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
       ...boards.filter((b) => hit(b.name)).map((b) => ({ id: b.id, group: 'Boards', label: b.name, to: `/boards/${b.id}` })),
       ...brain
         .filter((d) => hit(d.title) || hit(d.body))
-        .map((d) => ({ id: d.id, group: 'Brain', label: d.title, to: `/kloudie/brain?doc=${d.id}` })),
-      ...creations.filter((c) => hit(c.title)).map((c) => ({ id: c.id, group: 'Library', label: c.title, to: '/kloudie/library' })),
+        .map((d) => ({ id: d.id, group: 'Brain', label: d.title, to: `/forge/brain?doc=${d.id}` })),
+      ...creations.filter((c) => hit(c.title)).map((c) => ({ id: c.id, group: 'Library', label: c.title, to: '/forge/library' })),
     ].slice(0, 12)
   }, [q, cards, boards, brain, creations])
 

@@ -31,7 +31,7 @@ export default function Brain() {
   const addNote = () => {
     const title = window.prompt('Note title')?.trim()
     if (!title) return
-    const body = window.prompt('What should kloudie remember?')?.trim() ?? ''
+    const body = window.prompt('What should Forge remember?')?.trim() ?? ''
     addBrainDoc({ title, kind: 'note', source: 'Written by you', body })
   }
 
@@ -39,7 +39,7 @@ export default function Brain() {
     <div className="mx-auto max-w-5xl p-6">
       <PageHeader
         title="Brain"
-        subtitle="What kloudie grounds on. Pasted links are transcribed on ingest, then searchable."
+        subtitle="What Forge grounds on. Pasted links are transcribed on ingest, then searchable."
         action={
           <Button size="sm" variant="primary" onClick={addNote}>
             Add note

@@ -7,10 +7,10 @@ p.on('pageerror', (e) => errs.push('PAGEERROR: ' + e.message))
 p.on('console', (m) => m.type() === 'error' && errs.push(m.text()))
 const log = []
 
-await p.goto('http://localhost:4173/', { waitUntil: 'domcontentloaded' })
+await p.goto('http://localhost:4174/', { waitUntil: 'domcontentloaded' })
 await p.evaluate(() => localStorage.clear())
 
-await p.goto('http://localhost:4173/#/review', { waitUntil: 'networkidle' })
+await p.goto('http://localhost:4174/#/review', { waitUntil: 'networkidle' })
 await p.waitForFunction(() => {
   const v = document.querySelector('video')
   return v && v.readyState >= 2
@@ -69,18 +69,18 @@ log.push('back on v1 source: ' + (await p.locator('video source').first().getAtt
 // 6. Request changes must reach the card and the Inbox.
 await p.getByRole('button', { name: 'Request changes' }).click()
 await p.waitForTimeout(300)
-await p.goto('http://localhost:4173/#/inbox', { waitUntil: 'networkidle' })
+await p.goto('http://localhost:4174/#/inbox', { waitUntil: 'networkidle' })
 await p.waitForTimeout(300)
 log.push('review decision in Inbox: ' + (await p.getByText(/Changes requested on Tristan/).first().isVisible()))
 
-await p.goto('http://localhost:4173/#/boards?card=card-2', { waitUntil: 'networkidle' })
+await p.goto('http://localhost:4174/#/boards?card=card-2', { waitUntil: 'networkidle' })
 await p.waitForTimeout(400)
 log.push('decision commented on card: ' + (await p.getByText(/Changes requested on Tristan/).first().isVisible()))
 log.push('Review button on card: ' + (await p.getByRole('link', { name: 'Review' }).first().isVisible()))
 await p.screenshot({ path: 'screenshots/review-card.png' })
 
 // 7. Persistence.
-await p.goto('http://localhost:4173/#/review', { waitUntil: 'networkidle' })
+await p.goto('http://localhost:4174/#/review', { waitUntil: 'networkidle' })
 await p.waitForTimeout(500)
 log.push('drawn note survived reload: ' + (await p.getByText('Sky is blown out').count() > 0))
 

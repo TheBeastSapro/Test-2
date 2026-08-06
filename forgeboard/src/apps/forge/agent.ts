@@ -8,11 +8,11 @@ import type { AgentMessage } from '../../lib/types'
  * depends on lives in the return shape, so swapping in a real call means
  * replacing the body of `respond` and nothing else:
  *
- *   const res = await fetch('/api/kloudie', { method: 'POST', body: … })
+ *   const res = await fetch('/api/Forge', { method: 'POST', body: … })
  *   return { message: toAgentMessage(await res.json()), credits: res.credits }
  *
- * Kloudboard's own MCP surface splits the same way — cheap structured writes
- * (`create_card`, `manage_card`) cost nothing, and only `ask_kloudie` burns
+ * ForgeBoard's own MCP surface splits the same way — cheap structured writes
+ * (`create_card`, `manage_card`) cost nothing, and only `ask_forge` burns
  * credits. The `credits` field here mirrors that.
  */
 

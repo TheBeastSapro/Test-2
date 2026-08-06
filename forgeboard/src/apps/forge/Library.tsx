@@ -53,7 +53,7 @@ export default function Library() {
         {shown.length === 0 ? (
           <Empty
             title="Nothing here yet"
-            hint="Anything kloudie or the Playground produces lands in the Library."
+            hint="Anything Forge or the Playground produces lands in the Library."
           />
         ) : (
           <ul className="divide-y divide-line">

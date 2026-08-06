@@ -14,7 +14,7 @@ const STARTERS = [
   { kind: 'IMPORT', text: 'Grab my latest YouTube transcript into the Brain' },
 ]
 
-export default function KloudieChat() {
+export default function ForgeChat() {
   const { conversations, upsertConversation, credits, spendCredits, ...actions } = useStore()
   const { conversationId } = useParams()
   const [params, setParams] = useSearchParams()
@@ -62,7 +62,7 @@ export default function KloudieChat() {
     }
     const withUser = { ...base, messages: [...base.messages, userMsg] }
     upsertConversation(withUser)
-    if (!existing) navigate(`/kloudie/c/${id}`, { replace: true })
+    if (!existing) navigate(`/forge/c/${id}`, { replace: true })
 
     setThinking(true)
     const reply = await respond(text, { useBrain })
@@ -72,7 +72,7 @@ export default function KloudieChat() {
   }
 
   /**
-   * The approval gate. kloudie proposes a workspace write; nothing lands until
+   * The approval gate. Forge proposes a workspace write; nothing lands until
    * a human confirms. Approving here executes against the same store every
    * other app reads from.
    */
@@ -129,7 +129,7 @@ export default function KloudieChat() {
         actions.addBrainDoc({
           title: (p.payload.title as string) ?? 'Untitled note',
           kind: 'note',
-          source: 'Saved by kloudie',
+          source: 'Saved by Forge',
           body: (p.payload.body as string) ?? '',
         })
       }
@@ -212,7 +212,7 @@ export default function KloudieChat() {
           className="mx-auto max-w-2xl"
         >
           <div className="mb-2 flex items-center gap-2 rounded-t-xl border border-b-0 border-line bg-zinc-50 px-3 py-1.5 text-[11px] text-subtle">
-            <span className="font-semibold tracking-wide uppercase">kloudie will use</span>
+            <span className="font-semibold tracking-wide uppercase">Forge will use</span>
             <button
               type="button"
               onClick={() => setUseBrain((v) => !v)}
@@ -240,7 +240,7 @@ export default function KloudieChat() {
               }}
               rows={2}
               placeholder="Describe a task or ask a question"
-              aria-label="Message kloudie"
+              aria-label="Message Forge"
               className="min-h-14 flex-1 resize-none bg-transparent px-2 py-1.5 text-[13px] outline-none placeholder:text-subtle"
             />
             <Button

@@ -12,30 +12,30 @@ import { relative } from '../../lib/format'
 import { cx } from '../../components/ui'
 
 const SECTIONS = [
-  { to: '/kloudie/library', label: 'Library', Icon: BookOpen },
-  { to: '/kloudie/brain', label: 'Brain', Icon: BrainIcon },
-  { to: '/kloudie/automations', label: 'Automations', Icon: Workflow },
-  { to: '/kloudie/playground', label: 'Playground', Icon: SlidersHorizontal },
+  { to: '/forge/library', label: 'Library', Icon: BookOpen },
+  { to: '/forge/brain', label: 'Brain', Icon: BrainIcon },
+  { to: '/forge/automations', label: 'Automations', Icon: Workflow },
+  { to: '/forge/playground', label: 'Playground', Icon: SlidersHorizontal },
 ]
 
-export default function KloudieLayout() {
+export default function ForgeLayout() {
   const { conversations, credits } = useStore()
   const navigate = useNavigate()
 
   return (
     <div className="flex h-full">
       <nav
-        aria-label="kloudie"
+        aria-label="Forge"
         className="flex w-60 shrink-0 flex-col border-r border-line bg-white"
       >
         <div className="flex items-center gap-2 px-4 py-3.5">
           <CloudLightning size={17} className="text-brand" strokeWidth={2.2} />
-          <span className="text-[15px] font-semibold">kloudie</span>
+          <span className="text-[15px] font-semibold">Forge</span>
         </div>
 
         <div className="px-3">
           <button
-            onClick={() => navigate('/kloudie')}
+            onClick={() => navigate('/forge')}
             className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-soft py-2 text-[13px] font-medium text-brand transition-colors hover:bg-brand/10"
           >
             <Plus size={14} />
@@ -71,7 +71,7 @@ export default function KloudieLayout() {
           {conversations.map((c) => (
             <li key={c.id}>
               <NavLink
-                to={`/kloudie/c/${c.id}`}
+                to={`/forge/c/${c.id}`}
                 className={({ isActive }) =>
                   cx(
                     'block rounded-lg px-2 py-1.5',

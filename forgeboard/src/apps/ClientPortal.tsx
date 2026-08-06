@@ -7,7 +7,7 @@ import { Badge, Button, Empty, PageHeader, Panel, Progress, Tag, cx } from '../c
 /**
  * The guest-facing view of a board.
  *
- * Kloudboard's pricing thesis lives here: clients and freelancers review and
+ * ForgeBoard's pricing thesis lives here: clients and freelancers review and
  * approve work without consuming a paid seat, which is what pulls the whole
  * supply chain into the workspace. So the portal is deliberately narrow — a
  * guest sees the deliverables shared with them and nothing else: no other

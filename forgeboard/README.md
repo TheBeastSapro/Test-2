@@ -1,6 +1,8 @@
-# kloudie-dashboard
+# ForgeBoard
 
-A working clone of the Kloudboard / kloudie workspace, Review module included.
+A creative-team workspace — boards, drive, frame-accurate review, payouts,
+and a built-in AI agent called **Forge**. Built by reverse-engineering
+Kloudboard/kloudie; the teardown is the other half of this repo.
 The teardown it was built from is in
 [`../REVERSE-ENGINEERING.md`](../REVERSE-ENGINEERING.md).
 
@@ -12,7 +14,7 @@ npm run verify     # headless pass over every route + end-to-end state flow
 ```
 
 No backend, no API keys, no network calls. State lives in `localStorage` under
-`kloudboard.workspace.v1`.
+`forgeboard.workspace.v1`.
 
 ---
 
@@ -32,9 +34,9 @@ No backend, no API keys, no network calls. State lives in `localStorage` under
 | **Pay** | Payouts linked to the cards they paid for, with Paid / Pending approval / Queued tiles. "Pay now" generates an invoice. Team roster with guest flags, contracts. |
 | **Invoices** | Its own app, as in the original — derived from paid payouts, each naming the cards it paid for. |
 | **Client portal** | The guest-facing view. Approve or request changes on shared deliverables; the decision lands as a card comment *and* an Inbox item. |
-| **kloudie** | The agent (below). |
+| **Forge** | The agent (below). |
 
-**kloudie's five sections**
+**Forge's five sections**
 
 - **Chat** — proposes workspace writes and waits for approval before executing.
 - **Library** — every creation, filterable by module, with credit cost.
@@ -46,7 +48,7 @@ No backend, no API keys, no network calls. State lives in `localStorage` under
   per-module history, and live credit metering.
 
 Plus: workspace switcher, `⌘K` command palette searching cards / boards / Brain /
-Library, and an "Ask kloudie" omnibox that routes into a new agent conversation.
+Library, and an "Ask Forge" omnibox that routes into a new agent conversation.
 
 ---
 
@@ -57,7 +59,7 @@ Boards, Calendar, Dashboard counts, Drive, Pay payouts, the Client Portal
 and the agent all read and write *that same record*. Reschedule on the Calendar
 and the board moves. Approve in the portal and a comment appears on the card and
 an item appears in the Inbox. Payouts can reference the cards they paid for
-because there is one card table, not five — which is exactly why Kloudboard can
+because there is one card table, not five — which is exactly why the original can
 pay a freelancer for a specific delivered video and Frame.io plus Wise cannot.
 
 **2. Writes are proposed, not applied.** The agent never mutates the workspace
@@ -81,7 +83,7 @@ portal → card → inbox chain, invoice generation on payment.
 documentary channel modelled on the one in the source video), and the agent's
 replies.
 
-**The one seam to replace for a real backend:** `src/apps/kloudie/agent.ts`.
+**The one seam to replace for a real backend:** `src/apps/forge/agent.ts`.
 It is a deterministic stand-in with the exact shape a real call returns
 (`{ message, credits }`), so swapping in a model means replacing the body of
 `respond()` and nothing else. Everything else in the app is already wired to

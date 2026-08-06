@@ -1,7 +1,7 @@
 /**
  * The data spine.
  *
- * Kloudboard's central architectural choice is that a *card* is the single unit
+ * ForgeBoard's central architectural choice is that a *card* is the single unit
  * of work, and every surface — Boards, Calendar, Dashboard counts, Economy
  * payouts, the agent — reads and writes that same record. Payouts can be linked
  * to completed cards only because there is one card table, not five.
@@ -19,7 +19,7 @@ export type AppId =
   | 'invoices'
   | 'review'
   | 'portal'
-  | 'kloudie'
+  | 'forge'
 
 export type CardTag =
   | 'YOUTUBE'
@@ -81,7 +81,7 @@ export interface Member {
   id: string
   name: string
   role: 'Owner' | 'Editor' | 'Writer' | 'Designer' | 'Guest'
-  /** Guests are free and unlimited on every plan — kloudboard's growth loop. */
+  /** Guests are free and unlimited on every plan — forgeboard's growth loop. */
   guest: boolean
   initials: string
   hue: number

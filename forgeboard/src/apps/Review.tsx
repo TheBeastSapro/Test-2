@@ -41,6 +41,14 @@ const TOOLS: { id: ReviewTool; label: string; glyph: string }[] = [
 const SPEEDS = [0.5, 1, 1.5, 2]
 
 /**
+ * Clip URL resolver. Normally a plain path under /public. A single-file build
+ * (the hosted demo) injects `window.__CLIPS__` mapping the same paths to data
+ * URIs, so the player works with no separate asset requests.
+ */
+const clipSrc = (path: string): string =>
+  (globalThis as { __CLIPS__?: Record<string, string> }).__CLIPS__?.[path] ?? path
+
+/**
  * The Frame.io-style review module.
  *
  * The whole point of frame-accurate review is that a note is worthless unless
@@ -332,8 +340,8 @@ export default function Review() {
               v.paused ? void v.play() : v.pause()
             }}
           >
-            <source src={`${asset.src}.mp4`} type="video/mp4" />
-            <source src={`${asset.src}.webm`} type="video/webm" />
+            <source src={clipSrc(`${asset.src}.mp4`)} type="video/mp4" />
+            <source src={clipSrc(`${asset.src}.webm`)} type="video/webm" />
           </video>
 
           {/* Regions of notes near the playhead, plus the one being drawn. */}

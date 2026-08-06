@@ -11,12 +11,12 @@ import PayApp from './apps/PayApp'
 import InvoicesApp from './apps/InvoicesApp'
 import Review from './apps/Review'
 import ClientPortal from './apps/ClientPortal'
-import KloudieLayout from './apps/kloudie/KloudieLayout'
-import KloudieChat from './apps/kloudie/KloudieChat'
-import Library from './apps/kloudie/Library'
-import Brain from './apps/kloudie/Brain'
-import Automations from './apps/kloudie/Automations'
-import Playground from './apps/kloudie/Playground'
+import ForgeLayout from './apps/forge/ForgeLayout'
+import ForgeChat from './apps/forge/ForgeChat'
+import Library from './apps/forge/Library'
+import Brain from './apps/forge/Brain'
+import Automations from './apps/forge/Automations'
+import Playground from './apps/forge/Playground'
 
 export default function App() {
   return (
@@ -35,9 +35,9 @@ export default function App() {
             <Route path="/pay" element={<PayApp />} />
             <Route path="/invoices" element={<InvoicesApp />} />
             <Route path="/portal" element={<ClientPortal />} />
-            <Route path="/kloudie" element={<KloudieLayout />}>
-              <Route index element={<KloudieChat />} />
-              <Route path="c/:conversationId" element={<KloudieChat />} />
+            <Route path="/forge" element={<ForgeLayout />}>
+              <Route index element={<ForgeChat />} />
+              <Route path="c/:conversationId" element={<ForgeChat />} />
               <Route path="library" element={<Library />} />
               <Route path="brain" element={<Brain />} />
               <Route path="automations" element={<Automations />} />

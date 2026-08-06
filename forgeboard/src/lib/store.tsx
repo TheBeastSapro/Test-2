@@ -24,7 +24,7 @@ import type {
   ReviewComment,
 } from './types'
 
-const STORAGE_KEY = 'kloudboard.workspace.v1'
+const STORAGE_KEY = 'forgeboard.workspace.v1'
 
 interface State {
   workspaceId: string

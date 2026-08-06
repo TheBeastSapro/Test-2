@@ -410,7 +410,7 @@ Not visible in the recording, but documented:
 
 Originally scoped as *"all except video editing"*, then extended to include the
 Review module. **Everything documented above is now implemented** in
-`kloudie-dashboard/` — ten apps in the rail, including Review and the Client
+`forgeboard/` — ten apps in the rail, including Review and the Client
 Portal found on the product pages.
 
 The one remaining gap is **video generation** in the Playground's *Image &

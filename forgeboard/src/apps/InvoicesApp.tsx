@@ -5,7 +5,7 @@ import { member, money, shortDate } from '../lib/format'
 import { Avatar, Badge, Button, Empty, PageHeader, Panel } from '../components/ui'
 
 /**
- * Invoices is its own top-level app in kloudboard, not a tab inside Pay.
+ * Invoices is its own top-level app in forgeboard, not a tab inside Pay.
  * Verified in-app: "Generated automatically when payouts are paid, or created
  * manually. Download, or save a copy to Drive."
  *
