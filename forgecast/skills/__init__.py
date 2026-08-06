@@ -575,6 +575,15 @@ DATA_DIR = Path(__file__).resolve().parent / "data"
 
 SHIPPED_DOCS: tuple[tuple[str, str, str], ...] = (
     (
+        "Reverse-engineer a reference format",
+        "Before writing for a channel modelled on a creator: whether the runtime is "
+        "one throughline or an anthology of repeating segments, the segment template, "
+        "and what the picture does at each phase. Load it before hook-writing or a "
+        "structure skill, which assume a shape this decides. Not for a channel with no "
+        "reference.",
+        "reverse-engineer-format.md",
+    ),
+    (
         "Image-to-video prompting",
         "Before submitting any image-to-video render: picking the i2v model against its "
         "per-second cost, writing the subject/action/camera/lighting/mood/technical "

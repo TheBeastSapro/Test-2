@@ -34,6 +34,11 @@ ROOT = Path(__file__).resolve().parent.parent
 # first heading passes a length check and teaches nothing, and these four are load-bearing
 # rules rather than prose — the Sample Gate is the app's cost protection.
 LOAD_BEARING: dict[str, tuple[str, ...]] = {
+    # The three findings that make this document reproducible rather than descriptive:
+    # which structural unit repeats, that the sync between picture and narration is the
+    # rule worth carrying, and that the template transfers while the content does not.
+    "reverse-engineer-format.md": ("find the repeating unit", "anthology",
+                                   "Step 3", "what to reproduce, and what not to"),
     "image-to-video.md": ("Sample Gate", "[SUBJECT] + [ACTION]", "per-second",
                           "bill separately"),
     "i2v-prompt-cookbook.md": ("Establishing exterior", "Hook close-up", "Forbidden",

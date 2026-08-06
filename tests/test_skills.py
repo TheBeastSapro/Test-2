@@ -512,6 +512,7 @@ SEEDED_SLUGS = [
     "i2v-prompt-cookbook",
     "image-to-video-prompting",
     "photoreal-vs-cinematic-register",
+    "reverse-engineer-a-reference-format",
     "sound-design-method",
     "sound-designer",
     "storyboard-and-scene-breakdown",
