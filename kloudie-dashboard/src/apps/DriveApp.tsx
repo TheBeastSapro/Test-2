@@ -25,7 +25,7 @@ const TONE: Record<Asset['kind'], string> = {
 
 const FILTERS = ['all', 'audio', 'image', 'doc', 'video', 'other'] as const
 
-export default function FilesApp() {
+export default function DriveApp() {
   const { cards } = useStore()
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('all')
 
@@ -35,8 +35,8 @@ export default function FilesApp() {
   return (
     <div className="mx-auto max-w-5xl p-6">
       <PageHeader
-        title="Files"
-        subtitle={`${assets.length} assets · ${bytes(totalKb)} of 50 GB used`}
+        title="Drive"
+        subtitle={`Your team's storage hub · ${assets.length} files · ${bytes(totalKb)} of 50 GB used`}
         action={
           <div className="flex flex-wrap gap-1">
             {FILTERS.map((f) => (

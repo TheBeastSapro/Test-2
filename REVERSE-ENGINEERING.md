@@ -40,24 +40,31 @@ Business model detail worth stealing: **AI credits** are the metered resource
 
 ## 2. The built-in apps — the actual answer to "what did he build"
 
-### 2.1 Top-level app rail (8 apps)
+### 2.1 Top-level app rail — 9 apps
 
-Observed in-app at `app.kloudboard.com`, left edge, top to bottom:
+**Verified in-app** (signed-in walkthrough of a fresh workspace, 2026-08-06).
+The earlier pass off the 720p recording counted 8 and got two names wrong; this
+is the corrected inventory, left edge, top to bottom:
 
-| # | App | Icon | What it replaces | What it does |
+| # | App | Route | What it replaces | What it does |
 |---|---|---|---|---|
-| 1 | **Inbox** | tray | Slack/email notifications | Cross-workspace action feed, approvals, mentions |
-| 2 | **Dashboard / Home** | house | Notion dashboards | KPI tiles, views chart, connected apps, "Due this week", Monthly Progress (ACTIVE / DONE / OVERDUE) |
-| 3 | **Boards** | kanban | Trello, Asana | Kanban per project. Cards = deliverables (a video, a post). Columns are stages. Cards carry type tags (`YOUTUBE`, `PODCAST`, `MARKETING`, `DESIGN`), due date, checklist progress, assignee avatars, comment counts |
-| 4 | **Calendar** | calendar | Notion calendar, publish schedulers | Due dates / publish schedule view over the boards |
-| 5 | **Chat** | speech bubble | Slack | Channels + DMs, scoped per project |
-| 6 | **Files / Assets** | folder | Google Drive, Dropbox | Asset management, brand assets, media, attachments on cards |
-| 7 | **Economy** | credit card | Wise + PayPal + Bill.com + DocuSign | Freelancer payouts, invoices, contracts, onboarding — the money layer |
-| 8 | **kloudie** | cloud | ChatGPT / Claude / Jasper | The agent (see §2.2) |
+| 1 | **Inbox** | `/inbox` | Slack/email notifications | Action feed with an unread badge. Two tabs: **Inbox** and **What's new**; Unread/Read filter, Mark all read |
+| 2 | **Home** | `/` | Notion dashboards | Three sections: **Tasks**, **Analytics** (with Export CSV / Refresh stats), **Team**. Empty state pushes *"Connect your first platform — link your social accounts to track reach, engagement, and follower growth"* |
+| 3 | **Boards** | `/board` | Trello, Asana | Kanban plus **List view, Gantt, Completed** — four views per board, `+ Add new` view, `Save as template`. Separate **Tracking** and **Templates** sections (see §2.3) |
+| 4 | **Calendar** | `/calendar` | Notion calendar **+ Buffer/Hootsuite** | Month/Week/Day. Two sub-sections: **Schedule** (tasks and events) and **Posts** — *"Publish to your channels from kloudboard: connect an account to schedule and publish without leaving the workspace."* This is a social publishing scheduler, not just a due-date view |
+| 5 | **Chat** | `/messages` | Slack | Channels + DMs. Rich-text composer. Ships with a `#general` channel and two DMs: **kloudie** and **kloudboard Support**. Bridges in **WhatsApp, Slack, Discord** via Connect buttons |
+| 6 | **Drive** | `/drive` | Google Drive, Dropbox | All files / Favorited / Trash, folders, upload. Its own onboarding calls it *"your team's storage hub — every asset in one place, with frame-accurate review synced to the board"* |
+| 7 | **Pay** | `/pay` | Wise + PayPal + Bill.com | **Payouts** (People / Approvals / Queue / History), **Wallet**, **Overview**. Stat tiles for Pending approval / Queued / Paid / Links over 30d·90d·1Y·YTD·All, with CSV export. Pitch: *"pay your whole team at once — bulk payouts to staff and freelancers in a few clicks, with an approval layer"* |
+| 8 | **Invoices** | `/invoices` | Invoicing tools | Its own top-level app, separate from Pay. *"Generated automatically when payouts are paid, or created manually. Download, or save a copy to Drive."* |
+| 9 | **kloudie** | `/kloudie` | ChatGPT / Claude / Jasper | The agent (see §2.2) |
 
-Plus, persistently in the chrome: workspace switcher (top-left, e.g. *"Personal
-Brand Content"*), global search with `⌘K`, an **"Ask kloudie"** omnibox pinned
-centre-top, a Feedback button, and **Invite** pinned to the bottom of the rail.
+Corrections to the first pass: what I called "Files" is **Drive**; what I called
+"Economy" is **Pay**; and **Invoices** is a ninth app I missed entirely because
+it never appears in the source recording.
+
+Persistently in the chrome: workspace switcher (top-left), global search with
+`⌘K`, an **"Ask kloudie"** button top-right, and a Feedback button. Boards adds
+**Invite** and **+ New card** to its own header rather than the rail.
 
 ### 2.2 kloudie — the agent app (6 sections)
 
@@ -70,6 +77,20 @@ centre-top, a Feedback button, and **Invite** pinned to the bottom of the rail.
 | **Playground** | Direct-access generation tools (see §2.3) |
 | **Conversations** | Chat history list down the left |
 
+**Verified**: the five sections are exactly `New chat · Library · Brain ·
+Automations · Playground`, with Conversations listed below them.
+
+The empty state is the sharpest thing in the product. Not "how can I help" —
+instead **"Let me learn your channel: paste your YouTube link, I'll study your
+videos and write in your voice,"** with a `youtube.com/@yourchannel` field and a
+**Learn my channel** button (plus *"No channel yet? Start from a topic
+instead"*). The composer below reads *"Ask anything, or describe the system you
+want built."*
+
+That is the whole positioning in two sentences: the agent's first act is
+ingesting your back catalogue, and what you ask it for is a *system*, not a
+message. Onboarding step 6 does the same job — see §2.9.
+
 Two details that matter for cloning it:
 
 - The composer has a **context scope selector** — *"KLOUDIE WILL USE: your
@@ -79,6 +100,30 @@ Two details that matter for cloning it:
 - The agent **proposes a task and waits for approval** before acting
   (*"Claude did just create the task, you simply press on approve"*). Write
   actions are gated by a human confirm step.
+
+### 2.2b Boards — views, Tracking, Templates *(verified)*
+
+The Boards sidebar carries three things the first pass missed:
+
+- **Four views per board** — Kanban, List view, Completed, Gantt — plus
+  `+ Add new` and `+ Save as template`.
+- **Tracking** — *"Select a board to view tracking analytics."* Per-board
+  analytics, not time tracking.
+- **Templates** — two tabs, **Board templates** and **Checklist templates**.
+  Split into **My Templates** (saved from any board) and **Community
+  Templates**: *"shared publicly by other kloudboard users, use any as a
+  starting point."* Filterable by All / Official / Community, sortable by Most
+  popular.
+
+The community gallery is the payoff for the source video's *"base it on the most
+used YouTube automation template"* — that template is real and public. Visible
+entries include several **YouTube Automation** boards (one badged Official),
+**Ad Creatives**, **Clipping Agency**, and **Editing Agency**, with column sets
+like Potential Topics → Topic Approved → Script Pending Review → Script Approved
+→ VO Pending Review → VO Approved → Video Editing.
+
+That library is a quiet moat: the workflow knowledge of the niche accumulates
+inside the product, and new users adopt a proven pipeline on day one.
 
 ### 2.3 Playground — the generation modules
 
@@ -151,6 +196,38 @@ next to YouTube's own revenue chart.
 *(The blue overlay panel showing Outlier 10.4x / VPH / Engagement / RPM / Est
 Earnings on the watch page is **vidIQ**, a separate third-party product — not
 part of kloudboard. Easy to misattribute from the video.)*
+
+### 2.9 Onboarding — 6 steps *(verified)*
+
+Worth documenting because it encodes the product's own taxonomy:
+
+1. **About you** — name, timezone, **Light/Dark theme** (the app ships a real
+   dark mode; the source recording was light).
+2. **Your workspace** — project name; *"What describes you best?"* Content
+   Creator / Agency; *"How big is your team?"* Just me (solo creator) / 2–5
+   (small) / 6–20 (medium) / 20+ (large).
+3. **Invite your team** — email + role, copy-invite-link, with the free-guest
+   rule stated inline: guests are free forever, members get full access.
+4. **What do you make?** — Long-form video (>8 min), Medium (1–8 min),
+   Short-form (<60s), Audio/Podcasts, Written content, Images & Graphics,
+   Animations. Then *"Where do you publish?"* — YouTube, TikTok, Instagram,
+   Facebook, X, LinkedIn, Snapchat, Spotify/Apple Podcasts, Substack/Medium,
+   personal website, Other.
+5. *(Skipped in the capture.)*
+6. **Train kloudie on your content** — *"Pick the videos and posts that shape
+   how kloudie writes for you."* Paste a YouTube channel or a video/post link
+   (TikTok, Instagram, X), or connect a platform. Closes with *"You can add
+   more anytime from the Brain page"* → **Create workspace**.
+
+Step 6 is the confirmation that the Brain is seeded at signup by ingesting the
+user's existing catalogue. The product's cold-start answer is "import the work
+you already did", which is also why transcription-on-ingest has to exist.
+
+### 2.10 Referral program *(verified)*
+
+An in-app modal: **"Invite your network, earn for life."** Share a referral
+link → they get **20% off for 3 months** → you earn **40% commission on
+everything, for life.** Aggressive, and consistent with the free-guest land-grab.
 
 ### 2.8 Public roadmap — what is not built yet
 

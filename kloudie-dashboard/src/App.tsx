@@ -6,8 +6,9 @@ import InboxApp from './apps/InboxApp'
 import Boards from './apps/Boards'
 import CalendarApp from './apps/CalendarApp'
 import ChatApp from './apps/ChatApp'
-import FilesApp from './apps/FilesApp'
-import EconomyApp from './apps/EconomyApp'
+import DriveApp from './apps/DriveApp'
+import PayApp from './apps/PayApp'
+import InvoicesApp from './apps/InvoicesApp'
 import Review from './apps/Review'
 import ClientPortal from './apps/ClientPortal'
 import KloudieLayout from './apps/kloudie/KloudieLayout'
@@ -29,9 +30,10 @@ export default function App() {
             <Route path="/boards/:boardId" element={<Boards />} />
             <Route path="/calendar" element={<CalendarApp />} />
             <Route path="/chat" element={<ChatApp />} />
-            <Route path="/files" element={<FilesApp />} />
+            <Route path="/drive" element={<DriveApp />} />
             <Route path="/review" element={<Review />} />
-            <Route path="/economy" element={<EconomyApp />} />
+            <Route path="/pay" element={<PayApp />} />
+            <Route path="/invoices" element={<InvoicesApp />} />
             <Route path="/portal" element={<ClientPortal />} />
             <Route path="/kloudie" element={<KloudieLayout />}>
               <Route index element={<KloudieChat />} />

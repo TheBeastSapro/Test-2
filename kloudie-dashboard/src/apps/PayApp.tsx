@@ -12,24 +12,27 @@ const STATUS_TONE: Record<Payout['status'], 'green' | 'amber' | 'blue'> = {
   requested: 'amber',
 }
 
-export default function EconomyApp() {
+export default function PayApp() {
   const { payouts, cards, setPayoutStatus } = useStore()
 
   const paid = payouts.filter((p) => p.status === 'paid')
-  const pending = payouts.filter((p) => p.status !== 'paid')
+  const requested = payouts.filter((p) => p.status === 'requested')
+  const queued = payouts.filter((p) => p.status === 'scheduled')
+  const requestedTotal = requested.reduce((a, p) => a + p.amountCents, 0)
+  const queuedTotal = queued.reduce((a, p) => a + p.amountCents, 0)
   const paidTotal = paid.reduce((a, p) => a + p.amountCents, 0)
-  const pendingTotal = pending.reduce((a, p) => a + p.amountCents, 0)
 
   return (
     <div className="mx-auto max-w-5xl p-6">
       <PageHeader
-        title="Economy"
-        subtitle="Payouts are linked to the cards they paid for. Invoices generate on payment."
+        title="Pay"
+        subtitle="Bulk payouts to staff and freelancers, with an approval layer. Every payout links to the cards it paid for."
       />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <Money label="Paid out" value={paidTotal} hint={`${paid.length} payouts`} />
-        <Money label="Outstanding" value={pendingTotal} hint={`${pending.length} awaiting`} />
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Money label="Paid" value={paidTotal} hint={`${paid.length} payouts`} />
+        <Money label="Pending approval" value={requestedTotal} hint={`${requested.length} to approve`} />
+        <Money label="Queued" value={queuedTotal} hint={`${queued.length} scheduled`} />
         <Money
           label="Cost per published video"
           value={

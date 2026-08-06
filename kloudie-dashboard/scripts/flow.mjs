@@ -51,7 +51,7 @@ await p.goto('http://localhost:4173/#/kloudie/library', { waitUntil: 'networkidl
 log.push('library shows new creation: ' + await p.getByText('This is Bermuda, a lonely rock').first().isVisible())
 
 // 6. Economy: pay a pending payout, invoice must generate.
-await p.goto('http://localhost:4173/#/economy', { waitUntil: 'networkidle' })
+await p.goto('http://localhost:4173/#/pay', { waitUntil: 'networkidle' })
 const before = await p.getByText('Pay now').count()
 await p.getByRole('button', { name: 'Pay now' }).first().click()
 await p.waitForTimeout(300)

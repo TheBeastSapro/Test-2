@@ -5,8 +5,9 @@ const routes = [
   ['calendar', '#/calendar'],
   ['chat', '#/chat'],
   ['review', '#/review'],
-  ['economy', '#/economy'],
-  ['files', '#/files'],
+  ['pay', '#/pay'],
+  ['invoices', '#/invoices'],
+  ['drive', '#/drive'],
   ['inbox', '#/inbox'],
   ['portal', '#/portal'],
   ['kloudie-chat', '#/kloudie'],
@@ -23,7 +24,7 @@ p.on('pageerror', e => errors.push('PAGEERROR: ' + e.message))
 for (const [name, hash] of routes) {
   await p.goto('http://localhost:4173/' + hash, { waitUntil: 'networkidle' })
   await p.waitForTimeout(350)
-  await p.screenshot({ path: `/tmp/shots/${name}.png` })
+  await p.screenshot({ path: `screenshots/${name}.png` })
 }
 await b.close()
 console.log(errors.length ? 'ERRORS:\n' + errors.join('\n') : 'NO CONSOLE ERRORS')

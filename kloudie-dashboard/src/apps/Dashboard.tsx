@@ -66,10 +66,10 @@ export default function Dashboard() {
             <p className="mt-1 flex items-baseline gap-2">
               <span className="text-[22px] font-semibold">{money(owed)}</span>
               <Link
-                to="/economy"
+                to="/pay"
                 className="text-[12px] font-medium text-brand hover:underline"
               >
-                Economy →
+                Pay →
               </Link>
             </p>
           </div>
