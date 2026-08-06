@@ -200,30 +200,24 @@ export default function Review() {
     e.preventDefault()
     const body = draft.trim()
     if (!body) return
-    addReviewComment({
-      assetId: asset.id,
-      authorId: 'm-1',
-      timecodeSec: time,
-      body,
-      region: pending,
-    })
+    void addReviewComment(asset.id, { timecodeSec: time, body, region: pending })
     setDraft('')
     setPending(null)
     setTool(null)
   }
 
   const decide = (status: 'approved' | 'changes requested') => {
-    setReviewStatus(asset.id, status)
+    void setReviewStatus(asset.id, status)
     const label = `${asset.title} v${asset.version}`
     if (card) {
-      addComment(
+      void addComment(
         card.id,
         status === 'approved'
           ? `${label} approved in Review.`
           : `Changes requested on ${label} — ${open} open note${open === 1 ? '' : 's'}.`,
       )
     }
-    addInboxItem({
+    void addInboxItem({
       kind: 'review',
       title:
         status === 'approved'
@@ -509,7 +503,7 @@ export default function Review() {
                 </div>
                 <div className="flex shrink-0 flex-col gap-0.5">
                   <button
-                    onClick={() => toggleReviewComment(c.id)}
+                    onClick={() => void toggleReviewComment(c.id, !c.resolved)}
                     aria-label={c.resolved ? 'Reopen note' : 'Resolve note'}
                     title={c.resolved ? 'Reopen' : 'Resolve'}
                     className={cx(
@@ -520,7 +514,7 @@ export default function Review() {
                     <Check size={13} />
                   </button>
                   <button
-                    onClick={() => deleteReviewComment(c.id)}
+                    onClick={() => void deleteReviewComment(c.id)}
                     aria-label="Delete note"
                     className="grid h-6 w-6 place-items-center rounded text-subtle hover:bg-red-50 hover:text-red-600"
                   >

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileAudio, FileImage, FileText, FileVideo, Package } from 'lucide-react'
 import { useStore } from '../lib/store'
-import { assets } from '../lib/seed'
 import { bytes, relative } from '../lib/format'
 import { Badge, Empty, PageHeader, Panel, cx } from '../components/ui'
 import type { Asset } from '../lib/types'
@@ -26,8 +25,21 @@ const TONE: Record<Asset['kind'], string> = {
 const FILTERS = ['all', 'audio', 'image', 'doc', 'video', 'other'] as const
 
 export default function DriveApp() {
-  const { cards } = useStore()
+  const { cards, files: assets, uploadFile } = useStore()
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('all')
+  const [busy, setBusy] = useState(false)
+
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const chosen = Array.from(e.target.files ?? [])
+    if (!chosen.length) return
+    setBusy(true)
+    try {
+      for (const f of chosen) await uploadFile(f)
+    } finally {
+      setBusy(false)
+      e.target.value = ''
+    }
+  }
 
   const shown = assets.filter((a) => filter === 'all' || a.kind === filter)
   const totalKb = assets.reduce((a, x) => a + x.sizeKb, 0)
@@ -38,7 +50,11 @@ export default function DriveApp() {
         title="Drive"
         subtitle={`Your team's storage hub · ${assets.length} files · ${bytes(totalKb)} of 50 GB used`}
         action={
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap items-center gap-1">
+            <label className="mr-2 cursor-pointer rounded-lg bg-brand px-3 py-1.5 text-[12px] font-medium text-white hover:bg-brand/90">
+              {busy ? 'Uploading…' : 'Upload files'}
+              <input type="file" multiple onChange={onPick} className="sr-only" disabled={busy} />
+            </label>
             {FILTERS.map((f) => (
               <button
                 key={f}

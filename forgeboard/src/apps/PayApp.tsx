@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { FileText } from 'lucide-react'
 import { useStore } from '../lib/store'
-import { contracts, members } from '../lib/seed'
+
 import { member, money, relative, shortDate } from '../lib/format'
 import { Avatar, Badge, Button, Empty, PageHeader, Panel, cx } from '../components/ui'
 import type { Payout } from '../lib/types'
@@ -13,7 +13,7 @@ const STATUS_TONE: Record<Payout['status'], 'green' | 'amber' | 'blue'> = {
 }
 
 export default function PayApp() {
-  const { payouts, cards, setPayoutStatus } = useStore()
+  const { payouts, cards, members, contracts, setPayoutPaid } = useStore()
 
   const paid = payouts.filter((p) => p.status === 'paid')
   const requested = payouts.filter((p) => p.status === 'requested')
@@ -94,7 +94,7 @@ export default function PayApp() {
                         <Button
                           size="sm"
                           variant="primary"
-                          onClick={() => setPayoutStatus(p.id, 'paid')}
+                          onClick={() => void setPayoutPaid(p.id)}
                         >
                           Pay now
                         </Button>

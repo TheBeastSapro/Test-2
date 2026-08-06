@@ -17,9 +17,9 @@ import {
   UserPlus,
 } from 'lucide-react'
 import { useStore } from '../lib/store'
-import { workspaces } from '../lib/seed'
+
 import { compact } from '../lib/format'
-import { Avatar, cx } from './ui'
+import { cx } from './ui'
 import type { AppId } from '../lib/types'
 
 const APPS: { id: AppId; to: string; label: string; Icon: typeof Home }[] = [
@@ -37,7 +37,7 @@ const APPS: { id: AppId; to: string; label: string; Icon: typeof Home }[] = [
 ]
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const { inbox, credits, workspaceId, setWorkspace } = useStore()
+  const { inbox, credits, workspaceName, user, signOut } = useStore()
   const [searchOpen, setSearchOpen] = useState(false)
   const unread = inbox.filter((i) => !i.read).length
 
@@ -55,8 +55,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-full flex-col">
       <TopBar
-        workspaceId={workspaceId}
-        onWorkspace={setWorkspace}
+        workspaceName={workspaceName}
+        userName={user?.name ?? ''}
+        onSignOut={() => void signOut()}
         credits={credits}
         onSearch={() => setSearchOpen(true)}
       />
@@ -103,13 +104,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function TopBar({
-  workspaceId,
-  onWorkspace,
+  workspaceName,
+  userName,
+  onSignOut,
   credits,
   onSearch,
 }: {
-  workspaceId: string
-  onWorkspace: (id: string) => void
+  workspaceName: string
+  userName: string
+  onSignOut: () => void
   credits: number
   onSearch: () => void
 }) {
@@ -130,21 +133,7 @@ function TopBar({
         <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-brand text-white">
           <CloudLightning size={14} strokeWidth={2.2} />
         </span>
-        <label className="sr-only" htmlFor="ws">
-          Workspace
-        </label>
-        <select
-          id="ws"
-          value={workspaceId}
-          onChange={(e) => onWorkspace(e.target.value)}
-          className="min-w-0 cursor-pointer truncate rounded-md border border-transparent bg-transparent py-1 pr-6 pl-1 text-[13px] font-semibold hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-brand"
-        >
-          {workspaces.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
+        <span className="min-w-0 truncate text-[13px] font-semibold">{workspaceName}</span>
       </div>
 
       <button
@@ -178,7 +167,13 @@ function TopBar({
         >
           {compact(credits)} credits
         </span>
-        <Avatar id="m-1" size={26} />
+        <button
+          onClick={onSignOut}
+          title={`${userName} — sign out`}
+          className="rounded-lg px-2 py-1 text-[12px] font-medium text-subtle hover:bg-zinc-100 hover:text-ink"
+        >
+          Sign out
+        </button>
       </div>
     </header>
   )

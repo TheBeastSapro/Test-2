@@ -231,6 +231,41 @@ CREATE TABLE IF NOT EXISTS inbox (
 );
 CREATE INDEX IF NOT EXISTS idx_inbox_user ON inbox(workspace_id, user_id);
 
+CREATE TABLE IF NOT EXISTS channels (
+  id           TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  name         TEXT NOT NULL,
+  kind         TEXT NOT NULL DEFAULT 'channel'
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id         TEXT PRIMARY KEY,
+  channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+  author_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body       TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_chatmsg_channel ON chat_messages(channel_id);
+
+CREATE TABLE IF NOT EXISTS competitors (
+  id           TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  handle       TEXT NOT NULL,
+  platform     TEXT NOT NULL DEFAULT 'YouTube',
+  subs         INTEGER NOT NULL DEFAULT 0,
+  outlier      REAL NOT NULL DEFAULT 0,
+  niche        TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS contracts (
+  id           TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  member_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title        TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'draft',
+  created_at   TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS automations (
   id           TEXT PRIMARY KEY,
   workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,

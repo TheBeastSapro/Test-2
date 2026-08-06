@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { StoreProvider } from './lib/store'
 import { Shell } from './components/Shell'
+import { AuthGate } from './components/AuthGate'
 import Dashboard from './apps/Dashboard'
 import InboxApp from './apps/InboxApp'
 import Boards from './apps/Boards'
@@ -22,7 +23,8 @@ export default function App() {
   return (
     <StoreProvider>
       <HashRouter>
-        <Shell>
+        <AuthGate>
+          <Shell>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/inbox" element={<InboxApp />} />
@@ -45,7 +47,8 @@ export default function App() {
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </Shell>
+          </Shell>
+        </AuthGate>
       </HashRouter>
     </StoreProvider>
   )

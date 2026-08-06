@@ -13,8 +13,15 @@ npm run build      # tsc -b && vite build
 npm run verify     # headless pass over every route + end-to-end state flow
 ```
 
-No backend, no API keys, no network calls. State lives in `localStorage` under
-`forgeboard.workspace.v1`.
+Real server, real database, real accounts, real file storage. Nothing here
+costs money to run.
+
+```bash
+npm install
+npm run build && npm run server   # http://localhost:8787
+npm run test:server               # 48 API assertions over real HTTP
+npm run test:e2e                  # 14 full-stack browser assertions
+```
 
 ---
 
@@ -73,24 +80,28 @@ the credit counter has dropped.
 
 ---
 
-## Real vs. seeded
+## What is real, and what still isn't
 
-**Real behaviour** — all state mutation and persistence, drag-and-drop, the
-approval gate, credit metering and spend, search, filtering, routing, the
-portal → card → inbox chain, invoice generation on payment.
+**Real** — accounts with scrypt-hashed passwords and server-side sessions;
+every board, card, comment, checklist item, file, review note and payout in
+SQLite; file upload streamed to disk and served back with HTTP range requests;
+workspace isolation enforced at the query; and Forge answering through the
+Claude CLI on your subscription, proposing writes that only land when you
+approve them.
 
-**Seeded** — the workspace contents in `src/lib/seed.ts` (a faceless
-documentary channel modelled on the one in the source video), and the agent's
-replies.
+**Not real yet** — the Playground's audio and image modules need a paid
+provider key. They refuse honestly (`503` naming the exact environment
+variable) instead of faking output. Drop `ELEVENLABS_API_KEY` in and Text to
+Speech and Sound Effects start working with no code change; the result is saved
+to Drive as a real file. Script Writing and Social Posts already work, because
+they run through Forge.
 
-**The one seam to replace for a real backend:** `src/apps/forge/agent.ts`.
-It is a deterministic stand-in with the exact shape a real call returns
-(`{ message, credits }`), so swapping in a model means replacing the body of
-`respond()` and nothing else. Everything else in the app is already wired to
-real state.
+Payouts are a ledger, not money movement. Marking one paid generates an
+invoice; no payment rail is connected, and connecting one needs a business
+account and KYC.
 
-Analytics figures derive from a single `channel90d` object so views, revenue and
-RPM can't drift apart.
+Dashboard analytics are still illustrative — nothing is connected to a real
+YouTube account.
 
 ---
 

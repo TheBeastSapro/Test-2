@@ -7,280 +7,247 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import * as seed from './seed'
+import { api, auth, type AuthUser, type FileRow, type Snapshot } from './api'
+import { setMemberRegistry } from './format'
 import type {
-  Automation,
   Board,
   BrainDoc,
   Card,
-  ChatMessage,
-  Competitor,
   Conversation,
-  Creation,
   InboxItem,
+  Member,
   Payout,
   PlaygroundModuleId,
   ReviewAsset,
   ReviewComment,
+  ReviewRegion,
 } from './types'
 
-const STORAGE_KEY = 'forgeboard.workspace.v1'
+/**
+ * Server-backed store.
+ *
+ * Every mutation is a request; the snapshot is refetched after it lands. That
+ * is chattier than patching local state, but it means the screen can never
+ * disagree with the database — which matters far more here, because the same
+ * workspace is now reachable from another browser and another person.
+ */
 
-interface State {
-  workspaceId: string
-  boards: Board[]
-  cards: Card[]
-  payouts: Payout[]
-  messages: ChatMessage[]
-  inbox: InboxItem[]
-  brain: BrainDoc[]
-  creations: Creation[]
-  automations: Automation[]
-  competitors: Competitor[]
-  conversations: Conversation[]
-  reviewAssets: ReviewAsset[]
-  reviewComments: ReviewComment[]
-  credits: number
+const EMPTY: Snapshot = {
+  workspaceName: '',
+  channels: [],
+  chatMessages: [],
+  competitors: [],
+  contracts: [],
+  credits: 0,
+  members: [],
+  boards: [],
+  cards: [],
+  files: [],
+  reviewAssets: [],
+  reviewComments: [],
+  payouts: [],
+  brain: [],
+  creations: [],
+  conversations: [],
+  inbox: [],
+  automations: [],
+  agentProvider: 'mock',
 }
 
-const initial = (): State => ({
-  workspaceId: seed.workspaces[0].id,
-  boards: seed.boards,
-  cards: seed.cards,
-  payouts: seed.payouts,
-  messages: seed.messages,
-  inbox: seed.inbox,
-  brain: seed.brain,
-  creations: seed.creations,
-  automations: seed.automations,
-  competitors: seed.competitors,
-  conversations: seed.conversations,
-  reviewAssets: seed.reviewAssets,
-  reviewComments: seed.reviewComments,
-  credits: seed.CREDITS_START,
-})
+interface Store extends Snapshot {
+  user: AuthUser | null
+  loading: boolean
+  error: string | null
+  refresh(): Promise<void>
+  signIn(email: string, password: string): Promise<void>
+  signUp(name: string, email: string, password: string): Promise<void>
+  signOut(): Promise<void>
 
-function load(): State {
-  if (typeof localStorage === 'undefined') return initial()
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return initial()
-    // Merge over a fresh baseline so a seed change never leaves a half-shaped
-    // object behind from an older persisted session.
-    return { ...initial(), ...(JSON.parse(raw) as Partial<State>) }
-  } catch {
-    return initial()
-  }
-}
+  moveCard(cardId: string, stageId: string): Promise<void>
+  updateCard(cardId: string, patch: Partial<Card>): Promise<void>
+  addCard(input: {
+    boardId: string
+    stageId?: string
+    title: string
+    tag?: string
+    due?: string | null
+    payoutCents?: number
+  }): Promise<void>
+  addComment(cardId: string, body: string): Promise<void>
+  addBoard(input: { name: string; template: string; stages: string[] }): Promise<void>
 
-interface Store extends State {
-  setWorkspace(id: string): void
-  moveCard(cardId: string, stageId: string): void
-  addCard(card: Omit<Card, 'id' | 'ref' | 'createdAt'>): Card
-  updateCard(cardId: string, patch: Partial<Card>): void
-  toggleChecklistItem(cardId: string, itemId: string): void
-  addComment(cardId: string, body: string): void
-  addBoard(board: Omit<Board, 'id'>): Board
-  sendMessage(channelId: string, body: string): void
-  markInboxRead(id: string): void
-  markAllInboxRead(): void
-  addInboxItem(item: Omit<InboxItem, 'id' | 'at' | 'read'>): void
-  setPayoutStatus(id: string, status: Payout['status']): void
-  addBrainDoc(doc: Omit<BrainDoc, 'id' | 'at'>): void
-  addCreation(c: Omit<Creation, 'id' | 'at'>): void
-  toggleAutomation(id: string): void
-  spendCredits(n: number): void
-  upsertConversation(c: Conversation): void
-  addReviewComment(c: Omit<ReviewComment, 'id' | 'at' | 'resolved'>): void
-  toggleReviewComment(id: string): void
-  deleteReviewComment(id: string): void
-  setReviewStatus(assetId: string, status: ReviewAsset['status']): void
-  reset(): void
+  uploadFile(file: File, cardId?: string | null): Promise<FileRow | null>
+  createReview(input: {
+    fileId: string
+    title?: string
+    durationSec?: number
+    fps?: number
+    cardId?: string | null
+  }): Promise<void>
+  addReviewComment(
+    assetId: string,
+    input: { timecodeSec: number; body: string; region: ReviewRegion | null },
+  ): Promise<void>
+  toggleReviewComment(commentId: string, resolved: boolean): Promise<void>
+  setReviewStatus(assetId: string, status: ReviewAsset['status']): Promise<void>
+
+  addBrainDoc(input: { title: string; kind?: string; source?: string; body?: string }): Promise<void>
+  setPayoutPaid(payoutId: string): Promise<void>
+  markAllInboxRead(): Promise<void>
+  markInboxRead(itemId: string): Promise<void>
+  addInboxItem(input: { kind: string; title: string; body?: string; cardRef?: string | null }): Promise<void>
+  toggleChecklistItem(itemId: string, done: boolean): Promise<void>
+  sendChatMessage(channelId: string, body: string): Promise<void>
+  setAutomationEnabled(autoId: string, enabled: boolean): Promise<void>
+  deleteReviewComment(commentId: string): Promise<void>
+
+  ask(input: { message: string; conversationId?: string | null; useBrain?: boolean }): Promise<{
+    conversationId: string
+    messageId: string
+    note: string | null
+  }>
+  approveProposal(messageId: string): Promise<void>
+  declineProposal(messageId: string): Promise<void>
+  generate(input: {
+    module: PlaygroundModuleId
+    prompt: string
+    settings?: Record<string, unknown>
+  }): Promise<{ title: string; body: string; credits: number }>
 }
 
 const Ctx = createContext<Store | null>(null)
 
-let seq = 1000
-const nextId = (p: string) => `${p}-${++seq}-${Math.random().toString(36).slice(2, 7)}`
-
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>(load)
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [snap, setSnap] = useState<Snapshot>(EMPTY)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Components resolve authors through member(); keep it fed from the server
+  // so avatars and names are real users rather than seed data.
+  useEffect(() => setMemberRegistry(snap.members), [snap.members])
+
+  const refresh = useCallback(async () => {
+    try {
+      setSnap(await api.snapshot())
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load the workspace')
+    }
+  }, [])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch {
-      // Storage full or blocked (private mode). The app stays fully usable
-      // in memory; only cross-reload persistence is lost.
-    }
-  }, [state])
-
-  const patch = useCallback(
-    (fn: (s: State) => Partial<State>) => setState((s) => ({ ...s, ...fn(s) })),
-    [],
-  )
+    ;(async () => {
+      try {
+        const { user: u } = await auth.me()
+        setUser(u)
+        await refresh()
+      } catch {
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [refresh])
 
   const store = useMemo<Store>(() => {
-    const mapCards = (s: State, id: string, fn: (c: Card) => Card) =>
-      s.cards.map((c) => (c.id === id ? fn(c) : c))
+    /** Run a mutation, then resync. Errors surface rather than failing silently. */
+    const act = async (fn: () => Promise<unknown>) => {
+      try {
+        await fn()
+        await refresh()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Something went wrong')
+        throw e
+      }
+    }
 
     return {
-      ...state,
+      ...snap,
+      user,
+      loading,
+      error,
+      refresh,
 
-      setWorkspace: (workspaceId) => patch(() => ({ workspaceId })),
-
-      moveCard: (cardId, stageId) =>
-        patch((s) => ({ cards: mapCards(s, cardId, (c) => ({ ...c, stageId })) })),
-
-      addCard: (input) => {
-        const nums = state.cards.map((c) => Number(c.ref.split('-')[1]) || 0)
-        const card: Card = {
-          ...input,
-          id: nextId('card'),
-          ref: `KB-${Math.max(0, ...nums) + 1}`,
-          createdAt: new Date().toISOString(),
-        }
-        patch((s) => ({ cards: [...s.cards, card] }))
-        return card
+      signIn: async (email, password) => {
+        const { user: u } = await auth.login(email, password)
+        setUser(u)
+        await refresh()
+      },
+      signUp: async (name, email, password) => {
+        const { user: u } = await auth.register(name, email, password)
+        setUser(u)
+        await refresh()
+      },
+      signOut: async () => {
+        await auth.logout()
+        setUser(null)
+        setSnap(EMPTY)
       },
 
+      moveCard: (cardId, stageId) => act(() => api.updateCard(cardId, { stageId })),
       updateCard: (cardId, p) =>
-        patch((s) => ({ cards: mapCards(s, cardId, (c) => ({ ...c, ...p })) })),
+        act(() =>
+          api.updateCard(cardId, {
+            ...(p.stageId !== undefined ? { stageId: p.stageId } : {}),
+            ...(p.title !== undefined ? { title: p.title } : {}),
+            ...(p.due !== undefined ? { due: p.due } : {}),
+            ...(p.tag !== undefined ? { tag: p.tag } : {}),
+            ...(p.payoutCents !== undefined ? { payoutCents: p.payoutCents } : {}),
+          }),
+        ),
+      addCard: (input) => act(() => api.createCard(input)),
+      addComment: (cardId, body) => act(() => api.addCardComment(cardId, body)),
+      addBoard: ({ name, template, stages }) =>
+        act(() => api.createBoard(name, template, stages)),
 
-      toggleChecklistItem: (cardId, itemId) =>
-        patch((s) => ({
-          cards: mapCards(s, cardId, (c) => ({
-            ...c,
-            checklist: c.checklist.map((i) =>
-              i.id === itemId ? { ...i, done: !i.done } : i,
-            ),
-          })),
-        })),
-
-      addComment: (cardId, body) =>
-        patch((s) => ({
-          cards: mapCards(s, cardId, (c) => ({
-            ...c,
-            comments: [
-              ...c.comments,
-              { id: nextId('cm'), authorId: 'm-1', body, at: new Date().toISOString() },
-            ],
-          })),
-        })),
-
-      addBoard: (input) => {
-        const board: Board = { ...input, id: nextId('b') }
-        patch((s) => ({ boards: [...s.boards, board] }))
-        return board
-      },
-
-      sendMessage: (channelId, body) =>
-        patch((s) => ({
-          messages: [
-            ...s.messages,
-            { id: nextId('msg'), channelId, authorId: 'm-1', body, at: new Date().toISOString() },
-          ],
-        })),
-
-      markInboxRead: (id) =>
-        patch((s) => ({
-          inbox: s.inbox.map((i) => (i.id === id ? { ...i, read: true } : i)),
-        })),
-
-      markAllInboxRead: () =>
-        patch((s) => ({ inbox: s.inbox.map((i) => ({ ...i, read: true })) })),
-
-      addInboxItem: (item) =>
-        patch((s) => ({
-          inbox: [
-            { ...item, id: nextId('i'), at: new Date().toISOString(), read: false },
-            ...s.inbox,
-          ],
-        })),
-
-      setPayoutStatus: (id, status) =>
-        patch((s) => ({
-          payouts: s.payouts.map((p) =>
-            p.id !== id
-              ? p
-              : {
-                  ...p,
-                  status,
-                  // Invoices generate on payment — the "no chasing freelancers" rule.
-                  invoiceNo:
-                    status === 'paid' && !p.invoiceNo
-                      ? `INV-${String(4_042 + s.payouts.length).padStart(4, '0')}`
-                      : p.invoiceNo,
-                },
-          ),
-        })),
-
-      addBrainDoc: (doc) =>
-        patch((s) => ({
-          brain: [{ ...doc, id: nextId('br'), at: new Date().toISOString() }, ...s.brain],
-        })),
-
-      addCreation: (c) =>
-        patch((s) => ({
-          creations: [{ ...c, id: nextId('cr'), at: new Date().toISOString() }, ...s.creations],
-        })),
-
-      toggleAutomation: (id) =>
-        patch((s) => ({
-          automations: s.automations.map((a) =>
-            a.id === id ? { ...a, enabled: !a.enabled } : a,
-          ),
-        })),
-
-      spendCredits: (n) => patch((s) => ({ credits: Math.max(0, s.credits - n) })),
-
-      upsertConversation: (c) =>
-        patch((s) => {
-          const exists = s.conversations.some((x) => x.id === c.id)
-          return {
-            conversations: exists
-              ? s.conversations.map((x) => (x.id === c.id ? c : x))
-              : [c, ...s.conversations],
+      uploadFile: async (file, cardId) => {
+        let created: FileRow | null = null
+        await act(async () => {
+          const r = await api.uploadFile(file, cardId)
+          created = {
+            id: r.id,
+            name: r.name,
+            kind: r.kind as FileRow['kind'],
+            sizeKb: Math.max(1, Math.round(r.size / 1024)),
+            cardId: cardId ?? null,
+            at: new Date().toISOString(),
+            url: `/api/files/${r.id}/content`,
           }
-        }),
+        })
+        return created
+      },
+      createReview: (input) => act(() => api.createReview(input)),
+      addReviewComment: (assetId, input) => act(() => api.addReviewComment(assetId, input)),
+      toggleReviewComment: (commentId, resolved) =>
+        act(() => api.setReviewCommentResolved(commentId, resolved)),
+      setReviewStatus: (assetId, status) => act(() => api.setReviewStatus(assetId, status)),
 
-      addReviewComment: (c) =>
-        patch((s) => ({
-          reviewComments: [
-            ...s.reviewComments,
-            { ...c, id: nextId('rc'), resolved: false, at: new Date().toISOString() },
-          ],
-        })),
+      addBrainDoc: (input) => act(() => api.addBrainDoc(input)),
+      setPayoutPaid: (payoutId) => act(() => api.payPayout(payoutId)),
+      markAllInboxRead: () => act(() => api.markInboxAllRead()),
+      markInboxRead: (itemId) => act(() => api.markInboxRead(itemId)),
+      addInboxItem: (input) => act(() => api.addInboxItem(input)),
+      toggleChecklistItem: (itemId, done) => act(() => api.toggleChecklistItem(itemId, done)),
+      sendChatMessage: (channelId, body) => act(() => api.sendChatMessage(channelId, body)),
+      setAutomationEnabled: (autoId, enabled) => act(() => api.setAutomationEnabled(autoId, enabled)),
+      deleteReviewComment: (commentId) => act(() => api.deleteReviewComment(commentId)),
 
-      toggleReviewComment: (id) =>
-        patch((s) => ({
-          reviewComments: s.reviewComments.map((c) =>
-            c.id === id ? { ...c, resolved: !c.resolved } : c,
-          ),
-        })),
+      ask: async (input) => {
+        const r = await api.ask(input)
+        await refresh()
+        return { conversationId: r.conversationId, messageId: r.messageId, note: r.note }
+      },
+      approveProposal: (messageId) => act(() => api.approve(messageId)),
+      declineProposal: (messageId) => act(() => api.decline(messageId)),
 
-      deleteReviewComment: (id) =>
-        patch((s) => ({
-          reviewComments: s.reviewComments.filter((c) => c.id !== id),
-        })),
-
-      setReviewStatus: (assetId, status) =>
-        patch((s) => ({
-          reviewAssets: s.reviewAssets.map((a) =>
-            a.id === assetId ? { ...a, status } : a,
-          ),
-        })),
-
-      reset: () => {
-        try {
-          localStorage.removeItem(STORAGE_KEY)
-        } catch {
-          /* nothing to clear */
-        }
-        setState(initial())
+      generate: async (input) => {
+        const r = await api.generate(input)
+        await refresh()
+        return { title: r.title, body: r.body, credits: r.credits }
       },
     }
-  }, [state, patch])
+  }, [snap, user, loading, error, refresh])
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>
 }
@@ -300,3 +267,5 @@ export const CREDIT_COST: Record<PlaygroundModuleId, number> = {
   script: 140,
   social: 38,
 }
+
+export type { Board, BrainDoc, Card, Conversation, InboxItem, Member, Payout, ReviewComment }

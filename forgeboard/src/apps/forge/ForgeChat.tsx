@@ -4,34 +4,62 @@ import { ArrowUp, Check, CloudLightning, Plus, X } from 'lucide-react'
 import { useStore } from '../../lib/store'
 import { relative } from '../../lib/format'
 import { Badge, Button, cx } from '../../components/ui'
-import type { AgentMessage, AgentProposal, Conversation } from '../../lib/types'
-import { respond } from './agent'
+import type { AgentMessage, AgentProposal } from '../../lib/types'
 
 const STARTERS = [
-  { kind: 'CREATE', text: 'Write a TikTok script in my style from my latest YouTube upload' },
-  { kind: 'DESIGN', text: 'Design a thumbnail for the Tristan da Cunha video' },
+  { kind: 'CREATE', text: 'Make a board where I can manage this channel' },
+  { kind: 'PLAN', text: 'Suggest three video ideas that fit my niche' },
   { kind: 'REPURPOSE', text: 'Turn my latest video into a week of social posts' },
-  { kind: 'IMPORT', text: 'Grab my latest YouTube transcript into the Brain' },
+  { kind: 'IMPORT', text: 'Save my channel voice and style notes to the Brain' },
 ]
 
 export default function ForgeChat() {
-  const { conversations, upsertConversation, credits, spendCredits, ...actions } = useStore()
+  const {
+    conversations,
+    credits,
+    agentProvider,
+    ask,
+    approveProposal,
+    declineProposal,
+  } = useStore()
+
   const { conversationId } = useParams()
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
 
-  const existing = conversations.find((c) => c.id === conversationId) ?? null
   const [draft, setDraft] = useState('')
-  /** Scope control — the agent grounds on the Brain unless you narrow it. */
+  /** Grounding is a property of the request, as in the original. */
   const [useBrain, setUseBrain] = useState(true)
   const [thinking, setThinking] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const [err, setErr] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
 
-  const messages = existing?.messages ?? []
+  const conversation = conversations.find((c) => c.id === conversationId) ?? null
+  const messages: AgentMessage[] = conversation?.messages ?? []
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages.length, thinking])
+
+  async function submit(body: string) {
+    const text = body.trim()
+    if (!text || thinking) return
+    setDraft('')
+    setErr(null)
+    setThinking(true)
+    try {
+      const r = await ask({ message: text, conversationId, useBrain })
+      setNote(r.note)
+      if (r.conversationId !== conversationId) {
+        navigate(`/forge/c/${r.conversationId}`, { replace: true })
+      }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Forge could not answer')
+    } finally {
+      setThinking(false)
+    }
+  }
 
   // A question typed into the top-bar omnibox arrives as ?q=
   useEffect(() => {
@@ -41,108 +69,6 @@ export default function ForgeChat() {
     void submit(q)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params])
-
-  async function submit(body: string) {
-    const text = body.trim()
-    if (!text || thinking) return
-    setDraft('')
-
-    const id = existing?.id ?? `cv-${Date.now()}`
-    const userMsg: AgentMessage = {
-      id: `am-${Date.now()}`,
-      role: 'user',
-      body: text,
-      at: new Date().toISOString(),
-    }
-    const base: Conversation = existing ?? {
-      id,
-      title: text.length > 52 ? `${text.slice(0, 52)}…` : text,
-      messages: [],
-      at: new Date().toISOString(),
-    }
-    const withUser = { ...base, messages: [...base.messages, userMsg] }
-    upsertConversation(withUser)
-    if (!existing) navigate(`/forge/c/${id}`, { replace: true })
-
-    setThinking(true)
-    const reply = await respond(text, { useBrain })
-    setThinking(false)
-    spendCredits(reply.credits)
-    upsertConversation({ ...withUser, messages: [...withUser.messages, reply.message] })
-  }
-
-  /**
-   * The approval gate. Forge proposes a workspace write; nothing lands until
-   * a human confirms. Approving here executes against the same store every
-   * other app reads from.
-   */
-  function resolve(msg: AgentMessage, decision: 'approved' | 'declined') {
-    if (!existing || !msg.proposal) return
-    const p = msg.proposal
-
-    if (decision === 'approved') {
-      if (p.kind === 'create_board') {
-        const payload = p.payload as { name: string; template: string; stages: string[] }
-        const board = actions.addBoard({
-          name: payload.name,
-          template: payload.template,
-          stages: payload.stages.map((name, i) => ({
-            id: `st-${Date.now()}-${i}`,
-            name,
-            tone: ['bg-zinc-400', 'bg-amber-500', 'bg-violet-500', 'bg-blue-500', 'bg-emerald-500'][
-              i % 5
-            ],
-          })),
-        })
-        actions.addCard({
-          boardId: board.id,
-          stageId: board.stages[0].id,
-          title: (p.payload.firstCard as string) ?? 'First video',
-          tag: 'YOUTUBE',
-          due: null,
-          assigneeIds: [],
-          checklist: [],
-          comments: [],
-          attachmentIds: [],
-          payoutCents: 0,
-        })
-      }
-      if (p.kind === 'create_card') {
-        const payload = p.payload as { boardId: string; titles: string[] }
-        const board = actions.boards.find((b) => b.id === payload.boardId) ?? actions.boards[0]
-        for (const title of payload.titles) {
-          actions.addCard({
-            boardId: board.id,
-            stageId: board.stages[0].id,
-            title,
-            tag: 'YOUTUBE',
-            due: null,
-            assigneeIds: [],
-            checklist: [],
-            comments: [],
-            attachmentIds: [],
-            payoutCents: 0,
-          })
-        }
-      }
-      if (p.kind === 'save_to_brain') {
-        actions.addBrainDoc({
-          title: (p.payload.title as string) ?? 'Untitled note',
-          kind: 'note',
-          source: 'Saved by Forge',
-          body: (p.payload.body as string) ?? '',
-        })
-      }
-    }
-
-    const next: AgentProposal = { ...p, status: decision }
-    upsertConversation({
-      ...existing,
-      messages: existing.messages.map((m) =>
-        m.id === msg.id ? { ...m, proposal: next } : m,
-      ),
-    })
-  }
 
   const empty = messages.length === 0 && !thinking
 
@@ -154,8 +80,13 @@ export default function ForgeChat() {
             <div className="pt-10 text-center">
               <CloudLightning size={30} className="mx-auto text-brand" strokeWidth={2} />
               <h1 className="mt-3 text-[22px] font-semibold tracking-tight">
-                What's on the agenda?
+                What&apos;s on the agenda?
               </h1>
+              <p className="mt-1 text-[12px] text-subtle">
+                {agentProvider === 'cli'
+                  ? 'Running on your Claude subscription.'
+                  : 'Running without a model — set up the Claude CLI for real answers.'}
+              </p>
             </div>
           ) : (
             <ul className="space-y-6">
@@ -173,14 +104,12 @@ export default function ForgeChat() {
                         <CloudLightning size={13} strokeWidth={2.2} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[13px] leading-relaxed whitespace-pre-wrap">
-                          {m.body}
-                        </p>
+                        <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{m.body}</p>
                         {m.proposal && (
                           <ProposalCard
                             proposal={m.proposal}
-                            onApprove={() => resolve(m, 'approved')}
-                            onDecline={() => resolve(m, 'declined')}
+                            onApprove={() => void approveProposal(m.id)}
+                            onDecline={() => void declineProposal(m.id)}
                           />
                         )}
                         <p className="mt-1.5 text-[10px] text-subtle">{relative(m.at)}</p>
@@ -211,6 +140,20 @@ export default function ForgeChat() {
           }}
           className="mx-auto max-w-2xl"
         >
+          {(err || note) && (
+            <p
+              role="status"
+              className={cx(
+                'mb-2 rounded-lg border px-2.5 py-2 text-[12px]',
+                err
+                  ? 'border-red-200 bg-red-50 text-red-700'
+                  : 'border-amber-200 bg-amber-50 text-amber-800',
+              )}
+            >
+              {err ?? note}
+            </p>
+          )}
+
           <div className="mb-2 flex items-center gap-2 rounded-t-xl border border-b-0 border-line bg-zinc-50 px-3 py-1.5 text-[11px] text-subtle">
             <span className="font-semibold tracking-wide uppercase">Forge will use</span>
             <button
@@ -228,6 +171,7 @@ export default function ForgeChat() {
               Add a doc or source
             </span>
           </div>
+
           <div className="flex items-end gap-2 rounded-xl border border-line bg-white p-2 transition-colors focus-within:border-brand">
             <textarea
               value={draft}
@@ -239,7 +183,7 @@ export default function ForgeChat() {
                 }
               }}
               rows={2}
-              placeholder="Describe a task or ask a question"
+              placeholder="Ask anything, or describe the system you want built"
               aria-label="Message Forge"
               className="min-h-14 flex-1 resize-none bg-transparent px-2 py-1.5 text-[13px] outline-none placeholder:text-subtle"
             />
@@ -254,8 +198,7 @@ export default function ForgeChat() {
             </Button>
           </div>
           <p className="mt-1.5 text-center text-[11px] text-subtle">
-            {credits.toLocaleString()} credits left · writes are proposed, never applied
-            silently
+            {credits.toLocaleString()} credits · writes are proposed, never applied silently
           </p>
         </form>
 
@@ -299,9 +242,7 @@ function ProposalCard({
       )}
     >
       <div className="flex items-center gap-2">
-        <Badge tone={resolved ? 'zinc' : 'blue'}>
-          {proposal.kind.replace(/_/g, ' ')}
-        </Badge>
+        <Badge tone={resolved ? 'zinc' : 'blue'}>{proposal.kind.replace(/_/g, ' ')}</Badge>
         {proposal.status === 'approved' && (
           <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600">
             <Check size={12} /> Applied to the workspace

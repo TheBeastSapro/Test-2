@@ -4,7 +4,7 @@ import { compact } from '../../lib/format'
 import { Badge, Panel, PageHeader, cx } from '../../components/ui'
 
 export default function Automations() {
-  const { automations, toggleAutomation, competitors } = useStore()
+  const { automations, setAutomationEnabled, competitors } = useStore()
   const active = automations.filter((a) => a.enabled).length
 
   return (
@@ -41,7 +41,7 @@ export default function Automations() {
                 role="switch"
                 aria-checked={a.enabled}
                 aria-label={`${a.enabled ? 'Disable' : 'Enable'} ${a.name}`}
-                onClick={() => toggleAutomation(a.id)}
+                onClick={() => void setAutomationEnabled(a.id, !a.enabled)}
                 className={cx(
                   'relative h-5 w-9 shrink-0 rounded-full transition-colors',
                   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',

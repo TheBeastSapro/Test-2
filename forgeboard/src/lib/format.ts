@@ -1,4 +1,3 @@
-import { members } from './seed'
 import type { Member } from './types'
 
 export const money = (cents: number) =>
@@ -48,9 +47,21 @@ export const shortDate = (iso: string) =>
 export const dayKey = (iso: string | Date) =>
   (typeof iso === 'string' ? new Date(iso) : iso).toISOString().slice(0, 10)
 
-const byId = new Map<string, Member>(members.map((m) => [m.id, m]))
+/**
+ * Author lookup.
+ *
+ * Components resolve names and avatars synchronously while rendering, so the
+ * member list lives in a small registry the store refills whenever the server
+ * snapshot changes, rather than threading it through every component.
+ */
+let registry = new Map<string, Member>()
+
+export function setMemberRegistry(list: Member[]) {
+  registry = new Map(list.map((m) => [m.id, m]))
+}
+
 export const member = (id: string): Member =>
-  byId.get(id) ?? { id, name: 'Unknown', role: 'Guest', guest: true, initials: '??', hue: 0 }
+  registry.get(id) ?? { id, name: 'Unknown', role: 'Guest', guest: true, initials: '??', hue: 0 }
 
 /** True if the date lands inside the next 7 days (drives "Due this week"). */
 export const dueThisWeek = (iso: string | null) => {

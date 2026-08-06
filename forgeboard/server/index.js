@@ -14,6 +14,7 @@ import {
   userFromSession,
 } from './auth.js'
 import { agentProvider, askForge } from './agent.js'
+import { generate } from './generate.js'
 
 const PORT = Number(process.env.PORT ?? 8787)
 const UPLOADS = resolve(process.env.FORGEBOARD_UPLOADS ?? 'data/uploads')
@@ -168,6 +169,15 @@ function snapshot(workspaceId) {
       .all(workspaceId),
     inbox: q(`SELECT * FROM inbox WHERE workspace_id = ? ORDER BY created_at DESC`),
     automations: q(`SELECT * FROM automations WHERE workspace_id = ?`),
+    channels: q(`SELECT * FROM channels WHERE workspace_id = ?`),
+    chatMessages: db
+      .prepare(
+        `SELECT cm.* FROM chat_messages cm JOIN channels ch ON ch.id = cm.channel_id
+         WHERE ch.workspace_id = ? ORDER BY cm.created_at`,
+      )
+      .all(workspaceId),
+    competitors: q(`SELECT * FROM competitors WHERE workspace_id = ?`),
+    contracts: q(`SELECT * FROM contracts WHERE workspace_id = ? ORDER BY created_at DESC`),
     agent: { provider: agentProvider() },
   }
 }
@@ -193,6 +203,8 @@ function seedWorkspace(user, name = `${user.name.split(' ')[0]}'s workspace`) {
       .prepare(`INSERT INTO stages (id, board_id, name, tone, position) VALUES (?, ?, ?, ?, ?)`)
       .run(id('st'), bid, s, tones[i], i),
   )
+  db.prepare(`INSERT INTO channels (id, workspace_id, name, kind) VALUES (?, ?, 'general', 'channel')`)
+    .run(id('ch'), wid)
   return wid
 }
 
@@ -470,6 +482,84 @@ async function api(req, res, url, user) {
     db.prepare(`UPDATE inbox SET read = 1 WHERE workspace_id = ? AND user_id = ?`)
       .run(ws.id, user.id)
     return json(res, 200, { ok: true })
+  }
+
+  // ---- checklist
+  if (p === '/api/checklist' && method === 'POST') {
+    const { cardId, label } = await readJson(req)
+    const card = db.prepare(`SELECT * FROM cards WHERE id = ? AND workspace_id = ?`).get(cardId, ws.id)
+    if (!card) throw Object.assign(new Error('Card not found'), { status: 404 })
+    if (!label?.trim()) throw Object.assign(new Error('Label is required'), { status: 400 })
+    const n = db.prepare(`SELECT COUNT(*) AS c FROM checklist_items WHERE card_id = ?`).get(cardId).c
+    const iid = id('ci')
+    db.prepare(`INSERT INTO checklist_items (id, card_id, label, done, position) VALUES (?, ?, ?, 0, ?)`)
+      .run(iid, cardId, label.trim(), n)
+    return json(res, 201, { id: iid })
+  }
+
+  if (seg[1] === 'checklist' && seg[2] && method === 'PATCH') {
+    const { done } = await readJson(req)
+    db.prepare(
+      `UPDATE checklist_items SET done = ?
+       WHERE id = ? AND card_id IN (SELECT id FROM cards WHERE workspace_id = ?)`,
+    ).run(done ? 1 : 0, seg[2], ws.id)
+    return json(res, 200, { ok: true })
+  }
+
+  // ---- chat
+  if (seg[1] === 'chat' && seg[2] && seg[3] === 'messages' && method === 'POST') {
+    const ch = db.prepare(`SELECT * FROM channels WHERE id = ? AND workspace_id = ?`).get(seg[2], ws.id)
+    if (!ch) throw Object.assign(new Error('Channel not found'), { status: 404 })
+    const { body } = await readJson(req)
+    if (!body?.trim()) throw Object.assign(new Error('Message cannot be empty'), { status: 400 })
+    const mid = id('chm')
+    db.prepare(
+      `INSERT INTO chat_messages (id, channel_id, author_id, body, created_at) VALUES (?, ?, ?, ?, ?)`,
+    ).run(mid, ch.id, user.id, body.trim(), nowIso())
+    return json(res, 201, { id: mid })
+  }
+
+  // ---- inbox
+  if (p === '/api/inbox' && method === 'POST') {
+    const { kind = 'mention', title, body = '', cardRef = null } = await readJson(req)
+    if (!title?.trim()) throw Object.assign(new Error('Title is required'), { status: 400 })
+    const iid = id('i')
+    db.prepare(
+      `INSERT INTO inbox (id, workspace_id, user_id, kind, title, body, card_ref, read, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+    ).run(iid, ws.id, user.id, kind, title.trim(), body, cardRef, nowIso())
+    return json(res, 201, { id: iid })
+  }
+
+  if (seg[1] === 'inbox' && seg[2] && seg[2] !== 'read-all' && method === 'PATCH') {
+    db.prepare(`UPDATE inbox SET read = 1 WHERE id = ? AND workspace_id = ? AND user_id = ?`)
+      .run(seg[2], ws.id, user.id)
+    return json(res, 200, { ok: true })
+  }
+
+  // ---- automations
+  if (seg[1] === 'automations' && seg[2] && method === 'PATCH') {
+    const { enabled } = await readJson(req)
+    db.prepare(`UPDATE automations SET enabled = ? WHERE id = ? AND workspace_id = ?`)
+      .run(enabled ? 1 : 0, seg[2], ws.id)
+    return json(res, 200, { ok: true })
+  }
+
+  // ---- review comment delete
+  if (seg[1] === 'review' && seg[2] === 'comments' && seg[3] && method === 'DELETE') {
+    db.prepare(
+      `DELETE FROM review_comments
+       WHERE id = ? AND asset_id IN (SELECT id FROM review_assets WHERE workspace_id = ?)`,
+    ).run(seg[3], ws.id)
+    return json(res, 200, { ok: true })
+  }
+
+  // ---- generation
+  if (p === '/api/generate' && method === 'POST') {
+    const { module: mod, prompt, settings = {} } = await readJson(req)
+    if (!prompt?.trim()) throw Object.assign(new Error('Give it something to work from'), { status: 400 })
+    const out = await generate({ workspaceId: ws.id, userId: user.id, module: mod, prompt, settings })
+    return json(res, 201, out)
   }
 
   // ---- Forge

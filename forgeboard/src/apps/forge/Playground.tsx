@@ -57,7 +57,7 @@ const PLACEHOLDER: Record<PlaygroundModuleId, string> = {
 }
 
 export default function Playground() {
-  const { creations, credits, spendCredits, addCreation } = useStore()
+  const { creations, credits, generate } = useStore()
   const [module, setModule] = useState<PlaygroundModuleId>('tts')
   const [text, setText] = useState('')
   const [voice, setVoice] = useState(VOICES[0])
@@ -72,6 +72,7 @@ export default function Playground() {
   const [platforms, setPlatforms] = useState<string[]>(['X', 'LinkedIn'])
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+  const [err, setErr] = useState<string | null>(null)
 
   const meta = MODULE_META[module]
   const cost =
@@ -84,27 +85,25 @@ export default function Playground() {
 
   const history = creations.filter((c) => c.module === module)
 
-  async function generate() {
+  async function run() {
     if (!affordable || busy) return
     setBusy(true)
     setResult(null)
-    await new Promise((r) => setTimeout(r, 900))
-
-    const title =
-      text.trim().slice(0, 60) + (text.trim().length > 60 ? '…' : '')
-    const body =
-      module === 'tts'
-        ? `${Math.max(1, Math.round(text.length / 900))}:${String(
-            Math.round((text.length % 900) / 15),
-          ).padStart(2, '0')} · ${voice.split(' — ')[0]} · ${
-            MODELS.find((m) => m.id === model)?.name
-          } · ${text.length} characters`
-        : `${meta.label} output · ${text.trim().split(/\s+/).length} words of prompt`
-
-    addCreation({ title, module, body, credits: cost })
-    spendCredits(cost)
-    setResult(body)
-    setBusy(false)
+    setErr(null)
+    try {
+      const out = await generate({
+        module,
+        prompt: text,
+        settings: { voice, model, speed, stability, similarity, style, imageModel, seconds, groundOnBrain, platforms },
+      })
+      setResult(out.body)
+    } catch (e) {
+      // Audio and image modules need a paid provider key. Say so plainly
+      // rather than inventing a result.
+      setErr(e instanceof Error ? e.message : 'Generation failed')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -176,7 +175,7 @@ export default function Playground() {
                   size="sm"
                   className="ml-auto"
                   disabled={!affordable || busy}
-                  onClick={() => void generate()}
+                  onClick={() => void run()}
                 >
                   <Sparkles size={13} />
                   {busy ? 'Generating…' : module === 'tts' ? 'Generate speech' : 'Generate'}
@@ -196,6 +195,12 @@ export default function Playground() {
                 </button>
               ))}
             </div>
+
+            {err && (
+              <Panel title="Not available yet" className="kb-in">
+                <p className="text-[12.5px] text-ink">{err}</p>
+              </Panel>
+            )}
 
             {result && (
               <Panel title="Result" className="kb-in">

@@ -40,7 +40,7 @@ export default function Boards() {
   const boardCards = cards.filter((c) => c.boardId === board.id)
 
   const drop = (stageId: string) => {
-    if (dragging) moveCard(dragging, stageId)
+    if (dragging) void moveCard(dragging, stageId)
     setDragging(null)
     setOver(null)
   }
@@ -48,18 +48,7 @@ export default function Boards() {
   const quickAdd = (stageId: string) => {
     const title = window.prompt('Card title')?.trim()
     if (!title) return
-    addCard({
-      boardId: board.id,
-      stageId,
-      title,
-      tag: 'YOUTUBE',
-      due: null,
-      assigneeIds: [],
-      checklist: [],
-      comments: [],
-      attachmentIds: [],
-      payoutCents: 0,
-    })
+    void addCard({ boardId: board.id, stageId, title })
   }
 
   return (
@@ -278,7 +267,7 @@ function CardDrawer({ card, onClose }: { card: Card; onClose: () => void }) {
             <Field label="Stage">
               <select
                 value={card.stageId}
-                onChange={(e) => updateCard(card.id, { stageId: e.target.value })}
+                onChange={(e) => void updateCard(card.id, { stageId: e.target.value })}
                 className="w-full rounded-md border border-line px-2 py-1 text-[12px]"
               >
                 {board.stages.map((s) => (
@@ -293,7 +282,7 @@ function CardDrawer({ card, onClose }: { card: Card; onClose: () => void }) {
                 type="date"
                 value={card.due?.slice(0, 10) ?? ''}
                 onChange={(e) =>
-                  updateCard(card.id, {
+                  void updateCard(card.id, {
                     due: e.target.value ? new Date(e.target.value).toISOString() : null,
                   })
                 }
@@ -336,7 +325,7 @@ function CardDrawer({ card, onClose }: { card: Card; onClose: () => void }) {
                       <input
                         type="checkbox"
                         checked={i.done}
-                        onChange={() => toggleChecklistItem(card.id, i.id)}
+                        onChange={() => void toggleChecklistItem(i.id, !i.done)}
                         className="h-3.5 w-3.5 accent-[var(--color-brand)]"
                       />
                       <span className={cx(i.done && 'text-subtle line-through')}>{i.label}</span>
@@ -422,7 +411,7 @@ function CardDrawer({ card, onClose }: { card: Card; onClose: () => void }) {
             e.preventDefault()
             const body = draft.trim()
             if (!body) return
-            addComment(card.id, body)
+            void addComment(card.id, body)
             setDraft('')
           }}
           className="flex gap-2 border-t border-line p-3"
