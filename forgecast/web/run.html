@@ -29,9 +29,22 @@
   .graph-frame::after  { right: 0; background: linear-gradient(to left,  var(--raise), transparent); }
   .graph-frame[data-more~="left"]::before  { opacity: 1; }
   .graph-frame[data-more~="right"]::after  { opacity: 1; }
-  .graph { display: flex; gap: 46px; align-items: flex-start;
+  /* Centred, not top-aligned. The row is as tall as its tallest column — three
+     stacked nodes in the middle of a long-form pipeline — and with everything hugging
+     the top, the first screen showed one node in the corner of a box four times its
+     height. Reported as confusing, and fairly: the space read as something missing
+     rather than as room the wider part of the graph needs. Centring costs nothing,
+     puts the wires through the middle of the frame, and makes a one-node column look
+     like a stage in a pipeline instead of a card that failed to load. */
+  .graph { display: flex; gap: 46px; align-items: center;
            position: relative; min-width: max-content; padding: 6px 2px; }
-  .layer { display: flex; flex-direction: column; gap: 14px; min-width: 176px; }
+  /* Capped, not just floored. A failed node carries its error, and a column with no
+     upper bound sized itself to the longest line in it — one stalled stage stretched
+     its layer past 1400px and pushed every other stage out of the window, so the
+     graph became least readable at exactly the moment it mattered most. The error
+     wraps inside the node instead. */
+  .layer { display: flex; flex-direction: column; gap: 14px;
+           min-width: 176px; max-width: 244px; }
   .node {
     position: relative; z-index: 2; background: var(--raise-2);
     border: 1px solid var(--line); border-left: 3px solid var(--line);
@@ -71,6 +84,17 @@
   .kv dd { margin: 0; }
   details.beat { border-top: 1px solid var(--line); padding: 8px 0; }
   details.beat summary { cursor: pointer; }
+
+  /* The brief's beats are not collapsed any more. Each is one sentence, and this is
+     the gate where the operator decides whether the video is worth making — a gate
+     whose content is eight closed disclosures asks for a decision while showing only
+     the labels, which is how "Beat 6 · hook" ends up being the most informative thing
+     on screen. Collapsing still earns its place on the script gate below, where each
+     row is a paragraph. */
+  .beat-row { border-top: 1px solid var(--line); padding: 9px 0; }
+  .beat-row .beat-head { font-size: var(--t-md); }
+  .beat-row p { margin: 3px 0 0; color: var(--text-2); font-size: var(--t-md);
+                max-width: 68ch; line-height: 1.55; }
 </style>
 {% endblock %}
 
@@ -130,8 +154,13 @@
               </div>
             {% endif %}
             {% if node.error %}
-              <div class="log error" style="margin-top:7px;padding:6px 8px;font-size:var(--t-xs)">
-                {{ node.error[:180] }}
+              {# Cut at a word, not at character 180. The whole error is in the banner
+                 above the graph, so this only has to be enough to identify which
+                 stage failed and why — and "Connect ElevenLa" reads as the page
+                 breaking rather than as the message being abridged. #}
+              <div class="log error" title="{{ node.error }}"
+                   style="margin-top:7px;padding:6px 8px;font-size:var(--t-xs)">
+                {{ node.error|truncate(170, false, "…") }}
               </div>
             {% endif %}
           </div>
@@ -155,11 +184,11 @@
       <dt>Promise</dt><dd>{{ out.get("promise", "—") }}</dd>
     </dl>
     {% for beat in out.get("beats", []) %}
-      <details class="beat">
-        <summary>{{ beat.get("name", "Beat") }}
-          <span class="muted">· {{ beat.get("purpose", "") }}</span></summary>
-        <p style="margin:8px 0 0">{{ beat.get("summary", "") }}</p>
-      </details>
+      <div class="beat-row">
+        <div class="beat-head">{{ beat.get("name", "Beat") }}
+          <span class="muted">· {{ beat.get("purpose", "") }}</span></div>
+        {% if beat.get("summary") %}<p>{{ beat["summary"] }}</p>{% endif %}
+      </div>
     {% endfor %}
 
   {% elif gate.type == "script" %}
