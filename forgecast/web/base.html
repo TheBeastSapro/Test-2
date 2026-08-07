@@ -132,7 +132,16 @@
       <div class="lane">Recent runs</div>
       {% for item in recent_runs %}
         <a class="chan" href="/runs/{{ item.id }}" title="{{ item.topic }}">
-          <span class="status {{ item.status.value }}" style="padding:0 6px;font-size:9.5px">{{ item.status.value[:4] }}</span>
+          {# Abbreviations chosen per word, not by slicing at four characters. `[:4]`
+             turned "running" into "runn" and "completed" into "comp" — visible on
+             every page of the app, and reading as a rendering fault rather than as a
+             shortened word. A status the operator cannot read is not a status. #}
+          {% set short = {'running': 'run', 'completed': 'done', 'failed': 'fail',
+                          'queued': 'queue', 'cancelled': 'stop',
+                          'awaiting_approval': 'gate'} %}
+          <span class="status {{ item.status.value }}" style="padding:0 6px;font-size:9.5px"
+                title="{{ item.status.value.replace('_', ' ') }}"
+                >{{ short.get(item.status.value, item.status.value) }}</span>
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ item.topic }}</span>
         </a>
       {% endfor %}

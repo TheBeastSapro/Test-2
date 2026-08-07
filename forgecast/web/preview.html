@@ -22,8 +22,13 @@
   .plan li { display: flex; gap: 9px; align-items: flex-start; padding: 6px 14px;
              font-size: 13.5px; line-height: 1.4; }
   .plan .mark { flex: none; width: 16px; text-align: center; margin-top: 1px; }
-  .plan li.completed .label, .plan li.skipped .label {
-    text-decoration: line-through; color: var(--muted); }
+  /* Done is not cancelled. A finished step used to be struck through, so a run that
+     completed all thirteen stages presented as thirteen crossed-out lines — the visual
+     language of work abandoned, on the screen you reach by succeeding. Completion now
+     reads the way it does everywhere else in the app: a mint tick, and the label left
+     alone. Recede the finished ones by colour if anything, never by defacing them. */
+  .plan li.completed .label { color: var(--text-2); }
+  .plan li.skipped .label { color: var(--muted); }
   .plan li.completed .mark { color: var(--ok); }
   .plan li.skipped   .mark { color: var(--muted); }
   .plan li.running   .mark { color: var(--accent); }
@@ -33,6 +38,33 @@
   .plan li.pending .label, .plan li.ready .label { color: var(--muted); }
   .plan li .spin { display: inline-block; animation: spin 1.1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* A failed step carries its reason. Wraps rather than truncates: the useful part of
+     "no voice to narrate with: the casting gate selected none…" is the clause after the
+     colon, which is exactly what an ellipsis eats. */
+  .plan li { flex-wrap: wrap; }
+  .plan .why { flex-basis: 100%; margin: 3px 0 2px 25px; font-size: 12px;
+               line-height: 1.45; color: var(--err); }
+
+  /* ------------------------------------------------------- the finished video */
+  .final { background: var(--raise); border: 1px solid var(--line);
+           border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+  /* Mint edge: this panel is the successful outcome, and the accent means "produced"
+     everywhere else in the app. Amber when it is only the opening, matching the warning
+     register rather than claiming a finished film. */
+  .final { border-top: 2px solid var(--accent); }
+  .final-partial { border-top-color: var(--warn); }
+  .final header { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+                  border-bottom: 1px solid var(--line); background: var(--raise-2); }
+  .final-what { font-size: 13px; font-weight: 600; color: var(--text); }
+  .final-meta { font-family: var(--mono); font-size: 11.5px; color: var(--faint); }
+  /* Capped so an 8-minute video does not push the plan off the screen on a laptop, and
+     letterboxed on black rather than cropped — this is the deliverable, so it is shown
+     whole. */
+  .final video { display: block; width: 100%; max-height: 64vh;
+                 background: #000; object-fit: contain; }
+  .final-note { margin: 0; padding: 9px 14px; font-size: 12.5px; color: var(--warn);
+                border-top: 1px solid var(--line); background: var(--raise-2); }
 
   /* ---------------------------------------------------------------- player */
   .stage { background: var(--raise); border: 1px solid var(--line);
@@ -126,6 +158,37 @@
   </div>
 </div>
 
+{# The finished film, above everything else, whenever there is one.
+
+   The panel below this is a *simulation* — scenes composited by the browser so the edit
+   can be judged before it costs anything to render. That is the right thing to look at
+   while a run is still working. It is the wrong thing to look at afterwards, and until
+   now it was the only thing: a run that had rendered 23 MB of video to disk showed the
+   same black frame as one that had rendered nothing, and offered no route to the file.
+   The render is what the operator came for, so it goes first and it is a real player. #}
+{% if finished %}
+<div class="final {% if finished.partial %}final-partial{% endif %}">
+  <header>
+    <span class="final-what">
+      {% if finished.partial %}Opening only{% else %}Finished video{% endif %}
+    </span>
+    <span class="final-meta">{{ finished.name }} · {{ '%.1f'|format(finished.bytes / 1048576) }} MB</span>
+    <span style="flex:1"></span>
+    {# `download` rather than a plain link: the signed URL is a media route that streams,
+       so without it the browser navigates away from the studio to play the file. #}
+    <a class="btn btn-sm" href="{{ finished.url }}" download="{{ finished.name }}">Download</a>
+  </header>
+  <video controls preload="metadata" playsinline src="{{ finished.url }}"
+         {% if finished.poster %}poster="{{ finished.poster }}"{% endif %}></video>
+  {% if finished.partial %}
+    <p class="final-note">
+      This is the approved opening, not the whole video — the render stage has not
+      finished. The plan below shows what is still outstanding.
+    </p>
+  {% endif %}
+</div>
+{% endif %}
+
 <div class="studio">
 
   <!-- The plan is the graph, not a copy of it: same nodes, same order, live status. -->
@@ -140,6 +203,13 @@
         <li class="{{ node.status.value }}" data-key="{{ node.key }}">
           <span class="mark"></span>
           <span class="label">{{ node.title }}</span>
+          {# The reason a step failed, on the step that failed. It was previously
+             nowhere on this page: a run died, the panel drew a red ✕, and the only
+             copy of *why* was on the graph page one click away. The failure is the
+             one thing on a dead run worth reading. #}
+          {% if node.status.value == 'failed' and node.error %}
+            <span class="why">{{ node.error }}</span>
+          {% endif %}
         </li>
       {% endfor %}
     </ol>

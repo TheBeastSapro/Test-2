@@ -174,7 +174,7 @@
       <video controls preload="metadata" src="{{ artifact.url }}"></video>
       <p class="muted" style="font-size:13px">
         {{ '%.1f'|format(out.get("duration_seconds", 0)) }}s ·
-        {{ '%.1f'|format(artifact.size_mb) }} MB
+        {{ artifact.size_label }}
       </p>
     {% endfor %}
     <dl class="kv">
@@ -243,7 +243,7 @@
             <span class="muted">· {{ artifact.meta.get("role") }}</span>
           {% endif %}
         </td>
-        <td class="mono muted">{{ '%.2f'|format(artifact.size_mb) }} MB</td>
+        <td class="mono muted">{{ artifact.size_label }}</td>
         <td>{% if artifact.url %}<a href="{{ artifact.url }}" target="_blank">open</a>{% endif %}</td>
       </tr>
       {% endfor %}

@@ -45,6 +45,71 @@ def _node_output(run: Run, key: str) -> dict | None:
     return dict(node.output)
 
 
+# The finished film, if the run got that far.
+#
+# This exists because the page did not have it. Everything below this line builds the
+# *plan* preview — scenes composited in the browser so you can judge the edit before
+# paying to render it — and that is the right thing to show while a run is still going.
+# But a run that has rendered has an actual video on disk, registered as an artifact on
+# the render node, and the page went on showing the simulation of it. A completed run
+# looked identical to one that had produced nothing: a black frame, and no way to reach
+# the file. The render is the point of the product; it has to be the thing you see.
+#
+# Artifacts are the source rather than a hard-coded path, so a pipeline that renames or
+# relocates its output stays playable without this knowing about it.
+_FINAL_NODES = ("render", "hook")
+
+
+def _finished_video(run: Run, user_id: int) -> dict | None:
+    by_id = {node.id: node.key for node in run.nodes}
+    found: dict[str, dict] = {}
+    for artifact in run.artifacts:
+        key = by_id.get(artifact.node_id)
+        if key not in _FINAL_NODES or artifact.kind != "video":
+            continue
+        path = Path(artifact.path)
+        # A registered artifact whose file has been moved or cleaned up would otherwise
+        # render a player pointed at a 404, which reads as a broken video rather than as
+        # a missing one.
+        if not path.exists():
+            continue
+        url = sign_url(path, user_id)
+        if url is None:
+            continue
+        found.setdefault(key, {
+            "url": url,
+            "name": path.name,
+            "bytes": path.stat().st_size,
+            # The hook is a 15-second opening, not the video. Saying so is the whole
+            # difference between "here is your film" and an operator wondering why
+            # eight minutes came back as fifteen seconds.
+            "partial": key != "render",
+        })
+    for key in _FINAL_NODES:
+        if key in found:
+            # A poster, so the player shows the video rather than a grey rectangle
+            # before it is played. `preload="metadata"` fetches no frame, so without one
+            # the finished film presents as an empty box — which is the exact complaint
+            # this whole panel exists to answer. The thumbnail is already generated for
+            # every run and is the frame the operator chose to represent it.
+            found[key]["poster"] = _first_image(run, by_id, user_id, ("thumbnail", "hook"))
+            return found[key]
+    return None
+
+
+def _first_image(run: Run, by_id: dict, user_id: int, nodes: tuple[str, ...]) -> str | None:
+    for want in nodes:
+        for artifact in run.artifacts:
+            if by_id.get(artifact.node_id) != want or artifact.kind != "image":
+                continue
+            path = Path(artifact.path)
+            if path.exists():
+                url = sign_url(path, user_id)
+                if url:
+                    return url
+    return None
+
+
 def _frame_size(run: Run) -> tuple[int, int]:
     """The frame the render node will actually produce.
 
@@ -156,6 +221,7 @@ def preview_page(
             **shell(session, user, "studio"),
             "run": run,
             "plan_nodes": plan_nodes,
+            "finished": _finished_video(run, user.id),
             # Chrome off: this page is also the Studio panel inside the chat, and a
             # sidebar nested inside a sidebar is how an embed announces itself as one.
             "embed": bool(embed),

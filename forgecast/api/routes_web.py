@@ -151,6 +151,20 @@ def _rail_channels(channels: list, runs: list) -> list[dict]:
     ]
 
 
+def _size_label(size_bytes: int | None) -> str:
+    """A file size in the unit that makes it readable.
+
+    Bytes below a kilobyte, because a 907-byte manifest is not "0.0 KB"; one decimal
+    from there up, because two is noise at any scale a person is scanning.
+    """
+    total = float(size_bytes or 0)
+    for unit, step in (("B", 1024), ("KB", 1024), ("MB", 1024), ("GB", None)):
+        if step is None or total < step:
+            return f"{int(total)} {unit}" if unit == "B" else f"{total:.1f} {unit}"
+        total /= step
+    return f"{total:.1f} GB"
+
+
 def shell(
     session: Session, user: User, nav: str, *,
     channels: list | None = None, runs: list | None = None,
@@ -425,6 +439,12 @@ def run_page(
                 "node_key": node_keys.get(artifact.node_id or -1, ""),
                 "url": artifact_url(artifact.path, user.id),
                 "size_mb": artifact.size_bytes / 1_048_576,
+                # Formatted here rather than in the template, because the unit has to
+                # change with the magnitude and Jinja's `format` cannot decide that.
+                # Fixing megabytes to two decimals printed "0.00 MB" against every
+                # brief, script and shot list in the table — twelve of the fourteen
+                # rows on a normal run, all reading as empty files.
+                "size_label": _size_label(artifact.size_bytes),
                 "meta": artifact.meta or {},
             }
         )
