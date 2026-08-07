@@ -500,6 +500,17 @@ def _stand_subject(ctx: NodeContext, shot: dict, slug: str, subject: Path,
     from ..layers.shot import place
 
     if not shot.get("composite") or plate_path is None:
+        # Said out loud rather than performed quietly. A shot marked for motion that
+        # cannot take it is how the ration came to plan two clips and render none for
+        # every run: the planner marked, this returned the still, and neither end
+        # reported a disagreement. The planner no longer marks these — this is the
+        # backstop, and a backstop that degrades in silence is the defect it is
+        # supposed to catch.
+        if shot.get("animate"):
+            ctx.log(f"{slug}: planned to move but there is "
+                    + ("no cut-out in it" if not shot.get("composite")
+                       else "no plate to move it against")
+                    + " — holding it as a still", level="warning")
         return subject
 
     # The shots the planner rationed motion to. `animate` has been on the shot list
@@ -1617,6 +1628,18 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
         f"generated {len(usable)}/{len(shots)} plates across {scenes_covered} scenes"
         + (f", {degraded} degraded" if degraded else "")
     )
+
+    # Planned against produced, for the one treatment that can be planned and then
+    # silently not happen. Two rules that each looked right marked motion onto the
+    # shots that could not take it, so every run planned two clips and rendered none —
+    # and the only way that was ever going to surface was somebody counting the files.
+    # Counting it here means the run says so itself.
+    asked_to_move = sum(1 for shot in shots if shot.get("animate"))
+    moved = sum(1 for item in usable if str(item.get("path", "")).endswith("_drift.mp4"))
+    if asked_to_move:
+        ctx.log(f"{moved}/{asked_to_move} shot(s) planned for motion actually moved",
+                planned_motion=asked_to_move, rendered_motion=moved,
+                level="info" if moved == asked_to_move else "warning")
     if clips_by_model:
         ctx.log(
             "animated " + ", ".join(f"{count} on {name}"
