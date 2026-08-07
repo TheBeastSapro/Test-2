@@ -14,10 +14,11 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from ..config import get_settings
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..prompts import cast
 from ..prompts import moves as camera_moves
-from ..providers import ProviderError, VideoProvider
+from ..providers import ProviderError, VideoProvider, footage
 from ..providers.media import (
     HERO_TIER,
     STANDARD_TIER,
@@ -25,6 +26,7 @@ from ..providers.media import (
     video_tier,
     video_usd,
 )
+from ..providers.stock import to_query
 from ..render import ffmpeg as ff
 from ..render.cutting import plates_for, shot_estimate, spec_for
 from ..style import sourcing
@@ -357,6 +359,134 @@ def _concat_audio(clips: list[Path], out_path: Path) -> Path:
 # ---------------------------------------------------------------------- broll plan
 
 
+def _fetch_footage(ctx: NodeContext, shot: dict, slug: str, seconds: float):
+    """Get the chosen clip onto disk, muted and trimmed. `None` if anything stops it.
+
+    The licence is re-established from the clip rather than read from the shot list. The
+    list is a JSON artifact an operator can open and edit, so trusting a stored
+    `commercially_safe: true` would be this app vouching for a licence it never checked —
+    the same quiet claim `FootageClip.commercially_safe` exists to refuse, one file
+    removed.
+
+    Acquisition goes through `vision.acquire`, which already handles local paths, direct
+    media URLs and yt-dlp. A fetcher here would be a fourth copy of the same subprocess
+    call with its own timeout and its own way of failing at three in the morning.
+
+    Audio comes off at ingest, never at render. A clip that arrives muted cannot be
+    un-muted by a later stage written by somebody who does not know where the file came
+    from — and the sound design owns this video's audio.
+    """
+    from ..vision.acquire import AcquireError, acquire
+
+    raw = shot.get("clip") or {}
+    clip = footage.FootageClip(
+        url=str(raw.get("url") or ""), title=str(raw.get("title") or ""),
+        creator=str(raw.get("creator") or ""), licence=str(raw.get("licence") or ""),
+        source=str(raw.get("source") or ""),
+        landing_url=str(raw.get("landing_url") or ""),
+        licence_url=str(raw.get("licence_url") or ""),
+        attribution=str(raw.get("attribution") or ""),
+        seconds=float(raw.get("seconds") or 0.0), width=int(raw.get("width") or 0),
+        operator_directed=bool(raw.get("operator_directed")),
+    )
+    if not clip.commercially_safe or not clip.url:
+        ctx.log(f"{slug}: the recorded clip is not usable in a monetised edit "
+                f"({clip.licence or 'no licence'}) — generating instead", level="warning")
+        return None
+
+    workdir = ctx.path_for(f"{slug}_footage_src")
+    workdir.mkdir(parents=True, exist_ok=True)
+    try:
+        got = acquire(clip.fetch_reference(), workdir, max_seconds=seconds * 3)
+    except (AcquireError, Exception) as exc:  # acquire raises its own and yt-dlp's
+        ctx.log(f"{slug}: could not fetch {clip.source} footage: {exc}", level="warning")
+        return None
+
+    out = ctx.path_for(f"{slug}_footage.mp4")
+    try:
+        footage.strip_audio(got.path, out, seconds=seconds)
+    except Exception as exc:
+        ctx.log(f"{slug}: could not mute and trim the clip: {exc}", level="warning")
+        return None
+    if not out.exists() or out.stat().st_size == 0:
+        return None
+    return out, clip
+
+
+#: How many footage searches run at once. Four sources per beat behind one connection
+#: pool; more parallelism here buys latency the operator waits on for free and risks a
+#: vendor's rate limit, which costs the lane for the whole run rather than one beat.
+_FOOTAGE_CONCURRENCY = 4
+
+
+async def _offer_free_footage(ctx: NodeContext, beats: list[dict]) -> None:
+    """Replace generated clips with licensed footage wherever the free lane can serve.
+
+    Only beats already planned to MOVE are offered. A still is never converted into
+    footage, and that single restriction is what makes the change safe: a moving beat
+    buys one plate whether the pixels come from Pexels or from Kling, so the free lane
+    substitutes strictly inside a class the profile has already counted, and no
+    measurement function has to know it exists.
+
+    It runs at plan time, not at fetch time, and the reason is `nodes/sample`: the Sample
+    Gate reads the plan, spends real money on one clip per distinct setup, and filters on
+    `kind == "video"`. Choosing footage later would buy samples for setups that never
+    render, and the plan's own `video_usd` would be a quote for work nobody does.
+
+    Nothing here may fail the node. A free lane that can break a paid run is worse than
+    no free lane, so every failure — a dead source, a timeout, no key, an exception —
+    leaves the beat exactly as the planner wrote it.
+    """
+    movers = [beat for beat in beats if beat["kind"] == "video"]
+    if not movers:
+        return
+
+    # Mock never touches the network and never spends money. The free lane spends
+    # nothing but does reach the network, so it is skipped — which is also what keeps
+    # every existing test harness offline.
+    if getattr(ctx.registry, "mode", "") == "mock":
+        return
+
+    settings = get_settings()
+    pexels = str(getattr(settings, "pexels_api_key", "") or "")
+    pixabay = str(getattr(settings, "pixabay_api_key", "") or "")
+
+    width, _height = dimensions(ctx)
+    gate = asyncio.Semaphore(_FOOTAGE_CONCURRENCY)
+
+    async def look(beat: dict) -> None:
+        query = to_query(beat["prompt"])
+        async with gate:
+            try:
+                clips = await footage.find(query, pexels_key=pexels, pixabay_key=pixabay)
+            except Exception as exc:
+                beat["why"] = f"footage search failed: {exc}"
+                return
+        chosen, why = footage.best_for(
+            clips, query=query, seconds=beat["seconds"], width=width)
+        beat["why"] = why
+        if chosen is not None:
+            beat["kind"] = "footage"
+            beat["clip"] = chosen
+
+    try:
+        await asyncio.gather(*(look(beat) for beat in movers))
+    except Exception as exc:
+        ctx.log(f"the free footage lane did not run: {exc}", level="warning")
+        return
+
+    served = [beat for beat in movers if beat["kind"] == "footage"]
+    if served:
+        ctx.log(f"{len(served)} of {len(movers)} moving beats served by licensed "
+                f"footage — those cost nothing to generate")
+    else:
+        # Why not, once, rather than per beat: on a run where nothing matched this would
+        # otherwise be a paragraph of near-identical lines.
+        reasons = {beat["why"] for beat in movers if beat["why"]}
+        ctx.log("no moving beat could be served free — "
+                + ("; ".join(sorted(reasons))[:220] if reasons else "no reason recorded"))
+
+
 @node_handler("broll_plan")
 async def broll_plan_node(ctx: NodeContext) -> NodeResult:
     script = ctx.output("script")
@@ -438,10 +568,28 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
     # wrong for both and every run paid for it.
     animated_allowed, heroes_allowed = sourcing.budgets(
         (ctx.channel.style_profile or {}).get("sourcing"), len(scenes))
-    videos = 0
+
+    # Two counters where there was one, and conflating them is the easiest mistake in
+    # this node to make and the hardest to see.
+    #
+    #   `moving`   — beats that MOVE. Enforces `animated_allowed`, which is the look the
+    #                reference dictated: `animation_share` measures the share of shots
+    #                that are moving footage rather than stills, and a beat moves whether
+    #                the pixels were bought or generated.
+    #   `animated` — beats that are GENERATED. Priced into `animation_usd` and reported
+    #                as `video_shots`, which `nodes/sample` and the cost log already read
+    #                as meaning generated.
+    #
+    # One counter doing both jobs either lets a channel move more than its reference
+    # does, or reports a bill for clips nobody bought.
+    moving = 0
+    animated = 0
     heroes = 0
     planned_shots = 0
     animation_usd = 0.0
+
+    # ---- pass A: everything that is not money -------------------------------------
+    beats: list[dict] = []
     for position, scene in enumerate(scenes):
         planned = by_index.get(scene["index"], {})
         kind = str(planned.get("kind") or scene.get("visual_kind") or "image")
@@ -451,15 +599,39 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
             # A map with nothing to mark is an empty map. Fall back rather than
             # rendering an establishing shot of the whole planet with no point to it.
             kind = "image"
-        if kind == "video" and videos >= animated_allowed:
+        if kind == "video" and moving >= animated_allowed:
             kind = "image"  # protect the budget from an over-eager plan
         if kind == "video":
-            videos += 1
+            moving += 1
         kind = kind if kind in {"video", "map"} else "image"
 
         seconds = float(scene["seconds"])
         shot_count = shot_estimate(seconds, spec)
         planned_shots += shot_count
+
+        prompt = str(planned.get("prompt") or scene.get("visual_prompt") or "").strip() \
+            or f"cinematic b-roll: {scene['narration'][:120]}"
+        # The locked likenesses for the people actually in this scene, appended to the
+        # prompt the planner wrote. Only this scene's characters: every locked face costs
+        # words in every prompt carrying it, and a prompt holding six descriptions has
+        # pushed its own subject out of the model's attention.
+        prompt = cast.stamp(prompt, company.in_scene(scene["index"]))
+
+        beats.append({"position": position, "scene": scene, "planned": planned,
+                      "kind": kind, "places": places, "seconds": seconds,
+                      "shot_count": shot_count, "prompt": prompt,
+                      "clip": None, "why": ""})
+
+    # ---- pass B: the free lane, before a single dollar is committed ----------------
+    saved_usd = 0.0
+    await _offer_free_footage(ctx, beats)
+
+    # ---- pass C: the money, and the shot list --------------------------------------
+    for beat in beats:
+        position, scene, planned = beat["position"], beat["scene"], beat["planned"]
+        kind, places = beat["kind"], beat["places"]
+        seconds, shot_count, prompt = beat["seconds"], beat["shot_count"], beat["prompt"]
+
         # An animated clip and a map are bought once and sliced; only a still is cheap
         # enough that a second one is worth buying to break up a long beat.
         #
@@ -467,6 +639,12 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
         # that reframes one picture across four shots buys one plate here, and one that
         # changes picture on every cut buys a plate a shot. Same profile the reserve was
         # computed from, so the hold and the spend cannot disagree.
+        #
+        # `footage` is not `image`, so it buys one plate — exactly what the `video` beat
+        # it replaced already bought. That is the whole reason no measurement function
+        # changes: the free lane substitutes strictly *within* a beat class the profile
+        # has already counted, so `plates_for`, `estimate_plates`, `budgets` and
+        # `animation_reserve` all stay in step without being touched.
         plates = plates_for(seconds, spec, reusable=kind == "image",
                             sourcing=(ctx.channel.style_profile or {}).get("sourcing"))
 
@@ -475,7 +653,18 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
         # only shot in the video every viewer sees.
         tier = HERO_TIER if position == 0 else video_tier(planned.get("tier"))
         model = ""
-        if kind == "video":
+        if kind == "footage":
+            # Free, so it takes no hero slot and adds nothing to the bill. The tier is
+            # flattened for the same reason the money block below flattens a still's:
+            # a tier is only meaningful where it names a different endpoint, and this
+            # beat has none. What it would have cost is recorded, because that number is
+            # the whole point of the lane.
+            tier = STANDARD_TIER
+            saved_usd += video_usd(
+                model_for_tier(HERO_TIER if position == 0 else video_tier(planned.get("tier")),
+                               standard=standard_model, hero=hero_model),
+                seconds)
+        elif kind == "video":
             # The budget is spent here and only here, because a tier is only money where
             # it is a different endpoint: a still marked hero costs exactly what a still
             # costs, so charging it against the cap would deny the upgrade to an animated
@@ -486,14 +675,8 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
                 heroes += 1
             model = model_for_tier(tier, standard=standard_model, hero=hero_model)
             animation_usd += video_usd(model, seconds)
+            animated += 1
 
-        prompt = str(planned.get("prompt") or scene.get("visual_prompt") or "").strip() \
-            or f"cinematic b-roll: {scene['narration'][:120]}"
-        # The locked likenesses for the people actually in this scene, appended to the
-        # prompt the planner wrote. Only this scene's characters: every locked face costs
-        # words in every prompt carrying it, and a prompt holding six descriptions has
-        # pushed its own subject out of the model's attention.
-        prompt = cast.stamp(prompt, company.in_scene(scene["index"]))
         for plate_index in range(plates):
             shots.append(
                 {
@@ -519,28 +702,44 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
                     "motion": str(planned.get("motion") or "slow push in"),
                     "places": places,
                     "seconds": seconds,
+                    # The clip a footage beat will fetch, recorded so the batch does not
+                    # search again and get a different answer. `commercially_safe` is
+                    # deliberately NOT trusted from here — the shot list is a JSON
+                    # artifact an operator can edit, and believing a stored `true` would
+                    # be this app vouching for a licence it did not establish, one file
+                    # removed. `shots_node` re-asks the clip itself.
+                    **({"clip": beat["clip"].as_dict()} if beat["clip"] else {}),
                 }
             )
 
     path = ctx.path_for("shot_list.json")
     path.write_text(json.dumps({"shots": shots}, indent=2, ensure_ascii=False), encoding="utf-8")
     ctx.emit_artifact("json", path, "application/json", shots=len(shots))
+    sourced = sum(1 for beat in beats if beat["kind"] == "footage")
     ctx.log(
         f"planned {planned_shots} visual shots across {len(scenes)} scenes from "
-        f"{len(shots)} plates ({videos} animated), cutting every "
-        f"{spec.target_shot_seconds:.1f}s"
+        f"{len(shots)} plates ({moving} moving: {animated} generated, {sourced} "
+        f"sourced), cutting every {spec.target_shot_seconds:.1f}s"
     )
+    if sourced:
+        # Money not spent, never a refund. The reserve is still held against the whole
+        # plan and still released at settle — a hold reduced for footage a search had not
+        # run yet would be short whenever the search found nothing, and that is the one
+        # direction the ledger cannot recover from mid-run.
+        ctx.log(f"{sourced} beat(s) came from licensed footage — about "
+                f"${saved_usd:.2f} of generation not bought",
+                footage_shots=sourced, footage_usd_saved=round(saved_usd, 2))
 
     hero_slug = model_for_tier(HERO_TIER, standard=standard_model, hero=hero_model)
     batch_slug = model_for_tier(STANDARD_TIER, standard=standard_model, hero=hero_model)
-    if videos:
+    if animated:
         # The plan is the stage that decides this spend, so it is the stage that has to
         # say what it decided. Reported per model rather than as one figure at one rate,
         # because a blended plan quoted at either model's rate is wrong in whichever
         # direction that model sits — and the low direction is a reserve that runs out
         # in the middle of a batch.
         ctx.log(
-            f"{heroes} hero shot(s) on {hero_slug} and {videos - heroes} on {batch_slug}"
+            f"{heroes} hero shot(s) on {hero_slug} and {animated - heroes} on {batch_slug}"
             f" — about ${animation_usd:.2f} of animation",
             hero_model=hero_slug, standard_model=batch_slug,
             video_usd=round(animation_usd, 2),
@@ -549,7 +748,14 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
     return NodeResult(
         output={
             "shots": shots,
-            "video_shots": videos,
+            # Generated, not moving. `nodes/sample` and the cost log both
+            # read this as "clips somebody will pay for", so a sourced beat
+            # must not appear in it — the gate would sample a setup that is
+            # never generated.
+            "video_shots": animated,
+            "footage_shots": sourced,
+            "footage_usd_saved": round(saved_usd, 2),
+            "moving_shots": moving,
             "hero_shots": heroes,
             "plates": len(shots),
             "planned_shots": planned_shots,
@@ -656,6 +862,38 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
         prompt = shot["prompt"]
         seconds = float(shot.get("seconds") or 5.0)
         plate: Path | None = None
+
+        # A beat the plan served from licensed footage. Fetched before the still, which
+        # inverts the rule three lines below and is the one place that is right: for a
+        # footage shot the still is not a conditioning frame, only insurance, so buying
+        # it up front would spend on every beat the free lane just saved.
+        #
+        # It never falls through to a paid clip. The plan quoted zero here and the Sample
+        # Gate approved no setup for it, so generating would be a spend nobody authorised
+        # on a model the gate never sampled. When the fetch fails the beat becomes a
+        # still, which is the same degradation every other stage in this node performs.
+        if str(shot.get("kind")) == "footage" and shot.get("clip"):
+            got = await asyncio.to_thread(_fetch_footage, ctx, shot, slug, seconds)
+            if got is not None:
+                clip_path, clip = got
+                ctx.emit_artifact(
+                    "video", clip_path, "video/mp4",
+                    scene_index=index, plate_index=plate_index, role="shot",
+                    prompt=prompt[:300], seconds=seconds,
+                    # The credit travels with the shot, which is what `finalize`
+                    # collects to write `attribution.md`. The kind must be "video" for
+                    # it to be picked up, and it is.
+                    licence=clip.licence, attribution=clip.credit_line(),
+                    creator=clip.creator, landing_url=clip.landing_url,
+                    source=clip.source, sourced=True,
+                )
+                produced.append({"scene_index": index, "plate_index": plate_index,
+                                 "path": str(clip_path), "kind": "footage",
+                                 "source": clip.source, "seconds": seconds})
+                continue
+            degraded += 1
+            ctx.log(f"scene {index}: licensed footage could not be fetched — "
+                    f"falling back to a still", level="warning")
 
         # Always make the still first: it is the cheap fallback and the
         # conditioning frame that image-to-video models need.

@@ -404,6 +404,46 @@
    shot's rate. The blend is printed below them and it is the only number here anybody
    can act on: neither list contains it, and nobody reads "$14.70" beside "$98.00" and
    arrives at "$21.50 for five hero shots and seventy-five batch ones". #}
+{# The free lane, above the paid one, because it runs first and because the page used to
+   present paying as the only choice there was. Named for what it does rather than what
+   it costs: "free" over-promises — two of its four sources need a key — and the reason
+   to prefer it is that a real clip of the subject beats a generated impression of it,
+   with costing nothing as the second argument rather than the first. #}
+<h2>Footage first</h2>
+<div class="card">
+  <p class="muted" style="margin:0 0 12px;font-size:13px">
+    Before any shot is generated, Forgecast searches licensed and public-domain footage
+    for one that actually depicts it. A beat served this way costs nothing, and it is a
+    real clip rather than a model's impression of one. Only beats already planned to
+    <em>move</em> are offered — a still is never turned into footage — so this changes
+    what a video costs and never how it looks.
+  </p>
+  <table>
+    <thead><tr><th>Source</th><th>Reaches</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for row in footage_lane.sources %}
+        <tr>
+          <td>{{ row.name }}</td>
+          <td class="muted">{{ row.reach }}</td>
+          <td>
+            {% if row.ready %}<span class="status completed">searching</span>
+            {% else %}<span class="status queued">needs {{ row.key }}</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if not footage_lane.modern %}
+    <div class="banner warn" style="margin:14px 0 0">
+      <strong>The free lane only reaches archive material.</strong>
+      NASA and the Internet Archive need no key, and both are old — a channel about
+      anything recent will rarely get a free beat from them. Pexels and Pixabay are
+      where a modern shot comes from. Both keys are free, and both meter rather than
+      bill, so neither can run up a balance.
+    </div>
+  {% endif %}
+</div>
+
 <h2>Image-to-video model</h2>
 <div class="card">
   <p class="muted" style="margin:0 0 12px;font-size:13px">

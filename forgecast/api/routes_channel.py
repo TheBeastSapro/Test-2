@@ -83,6 +83,35 @@ BACKEND_LABELS = {
 }
 
 
+def _footage_lane_state() -> dict:
+    """How far the free lane reaches on this install.
+
+    Reported rather than configured. Two of the four sources need no key and two do, and
+    the pair that do are the pair that reach anything recent — Prelinger and NASA are
+    genuinely useful and genuinely old. A page that said only "footage first: on" would
+    be true and would not explain why a channel about anything modern never sees a free
+    beat.
+    """
+    from ..config import get_settings
+
+    settings = get_settings()
+    sources = [
+        {"name": "NASA", "reach": "spaceflight, earth observation, archive film",
+         "ready": True, "key": ""},
+        {"name": "Internet Archive", "reach": "public-domain film and lapsed-renewal TV",
+         "ready": True, "key": ""},
+        {"name": "Pexels", "reach": "modern stock footage",
+         "ready": bool(str(getattr(settings, "pexels_api_key", "") or "").strip()),
+         "key": "FORGECAST_PEXELS_API_KEY"},
+        {"name": "Pixabay", "reach": "modern stock footage",
+         "ready": bool(str(getattr(settings, "pixabay_api_key", "") or "").strip()),
+         "key": "FORGECAST_PIXABAY_API_KEY"},
+    ]
+    return {"sources": sources,
+            "ready": sum(1 for one in sources if one["ready"]),
+            "modern": any(one["ready"] for one in sources if one["key"])}
+
+
 def motion_backend_state(channel: Channel) -> dict:
     """Which engine will draw this channel's motion graphics, and which was asked for.
 
@@ -230,6 +259,15 @@ def _context(session: Session, user: User, channel: Channel, view: str) -> dict:
         # slug every render on every channel used. Priced per finished video rather than
         # per second, because per-second rates rank these models in the wrong order — see
         # `video_catalogue`.
+        # What the free lane can reach on this install. The page had no mention of it at
+        # all, so the only visible choice about b-roll was which model to *pay*, and the
+        # cheapest beat — one that costs nothing because licensed footage already depicts
+        # it — was invisible. A lane nobody can see is a lane nobody trusts.
+        #
+        # Keys rather than a toggle: the lane is always on, because a beat it can serve
+        # is a beat that costs nothing and matches the reference, and there is no reason
+        # to prefer paying for it. What varies is how far it reaches.
+        "footage_lane": _footage_lane_state(),
         "video_models": video_catalogue(channel.video_model),
         # The hero list has no default: an unset hero model means no upgrade, which is not
         # a row in the table and must not light one up. `default=""` is what says so.

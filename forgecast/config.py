@@ -135,6 +135,19 @@ class Settings(BaseSettings):
     # that can run up a balance. Absent, and the chain simply skips that tier.
     freesound_api_key: str = ""
 
+    # The two footage vendors that require a token. Same category as Freesound above and
+    # for the same reason: both meter, neither bills, so a leaked or exhausted key costs
+    # nothing but the lane. `config.py` already blesses that category by name.
+    #
+    # These decide whether the free lane can actually carry a video. NASA and Internet
+    # Archive need no key and reach public-domain film, but they reach old film — a
+    # channel about anything recent gets nothing from them. Pexels and Pixabay are where
+    # a modern shot comes from, and without them the free lane exists and rarely wins.
+    # Absent, `find` returns [] for those two sources rather than erroring, and the beat
+    # falls through to generation exactly as it does today.
+    pexels_api_key: str = ""
+    pixabay_api_key: str = ""
+
     # Research search providers. Tavily is preferred when both are present because it
     # returns extracted page content, saving a fetch per result.
     tavily_api_key: str = ""

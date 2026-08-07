@@ -698,3 +698,168 @@ def test_one_run_holds_two_video_providers_at_once():
     # And the standing choice is untouched by having asked for something else.
     assert registry.video().model == LITE
     assert registry.video(VEO) is registry.video(VEO)
+
+
+# ---------------------------------------------------- the free lane, ahead of paying
+#
+# B-roll is ~90% of what a video costs, so a beat served from licensed footage is the
+# largest single saving available. What these hold is that the saving cannot come at the
+# price of the two things it would be easy to break: the look the reference dictated,
+# and the agreement between what the ledger holds and what the run spends.
+
+
+def _footage_clip(**over):
+    from forgecast.providers import footage as footage_mod
+    base = dict(url="https://x.test/clip.mp4", title=PROMPT, creator="someone",
+                licence="pexels", source="pexels", landing_url="https://x.test/c",
+                seconds=30.0, width=1920, tags=PROMPT.lower().split())
+    base.update(over)
+    return footage_mod.FootageClip(**base)
+
+
+def _live(ctx):
+    """Mock mode skips the lane by design, so a live-mode registry is needed to see it."""
+    ctx.registry = ProviderRegistry(mode="live")
+    return ctx
+
+
+@pytest.mark.asyncio
+async def test_mock_mode_never_reaches_a_footage_source(tmp_path, monkeypatch):
+    """Every existing harness is mock, and mock must stay offline."""
+    async def explode(*_a, **_k):
+        raise AssertionError("the free lane ran in mock mode")
+
+    monkeypatch.setattr(media_node.footage, "find", explode)
+    output = await _run_plan(
+        tmp_path, _plan({index: {"kind": "video"} for index in range(4)}), monkeypatch)
+    assert output["footage_shots"] == 0
+
+
+@pytest.mark.asyncio
+async def test_a_moving_beat_served_free_costs_nothing_and_still_moves(tmp_path, monkeypatch):
+    """The saving must not change the look: the beat still moves, it is just not bought."""
+    async def found(*_a, **_k):
+        return [_footage_clip()]
+
+    async def canned(ctx, **_kwargs):
+        return _plan({index: {"kind": "video"} for index in range(4)}), 0, "stub-llm"
+
+    monkeypatch.setattr(media_node, "ask_json", canned)
+    monkeypatch.setattr(media_node.footage, "find", found)
+    result = await media_node.broll_plan_node(_live(_context(tmp_path)))
+    output = result.output
+
+    assert output["footage_shots"] > 0, "the free lane served nothing"
+    assert output["video_shots"] == 0, "nothing should have been bought"
+    assert output["video_usd"] == 0.0
+    assert output["footage_usd_saved"] > 0.0
+    # The look the reference dictated is unchanged: the same beats move.
+    assert output["moving_shots"] == output["footage_shots"] + output["video_shots"]
+
+
+@pytest.mark.asyncio
+async def test_the_plate_count_is_identical_whether_a_beat_is_free_or_paid(tmp_path, monkeypatch):
+    """The invariant that has broken twice: the reserve and the spend read one measurement.
+
+    A footage beat buys exactly what the video beat it replaced bought. If it did not,
+    `estimate_plates` and `animation_reserve` would be computing against a different plan
+    than the one that runs.
+    """
+    plan = _plan({index: {"kind": "video"} for index in range(4)})
+
+    async def canned(ctx, **_kwargs):
+        return plan, 0, "stub-llm"
+    monkeypatch.setattr(media_node, "ask_json", canned)
+
+    paid = (await media_node.broll_plan_node(_context(tmp_path / "paid"))).output
+
+    async def found(*_a, **_k):
+        return [_footage_clip()]
+    monkeypatch.setattr(media_node.footage, "find", found)
+    free = (await media_node.broll_plan_node(_live(_context(tmp_path / "free")))).output
+
+    assert free["plates"] == paid["plates"]
+    assert free["planned_shots"] == paid["planned_shots"]
+    assert free["moving_shots"] == paid["moving_shots"]
+
+
+@pytest.mark.asyncio
+async def test_free_footage_only_ever_lowers_the_bill(tmp_path, monkeypatch):
+    """The reserve is held against the whole plan; the lane may only subtract from it."""
+    plan = _plan({index: {"kind": "video"} for index in range(4)})
+
+    async def canned(ctx, **_kwargs):
+        return plan, 0, "stub-llm"
+    monkeypatch.setattr(media_node, "ask_json", canned)
+    paid = (await media_node.broll_plan_node(_context(tmp_path / "a"))).output
+
+    async def found(*_a, **_k):
+        return [_footage_clip()]
+    monkeypatch.setattr(media_node.footage, "find", found)
+    free = (await media_node.broll_plan_node(_live(_context(tmp_path / "b")))).output
+
+    assert free["video_usd"] <= paid["video_usd"]
+
+
+@pytest.mark.asyncio
+async def test_an_unusable_clip_leaves_the_beat_paid(tmp_path, monkeypatch):
+    """A licence a monetised edit breaches must not quietly become a free beat."""
+    async def found(*_a, **_k):
+        return [_footage_clip(licence="by-nc")]
+
+    async def canned(ctx, **_kwargs):
+        return _plan({index: {"kind": "video"} for index in range(4)}), 0, "stub-llm"
+    monkeypatch.setattr(media_node, "ask_json", canned)
+    monkeypatch.setattr(media_node.footage, "find", found)
+    output = (await media_node.broll_plan_node(_live(_context(tmp_path)))).output
+
+    assert output["footage_shots"] == 0
+    assert output["video_shots"] > 0
+
+
+@pytest.mark.asyncio
+async def test_a_still_is_never_converted_into_footage(tmp_path, monkeypatch):
+    """The restriction the whole design rests on. A still beat is not the lane's business."""
+    async def found(*_a, **_k):
+        return [_footage_clip()]
+
+    async def canned(ctx, **_kwargs):
+        return _plan({index: {"kind": "image"} for index in range(4)}), 0, "stub-llm"
+    monkeypatch.setattr(media_node, "ask_json", canned)
+    monkeypatch.setattr(media_node.footage, "find", found)
+    output = (await media_node.broll_plan_node(_live(_context(tmp_path)))).output
+
+    assert output["footage_shots"] == 0
+    assert output["moving_shots"] == 0
+
+
+@pytest.mark.asyncio
+async def test_a_failing_search_never_fails_the_node(tmp_path, monkeypatch):
+    """A free lane that can break a paid run is worse than no free lane."""
+    async def boom(*_a, **_k):
+        raise RuntimeError("every source is down")
+
+    async def canned(ctx, **_kwargs):
+        return _plan({index: {"kind": "video"} for index in range(4)}), 0, "stub-llm"
+    monkeypatch.setattr(media_node, "ask_json", canned)
+    monkeypatch.setattr(media_node.footage, "find", boom)
+    output = (await media_node.broll_plan_node(_live(_context(tmp_path)))).output
+
+    assert output["footage_shots"] == 0
+    assert output["video_shots"] > 0, "the beats must still be planned as generated"
+
+
+@pytest.mark.asyncio
+async def test_the_sample_gate_never_samples_a_beat_nobody_will_generate(tmp_path, monkeypatch):
+    """The gate spends real money per distinct setup, and it reads the plan."""
+    async def found(*_a, **_k):
+        return [_footage_clip()]
+
+    async def canned(ctx, **_kwargs):
+        return _plan({index: {"kind": "video"} for index in range(4)}), 0, "stub-llm"
+    monkeypatch.setattr(media_node, "ask_json", canned)
+    monkeypatch.setattr(media_node.footage, "find", found)
+    output = (await media_node.broll_plan_node(_live(_context(tmp_path)))).output
+
+    sampled = [shot for shot in output["shots"] if str(shot.get("kind")) == "video"]
+    assert sampled == [], "a sourced beat must not look like a generated one to the gate"
