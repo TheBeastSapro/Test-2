@@ -87,3 +87,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add an explicit reproduction step before diagnosis on any product with a pipeline or multi-stage output: drive it end to end to a real artifact, including waiting for slow stages, and compare what exists on disk or in the database against what the interface exposes. Diff produced-artifacts against reachable-artifacts as a named check. Treat empty-state inspection as insufficient — most interesting states are the ones only reachable by actually completing the work.
 
 **Principle:** A defect of omission cannot be found by reading the code that omits it, because that code is locally correct. Run the product to its real output and compare what it produced against what it shows; the gap between the two is where this class of bug lives, and it is invisible from both the source and the empty state.
+
+### Observation 6: Reproduce the failing call in isolation before believing its error message
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** Diagnosing why a pipeline run died two stages after a human approval gate. The raised exception stated a specific cause: a data structure was empty.
+
+**Skill:** debugging-and-error-recovery
+**Type:** open-source
+**Phase/Area:** Reading a failure — treating the error text as evidence rather than as fact
+
+**Issue:** The exception said "the shortlist is empty". It was not empty; it held four entries, none of which carried the one field the caller filtered on. The guard was `next((c for c in items if c.get("id")), None)`, so a full list of id-less entries reached the same "nothing found" branch as an absent list, and the message hard-coded one of the two causes. Acting on the message would have meant investigating why the list failed to populate — a question with no answer, because it populated correctly. Calling the producing function directly in a throwaway script resolved it in one step: four candidates, every `voice_id` None. The real defect was upstream and structural (a descriptive catalogue with no vendor ids, offered through an approval gate that could not change the outcome), and none of it was reachable from the error text.
+
+**Suggested improvement:** Add an explicit step when a failure carries a specific stated cause: call the producing function in isolation and inspect what it actually returns before investigating the cause the message names. Treat any error whose text asserts a cause that the raising code did not distinguish — a falsy-filter collapsing "absent" and "present but unusable" into one branch — as an unverified claim. When the reproduction contradicts the message, fixing the message is part of the fix, not a cleanup.
+
+**Principle:** An error message is a hypothesis written by someone who did not have the failing data. Where a guard collapses several distinct conditions into one branch, the message can only name one of them and will name the wrong one whenever the other occurs. Reproduce the call and look at the real values before spending any effort on the cause the text asserts.
