@@ -67,6 +67,38 @@ def _is_api_path(path: str) -> bool:
     return path.startswith(_API_PREFIXES)
 
 
+def _error_page(request: Request, code: int, headline: str, detail: str):
+    """The error, rendered inside the ordinary shell.
+
+    Imports are local because this reaches back into the web routes, and importing
+    those at module scope would close a cycle: routes_web imports the app.
+    """
+    from ..auth import optional_user
+    from ..db import session_scope
+    from .routes_web import TEMPLATES, shell
+
+    # The shell wants a signed-in user and a session. Neither is guaranteed here —
+    # this runs for signed-out requests, and for crashes whose cause may be the
+    # database itself — so it falls back to a bare frame rather than raising a second
+    # error while reporting the first.
+    frame: dict = {"nav": "", "formats": [], "format_counts": {}, "credits": 0,
+                   "recent_runs": [], "user": None}
+    try:
+        with session_scope() as session:
+            user = optional_user(request, session)
+            if user is not None:
+                frame = shell(session, user, "")
+    except Exception:                                              # pragma: no cover
+        log.debug("error page rendered without a shell", exc_info=True)
+
+    return TEMPLATES.TemplateResponse(
+        request, "error.html",
+        {**frame, "settings": get_settings(), "code": code, "headline": headline,
+         "detail": detail, "path": request.url.path},
+        status_code=code,
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -180,35 +212,34 @@ def create_app() -> FastAPI:
         if not wants_html or _is_api_path(request.url.path):
             return await http_exception_handler(request, exc)
 
-        from ..auth import optional_user
-        from ..db import session_scope
-        from .routes_web import TEMPLATES, shell
-
         code = exc.status_code
         headline, detail = _ERROR_COPY.get(code, (
             "Something went wrong",
             str(exc.detail) if exc.detail else "No further detail was recorded.",
         ))
+        return _error_page(request, code, headline, detail)
 
-        # The shell needs a signed-in user and a session. Neither is guaranteed here —
-        # this handler runs for signed-out requests too — so the page falls back to a
-        # bare frame rather than raising a second error while reporting the first.
-        frame: dict = {"nav": "", "formats": [], "format_counts": {}, "credits": 0,
-                       "recent_runs": [], "user": None}
-        try:
-            with session_scope() as session:
-                user = optional_user(request, session)
-                if user is not None:
-                    frame = shell(session, user, "")
-        except Exception:                                          # pragma: no cover
-            log.debug("error page rendered without a shell", exc_info=True)
+    @app.exception_handler(Exception)
+    async def unhandled_error_handler(request: Request, exc: Exception):
+        """A crash, shown as a page rather than as the word "Internal Server Error".
 
-        return TEMPLATES.TemplateResponse(
-            request, "error.html",
-            {**frame, "settings": settings, "code": code, "headline": headline,
-             "detail": detail, "path": request.url.path},
-            status_code=code,
-        )
+        The 500 copy existed and nothing could reach it: only HTTPException was
+        handled, so an ordinary bug answered with Starlette's bare plain-text body —
+        no navigation, no sign the app was still running, and nothing saying whether
+        the run in progress had survived. This is the same defect the 404 had, on the
+        path where the operator is already having a bad time.
+
+        The traceback stays in the log and out of the page. It is already logged by
+        the server, and a stack trace on screen tells the operator nothing they can
+        act on while showing them file paths from inside the install.
+        """
+        log.exception("unhandled error on %s", request.url.path)
+        if "text/html" not in request.headers.get("accept", "") or _is_api_path(
+            request.url.path
+        ):
+            raise exc            # JSON callers keep the 500 they have always had.
+        headline, detail = _ERROR_COPY[500]
+        return _error_page(request, 500, headline, detail)
 
     @app.get("/healthz", include_in_schema=False)
     async def healthz() -> dict:

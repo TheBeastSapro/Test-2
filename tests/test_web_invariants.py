@@ -883,3 +883,60 @@ def test_every_status_the_error_page_claims_to_explain_has_copy_for_it():
         assert isinstance(code, int)
         assert headline and not headline.endswith(".")   # a headline, not a sentence
         assert len(detail) > 40                          # says something, not a label
+
+
+def _client_that_crashes():
+    """An app with one route that raises, and a client that does not re-raise.
+
+    `raise_server_exceptions=False` is what makes the client behave like a browser:
+    with it on, TestClient re-raises the original exception and there is no response
+    to inspect, which is the opposite of what is being tested here.
+    """
+    from fastapi.testclient import TestClient
+
+    from forgecast.api.main import create_app
+
+    app = create_app()
+
+    @app.get("/__crash_for_test")
+    def crash():
+        raise ValueError("deliberate")
+
+    return TestClient(app, raise_server_exceptions=False)
+
+
+def test_a_crash_shows_the_app_rather_than_the_words_internal_server_error():
+    """The 500 copy existed and nothing could reach it — only HTTPException was
+    handled, so an ordinary bug answered with Starlette's bare plain-text body."""
+    response = _client_that_crashes().get(
+        "/__crash_for_test", headers={"accept": "text/html"})
+
+    assert response.status_code == 500
+    assert response.headers["content-type"].startswith("text/html")
+    assert "Something failed on this machine" in response.text
+    assert 'href="/"' in response.text
+
+
+def test_a_crash_never_puts_the_traceback_on_the_page():
+    """It is already in the log, it tells the operator nothing they can act on, and
+    it prints paths from inside the install onto the screen."""
+    body = _client_that_crashes().get(
+        "/__crash_for_test", headers={"accept": "text/html"}).text
+
+    assert "Traceback" not in body
+    assert "ValueError" not in body
+    assert "deliberate" not in body
+
+
+def test_a_json_caller_still_gets_a_plain_500():
+    """Asserted on the body, not the content type. Re-raising hands the exception
+    back to Starlette's server-error middleware, whose fallback response carries no
+    headers at all — so a content-type assertion here would be testing the middleware
+    rather than the thing that matters, which is that a machine caller does not start
+    receiving a rendered page where it expects a payload."""
+    response = _client_that_crashes().get(
+        "/__crash_for_test", headers={"accept": "application/json"})
+
+    assert response.status_code == 500
+    assert "<html" not in response.text.lower()
+    assert "Something failed on this machine" not in response.text
