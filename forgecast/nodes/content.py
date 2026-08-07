@@ -328,9 +328,28 @@ async def script_node(ctx: NodeContext) -> NodeResult:
                 level="warning",
             )
 
+    # Read what came back, rather than trusting that the prompt was obeyed. The banned
+    # constructions have always been *requested*; nothing checked the output, and this
+    # file's own notes say twice that an instruction the model may treat as context is
+    # one it drops the moment the output gets long. A script is that output.
+    #
+    # It reports and never rewrites. The findings go on the script gate, where a person
+    # is already deciding whether this script is worth voicing — a checker that silently
+    # fixed its own findings would be one nobody could audit, and the gate would lose the
+    # one cheap chance to disagree.
+    from ..scripting.tells import check as check_tells
+
+    report = check_tells(" ".join(scene.get("narration", "") for scene in scenes))
+    data["tells"] = report.as_dict()
+    if report.tells:
+        ctx.log(f"{len(report.tells)} writing tell(s) to look at — see the gate",
+                level="warning")
+        for tell in report.tells[:6]:
+            ctx.log(f"  {tell.kind}: {tell.detail}", level="warning")
+
     ctx.log(
         f"script ready: {len(scenes)} scenes, {data['word_count']} words, "
-        f"~{data['estimated_seconds']:.0f}s"
+        f"~{data['estimated_seconds']:.0f}s, rhythm {report.rhythm:.2f}"
     )
     return NodeResult(output=data, credits=credits, provider=provider)
 

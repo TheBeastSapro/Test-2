@@ -243,6 +243,29 @@
     {% endfor %}
 
   {% elif gate.type == "script" %}
+    {# What the finished text actually contains, not what the prompt asked for. This is
+       the gate where somebody decides whether a script is worth paying to voice, so it
+       is the one place these findings can still be acted on cheaply. #}
+    {% set tells = out.get("tells") or {} %}
+    {% if tells.get("tells") %}
+      <div class="banner mt-0" style="border-color:var(--warn)">
+        <b>{{ tells["tells"]|length }} writing tell(s)</b>
+        <span class="muted">· {{ tells.get("words", 0) }} words · rhythm
+          {{ '%.2f'|format(tells.get("rhythm", 0)) }}</span>
+        {% for tell in tells["tells"][:8] %}
+          <div class="beat-row">
+            <div class="beat-head">{{ tell.kind }}
+              <span class="muted">· {{ tell.detail }}</span></div>
+            {% if tell.quote %}<p class="mono t-sm">“{{ tell.quote }}”</p>{% endif %}
+            {% if tell.instead %}<p>{{ tell.instead }}</p>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% elif tells %}
+      <p class="muted prose t-sm m-0">Nothing flagged in the writing —
+        {{ tells.get("words", 0) }} words, rhythm
+        {{ '%.2f'|format(tells.get("rhythm", 0)) }}.</p>
+    {% endif %}
     <dl class="kv">
       <dt>Title</dt><dd>{{ out.get("title", "—") }}</dd>
       <dt>Length</dt>
