@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 from ..graph.engine import NodeContext, NodeResult, node_handler
+from ..providers.base import ProviderError
 from ..providers.search import provider_for
 from ..research import research_topic
 from ..voice import casting_summary, render_samples, sample_line, shortlist, target_from_reference
@@ -116,6 +117,30 @@ async def voice_casting_node(ctx: NodeContext) -> NodeResult:
         ctx.log(line_out)
     if sample_meta.get("placeholder"):
         ctx.log(sample_meta.get("note", "samples are placeholders"), level="warning")
+
+    # Stop here if approving this gate cannot produce a narrator.
+    #
+    # The built-in roster describes voices and does not own them — no entry carries a
+    # vendor id until an account is connected and synced. With no vendor and no channel
+    # voice, this node still shortlists four names and still raises a gate, the operator
+    # still picks one, and the run dies at `hook` two stages later with the script and
+    # the thumbnail already paid for.
+    #
+    # That is the failure ARCHITECTURE.md's "gates must sit on the cheap stages" exists
+    # to prevent, arriving through a gate rather than around one: a decision point that
+    # cannot change the outcome is worse than no decision point, because it reads as
+    # progress. Fail here, name the fix, and leave the auditions on disk so the reasons
+    # are still there to read.
+    usable = [c for c in candidates if c.voice_id]
+    if not usable and not (ctx.channel.voice_id or str(ctx.params.get("voice_id") or "")):
+        raise ProviderError(
+            f"nothing here can narrate: {len(candidates)} voices were shortlisted and "
+            "none is owned by a connected account. The built-in roster is a description "
+            "of voices, not a source of them. Connect ElevenLabs or MiniMax in Settings "
+            "and sync, or set this channel's voice, then start the run again — stopping "
+            "now so the render is not paid for a video that cannot be narrated.",
+            provider="voice",
+        )
 
     # `selected` stays null. The gate's approval carries the operator's choice as an
     # override, and the voice node reads it from here.

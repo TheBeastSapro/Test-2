@@ -243,9 +243,25 @@ def resolve_voice_id(
     if fallback:
         return fallback, f"no audition available — using the channel voice {fallback}"
 
+    # Say which of the two it is. The message here read "the shortlist is empty" for
+    # both cases, and the common one is the other: the built-in catalogue describes
+    # voices without vendor IDs on purpose — it is matched against a connected
+    # account's real voices — so with no vendor connected the shortlist is *full* and
+    # every entry is unusable. Reporting that as empty sends whoever reads it looking
+    # for a missing shortlist that is sitting right there, and says nothing about the
+    # fix, which is to connect a vendor or set a channel voice.
+    if candidates:
+        raise ProviderError(
+            f"no voice to narrate with: {len(candidates)} auditions were shortlisted "
+            f"({', '.join(str(c.get('name') or '?') for c in candidates[:4])}) but none "
+            "carries a vendor voice id — the built-in roster describes voices and does "
+            "not own them. Connect ElevenLabs or MiniMax in Settings, or set the "
+            "channel's voice, then run again.",
+            provider="voice",
+        )
     raise ProviderError(
-        "no voice to narrate with: the casting gate selected none, the shortlist is "
-        "empty, and the channel has no voice_id",
+        "no voice to narrate with: the casting gate selected none, no voice was "
+        "shortlisted, and the channel has no voice_id",
         provider="voice",
     )
 
