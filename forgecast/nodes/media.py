@@ -823,6 +823,12 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
                 # can see it, and so a fallback further down has something to work from
                 # if the fetch fails.
                 "prompt": f"{entity['title']} — {shot.beat}",
+                # Carried as fields rather than parsed back out of `prompt`. The name
+                # card and the stat card are rendered from exactly these two, and
+                # recovering them from a display string later is a parser nobody asked
+                # for standing between the wiki and the screen.
+                "entity": entity["title"],
+                "stats": dict(entity.get("stats") or {}),
                 "asset": shot.asset,
                 "asset_url": str(asset.get("url") or ""),
                 "asset_page": str(asset.get("page") or ""),
@@ -1362,7 +1368,13 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                              "path": str(asset_path), "kind": "canon",
                              "source": "fandom", "seconds": seconds,
                              "composite": bool(shot.get("composite")),
+                             # The graphics this shot was planned to carry, and what
+                             # they are drawn from. `render` promotes them to the
+                             # scene's motion element — they exist on the shot list
+                             # only because the planner works in shots.
                              "overlays": list(shot.get("overlays") or []),
+                             "entity": shot.get("entity", ""),
+                             "stats": dict(shot.get("stats") or {}),
                              "beat": shot.get("beat", "")})
             continue
 

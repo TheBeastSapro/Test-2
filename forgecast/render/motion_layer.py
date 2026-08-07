@@ -343,3 +343,62 @@ def _stage(narration: str, seconds: float, preset: MotionPreset) -> list[str]:
 
     lines = [line for line in lines[:line_count] if len(line) >= 2]
     return lines if len(lines) > 1 else []
+
+
+# ----------------------------------------------------------- the planner's vocabulary
+#
+# `edit/segment.py` marks its shots with the words an editor writes on a shot list —
+# "name card", "stat card", "bubble: it can smell you". This module's kinds are
+# identifiers — `name_card`, `stat_card`, `bubble`. Two vocabularies for one set of
+# things, and the mapping between them is exactly the join a defaulting lookup absorbs
+# silently: an unmapped label falls through to "no motion" and the run renders a video
+# with none of the graphics its plan asked for, with nothing anywhere saying so.
+#
+# So the mapping is one table, in the module that owns the kinds, and it is tested.
+
+#: Planner label prefix -> this module's kind. Matched as a prefix because the gag
+#: carries its line in the same string: `bubble: it can smell you`.
+OVERLAY_KINDS: dict[str, str] = {
+    "name card": "name_card",
+    "stat card": "stat_card",
+    "bubble": "bubble",
+}
+
+#: Which one wins when a scene's shots ask for several. A scene is one motion plan, so
+#: this is a real choice and not a tiebreak: the name card opens the segment and is the
+#: element a viewer needs to have read before anything else on screen means anything.
+#: The gag beats the stat card because a stat card the eye skips is a stat card, and a
+#: joke that lands late is not a joke.
+OVERLAY_PRIORITY = ("name_card", "bubble", "stat_card")
+
+
+def from_overlays(overlays, *, entity: str = "", stats: dict | None = None) -> dict:
+    """One scene's `meta["motion"]` from the marks its shots carry, or `{}`.
+
+    Returns the explicit shape `plan` already reads — `{"kind", "lines"}` — rather than
+    a `MotionPlan`, because the scene may not survive to the plan (too short, motion
+    off) and those rules belong to `plan` alone.
+    """
+    found: dict[str, list[str]] = {}
+    for mark in overlays or ():
+        text = str(mark).strip()
+        label, _, argument = text.partition(":")
+        kind = OVERLAY_KINDS.get(label.strip().lower())
+        if kind is None:
+            continue
+        if kind == "name_card":
+            lines = [entity] if entity else []
+        elif kind == "stat_card":
+            # "label value" per row, which is the shape the branch in `apply` parses and
+            # the shape `research.fandom.stats_from` already produces.
+            lines = [f"{label_}  {value}" for label_, value in (stats or {}).items()
+                     if str(value).strip()]
+        else:
+            lines = [argument.strip()] if argument.strip() else []
+        if lines:
+            found[kind] = lines
+
+    for kind in OVERLAY_PRIORITY:
+        if kind in found:
+            return {"kind": kind, "lines": found[kind]}
+    return {}

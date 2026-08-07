@@ -18,6 +18,7 @@ Nothing here touches a network.
 
 from __future__ import annotations
 
+import inspect
 import json
 from pathlib import Path
 
@@ -487,3 +488,75 @@ async def test_a_subject_that_cannot_be_fetched_is_a_hole_and_never_a_substitute
         await media_node.shots_node(context)
 
     assert images.prompts == [], "a failed canon fetch bought a generated stand-in"
+
+
+# ------------------------------------------------------- the planner's marks on screen
+
+
+def test_the_planner_s_words_map_onto_the_renderer_s_kinds():
+    """Two vocabularies for one set of things, and the mapping is where it goes quiet.
+
+    `edit/segment.py` writes what an editor writes on a shot list — "name card",
+    "bubble: it can smell you". `render/motion_layer.py` dispatches on identifiers —
+    `name_card`, `bubble`. An unmapped label falls through to no motion, so the run
+    renders a video with none of the graphics its plan chose and nothing says so.
+    """
+    from forgecast.render.motion_layer import OVERLAY_KINDS, from_overlays
+
+    assert from_overlays(["name card"], entity="Seek") == {
+        "kind": "name_card", "lines": ["Seek"]}
+    assert from_overlays(["bubble: it can smell you"]) == {
+        "kind": "bubble", "lines": ["it can smell you"]}
+    assert from_overlays(["stat card"], stats={"height": "3,3 m"}) == {
+        "kind": "stat_card", "lines": ["height  3,3 m"]}
+
+    # Every label the planner can write has a kind here. This is the assertion that
+    # fails when somebody adds a fourth element to the planner and stops there.
+    from forgecast.edit import segment as planner
+
+    source = inspect.getsource(planner)
+    for label in OVERLAY_KINDS:
+        assert f'"{label}' in source, f"{label!r} is mapped but the planner never writes it"
+
+
+def test_a_scene_gets_one_element_and_the_name_card_wins():
+    """Motion is applied per scene — `assemble_video` says so — so several marks on one
+    scene's shots is a real choice. The name card opens the segment and is the thing a
+    viewer has to read before anything else on screen means anything."""
+    from forgecast.render.motion_layer import from_overlays
+
+    both = from_overlays(["stat card", "bubble: hi", "name card"],
+                         entity="Seek", stats={"height": "3,3 m"})
+
+    assert both == {"kind": "name_card", "lines": ["Seek"]}
+
+
+def test_an_element_with_nothing_to_draw_is_not_planned():
+    """A stat card for a page with no stats is an empty box, and a name card with no
+    name is worse than no card."""
+    from forgecast.render.motion_layer import from_overlays
+
+    assert from_overlays(["stat card"], entity="Seek", stats={}) == {}
+    assert from_overlays(["name card"], entity="") == {}
+    assert from_overlays(["something nobody defined"], entity="Seek") == {}
+
+
+def test_a_stat_row_of_prose_is_reduced_to_its_figures_and_never_invents_one():
+    """Wiki infoboxes write sentences into number fields.
+
+    Siren Head's height is "Varies, though commonly set at 40 feet/12.19 meters."
+    Truncated to a row it reads "Varies, though commonly set at 40…" — losing the
+    figure and keeping the hedge, which is the worst of both. Every value below is live
+    off a real page.
+    """
+    from forgecast.motion.presets import STAT_VALUE_CHARS, _figures
+
+    assert _figures("Varies, though commonly set at 40 feet/12.19 meters.",
+                    STAT_VALUE_CHARS) == "40 feet / 12.19 meters"
+    # No measurement in it, so nothing is invented — it truncates like any other prose.
+    assert _figures("Variable (usually dwarfs humans in size)",
+                    STAT_VALUE_CHARS) == "Variable (usually dwarfs humans in size)"
+    # A real answer that happens not to be a number.
+    assert _figures("Immeasurable", STAT_VALUE_CHARS) == "Immeasurable"
+    # Already fits, so it is never touched — including its European decimal comma.
+    assert _figures("3,3 m", STAT_VALUE_CHARS) == "3,3 m"

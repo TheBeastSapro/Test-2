@@ -63,7 +63,15 @@ async def render_node(ctx: NodeContext) -> NodeResult:
                 seconds=seconds,
                 visual_path=usable[0] if usable else None,
                 narration=entry["narration"],
-                meta={"on_screen_text": entry.get("on_screen_text", "")},
+                # The graphics the segment planner decided, promoted from its shots to
+                # this scene. Motion is applied per scene here — `assemble_video` says
+                # so plainly — so a per-shot mark can only land as its scene's element,
+                # and `from_overlays` picks the one that wins. Without this the planner
+                # chose a name card, a stat card and a gag for every segment and the
+                # renderer drew none of them: `plan` reads `meta["motion"]` and nothing
+                # ever wrote it.
+                meta={"on_screen_text": entry.get("on_screen_text", ""),
+                      **_scene_motion(found)},
                 plates=usable,
             )
         )
@@ -292,6 +300,29 @@ def _plates_by_scene(produced: list) -> dict[int, list[dict]]:
     for entries in grouped.values():
         entries.sort(key=lambda item: int(item.get("plate_index") or 0))
     return grouped
+
+
+def _scene_motion(produced: list[dict]) -> dict:
+    """`{"motion": {...}}` for a scene whose shots asked for a graphic, else `{}`.
+
+    Only canon shots carry marks — they are the ones a written plan chose the graphics
+    for. Everything else keeps `plan`'s own rules, which is why this returns an empty
+    dict rather than a `{"motion": None}` that would read as "explicitly nothing".
+    """
+    from ..render.motion_layer import from_overlays
+
+    marks: list[str] = []
+    entity = ""
+    stats: dict = {}
+    for shot in produced or ():
+        marks += [str(mark) for mark in (shot.get("overlays") or [])]
+        entity = entity or str(shot.get("entity") or "")
+        stats = stats or dict(shot.get("stats") or {})
+    if not marks:
+        return {}
+
+    chosen = from_overlays(marks, entity=entity, stats=stats)
+    return {"motion": chosen} if chosen else {}
 
 
 def _motion_for(ctx: NodeContext, scenes: list[Scene], script: dict):

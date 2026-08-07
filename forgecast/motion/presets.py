@@ -668,6 +668,11 @@ STAT_X = 0.055
 STAT_TOP = 0.62
 STAT_STEP = 0.062
 
+#: How many characters of value a stat row holds before it has to be shortened. One
+#: constant, read by both the row builder and the shortener, because two copies of a
+#: width budget disagreeing is a row that is trimmed to a length it did not need to be.
+STAT_VALUE_CHARS = 42
+
 
 def _clean(text: str, limit: int) -> str:
     """One line, no newlines, trimmed at a word."""
@@ -676,6 +681,42 @@ def _clean(text: str, limit: int) -> str:
         return flat
     cut = flat[:limit].rsplit(" ", 1)[0]
     return (cut or flat[:limit]).rstrip(",;:-") + "…"
+
+
+#: A number and a unit, as wiki infoboxes actually write them. The decimal separator is
+#: either — the Doors wiki writes `3,3 m` — and the unit list is what these pages use
+#: rather than everything SI defines.
+_MEASURE = re.compile(
+    r"\d[\d.,]*\s*(?:kilometres|kilometers|centimetres|centimeters|kilograms|millimetres"
+    r"|millimeters|tonnes|pounds|inches|metres|meters|tons|feet|foot|lbs|km|cm|mm|kg|ft|"
+    r"in|mi|m|t)\b",
+    re.I,
+)
+
+
+def _figures(text: str, limit: int) -> str:
+    """A stat row's value, preferring the measurements in it when the prose will not fit.
+
+    Wiki infoboxes write sentences into number fields: Siren Head's height is "Varies,
+    though commonly set at 40 feet/12.19 meters." Truncated to a row that reads "Varies,
+    though commonly set at 40…", which is the worst of both — it loses the figure *and*
+    keeps the hedge. The figures are the thing a stat card is for.
+
+    Only when the prose does not fit, and only when there are figures. "Immeasurable" is
+    a real answer and stays; "Variable (usually dwarfs humans in size)" has no
+    measurement in it and falls through to plain truncation; "3,3 m" is already short
+    and is never touched. Every one of those is a live value off a real page.
+    """
+    flat = " ".join(str(text or "").split())
+    if len(flat) <= limit:
+        return flat
+    found = [match.group(0) for match in _MEASURE.finditer(flat)]
+    if not found:
+        return _clean(flat, limit)
+    # Two at most, which is how these are written — an imperial figure and its metric
+    # conversion. A third is a different measurement of a different thing.
+    joined = " / ".join(" ".join(part.split()) for part in found[:2])
+    return joined if len(joined) <= limit else _clean(joined, limit)
 
 
 def name_card(preset: MotionPreset, name: str, *, start: float, width: int, height: int,
@@ -708,7 +749,8 @@ def stat_card(preset: MotionPreset, stats: dict, *, start: float, width: int,
     video do not put height in different places.
     """
     order = ("height", "weight", "species", "status")
-    rows = [(label, _clean(stats.get(label), 42)) for label in order if stats.get(label)]
+    rows = [(label, _figures(stats.get(label), STAT_VALUE_CHARS))
+            for label in order if stats.get(label)]
     if not rows:
         return []
 

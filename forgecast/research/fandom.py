@@ -463,8 +463,23 @@ async def page(wiki: str, title: str, *, timeout: float = 20.0) -> Entity | None
 
 
 async def lookup(wiki: str, query: str, *, timeout: float = 20.0) -> Entity | None:
-    """Search then read: the call a caller that has a name and not a title wants."""
+    """Read the page by that name, and search only if there is not one.
+
+    The direct read comes first because a page with the asked-for title *is* the answer,
+    and searching for it is a worse route to the same thing. Measured, not assumed: the
+    Trevor Henderson wiki's own search ranks `Siren Head/Gallery`, `Light head` and
+    `Traffic light head` above `Siren Head`, so a search-first lookup returned nothing
+    usable for the single most famous entity on that wiki — while `page(wiki, "Siren
+    Head")` returns it with artwork and two beats. MediaWiki resolves redirects and
+    case on the direct read, so this also catches the near-misses a caller types.
+    """
+    direct = await page(wiki, query, timeout=timeout)
+    if direct is not None and direct.usable:
+        return direct
+
     for title in await search(wiki, query, limit=3, timeout=timeout):
+        if direct is not None and title == direct.title:
+            continue                    # already read, already rejected
         found = await page(wiki, title, timeout=timeout)
         if found is not None and found.usable:
             return found
