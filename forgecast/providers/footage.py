@@ -44,11 +44,14 @@ operator lane exists precisely so that there does not need to be one.
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import quote_plus
 
 import httpx
 
@@ -516,6 +519,12 @@ async def find(
         ("Internet Archive", search_archive(query, limit=limit)),
         ("Pexels", search_pexels(query, api_key=pexels_key, limit=limit)),
         ("Pixabay", search_pixabay(query, api_key=pixabay_key, limit=limit)),
+        # Last, because its licence is the least firmly established of the four: a mark
+        # the uploader applied themselves, which this app cannot verify and which the
+        # sort below therefore ranks under everything owing no credit. It is also the
+        # only keyless source that reaches anything recent, so on an install with no
+        # vendor keys it is the difference between the free lane working and not.
+        ("YouTube CC", search_youtube_cc(query, limit=limit)),
     )
     for label, coroutine in attempts:
         try:
@@ -737,3 +746,117 @@ def _as_int(value) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+# ------------------------------------------------------------------- YouTube, CC only
+
+#: YouTube's own Creative Commons search filter, as the `sp` parameter its results page
+#: takes. There is exactly one CC option in that menu and this is it — decoded, it is the
+#: protobuf for "licence: Creative Commons".
+_CC_FILTER = "EgIwAQ%3D%3D"
+
+#: How many results to read. Small on purpose: this lane returns the loosest matches of
+#: the four sources, so the cost of reading further is a longer wait for worse candidates.
+_CC_RESULTS = 10
+
+
+async def search_youtube_cc(query: str, *, limit: int = 8) -> list[FootageClip]:
+    """YouTube, restricted to the uploads their uploader marked Creative Commons.
+
+    The fourth source in the operator's list and the only one that reaches anything both
+    recent and keyless. Prelinger and NASA are genuinely useful and genuinely old; a
+    channel about anything from this decade gets nothing from them.
+
+    Discovery goes through `research.keyless._run`, which is the desk's existing reach
+    and the one place a subprocess is started here. A second runner would be a fifth
+    fetcher with its own timeout and its own way of failing at three in the morning —
+    and it would also escape the test suite's refusal to let a real yt-dlp run happen,
+    which is what stops this lane quietly calling YouTube from a test.
+
+    ## What the CC mark is and is not
+
+    YouTube offers one Creative Commons option and the uploader ticks it themselves. On
+    their own footage that is a real grant of CC BY. On a re-upload of someone else's
+    work it is a mistake, and this app cannot tell the two apart from a search result.
+
+    So `by` is recorded, which means the clip is usable and **owes a credit** — and the
+    credit is the point. `attribution_markdown` writes the uploader and the URL beside
+    the video, so what was relied on is stated rather than assumed. The same reasoning
+    the scene locator uses for its own CC lane, which is deliberately never asked about a
+    named title for exactly this reason: a stranger's tick on a studio film would
+    otherwise launder a rip through a checkbox.
+
+    This lane is asked only generic subject queries — "undersea cable on the seabed" —
+    because that is all a shot prompt ever is. It is never handed a film title.
+    """
+    binary = _executable()
+    if not binary:
+        return []
+
+    url = (f"https://www.youtube.com/results?search_query={quote_plus(query)}"
+           f"&sp={_CC_FILTER}")
+    command = [
+        *binary, "--flat-playlist", "--dump-single-json",
+        "--playlist-end", str(max(1, min(int(_CC_RESULTS), 25))),
+        "--no-warnings", "--ignore-config",
+        *_cookie_args(),
+        url,
+    ]
+    try:
+        finished = await asyncio.to_thread(_keyless_run, command)
+    except Exception as exc:
+        log.warning("YouTube CC lane skipped: %s", exc)
+        return []
+    if finished.returncode != 0:
+        log.warning("YouTube CC lane skipped: %s", (finished.stderr or "")[-200:])
+        return []
+
+    try:
+        payload = json.loads(finished.stdout or "{}")
+    except json.JSONDecodeError:
+        return []
+
+    clips: list[FootageClip] = []
+    for entry in (payload.get("entries") or [])[:limit]:
+        if not isinstance(entry, dict):
+            continue
+        video_id = str(entry.get("id") or "")
+        if not video_id:
+            continue
+        clips.append(FootageClip(
+            url=f"https://www.youtube.com/watch?v={video_id}",
+            title=str(entry.get("title") or video_id),
+            creator=str(entry.get("uploader") or entry.get("channel") or "unknown"),
+            # The uploader's own mark. Real enough to use and to credit; not a licence
+            # this app established, which is what the credit line exists to say.
+            licence="by",
+            source="youtube_cc",
+            landing_url=f"https://www.youtube.com/watch?v={video_id}",
+            licence_url="https://creativecommons.org/licenses/by/3.0/",
+            seconds=float(entry.get("duration") or 0.0),
+            width=int(entry.get("width") or 0),
+            flag_reason="Creative Commons as marked by the uploader; the mark is theirs "
+                        "and was not verified here.",
+        ))
+    return clips
+
+
+def _executable() -> list[str] | None:
+    from ..ytdlp import command
+    return command()
+
+
+def _cookie_args() -> list[str]:
+    from ..ytdlp import cookie_args
+    return cookie_args()
+
+
+def _keyless_run(command: list[str]):
+    """Bounce to `research.keyless._run` at call time, not import time.
+
+    Imported inside the function because a test substitutes `keyless._run`, and a
+    module-level `from ... import _run` would bind the original before the substitution
+    happens — leaving a lane that reaches YouTube from the suite.
+    """
+    from ..research import keyless
+    return keyless._run(command)

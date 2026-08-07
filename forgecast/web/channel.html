@@ -427,7 +427,8 @@
           <td class="muted">{{ row.reach }}</td>
           <td>
             {% if row.ready %}<span class="status completed">searching</span>
-            {% else %}<span class="status queued">needs {{ row.key }}</span>{% endif %}
+            {% elif row.key %}<span class="status queued">needs {{ row.key }}</span>
+            {% else %}<span class="status queued">needs yt-dlp</span>{% endif %}
           </td>
         </tr>
       {% endfor %}
@@ -437,9 +438,10 @@
     <div class="banner warn" style="margin:14px 0 0">
       <strong>The free lane only reaches archive material.</strong>
       NASA and the Internet Archive need no key, and both are old — a channel about
-      anything recent will rarely get a free beat from them. Pexels and Pixabay are
-      where a modern shot comes from. Both keys are free, and both meter rather than
-      bill, so neither can run up a balance.
+      anything recent will rarely get a free beat from them. The three that reach
+      this decade are all unavailable: Pexels and Pixabay want a key (both free,
+      both meter rather than bill, so neither can run up a balance), and the
+      YouTube Creative Commons lane wants yt-dlp, which Setup installs.
     </div>
   {% endif %}
 </div>

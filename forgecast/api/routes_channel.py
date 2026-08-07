@@ -106,10 +106,25 @@ def _footage_lane_state() -> dict:
         {"name": "Pixabay", "reach": "modern stock footage",
          "ready": bool(str(getattr(settings, "pixabay_api_key", "") or "").strip()),
          "key": "FORGECAST_PIXABAY_API_KEY"},
+        # Keyless and the only one of the five that reaches anything recent, which is why
+        # `modern` counts it. It needs yt-dlp rather than a key, and yt-dlp is a base
+        # dependency — so on a working install this is always searching.
+        {"name": "YouTube (Creative Commons)",
+         "reach": "recent footage the uploader marked CC BY — owes a credit",
+         "ready": _ytdlp_present(), "key": ""},
     ]
     return {"sources": sources,
             "ready": sum(1 for one in sources if one["ready"]),
-            "modern": any(one["ready"] for one in sources if one["key"])}
+            # Whether anything here reaches this decade. NASA and the Archive do not, and
+            # a channel about anything recent that is told only "footage first: on" would
+            # wait for free beats that can never arrive.
+            "modern": any(one["ready"] for one in sources
+                          if one["key"] or one["name"].startswith("YouTube"))}
+
+
+def _ytdlp_present() -> bool:
+    from ..ytdlp import available
+    return available()
 
 
 def motion_backend_state(channel: Channel) -> dict:

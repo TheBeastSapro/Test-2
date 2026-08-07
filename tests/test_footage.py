@@ -7,6 +7,7 @@ that reads as though Forgecast checked something, beside a file nobody checked.
 
 from __future__ import annotations
 
+import json as _json
 import subprocess
 from pathlib import Path
 
@@ -490,3 +491,90 @@ async def test_a_manifest_that_cannot_be_read_resolves_to_nothing(monkeypatch):
     monkeypatch.setattr(footage, "_client", lambda: _Broken(None))
     clip = _clip(source="nasa", licence="usgov", url="https://x.test/collection.json")
     assert await footage.resolve_media_url(clip) == ""
+
+
+# ------------------------------------------------------- YouTube, Creative Commons only
+#
+# The fourth source in the operator's list, and the only keyless one that reaches
+# anything recent — Prelinger and NASA are genuinely useful and genuinely old.
+
+def _cc_payload(entries):
+    return _json.dumps({"entries": entries})
+
+
+class _Finished:
+    def __init__(self, stdout="", stderr="", returncode=0):
+        self.stdout, self.stderr, self.returncode = stdout, stderr, returncode
+
+
+@pytest.mark.asyncio
+async def test_the_cc_lane_asks_youtube_for_its_creative_commons_filter(monkeypatch):
+    """One CC option exists in that menu, and `sp` is how it is requested."""
+    seen = {}
+
+    def runner(command):
+        seen["command"] = command
+        return _Finished(_cc_payload([]))
+
+    monkeypatch.setattr(footage, "_executable", lambda: ["yt-dlp"])
+    monkeypatch.setattr(footage, "_keyless_run", runner)
+    await footage.search_youtube_cc("undersea cable")
+
+    url = seen["command"][-1]
+    assert "youtube.com/results" in url
+    assert "sp=EgIwAQ%3D%3D" in url, "without the filter this searches all of YouTube"
+    assert "undersea+cable" in url
+
+
+@pytest.mark.asyncio
+async def test_a_cc_result_owes_a_credit_and_says_the_mark_is_the_uploader_s(monkeypatch):
+    monkeypatch.setattr(footage, "_executable", lambda: ["yt-dlp"])
+    monkeypatch.setattr(footage, "_keyless_run", lambda _c: _Finished(_cc_payload([
+        {"id": "abc123", "title": "undersea cable being laid", "uploader": "Someone",
+         "duration": 42.0},
+    ])))
+    clips = await footage.search_youtube_cc("undersea cable")
+
+    assert len(clips) == 1
+    clip = clips[0]
+    assert clip.licence == "by"
+    assert clip.commercially_safe is True
+    assert clip.needs_attribution is True, "a CC BY clip must ship a credit"
+    assert "not verified here" in clip.flag_reason
+    assert clip.url == "https://www.youtube.com/watch?v=abc123"
+
+
+@pytest.mark.asyncio
+async def test_the_cc_lane_is_silent_when_yt_dlp_is_absent(monkeypatch):
+    monkeypatch.setattr(footage, "_executable", lambda: None)
+    assert await footage.search_youtube_cc("anything") == []
+
+
+@pytest.mark.asyncio
+async def test_a_failing_cc_lane_returns_nothing_rather_than_raising(monkeypatch):
+    """One source down is not a reason to fail a search three others answered."""
+    monkeypatch.setattr(footage, "_executable", lambda: ["yt-dlp"])
+    monkeypatch.setattr(footage, "_keyless_run",
+                        lambda _c: _Finished("", "Sign in to confirm", 1))
+    assert await footage.search_youtube_cc("anything") == []
+
+    def boom(_c):
+        raise OSError("no such binary")
+    monkeypatch.setattr(footage, "_keyless_run", boom)
+    assert await footage.search_youtube_cc("anything") == []
+
+
+@pytest.mark.asyncio
+async def test_unparseable_output_is_not_mistaken_for_results(monkeypatch):
+    monkeypatch.setattr(footage, "_executable", lambda: ["yt-dlp"])
+    monkeypatch.setattr(footage, "_keyless_run", lambda _c: _Finished("not json"))
+    assert await footage.search_youtube_cc("anything") == []
+
+
+@pytest.mark.asyncio
+async def test_a_cc_clip_sorts_below_one_owing_no_credit():
+    """`find` ranks by how firmly the licence is established, not by footage quality."""
+    owing = _clip(licence="by", source="youtube_cc", url="https://youtu.be/x", width=1920)
+    free = _clip(licence="usgov", source="nasa", url="https://x.test/n.mp4", width=1920)
+    ordered = sorted([owing, free], key=lambda c: (c.needs_attribution, -c.width))
+    assert ordered[0].source == "nasa"
