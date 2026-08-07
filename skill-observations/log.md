@@ -231,3 +231,35 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Before committing a new module, run an explicit reachability check: grep for its import across the production tree, excluding the file itself and the test directory, and confirm a real caller exists. If none does, either wire it in the same commit or say plainly in the message that it is unreachable and name the commit that will connect it. Add the check to the definition of done for new files, alongside tests passing — and treat a caller that is only a test as no caller at all. Where the codebase already names this defect, assume you are about to commit it rather than assuming you are the exception.
 
 **Principle:** Reachability is invisible from inside the file being written, so it has to be checked from outside by a mechanical sweep rather than by judgement. Knowing a project's most common defect does not protect you from it; the sweep does, and it is cheap enough that there is no case for skipping it.
+
+### Observation 15: Relaxing an over-strict filter can delete the intent it was protecting
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** Fixing a planner that reused three images across eight shots while nine sat unused, in a codebase whose named failure mode is exactly that kind of repetition.
+
+**Skill:** code-simplification
+**Type:** open-source
+**Phase/Area:** Fixing an over-constraint
+
+**Issue:** A selection step filtered a pool down to one shape of asset, and on real data that left it cycling three items across eight slots with nine candidates untouched. The fix looked obvious: stop excluding, widen the pool, order it so the preferred shape comes first. Every item now reached the output and the repetition was gone. But the filter had been encoding two things at once — an exclusion, which was the bug, and a preference for what should come *first*, which was the point. With a cursor that carried across calls, ordering the pool only shifted the phase of a modulo cycle, so the preference decided nothing at all and the output opened on whatever the arithmetic happened to land on. The relaxation had quietly deleted the intent along with the defect, and it looked completely correct: the metric I had set out to fix was fixed. What caught it was writing the assertion for the surviving intent — "it still leads on the preferred shape" — and watching it fail.
+
+**Suggested improvement:** When removing a constraint that turned out to be too strict, name what the constraint was *for* before deleting it, and write a separate assertion for that intent in the same change. A constraint usually encodes at least two things — what must not happen, and what should be preferred — and relaxing it addresses the first while silently dropping the second. If the intent cannot be restated as its own testable rule, that is the signal that the relaxation has removed a behaviour rather than a restriction. Assert on the intent, not only on the metric that prompted the fix.
+
+**Principle:** An over-strict filter is doing two jobs, and loosening it only ever fixes one of them. The preference a constraint enforced has to be re-expressed explicitly, or it disappears in the fix and takes the design decision with it.
+
+### Observation 16: Consult your own measurements before making the choice they already answer
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** Building a compositing step whose design question had already been measured and written into a reference document in an earlier session of the same project.
+
+**Skill:** source-driven-development
+**Type:** open-source
+**Phase/Area:** Choosing between plausible implementations
+
+**Issue:** I needed a background for a composited subject and picked the source that was nearest to hand — other images from the same page. It was defensible, it cost nothing, and it was wrong. Rendering one frame and *looking at it* showed why: those images were gameplay screenshots, so the finished shot carried a heads-up display along the bottom and a player avatar in the corner. The correct answer had been measured weeks earlier and written into this project's own reference document as a plain table of asset provenance — roughly seventy per cent sourced artwork against ten per cent generated background plates — with a paragraph explaining that generation is used only for the plate. I had written that table. I did not re-read it before choosing, because the choice felt like an implementation detail rather than a question the research had covered, and no test would ever have caught the difference.
+
+**Suggested improvement:** When a project carries its own measured reference for a domain, re-read the relevant section at the moment of each design choice inside that domain, not only at the start of the work. Treat a decision that *feels* like a local implementation detail as the most likely place to have skipped the reference, because those are the choices made without looking anything up. And for anything whose output is visual or otherwise perceptual, render one and look at it before committing: the defect here was obvious in under a second by eye and invisible to every automated check, including the ones written specifically for that code path.
+
+**Principle:** Research already done is only worth what it is re-read for. A measurement written down in an earlier session does not reach the decision it was made for unless it is deliberately consulted at that decision — and for perceptual output, looking at one artefact is a stronger check than any assertion about it.
