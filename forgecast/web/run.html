@@ -3,7 +3,32 @@
 
 {% block head %}
 <style>
-  .graph-wrap { position: relative; overflow-x: auto; padding: 4px 0 8px; }
+  /* A long-form pipeline is eight layers wide and does not fit any window, so this
+     scrolls — and did so with no sign that it was scrolling. On a platform with
+     overlay scrollbars the graph simply ended at the card's edge, mid-node, and the
+     stage the run was actually on could be entirely off-screen with nothing saying
+     to look for it. Three things fix that: a fade at each end that appears only when
+     there is more that way, a scrollbar that stays visible, and the load-time scroll
+     below that puts the active stage in view. */
+  .graph-wrap { position: relative; overflow-x: auto; padding: 4px 0 8px;
+                scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+  .graph-wrap::-webkit-scrollbar { height: 8px; }
+  .graph-wrap::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 999px; }
+  .graph-wrap::-webkit-scrollbar-track { background: transparent; }
+
+  /* The fades live on the card, not on the scroller: a child of an `overflow-x`
+     element scrolls away with the content, which is the one thing an edge marker
+     must not do. */
+  .graph-frame { position: relative; }
+  .graph-frame::before, .graph-frame::after {
+    content: ""; position: absolute; top: 0; bottom: 10px; width: 46px;
+    pointer-events: none; z-index: 3; opacity: 0;
+    transition: opacity var(--motion) var(--ease);
+  }
+  .graph-frame::before { left: 0;  background: linear-gradient(to right, var(--raise), transparent); }
+  .graph-frame::after  { right: 0; background: linear-gradient(to left,  var(--raise), transparent); }
+  .graph-frame[data-more~="left"]::before  { opacity: 1; }
+  .graph-frame[data-more~="right"]::after  { opacity: 1; }
   .graph { display: flex; gap: 46px; align-items: flex-start;
            position: relative; min-width: max-content; padding: 6px 2px; }
   .layer { display: flex; flex-direction: column; gap: 14px; min-width: 176px; }
@@ -78,7 +103,12 @@
 {% if run.error %}<div class="banner mt-6">{{ run.error }}</div>{% endif %}
 
 <h2>Pipeline</h2>
-<div class="card graph-wrap">
+{# The card is the frame and a child is the scroller, rather than the card scrolling
+   itself. The edge fades are absolutely positioned, and a child of an `overflow-x`
+   element scrolls away with the content — an edge marker that leaves the edge is the
+   one thing it cannot do. #}
+<div class="card graph-frame" id="graph-frame">
+ <div class="graph-wrap" id="graph-wrap">
   <div class="graph" id="graph">
     <svg id="wires"></svg>
     {% for layer in layers %}
@@ -109,6 +139,7 @@
       </div>
     {% endfor %}
   </div>
+ </div>
 </div>
 
 {% if gate %}
@@ -288,6 +319,49 @@
   drawWires();
   window.addEventListener("resize", drawWires);
 
+  // ── the graph's edges ────────────────────────────────────────────────────
+  //
+  // Eight layers of long-form pipeline are wider than any window, so this has
+  // always scrolled. What it never did was say so, or start anywhere useful: a
+  // run stopped at `render` opened on a graph showing brief through hook, with
+  // the stage it was actually waiting on off the right edge and nothing on
+  // screen suggesting there was a right edge to look past.
+  const wrap = document.getElementById("graph-wrap");
+  const frame = document.getElementById("graph-frame");
+
+  function markEdges() {
+    const more = [];
+    // A 1px slack: sub-pixel layout leaves scrollLeft a fraction short of the end
+    // at rest, and a fade that never quite turns off is worse than no fade.
+    if (wrap.scrollLeft > 1) more.push("left");
+    if (wrap.scrollLeft + wrap.clientWidth < wrap.scrollWidth - 1) more.push("right");
+    frame.dataset.more = more.join(" ");
+  }
+  wrap.addEventListener("scroll", markEdges, { passive: true });
+  window.addEventListener("resize", markEdges);
+  markEdges();
+
+  // Open on the stage that is live, not on the stage that is first. Priority is
+  // the order an operator cares about: what stopped, what is waiting on them,
+  // what is running — and only then the last thing that finished.
+  function focusLive(smooth) {
+    const live =
+      graph.querySelector('.node[data-status="failed"]') ||
+      graph.querySelector('.node[data-status="awaiting_approval"]') ||
+      graph.querySelector('.node[data-status="running"]') ||
+      [...graph.querySelectorAll('.node[data-status="completed"]')].pop();
+    if (!live) return;
+
+    // Centred by hand rather than with scrollIntoView, which scrolls every
+    // scrollable ancestor — including the page — and would yank the window down
+    // to the graph on each poll.
+    const want = live.offsetLeft - (wrap.clientWidth - live.offsetWidth) / 2;
+    const to = Math.max(0, Math.min(want, wrap.scrollWidth - wrap.clientWidth));
+    if (Math.abs(to - wrap.scrollLeft) < 4) return;
+    wrap.scrollTo({ left: to, behavior: smooth ? "smooth" : "auto" });
+  }
+  focusLive(false);
+
   // Live updates. Falls back to a reload loop if EventSource is unavailable.
   const log = document.getElementById("log");
   if (!window.EventSource) return;
@@ -322,6 +396,7 @@
     runStatus.className = "status " + state.status;
     document.getElementById("spent").textContent = state.credits_spent;
     let gateAppeared = false;
+    let moved = false;
     for (const [key, status] of Object.entries(state.nodes)) {
       const node = document.getElementById("node-" + key);
       if (!node || node.dataset.status === status) continue;
@@ -330,8 +405,13 @@
       badge.textContent = status;
       badge.className = "s status " + status;
       if (status === "awaiting_approval") gateAppeared = true;
+      moved = true;
     }
     drawWires();
+    // Follow the run along the graph, but only when a stage actually changed —
+    // the state event arrives on a timer whether or not anything moved, and a
+    // scroller that re-centres every few seconds cannot be read or dragged.
+    if (moved) { markEdges(); focusLive(true); }
     // The gate panel is server-rendered, so a new gate needs one reload to appear.
     if (gateAppeared && !document.querySelector("form[action*='/gate/']")) {
       window.location.reload();
