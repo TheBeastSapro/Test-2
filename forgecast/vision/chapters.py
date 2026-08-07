@@ -379,3 +379,84 @@ def _ordered(chapters: list[Chapter]) -> bool:
     """
     numbered = sum(1 for c in chapters if _ORDINAL.match(c.label))
     return numbered >= max(2, int(len(chapters) * 0.6))
+
+
+# ------------------------------------------------------------------------- writing
+#
+# The other direction, and it lives here because this module already owns the format.
+# A parser and a writer that disagree about what a mark looks like is a defect nobody
+# finds until a published description silently fails to become chapters — the video
+# just does not have them, with no error anywhere.
+#
+# The audience of the format this app targets writes these indexes by hand in the
+# comments. That is a request, made repeatedly, for something publishing costs nothing.
+
+#: YouTube's own floor for a chapter's length. A shorter one does not make the list
+#: shorter — it makes the whole description fail to parse as chapters, so the video ends
+#: up with none at all. That is why this is enforced by dropping the run rather than by
+#: dropping the offending mark: a partial list whose remaining gaps are still short
+#: fails the same way, and silently.
+MIN_CHAPTER_SECONDS = 10.0
+
+#: The first mark has to be exactly this, or there are no chapters. Not "close to zero"
+#: — the parser above accepts `0:01` because creators write it, and YouTube does not.
+FIRST_MARK = 0.0
+
+
+def stamp(seconds: float) -> str:
+    """A timestamp in the shape YouTube requires: `m:ss`, or `h:mm:ss` past an hour."""
+    total = max(0, int(seconds))
+    hours, rest = divmod(total, 3600)
+    minutes, secs = divmod(rest, 60)
+    if hours:
+        return f"{hours}:{minutes:02d}:{secs:02d}"
+    return f"{minutes}:{secs:02d}"
+
+
+def write(marks, *, runtime_seconds: float = 0.0) -> tuple[list[str], str]:
+    """Chapter lines for a description, and the reason when there are none.
+
+    `marks` is `(start_seconds, label)` pairs in any order. Returns `([], reason)`
+    rather than a best effort, because a list that breaks one of YouTube's rules is not
+    a shorter list — it is no chapters at all, with nothing anywhere saying so. An
+    operator who is told "too short a gap between two segments" can fix it; an operator
+    looking at a published video with no chapter bar cannot tell it was ever attempted.
+    """
+    cleaned = []
+    for start, label in marks or ():
+        try:
+            at = float(start)
+        except (TypeError, ValueError):
+            continue
+        text = " ".join(str(label or "").split())
+        if not text or at < 0:
+            continue
+        cleaned.append((at, text))
+    cleaned.sort(key=lambda mark: mark[0])
+
+    # Two marks at the same second are one boundary written twice, and the second of
+    # them is what makes the gap zero. Dropped here so the length check below reports
+    # a real problem rather than this one.
+    deduped: list[tuple[float, str]] = []
+    for at, text in cleaned:
+        if deduped and at - deduped[-1][0] < 1.0:
+            continue
+        deduped.append((at, text))
+
+    if len(deduped) < MIN_MARKS:
+        return [], (f"{len(deduped)} segment(s) to mark and YouTube needs "
+                    f"{MIN_MARKS} — no chapters written")
+    if deduped[0][0] != FIRST_MARK:
+        return [], (f"the first segment starts at {stamp(deduped[0][0])} and YouTube "
+                    f"requires 0:00 — no chapters written")
+
+    edges = [at for at, _ in deduped[1:]]
+    if runtime_seconds:
+        edges.append(float(runtime_seconds))
+    for index, end in enumerate(edges):
+        gap = end - deduped[index][0]
+        if gap < MIN_CHAPTER_SECONDS:
+            return [], (f"{deduped[index][1]!r} runs {gap:.0f}s and YouTube's minimum "
+                        f"is {MIN_CHAPTER_SECONDS:.0f}s — no chapters written")
+
+    return [f"{stamp(at)} {text}" for at, text in deduped], ""

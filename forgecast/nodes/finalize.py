@@ -415,6 +415,77 @@ def _mechanical_checks(ctx: NodeContext, script: dict, render: dict) -> list[tup
 
 
 # -------------------------------------------------------------------- final review
+#
+# Chapters. The gap list called this open for a reason worth restating: the audience of
+# the format this app targets writes the timestamp index by hand in the comments, on
+# video after video. It is a request, repeated, for something that costs nothing to
+# publish — and until now nothing here produced one.
+
+
+def _chapter_marks(ctx: NodeContext) -> tuple[list, str]:
+    """`(start_seconds, label)` per segment, from the run's own joins.
+
+    Two exact sources and no third. The segment boundaries come from `broll_plan`'s
+    canon segments, which is the same scene→entity join that decided the shots, and the
+    times come from the *measured* voiceover rather than the script's estimates —
+    `render` cuts to the measured lengths, so a mark placed on an estimate would be a
+    timestamp pointing at the wrong second.
+
+    Nothing is inferred from narration. A chapter list assembled by guessing where the
+    segments are is worse than none: it is wrong in a way the audience checks, on the
+    one artefact they were already writing themselves.
+    """
+    segments = (ctx.upstream_outputs.get("broll_plan") or {}).get("canon_segments") or []
+    if not segments:
+        return [], "nothing in this run names its segments, so none were written"
+
+    spoken = {int(entry["scene_index"]): float(entry.get("seconds") or 0.0)
+              for entry in (ctx.output("voice").get("segments") or [])}
+    if not spoken:
+        return [], "the voiceover reported no per-scene lengths to place marks against"
+
+    script = ctx.output("script")
+    order = [int(scene["index"]) for scene in (script.get("scenes") or [])]
+
+    # Walked in scene order so a mark's time is the sum of everything before it. The
+    # script's own order, not the segments' — a segment is a set of scene indexes and
+    # the clock belongs to the scene list.
+    starts: dict[int, float] = {}
+    clock = 0.0
+    for index in order:
+        starts[index] = clock
+        clock += spoken.get(index, 0.0)
+
+    marks = []
+    for segment in segments:
+        indexes = [int(value) for value in (segment.get("scene_indexes") or [])]
+        first = min((index for index in indexes if index in starts), default=None)
+        if first is None:
+            continue
+        marks.append((starts[first], str(segment.get("title") or "")))
+    return marks, ""
+
+
+def _with_chapters(ctx: NodeContext, description: str) -> tuple[str, str]:
+    """The description with a chapter index on the front, and the reason when not.
+
+    Prepended rather than appended. YouTube reads marks from anywhere in the
+    description, but a viewer scanning for the segment they want should not have to get
+    past the boilerplate to find it — and on this format the index *is* what they came
+    to the description for.
+    """
+    from ..vision import chapters as chapter_marks
+
+    marks, why = _chapter_marks(ctx)
+    if why:
+        return description, why
+
+    runtime = float((ctx.upstream_outputs.get("render") or {})
+                    .get("duration_seconds") or 0.0)
+    lines, refused = chapter_marks.write(marks, runtime_seconds=runtime)
+    if refused:
+        return description, refused
+    return "\n".join(lines) + ("\n\n" + description if description.strip() else ""), ""
 
 
 @node_handler("final_review")
@@ -435,9 +506,11 @@ async def final_review_node(ctx: NodeContext) -> NodeResult:
         thumbnails[0].path if thumbnails else None
     )
 
+    description, chapter_note = _with_chapters(ctx, str(script.get("description") or ""))
+
     metadata = {
         "title": str(script.get("title") or ctx.topic)[:100],
-        "description": str(script.get("description") or "")[:5000],
+        "description": description[:5000],
         "tags": [str(t)[:30] for t in (script.get("tags") or [])][:15],
         "category_id": str(ctx.params.get("category_id") or "27"),
         "privacy_status": str(ctx.options.get("privacy_status") or "private"),
@@ -454,6 +527,8 @@ async def final_review_node(ctx: NodeContext) -> NodeResult:
         "compliance_verdict": compliance.get("verdict"),
         "compliance_issues": compliance.get("issues", []),
     }
+    if chapter_note:
+        ctx.log(f"chapters: {chapter_note}", level="warning")
     ctx.log("ready to publish — awaiting final approval")
     return NodeResult(output=output, credits=0, provider="local")
 

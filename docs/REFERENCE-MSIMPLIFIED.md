@@ -252,9 +252,11 @@ loses the record of what the work was for.
    reads the canonical artwork off the wiki, reachable as `read_fandom`. The format's
    b-roll is retrieval, and an audience that polices its own canon will reject a
    generated Amber.
-2. ~~**It researches the wrong place.**~~ Partly closed. The wiki reader exists and the
-   agent reaches for it; the pipeline's own `research_node` still resolves to
-   Tavily/Brave/Wikipedia and does not know about it. Open.
+2. ~~**It researches the wrong place.**~~ Closed. `research/canon.py` is the lane:
+   `research_node` gathers the run's entities off a named wiki with their galleries and
+   attribution, writes `canon.json` beside the research, and the open-web path runs
+   alongside it rather than instead of it. The wiki is never inferred — see the note
+   below on why that is a rule and not caution.
 3. ~~**Captions.**~~ Closed. Burning is read off the learned style, and the hook gate
    previews what the render will actually produce.
 4. ~~**No name card, no stat card, no speech bubble.**~~ Closed. All three are
@@ -266,8 +268,8 @@ loses the record of what the work was for.
 7. ~~**Transitions.**~~ Closed, and the original claim here was backwards: the renderer
    always hard-cut, so this reference was reproduced by accident and a reference that
    *dissolves* was the one being rendered wrong.
-8. **Motion budget.** Open. The segment planner rations motion to the story beat, but
-   the pipeline does not use the planner yet.
+8. ~~**Motion budget.**~~ Closed. The segment planner rations motion to the story beat
+   and `broll_plan` now runs it, so the ration is what a run renders.
 9. ~~**No comment mining.**~~ Closed. `research/requests.py` tallies what the audience
    asked for, reachable as `audience_requests`.
 10. **Chapters.** Open. The audience writes timestamp indexes by hand in the comments,
@@ -276,12 +278,36 @@ loses the record of what the work was for.
 
 ### Still open, beyond the original list
 
-* **The planner is not in the pipeline.** `edit/segment.py` writes the shot list and the
-  agent can call it; `broll_plan` does not. Until it does, a run still decides each shot
-  at render time.
+* ~~**The planner is not in the pipeline.**~~ Closed. `broll_plan` plans every scene an
+  entity covers from `edit/segment.py` and the page's gallery, `shots_node` downloads
+  the art and stands it on a plate through `layers/shot.py`, and a wholly canon video
+  asks the planning model nothing at all.
 * **The wiki's image is often a whole scene, not a cutout.** Amber's is the creature
   between houses, shot through a window. So fetch-then-matte is a real step — and on
-  that asset the matte came back `usable=False` and was right to.
+  that asset the matte came back `usable=False` and was right to. The gallery softens
+  this without closing it: Seek's page carries six pre-cut transparent PNGs at
+  2250x2250 beside its scene shots, and `Asset.is_portrait_crop` sorts one kind from
+  the other. A page whose art is *all* scene shots still has no subject to composite.
+* **Which wiki is a decision nobody has been given a way to make.** The lane runs on a
+  named wiki and `canon.discover` returns verified candidates with their article
+  counts, but no screen asks the question. Today it is a run param or a channel field.
+
+### Measured while wiring it
+
+Both of these were found by running the reader against a *second* wiki, which is this
+codebase's most expensive habit and the one worth naming again:
+
+* **Headings carry markup, and on some wikis nothing else.** The Doors wiki writes
+  `== {{icons|overview}} Appearance ==` and `== [[The Mines]] ==`. Keyed raw, none of
+  them matched an alias, so 76,000 characters of exactly the sections this format wants
+  read as a page with no readable sections.
+* **A section runs to the next heading at its level or shallower.** Stopping at the
+  first `===` returned Seek's one-line lead and left twelve thousand characters of
+  behaviour on the floor.
+* **Plates are generated because gallery wides are gameplay screenshots.** Standing a
+  cut-out on one put a hotbar along the bottom of the frame and a player avatar in the
+  corner. The ~10% generated figure in the asset table above was already the answer; it
+  took rendering one to see why.
 
 ## Rights, unresolved
 

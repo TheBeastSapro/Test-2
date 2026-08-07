@@ -748,7 +748,17 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
         # time the script broke a paragraph.
         span = sum(float(scene["seconds"]) for scene in owned)
         plan = segment_planner.plan(entity, seconds=span)
-        planned_segments.append({"title": entity["title"], "scenes": len(owned),
+        planned_segments.append({"title": entity["title"],
+                                 # The scene indexes, not just how many. This is the
+                                 # only exact segment→time mapping the run ever has,
+                                 # and it is what `final_review` writes the chapter
+                                 # marks from: the audience of this format hand-writes
+                                 # that index in the comments, and publishing it costs
+                                 # nothing. Reconstructed later from narration it would
+                                 # be a guess; recorded here it is the same join that
+                                 # decided the shots.
+                                 "scene_indexes": [int(scene["index"]) for scene in owned],
+                                 "scenes": len(owned),
                                  "shots": plan.shot_count, "seconds": round(span, 1),
                                  "warnings": list(plan.warnings)})
         warnings += [f"{entity['title']}: {note}" for note in plan.warnings]
@@ -1170,6 +1180,7 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
             # attribution line and why `finalize` has to see it.
             "canon_shots": sum(len(plates) for plates in canon_by_scene.values()),
             "canon_scenes": len(canon_by_scene),
+            "canon_segments": canon_report.get("segments") or [],
             "target_shot_seconds": round(spec.target_shot_seconds, 3),
             # What the animated shots in this plan cost, each priced on the model it will
             # actually run on and on the duration that endpoint will actually bill. It is
