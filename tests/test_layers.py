@@ -224,14 +224,29 @@ def test_node_modules_can_never_reach_the_archive():
     assert not any("node_modules" in member for _path, member in files_to_ship())
 
 
-def test_the_banner_offers_the_extras_rather_than_only_reporting_tools():
+def test_the_tools_panel_offers_the_extras_rather_than_only_reporting_them():
     """Optional must not mean "print a command and give up" — which is the homework
-    this codebase already removed once for a CLI."""
+    this codebase already removed once for a CLI.
+
+    The surface moved: this was a banner above the chat, and it is Settings -> Tools
+    now. What is asserted is the invariant, not the address — every optional toolset
+    has to be startable from somewhere in the UI, and a panel that lists them without
+    a way to install them is the same dead end the banner was written to close.
+    """
     from pathlib import Path
 
     from forgecast import layers
 
-    chat_js = (Path(layers.__file__).resolve().parents[1] / "web" / "static"
-               / "chat.js").read_text(encoding="utf-8")
-    assert "/api/setup/extras" in chat_js
-    assert "installExtra" in chat_js
+    web = Path(layers.__file__).resolve().parents[1] / "web"
+    panel = (web / "settings.html").read_text(encoding="utf-8")
+    assert "/api/setup/extras" in panel
+    assert 'data-extra=' in panel        # a per-toolset Install button, not just a list
+    assert "streamInstall" in panel
+
+    # And the required tools keep their installer too, on the same panel.
+    assert "/api/setup/install" in panel
+
+    # The banner is gone rather than duplicated — two installers is two things to
+    # keep correct, and the reason this was moved was that one of them was in the way.
+    chat_js = (web / "static" / "chat.js").read_text(encoding="utf-8")
+    assert "/api/setup/extras" not in chat_js

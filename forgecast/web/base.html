@@ -230,6 +230,32 @@
     const text = document.getElementById('claude-text');
     if (text) text.textContent = 'Agent status unknown';
   });
+
+  // Missing local tooling, flagged where it does not interrupt anything.
+  //
+  // This was a banner across the top of the chat with its own Install button. The
+  // panel that fixes it is Settings -> Tools now, and what is left here is the flag:
+  // a dot on the Settings entry so a missing ffmpeg is still discoverable from
+  // whatever page you happen to be on, rather than only from the one page whose
+  // first line it was taking up.
+  //
+  // It lives in the shell rather than in chat.js because the tooling is the
+  // machine's, not the conversation's — a render started from the workspace fails
+  // for exactly the same reason, and the old placement could not say so there.
+  fetch('/api/setup/state').then(r => r.ok ? r.json() : null).then(state => {
+    if (!state) return;
+    const missing = (state.tools || []).filter(t => !t.present);
+    const link = document.querySelector('.side nav a[href="/settings"]');
+    if (!missing.length || !link) return;
+    const dot = document.createElement('span');
+    // Amber, not red. Everything except rendering works without these, so this is a
+    // thing to go and do — not a thing that has broken.
+    dot.className = 'dot dot-warn';
+    dot.style.marginLeft = '7px';
+    dot.title = missing.map(t => t.label).join(', ') + ' — install in Settings › Tools';
+    link.append(dot);
+    link.href = '/settings#tools';
+  }).catch(() => { /* not a desktop install, or the route is not mounted */ });
 </script>
 {% endif %}
 {% if settings and settings.local_mode and not embed %}

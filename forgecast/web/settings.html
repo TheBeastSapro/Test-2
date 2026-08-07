@@ -17,6 +17,8 @@
     <button data-panel="cloud">Cloud backup</button>
     <button data-panel="providers">Provider keys</button>
     <button data-panel="capabilities">What will be used</button>
+    <button data-panel="tools">Tools <span class="dot dot-idle" id="tools-tab-dot"
+            style="margin-left:6px;vertical-align:middle"></span></button>
     <button data-panel="instance">This machine</button>
   </div>
 
@@ -396,6 +398,55 @@
             {% endfor %}
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════ TOOLS -->
+    {# The local binaries and toolsets, in the place where installed things are managed.
+       This lived as a banner above the chat, which meant the answer to "what does this
+       machine actually have" was only ever visible while a missing tool was making it
+       shout — and it spent that visibility on the top of a conversation, where it was
+       in the way of the thing the operator opened the app to do. Here it is a page you
+       can go to on purpose, it lists what is present as well as what is not, and the
+       tab's own dot is what carries the urgency the banner used to.
+
+       Both lists come from the same endpoints the setup page uses — nothing here is a
+       second inventory, because a second inventory is a second thing to keep true. #}
+    <section data-panel="tools" hidden>
+      <div class="card">
+        <h3 class="mt-0">What this machine has</h3>
+        <p class="muted prose t-md">
+          Forgecast installs its own tooling rather than telling you to go and run a
+          package manager. Anything it cannot fetch for you is named with the one
+          command that will, and nothing here is ever needed to <em>read</em> a
+          channel — only to render one.
+        </p>
+        <div id="tools-required" class="mt-6">
+          <p class="muted m-0">Checking…</p>
+        </div>
+        <div id="tools-bar" hidden
+             style="height:6px;border-radius:999px;background:var(--raise-3);margin-top:14px">
+          <span id="tools-fill"
+                style="display:block;height:100%;width:0;border-radius:999px;
+                       background:var(--accent);transition:width .2s"></span>
+        </div>
+        <div class="muted t-sm mt-5" id="tools-note"></div>
+        <div class="mt-6" id="tools-actions" hidden>
+          <button class="primary" id="tools-install">Install what is missing</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:22px">
+        <h3 class="mt-0">Optional toolsets</h3>
+        <p class="muted prose t-md">
+          Large, and only wanted by somebody who hands the app a video or asks for
+          layered motion. They are kept out of the first-run install so a new machine
+          does not download hundreds of megabytes it may never open — but not-mandatory
+          must not mean "print a command and give up", so each installs from here.
+        </p>
+        <div id="tools-extras" class="mt-6">
+          <p class="muted m-0">Checking…</p>
+        </div>
       </div>
     </section>
 
@@ -846,5 +897,144 @@
     await fetch(`/api/connectors/${key}`, {method: 'DELETE'});
     location.reload();
   }
+
+  /* ── tools ───────────────────────────────────────────────────────────────
+     The inventory this panel shows and the install it starts are both the setup
+     page's — `/api/setup/state`, `/api/setup/install`, `/api/setup/extras`. The
+     install endpoint joins a job already running rather than starting a second
+     download of the same archive, so pressing Install here while the setup page
+     is mid-install is safe, and so is reloading in the middle of one.
+
+     It paints on page load, not on first click of the tab. The dot beside the
+     tab's name is the whole point of moving this off the chat: it has to be
+     right before anybody has opened the panel. */
+
+  function toolRow(dot, name, detail, right) {
+    return `<div class="setting"><div class="setting-top">
+        <span class="setting-name"><span class="dot ${dot}" style="margin-right:8px"></span>${esc(name)}</span>
+        ${right || ''}
+      </div>${detail ? `<div class="setting-why">${detail}</div>` : ''}</div>`;
+  }
+
+  async function paintTools() {
+    let state;
+    try {
+      state = await (await fetch('/api/setup/state')).json();
+    } catch {
+      // Not a desktop install, or the route is not mounted. Say so rather than
+      // leaving "Checking…" on screen for ever, which reads as a hung page.
+      $('#tools-required').innerHTML =
+        '<p class="muted m-0">This build does not manage its own tooling.</p>';
+      $('#tools-extras').innerHTML = '';
+      return;
+    }
+
+    const tools = state.tools || [];
+    const missing = tools.filter(t => !t.present);
+    const fetchable = missing.filter(t => !t.manual);
+
+    $('#tools-required').innerHTML = tools.map(tool => toolRow(
+      tool.present ? 'dot-ok' : (tool.manual ? 'dot-warn' : 'dot-bad'),
+      tool.label,
+      tool.present
+        ? `Found at <code>${esc(tool.where)}</code>`
+        : (tool.manual
+            // A tool that belongs to a package manager cannot be fetched for you —
+            // ffmpeg on macOS and Linux. An Install button for those would be a
+            // button that cannot work, so it is named with its command instead.
+            ? `Not installed. This one belongs to your package manager: <code>${esc(tool.manual)}</code>`
+            : 'Not installed. Forgecast can fetch this one.'),
+      tool.present ? '<span class="muted t-sm">ready</span>' : '',
+    )).join('') || '<p class="muted m-0">Nothing to install on this platform.</p>';
+
+    $('#tools-actions').hidden = !fetchable.length;
+    $('#tools-note').textContent = missing.length
+      ? `${missing.length} missing · ${fetchable.length} of them installable from here`
+      : 'Everything the renderer needs is present.';
+
+    // The tab's dot: red only when something is missing that we could have fixed
+    // and did not, amber when the operator has to run a command themselves.
+    const dot = $('#tools-tab-dot');
+    dot.className = 'dot ' + (fetchable.length ? 'dot-bad'
+                              : missing.length ? 'dot-warn' : 'dot-ok');
+
+    let extras = [];
+    try {
+      extras = ((await (await fetch('/api/setup/extras')).json()).extras) || [];
+    } catch { /* older build, or the route is not mounted */ }
+
+    $('#tools-extras').innerHTML = extras.map(extra => toolRow(
+      extra.installed ? 'dot-ok' : 'dot-idle',
+      extra.label,
+      // `gives` is phrased to follow "this gives you…", so it starts lowercase. Here
+      // it starts a sentence of its own.
+      `${esc(extra.gives).replace(/^./, c => c.toUpperCase())} — about ${extra.megabytes} MB, once.`
+      + (extra.installed || !extra.absent ? '' : ` <span class="muted">Missing ${esc(extra.absent)}.</span>`),
+      extra.installed
+        ? '<span class="muted t-sm">installed</span>'
+        : `<button class="btn-sm primary" data-extra="${esc(extra.key)}">Install</button>`,
+    )).join('') || '<p class="muted m-0">No optional toolsets in this build.</p>';
+
+    document.querySelectorAll('#tools-extras [data-extra]').forEach(button => {
+      button.onclick = () => streamInstall(
+        `/api/setup/extras/${button.dataset.extra}`, button);
+    });
+  }
+
+  /* Both installs answer in the same NDJSON the setup page reads — log lines,
+     progress, then a final done. One reader rather than one per endpoint. */
+  async function streamInstall(url, button) {
+    const was = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Installing…';
+    $('#tools-bar').hidden = false;
+
+    try {
+      const response = await fetch(url, { method: 'POST' });
+      if (!response.ok) throw new Error(await response.text());
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          let event;
+          try { event = JSON.parse(line); } catch { continue; }
+          if (event.type === 'log') {
+            $('#tools-note').textContent = String(event.text).slice(0, 160);
+          } else if (event.type === 'progress' && event.weight_total) {
+            // Weight, not bytes: the archives differ by an order of magnitude and a
+            // bar that measures the current download restarts at zero per tool.
+            $('#tools-fill').style.width =
+              Math.min(100, (event.weight_done / event.weight_total) * 100).toFixed(1) + '%';
+          } else if (event.type === 'done') {
+            $('#tools-fill').style.width = '100%';
+            $('#tools-note').textContent = event.ok
+              ? String(event.detail || 'Installed.')
+              : `Could not install it — ${event.detail || 'no reason given'}`;
+            toast(event.ok ? 'Installed.' : 'Install did not finish.');
+          }
+        }
+      }
+    } catch (error) {
+      $('#tools-note').textContent = 'Could not install: ' + String(error.message || error);
+    } finally {
+      button.disabled = false;
+      button.textContent = was;
+      $('#tools-bar').hidden = true;
+      // Re-ask rather than assume it worked — the endpoint reports its own verdict,
+      // and a row that says "installed" because a request returned is the kind of
+      // claim that gets found out at render time.
+      paintTools();
+    }
+  }
+
+  $('#tools-install').onclick = () => streamInstall('/api/setup/install', $('#tools-install'));
+  paintTools();
 </script>
 {% endblock %}
