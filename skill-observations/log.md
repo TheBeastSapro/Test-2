@@ -135,3 +135,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Before building or debugging an expensive measurement path, enumerate what the subject already publishes about itself — metadata, descriptions, chapter marks, sitemaps, feeds, declared schemas — and check whether any of it answers the question directly. Where a cheap declarative source exists, make it the primary path and the expensive inference the fallback for subjects that lack it. When an error message advises a remedy (\"supply cookies\"), verify the codebase actually implements a way to supply it before treating that as the route forward.
 
 **Principle:** Reach for the cheapest evidence that answers the question, and check what the subject declares about itself before inferring it. A declared value is usually both cheaper and more authoritative than a measured one; time spent unblocking an expensive inference path is wasted when the answer is published in plain text. Effort spent circumventing a refusal should first be spent asking whether the refused resource was needed at all.
+
+### Observation 9: Read the project's own design record before proposing a visual direction
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** Systematising the front end of an application whose author felt it looked amateur. A design skill was loaded that asks for a distinctive, opinionated visual direction and warns against defaulting to familiar looks.
+
+**Skill:** frontend-design
+**Type:** open-source
+**Phase/Area:** Establishing the brief before brainstorming a direction
+
+**Issue:** The skill's process starts with brainstorming a palette and typeface pairing. Applied literally here it would have produced the wrong work twice over. The stylesheet already carried a written rationale for its palette, and — critically — a stated engineering reason for its type: no webfont, because the import is a network round-trip on every launch of an application whose purpose is running offline. A brainstormed "characterful display face" would have violated a documented constraint that had nothing to do with taste. Meanwhile the actual defect was invisible to a direction-setting exercise: 23 distinct font sizes including seven half-pixel values, 29 spacing values, and no motion scale. The design was not under-directed, it was un-systematised, and those call for opposite responses. The skill does say the brief's own words win where a direction is pinned — but it treats the brief as the user's prompt, when in a codebase with history the binding brief is often already written into the source as constraints and rationale.
+
+**Suggested improvement:** Add a step before brainstorming: read the existing design record — stylesheet headers, token blocks, design docs, and any comment explaining why a choice was made — and treat documented constraints as part of the brief, ranking equal to the user's prompt. Then decide explicitly whether the work is direction-setting or systematising, and say which. Where a constraint forecloses an axis the skill would normally spend boldness on (no webfonts, a fixed palette, a required density), state what carries the design's character instead.
+
+**Principle:** In a codebase with history, part of the brief is already written into the source. Constraints recorded as rationale are binding, and reading them first distinguishes a design that needs redirecting from one that needs systematising — a distinction worth making early, because treating the second as the first destroys sound work while leaving the real defect untouched.
