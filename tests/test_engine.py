@@ -328,3 +328,54 @@ async def test_both_pipelines_reach_a_gate(session: Session, channel: Channel, p
     )
     session.commit()
     assert await engine().advance(run.id) is RunStatus.awaiting_approval
+
+
+async def test_mock_run_completes_on_a_channel_with_no_voice_of_its_own(
+    session: Session, user: User,
+):
+    """The state a new install is actually in, which no other test was in.
+
+    Every full-run test above drives the `channel` fixture, and that fixture carries
+    `voice_id="test-voice"`. A channel made by `cli bootstrap` or by the workspace form
+    carries none — voice is an optional field on both — so the branch a first-time
+    operator takes was the one branch never exercised.
+
+    On that branch `voice_casting` used to raise: the built-in roster describes voices
+    without owning any, so with no vendor connected nothing in the shortlist has a
+    vendor id. Refusing is right in live mode, where the render downstream is real money
+    spent on a video that cannot be narrated. In mock mode it is wrong twice over —
+    nothing downstream costs anything, and the app tells the operator in as many words
+    that runs complete with placeholder voice so the whole pipeline can be seen before
+    it costs anything. Everything from `hook` to `publish` was unreachable until a
+    vendor was connected, which is the evaluation mock mode exists to make unnecessary.
+    """
+    voiceless = Channel(
+        user_id=user.id,
+        name="Fresh Channel",
+        niche="deep sea",
+        target_duration_seconds=30,
+        style_profile={"tone": "calm and precise"},
+    )
+    session.add(voiceless)
+    session.commit()
+    assert not voiceless.voice_id, "the fixture must stay the untouched-channel case"
+
+    run = create_run(
+        session, channel=voiceless, topic="Why deep-sea cables keep breaking",
+        pipeline="faceless_shorts", options={"target_seconds": 20},
+    )
+    run_id = run.id
+    session.commit()
+
+    status = await _drive(run_id)
+
+    with SessionLocal() as check:
+        finished = check.get(Run, run_id)
+        stalled = [n.key for n in finished.nodes if n.status is not NodeStatus.completed]
+        # Named rather than counted: a bare status assertion here would say "failed"
+        # and leave the next person to go and find which stage did it.
+        assert status is RunStatus.completed, f"{status}, stalled at {stalled}: {finished.error}"
+        assert not stalled
+
+        published = next(n for n in finished.nodes if n.key == "publish")
+        assert published.output["url"].startswith("https://www.youtube.com/watch?v=")

@@ -131,8 +131,21 @@ async def voice_casting_node(ctx: NodeContext) -> NodeResult:
     # cannot change the outcome is worse than no decision point, because it reads as
     # progress. Fail here, name the fix, and leave the auditions on disk so the reasons
     # are still there to read.
+    #
+    # Not in mock mode. Every capability there resolves to an offline stand-in, so the
+    # premise this guard rests on — that the render downstream costs money that the
+    # missing narrator will waste — is not true, and the guard was instead cutting the
+    # run in half at exactly the stage the app tells the operator they can walk past:
+    # "runs complete with placeholder script, voice and visuals so the whole pipeline
+    # can be seen before it costs anything". Everything from `hook` to `publish` was
+    # unreachable without first connecting a vendor, which is the evaluation mock mode
+    # exists to make unnecessary.
     usable = [c for c in candidates if c.voice_id]
-    if not usable and not (ctx.channel.voice_id or str(ctx.params.get("voice_id") or "")):
+    if (
+        not usable
+        and ctx.registry.mode != "mock"
+        and not (ctx.channel.voice_id or str(ctx.params.get("voice_id") or ""))
+    ):
         raise ProviderError(
             f"nothing here can narrate: {len(candidates)} voices were shortlisted and "
             "none is owned by a connected account. The built-in roster is a description "

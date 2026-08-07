@@ -219,7 +219,8 @@ def _composite_overlay(plate: Path, text: str, out_path: Path) -> Path:
 
 
 def resolve_voice_id(
-    casting: dict, *, channel_voice_id: str = "", param_voice_id: str = ""
+    casting: dict, *, channel_voice_id: str = "", param_voice_id: str = "",
+    mock: bool = False,
 ) -> tuple[str, str]:
     """Decide which voice narrates, and say why. Returns (voice_id, note).
 
@@ -259,6 +260,17 @@ def resolve_voice_id(
     # every entry is unusable. Reporting that as empty sends whoever reads it looking
     # for a missing shortlist that is sitting right there, and says nothing about the
     # fix, which is to connect a vendor or set a channel voice.
+    # In mock mode there is nothing to refuse on behalf of. The stand-in narrator
+    # ignores the id it is handed and no call is made, so both messages below would be
+    # describing a cost that does not exist — and refusing here stopped a first-time
+    # operator at exactly the stage the app promises they can walk past, leaving
+    # everything from `hook` to `publish` unreachable until they connected a vendor.
+    # The note says which voice this is not, so nobody reads a finished mock run as
+    # evidence that casting worked.
+    if mock:
+        return "mock-voice", ("no real voice is connected — narrating with the offline "
+                              "stand-in, which is not any of the auditions")
+
     if candidates:
         raise ProviderError(
             f"no voice to narrate with: {len(candidates)} auditions were shortlisted "
@@ -288,6 +300,7 @@ async def voice_node(ctx: NodeContext) -> NodeResult:
         casting,
         channel_voice_id=ctx.channel.voice_id,
         param_voice_id=str(ctx.params.get("voice_id") or ""),
+        mock=ctx.registry.mode == "mock",
     )
     ctx.log(note)
     speed = float(ctx.options.get("voice_speed") or 1.0)

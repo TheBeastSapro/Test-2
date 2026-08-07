@@ -204,6 +204,7 @@ async def hook_node(ctx: NodeContext) -> NodeResult:
         casting,
         channel_voice_id=ctx.channel.voice_id,
         param_voice_id=str(ctx.params.get("voice_id") or ""),
+        mock=ctx.registry.mode == "mock",
     )
     ctx.log(note)
 
