@@ -380,3 +380,113 @@ def test_relevance_is_one_implementation_shared_with_the_still_lane():
                              licence_url="", attribution="", source="", landing_url="",
                              tags=list(clip.tags))
     assert clip.relevance_to("undersea cable seabed") == asset.relevance_to("undersea cable seabed")
+
+
+# ------------------------------------------------ resolving a result into a real file
+#
+# Two of the four sources return something that is not a media file, which is why the
+# keyless half of the free lane could not serve a single beat: Archive's url is a
+# download directory and NASA's is a manifest of assets, and `vision.acquire` refuses
+# the first and fails on the second.
+
+class _FakeResponse:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self._payload
+
+
+class _FakeClient:
+    def __init__(self, payload):
+        self._payload = payload
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_a):
+        return False
+
+    async def get(self, *_a, **_k):
+        return _FakeResponse(self._payload)
+
+
+@pytest.mark.asyncio
+async def test_a_pexels_clip_needs_no_resolution():
+    clip = _clip(source="pexels", url="https://x.test/a.mp4")
+    assert await footage.resolve_media_url(clip) == "https://x.test/a.mp4"
+
+
+@pytest.mark.asyncio
+async def test_an_archive_item_resolves_to_its_largest_video(monkeypatch):
+    """Archive keeps a 240p derivative beside the original and it often sorts first."""
+    async def metadata(url, params, *, label):
+        assert "/metadata/prelinger_thing" in url
+        return {"files": [
+            {"name": "thing_512kb.mp4", "size": "5000"},
+            {"name": "thing.mp4", "size": "900000"},
+            {"name": "thing.png", "size": "10"},
+            {"name": "thing.srt", "size": "10"},
+        ]}
+
+    monkeypatch.setattr(footage, "_json", metadata)
+    clip = _clip(source="internet_archive",
+                 url="https://archive.org/download/prelinger_thing",
+                 landing_url="https://archive.org/details/prelinger_thing",
+                 licence="publicdomain")
+    got = await footage.resolve_media_url(clip)
+    assert got == "https://archive.org/download/prelinger_thing/thing.mp4"
+
+
+@pytest.mark.asyncio
+async def test_an_archive_item_with_no_video_resolves_to_nothing(monkeypatch):
+    async def metadata(*_a, **_k):
+        return {"files": [{"name": "scan.pdf", "size": "10"}]}
+
+    monkeypatch.setattr(footage, "_json", metadata)
+    clip = _clip(source="internet_archive",
+                 url="https://archive.org/download/thing",
+                 landing_url="https://archive.org/details/thing")
+    assert await footage.resolve_media_url(clip) == ""
+
+
+@pytest.mark.asyncio
+async def test_nasa_prefers_the_original_rendition(monkeypatch):
+    monkeypatch.setattr(footage, "_client", lambda: _FakeClient([
+        "https://images-assets.nasa.gov/video/x/x~small.mp4",
+        "https://images-assets.nasa.gov/video/x/x~orig.mp4",
+        "https://images-assets.nasa.gov/video/x/x~thumb.jpg",
+        "https://images-assets.nasa.gov/video/x/x.srt",
+    ]))
+    clip = _clip(source="nasa", licence="usgov",
+                 url="https://images-assets.nasa.gov/video/x/collection.json")
+    assert (await footage.resolve_media_url(clip)).endswith("~orig.mp4")
+
+
+@pytest.mark.asyncio
+async def test_nasa_falls_back_to_the_tallest_rendition(monkeypatch):
+    """Named by height, so the highest number is the best available."""
+    monkeypatch.setattr(footage, "_client", lambda: _FakeClient([
+        "https://images-assets.nasa.gov/video/x/x~720.mp4",
+        "https://images-assets.nasa.gov/video/x/x~1080.mp4",
+        "https://images-assets.nasa.gov/video/x/x~480.mp4",
+    ]))
+    clip = _clip(source="nasa", licence="usgov",
+                 url="https://images-assets.nasa.gov/video/x/collection.json")
+    assert (await footage.resolve_media_url(clip)).endswith("~1080.mp4")
+
+
+@pytest.mark.asyncio
+async def test_a_manifest_that_cannot_be_read_resolves_to_nothing(monkeypatch):
+    import httpx
+
+    class _Broken(_FakeClient):
+        async def get(self, *_a, **_k):
+            raise httpx.ConnectError("down")
+
+    monkeypatch.setattr(footage, "_client", lambda: _Broken(None))
+    clip = _clip(source="nasa", licence="usgov", url="https://x.test/collection.json")
+    assert await footage.resolve_media_url(clip) == ""

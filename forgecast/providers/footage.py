@@ -628,3 +628,112 @@ def best_for(
     matching.sort(key=lambda row: (-row[2], row[0].needs_attribution, -row[0].width))
     chosen, grade, ratio = matching[0]
     return chosen, f"{chosen.source} match {grade} ({ratio:.2f})"
+
+
+# --------------------------------------------------------------- resolving to a file
+
+#: Video containers worth downloading, best first. MP4 before anything else because it
+#: is the one every downstream stage already handles without a transcode.
+_MEDIA_ORDER = (".mp4", ".m4v", ".mov", ".webm", ".mkv", ".ogv")
+
+
+def _rank(name: str) -> int:
+    lowered = name.lower()
+    for index, suffix in enumerate(_MEDIA_ORDER):
+        if lowered.endswith(suffix):
+            return index
+    return len(_MEDIA_ORDER)
+
+
+async def resolve_media_url(clip: FootageClip) -> str:
+    """Turn a search result into something that can actually be downloaded.
+
+    Two of the four sources do not return a media file, and this is why the keyless half
+    of the free lane could not serve a single beat:
+
+    * Internet Archive's `url` is `archive.org/download/{id}` — a **directory listing**.
+    * NASA's is the `href` of the item's `collection.json` — a **manifest** of assets.
+
+    Neither feeds `vision.acquire`: its direct path matches on a media suffix and refuses
+    them, and its yt-dlp path accepts any http URL and then fails on one. So a channel
+    with no Pexels or Pixabay key got nothing free, from sources that need no key at all.
+
+    One extra request per *chosen* clip, never per candidate. A search returns eight and
+    at most one is used, so resolving during the search would be eight manifest fetches
+    to answer a question about one.
+
+    Returns the original URL unchanged for sources that already give a file, and raises
+    nothing: a resolution that fails returns "" and the caller leaves the beat paid.
+    """
+    if clip.source == "internet_archive":
+        return await _resolve_archive(clip)
+    if clip.source == "nasa":
+        return await _resolve_nasa(clip)
+    return clip.url
+
+
+async def _resolve_archive(clip: FootageClip) -> str:
+    """The largest usable video file inside an Archive item.
+
+    Largest rather than first: Archive keeps derivatives beside the original — a 240p
+    MPEG-4 next to the source — and the small one sorts first as often as not. The
+    original is what a 1080p render wants.
+    """
+    identifier = (clip.landing_url or clip.url).rstrip("/").rsplit("/", 1)[-1]
+    if not identifier:
+        return ""
+    try:
+        payload = await _json(f"https://archive.org/metadata/{identifier}", {},
+                              label="Internet Archive item")
+    except (FootageError, ProviderTimeout):
+        return ""
+
+    files = [one for one in (payload.get("files") or []) if isinstance(one, dict)]
+    usable = [one for one in files if _rank(str(one.get("name") or "")) < len(_MEDIA_ORDER)]
+    if not usable:
+        return ""
+    usable.sort(key=lambda one: (_rank(str(one.get("name"))), -_as_int(one.get("size"))))
+    return f"https://archive.org/download/{identifier}/{usable[0]['name']}"
+
+
+async def _resolve_nasa(clip: FootageClip) -> str:
+    """The largest rendition listed in a NASA item's asset manifest.
+
+    The manifest is a flat array of URLs — original, several transcodes, a thumbnail and
+    the caption files — with no sizes, so the choice is made on the filename. `~orig`
+    marks the source rendition and is preferred; otherwise the highest numbered rendition
+    wins, because NASA names them by height (`~1080.mp4`, `~720.mp4`).
+    """
+    if not clip.url:
+        return ""
+    try:
+        async with _client() as client:
+            response = await client.get(clip.url)
+            response.raise_for_status()
+            assets = response.json()
+    except (httpx.HTTPError, ValueError):
+        return ""
+    if not isinstance(assets, list):
+        return ""
+
+    videos = [str(one) for one in assets
+              if isinstance(one, str) and _rank(one.split("?")[0]) < len(_MEDIA_ORDER)]
+    if not videos:
+        return ""
+
+    def quality(url: str) -> tuple[int, int]:
+        name = url.lower()
+        if "~orig" in name:
+            return (0, 0)
+        digits = "".join(ch for ch in name.rsplit("~", 1)[-1] if ch.isdigit())
+        return (1, -int(digits or 0))
+
+    videos.sort(key=quality)
+    return videos[0]
+
+
+def _as_int(value) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0

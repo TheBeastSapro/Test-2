@@ -465,9 +465,25 @@ async def _offer_free_footage(ctx: NodeContext, beats: list[dict]) -> None:
         chosen, why = footage.best_for(
             clips, query=query, seconds=beat["seconds"], width=width)
         beat["why"] = why
-        if chosen is not None:
-            beat["kind"] = "footage"
-            beat["clip"] = chosen
+        if chosen is None:
+            return
+
+        # Archive hands back a download directory and NASA a manifest of assets, so a
+        # chosen clip from either is not yet something that can be fetched. Resolved
+        # here — once, for the one clip that won — rather than during the search, where
+        # it would be eight manifest fetches to answer a question about one.
+        async with gate:
+            try:
+                resolved = await footage.resolve_media_url(chosen)
+            except Exception:
+                resolved = ""
+        if not resolved:
+            beat["why"] = (f"{chosen.source} matched but no downloadable file could be "
+                           f"resolved from it")
+            return
+        chosen.url = resolved
+        beat["kind"] = "footage"
+        beat["clip"] = chosen
 
     try:
         await asyncio.gather(*(look(beat) for beat in movers))
