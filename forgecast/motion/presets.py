@@ -643,3 +643,85 @@ def learn(profile: dict, *, name: str = "", reference: str = "",
     """Derive a preset from a measurement and save it under a reusable name."""
     preset = derive_from_profile(profile, name=name, reference=reference)
     return preset, preset.save(directory)
+
+
+# --------------------------------------------------------------- canon-explainer cards
+#
+# Three elements measured off a reference channel that carries its data and its jokes on
+# screen while the voice carries the prose. It burns no narration captions at all — so
+# the screen budget goes here instead, and these are what a segment is actually built
+# from besides the artwork.
+#
+# They are methods on the preset rather than free functions because every one of them
+# has to inherit the reference's own type size, palette and entry move. A name card that
+# ignores the learned accent colour is a name card from a different channel.
+
+#: Where a name card sits. Top centre, clear of the subject and clear of anything the
+#: caption zone might carry, because on a channel that *does* burn captions these
+#: elements still have to coexist with them.
+NAME_CARD_Y = 0.11
+
+#: Where a stat block starts, and how far apart its rows sit. Left-aligned and low,
+#: because it appears under a full-frame subject and reads as an annotation on the
+#: picture rather than as a title over it.
+STAT_X = 0.055
+STAT_TOP = 0.62
+STAT_STEP = 0.062
+
+
+def _clean(text: str, limit: int) -> str:
+    """One line, no newlines, trimmed at a word."""
+    flat = " ".join(str(text or "").split())
+    if len(flat) <= limit:
+        return flat
+    cut = flat[:limit].rsplit(" ", 1)[0]
+    return (cut or flat[:limit]).rstrip(",;:-") + "…"
+
+
+def name_card(preset: MotionPreset, name: str, *, start: float, width: int, height: int,
+              duration: float = 3.0) -> list:
+    """The entity's name, top centre — the first thing on a segment's first shot.
+
+    Sized a step above the caption ratio: this is the only text on screen at that
+    moment and it is doing a title's job, not a caption's.
+    """
+    size = max(20, int(preset.text_height_ratio * height * 1.45))
+    text, size = fit_text(_clean(name, 48), size, width, max_lines=1)
+    return [Text(
+        start=start, duration=duration, text=text, size=size,
+        colour=preset.accent_colour, x=0.5, y=NAME_CARD_Y,
+        alpha=fade_in_out(duration, rise=preset.entry_duration,
+                          fall=preset.exit_duration),
+        border=2,
+    )]
+
+
+def stat_card(preset: MotionPreset, stats: dict, *, start: float, width: int,
+              height: int, duration: float = 4.0, colour: str = "") -> list:
+    """Height, weight and the rest, as rows on the specification beat.
+
+    Takes the dict `research.fandom` returns, so the wiki's infobox reaches the screen
+    without a translation step in between — the one place these numbers exist is that
+    page, and re-typing them is how a video ends up disagreeing with its own source.
+
+    Rows are drawn in a fixed order rather than the dict's, so two segments of the same
+    video do not put height in different places.
+    """
+    order = ("height", "weight", "species", "status")
+    rows = [(label, _clean(stats.get(label), 42)) for label in order if stats.get(label)]
+    if not rows:
+        return []
+
+    size = max(14, int(preset.text_height_ratio * height * 0.72))
+    alpha = fade_in_out(duration, rise=preset.entry_duration, fall=preset.exit_duration)
+    out: list = []
+    for index, (label, value) in enumerate(rows):
+        line, line_size = fit_text(f"{label.upper()}  {value}", size, width, max_lines=1)
+        out.append(Text(
+            start=start + index * preset.stagger, duration=max(0.4, duration - index * preset.stagger),
+            text=line, size=line_size,
+            colour=colour or preset.accent_colour,
+            x=STAT_X, y=STAT_TOP + index * STAT_STEP,
+            alpha=alpha, border=2,
+        ))
+    return out
