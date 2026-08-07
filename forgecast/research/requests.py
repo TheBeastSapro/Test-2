@@ -37,7 +37,11 @@ ASKS = (
     r"(?:can|could|will|would)\s+(?:you|u)\s+(?:please\s+)?(?:do|make|cover|explain)",
     r"(?:please|pls|plz)\s+(?:do|make|cover|explain)",
     r"(?:do|make|cover|explain)\s+(?:a\s+)?(?:video\s+(?:on|about)\s+)?",
-    r"i\s+(?:want|wanna|would like)\s+to\s+see",
+    # `to` is optional and that is not a nicety: "I wanna see the Bolid One" is how
+    # this is written, and requiring "to see" missed it on the first real sample this
+    # was ever run against. `wanna` does not take `to` and neither does half the
+    # audience writing `want`.
+    r"i\s+(?:want|wanna|wanted|wish|would\s+like)\s+(?:to\s+)?see",
     r"(?:next\s+video|next\s+time|part\s+\d+)\s*[:,]?\s*",
     r"you\s+should\s+(?:do|make|cover|explain)",
     # "An explanation of the biggest SCPs would be awesome" — the noun form, which is
@@ -57,6 +61,12 @@ FILLER = ("the", "a", "an", "some", "more", "about", "on", "of", "us", "me", "on
           "next", "video", "vid", "episode", "please", "pls", "plz", "see", "do",
           "make", "cover", "explain", "explaining", "your", "you", "in", "for",
           "would", "be", "awesome", "too", "again", "time", "part", "pleaseee")
+
+#: Filler at the *front* of a phrase only. "one" leads a request — "make one about the
+#: Rake" — and ends a name: the Bolid One, the Chosen One. Stripped from both ends it
+#: turned a real request for "the Bolid One" into "bolid", which is not what anybody
+#: asked for and not what a search for it would find.
+HEAD_ONLY = ("one",)
 
 #: Below this a "request" is one person, which is noise rather than a signal.
 MIN_MENTIONS = 2
@@ -86,16 +96,25 @@ class Backlog:
     requests: list[Request] = field(default_factory=list)
     comments_read: int = 0
     with_a_request: int = 0
+    #: Subjects exactly one person named. Kept rather than dropped, because dropping
+    #: them made the report say "nothing asked for" to an operator whose audience had
+    #: just named three creatures — which is a false statement, not a quiet one. They
+    #: are still not a ranking: one person is one person, and the count says so.
+    once: list[Request] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         return {"comments_read": self.comments_read,
                 "with_a_request": self.with_a_request,
-                "requests": [item.as_dict() for item in self.requests]}
+                "requests": [item.as_dict() for item in self.requests],
+                "asked_once": [item.as_dict() for item in self.once]}
 
     def as_text(self) -> str:
+        if not self.requests and not self.once:
+            return f"{self.comments_read} comments read, none of them asked for anything."
         if not self.requests:
-            return (f"{self.comments_read} comments read, nothing asked for more than "
-                    f"once.")
+            named = ", ".join(item.subject for item in self.once[:8])
+            return (f"{self.comments_read} comments read. Nothing was asked for twice, "
+                    f"but {len(self.once)} thing(s) were named once: {named}.")
         lines = [f"{len(self.requests)} thing(s) asked for across "
                  f"{self.comments_read} comments ({self.with_a_request} contained a "
                  f"request):"]
@@ -112,7 +131,7 @@ def _clean(subject: str) -> str:
     words = re.sub(r"[^\w\s'-]", " ", subject).split()
     while words and words[0].lower() in FILLER:
         words.pop(0)
-    while words and words[-1].lower() in FILLER:
+    while words and words[-1].lower() in FILLER and words[-1].lower() not in HEAD_ONLY:
         words.pop()
     # Trimmed to the head of the phrase, not the tail. A request names its subject first
     # and then trails off — "the Anchorage on your next video" — so keeping the front is
@@ -159,11 +178,17 @@ def read(comments: list) -> Backlog:
         if found:
             hit_count += 1
 
-    requests = [
-        Request(subject=subject, mentions=count, likes=likes[subject],
-                examples=examples.get(subject, []))
-        for subject, count in tally.most_common()
-        if count >= MIN_MENTIONS
-    ]
-    return Backlog(requests=requests, comments_read=read_count,
+    def built(subject: str, count: int) -> Request:
+        return Request(subject=subject, mentions=count, likes=likes[subject],
+                       examples=examples.get(subject, []))
+
+    ranked = tally.most_common()
+    requests = [built(subject, count) for subject, count in ranked
+                if count >= MIN_MENTIONS]
+    # Sorted by likes, because on a page of singletons the only evidence of how many
+    # people agreed is how many liked the comment saying it.
+    once = sorted((built(subject, count) for subject, count in ranked
+                   if count < MIN_MENTIONS),
+                  key=lambda item: item.likes, reverse=True)
+    return Backlog(requests=requests, once=once, comments_read=read_count,
                    with_a_request=hit_count)

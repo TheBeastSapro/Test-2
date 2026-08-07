@@ -13,7 +13,7 @@ Every comment below is real, taken verbatim from the reference's videos this ses
 
 from __future__ import annotations
 
-from forgecast.research.requests import MIN_MENTIONS, read
+from forgecast.research.requests import MIN_MENTIONS, _clean, read
 
 REAL = [
     {"textDisplay": "An explanation of some of the biggest SCPs would be awesome!! "
@@ -125,3 +125,92 @@ def test_it_says_it_does_not_fetch():
     answer = Studio.audience_requests(object(), [])
     assert "error" in answer
     assert "does not fetch" in answer["error"]
+
+
+# ------------------------------------------------------- measured against real comments
+#
+# Everything above this line was written from comments I invented. These twenty are the
+# real top comments on the reference channel's most-watched video (Vj769HToCtY, 1.9M
+# views, 739 comments), read through NexLev and pasted verbatim. Running the miner
+# against them found three defects in one pass — which is the whole argument for having
+# them here.
+
+TOP_COMMENTS = [
+    "5:35 tf was that goofy ahh scream 😭🙏🥀",
+    "0-1;50 amber 1;50- 2;11 driving down the highway 2;11-3;18 spider creature "
+    "3;18-4;22 watch tower 4;22-5;25 sunman 5;25-6;29 mushroom 6;29-7;26 neph",
+    "Amber 0:32 housewalker 1:28 driving down the highway 2:22 unknown spider "
+    "creature 3:19  watch tower 4:24 SUN MAN 5:26",
+    "How I'd survive driving down the highway\n1:look at it like a deadstare",
+    '"It looks like a mushroom, bigger than yours" 6:36',
+    "I wanna see the Bolid One 🎉❤",
+    "Amber is just the giants from The bfg by Ronald dahl",
+    "An explanation of some of the biggest SCPs would be awesome!!😊😊 \n"
+    "My son would love that :)",
+    "99 missed calls from the SCP foundation",
+    "What we understood: Doctor Nowhere loves creating bigahh monsters",
+    "amber: i love eating humen\nHousewalker: same but not really",
+    '"It looks like a mushroom bigger than yours"😭👏🏿',
+    "3:40 bro screamed in lowercase 💔",
+    "“It looks like a mushroom bigger than yours”is so brain rotted",
+    "Why is the music so chill?",
+    "Please make us see the Anchorage on your next video",
+    "That looks so spooky 😨😨😨 that is a true monster right there",
+    "3:40 5:35 Ahhh, hmmmm, most calmest man in history",
+    "Sunman can also transform to its real form what it called. It's spider form.",
+    "Ahh ammm the chillest man in history",
+]
+
+
+def test_every_real_request_in_the_sample_is_found():
+    """Three requests in twenty comments, and the first run found two.
+
+    The miss was "I wanna see the Bolid One": the pattern required "to see", and
+    "wanna" does not take "to". Written from invented comments, every example had the
+    "to" in it — which is what makes a fixture written by the same person who wrote the
+    regex worth so much less than twenty real ones.
+    """
+    backlog = read([{"text": comment} for comment in TOP_COMMENTS])
+
+    named = {item.subject for item in backlog.requests + backlog.once}
+    assert "bolid one" in named
+    assert "biggest scps" in named
+    assert "anchorage" in named
+
+
+def test_a_name_ending_in_one_keeps_it():
+    """"one" leads a request — "make one about the Rake" — and ends a name: the Bolid
+    One, the Chosen One. Stripped from both ends it turned a real request for the Bolid
+    One into "bolid", which is not what anybody asked for and not what a search for it
+    would find."""
+    assert _clean("the Bolid One") == "bolid one"
+    assert _clean("one about the Rake") == "rake"
+
+
+def test_nothing_asked_for_twice_still_names_what_was_asked_for_once():
+    """The first version reported "nothing asked for more than once" on this sample.
+
+    Three people had just named three creatures. A report that says nothing was asked
+    for, to an operator whose audience asked for three things, is a false statement
+    rather than a quiet one — and this is the one output the format's growth loop runs
+    on.
+    """
+    backlog = read([{"text": comment} for comment in TOP_COMMENTS])
+
+    assert backlog.requests == []          # nothing hit twice in twenty comments
+    assert len(backlog.once) == 3
+    text = backlog.as_text()
+    assert "named once" in text
+    assert "bolid one" in text
+    # ...and it still refuses to call three singletons a ranking.
+    assert "3 thing(s)" in text
+
+
+def test_a_page_of_jokes_and_timestamps_is_not_read_as_requests():
+    """Seventeen of these twenty are gags, hand-written chapter indexes and canon
+    corrections. A miner that found requests in them would produce a backlog of noise
+    that reads exactly like signal."""
+    backlog = read([{"text": comment} for comment in TOP_COMMENTS])
+
+    assert backlog.comments_read == 20
+    assert backlog.with_a_request == 3
