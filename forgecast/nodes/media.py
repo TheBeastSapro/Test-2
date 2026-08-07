@@ -425,6 +425,92 @@ def _fetch_canon(ctx: NodeContext, shot: dict, slug: str) -> Path | None:
     return out
 
 
+async def _canon_plate(ctx: NodeContext, shot: dict, cache: dict, image_provider,
+                       width: int, height: int) -> Path | None:
+    """The background one composite stands on, bought once per segment.
+
+    Keyed on `plate_group` — the entity — because the reference reuses its plate across
+    a creature's whole segment and generating one a shot would be paying twenty times
+    for a location the format only has one of. `None` is a real answer: the caller
+    renders the cut-out as it arrived and says so.
+
+    Generation first and the page's own wide second, which is the measured order rather
+    than a preference. A wiki gallery's wides are gameplay screenshots — standing a
+    subject on one puts a hotbar along the bottom of the shot and a player avatar in the
+    corner, which is somebody's recording rather than a background. It stays as the free
+    fallback because a HUD behind the subject is a poor shot and no shot is a hole.
+    """
+    if not shot.get("composite"):
+        return None
+
+    group = str(shot.get("plate_group") or "")
+    if group in cache:
+        return cache[group]
+
+    plate: Path | None = None
+    prompt = str(shot.get("plate_prompt") or "")
+    if prompt:
+        try:
+            made = await image_provider.generate(
+                prompt, out_path=ctx.path_for(f"canon_plate_{_slugify(group)}"),
+                width=width, height=height,
+            )
+            plate = made.path
+            ctx.log(f"plate for {group or 'the canon segment'} generated once and reused "
+                    f"across its shots")
+        except ProviderError as exc:
+            ctx.log(f"plate for {group or 'the canon segment'} could not be generated "
+                    f"({exc}) — falling back to the page's own wide", level="warning")
+
+    if plate is None and shot.get("plate_url"):
+        plate = await asyncio.to_thread(
+            _fetch_canon, ctx, {"asset_url": shot["plate_url"],
+                                "asset": shot.get("plate_asset")},
+            f"canon_plate_{_slugify(group)}")
+
+    if plate is None:
+        ctx.log(f"nothing to stand {group or 'the canon subject'} on — its shots render "
+                f"as the cut-outs they arrived as", level="warning")
+
+    cache[group] = plate
+    return plate
+
+
+def _slugify(text: str) -> str:
+    """A filename fragment from an entity title. Not reversible and not meant to be."""
+    kept = "".join(char if char.isalnum() else "_" for char in str(text).lower())
+    return kept.strip("_")[:48] or "plate"
+
+
+def _stand_subject(ctx: NodeContext, shot: dict, slug: str, subject: Path,
+                   plate_path: Path | None, width: int, height: int) -> Path:
+    """Put a cut-out onto a plate. Returns the composite, or the subject unchanged.
+
+    This is the shot model the format is actually made of and the reason
+    `layers/shot.py` exists: the creature is the franchise's own artwork, the
+    environment is a generated plate, and the shot is the first standing on the second.
+    Without this step a canon shot renders as a 2250x2250 transparent PNG — which ffmpeg
+    will happily letterbox onto black, producing a sticker floating in a void.
+
+    Returns the subject untouched rather than raising when there is no plate or the
+    composite fails. A cut-out on black is a poor shot and a missing shot is a hole; the
+    poor shot is recoverable and says so in the log.
+    """
+    from ..layers.shot import place
+
+    if not shot.get("composite") or plate_path is None:
+        return subject
+
+    out = ctx.path_for(f"{slug}_composite.png")
+    try:
+        place(subject, plate_path, out, width=width, height=height)
+    except Exception as exc:
+        ctx.log(f"{slug}: could not stand {shot.get('asset')} on its plate: {exc}",
+                level="warning")
+        return subject
+    return out
+
+
 def _fetch_footage(ctx: NodeContext, shot: dict, slug: str, seconds: float):
     """Get the chosen clip onto disk, muted and trimmed. `None` if anything stops it.
 
@@ -598,6 +684,38 @@ def _scenes_for(entity: dict, scenes: list[dict]) -> list[dict]:
                    for name in names)]
 
 
+#: How much of the script's own visual direction goes into a plate prompt. The scene's
+#: `visual_prompt` is a whole-frame instruction and this is only asking for the back
+#: half of one, so it is a phrase of guidance rather than a paragraph of it.
+PLATE_PROMPT_CHARS = 180
+
+#: What every plate prompt ends with, and the reason it is a constant. The subject is
+#: composited on top, so a plate with its own creature in it renders two — and this is
+#: the failure mode a generation model falls into hardest, because the scene text it is
+#: given is entirely about a creature.
+PLATE_CONSTRAINT = (
+    "Empty environment only. No creature, no figure, no person, no animal, no character "
+    "of any kind. No text, no logo, no interface. Deep focus background plate, room for "
+    "a subject to stand in the lower centre foreground."
+)
+
+
+def _plate_prompt(entity: dict, scenes: list[dict]) -> str:
+    """What to generate as the background for one entity's segment.
+
+    Built from the script's own visual direction for the scenes the entity covers,
+    because that is where the environment was already described and it is the half of
+    the frame the plate is. The entity's name goes in only as the *place* it is
+    associated with, never as a subject to draw — see `PLATE_CONSTRAINT`.
+    """
+    direction = next((str(scene.get("visual_prompt") or "").strip()
+                      for scene in scenes if str(scene.get("visual_prompt") or "").strip()),
+                     "")
+    setting = direction[:PLATE_PROMPT_CHARS] or (
+        f"the environment {entity.get('title', 'this creature')} is found in")
+    return f"Background plate: {setting}. {PLATE_CONSTRAINT}"
+
+
 def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
     """Written shot lists for every scene an entity covers.
 
@@ -636,6 +754,28 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
         warnings += [f"{entity['title']}: {note}" for note in plan.warnings]
 
         gallery = {str(asset.get("name")): asset for asset in entity.get("gallery") or []}
+        # Plates for the cut-outs. These assets arrive as transparent PNGs — the ones
+        # this lane fetched off Doors are 2250x2250 RGBA with the creature in the middle
+        # — so a composite shot needs a background to stand on.
+        #
+        # Generated, not fetched, which is the measured split and not a preference:
+        # REFERENCE-MSIMPLIFIED records ~70% sourced creature art against ~10% generated
+        # background plates, and the reason is visible the moment you render one. The
+        # first version of this stood the cut-outs on the page's own wide images, and
+        # those are gameplay screenshots — the composite came back with a hotbar along
+        # the bottom and a player avatar in the corner. Chrome from somebody's recording
+        # is not a background, it is evidence of one.
+        #
+        # A gallery wide stays as the free fallback for a run with no image provider: a
+        # HUD behind the subject is a poor shot, and no shot at all is a hole.
+        fallback_plates = [asset for asset in entity.get("gallery") or []
+                           if not asset.get("portrait")]
+        plate_at = 0
+        # One plate per entity, reused across its composites. The reference reuses both
+        # halves — the same creature image across every shot of that creature, only
+        # scale and position changing — so a plate per shot would be paying for variety
+        # the format does not have and the eye reads as a different location each cut.
+        plate_prompt = _plate_prompt(entity, owned)
         # Each shot lands on whichever scene its start time falls in, so the shot list
         # keeps the (scene_index, plate_index) shape everything downstream already
         # reads. Boundaries are the scenes' own durations — the plan is laid over the
@@ -653,6 +793,15 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
             index = int(scene["index"])
             plates = by_scene.setdefault(index, [])
             by_scene[index] = plates
+
+            plate: dict = {}
+            # A plate only where the shot is a cut-out that needs one, and never the
+            # subject's own file: a wide standing behind itself is one picture at two
+            # scales, which reads as a zoom nobody asked for.
+            if shot.composite and fallback_plates:
+                plate = fallback_plates[plate_at % len(fallback_plates)]
+                plate_at += 1
+
             plates.append({
                 "scene_index": index,
                 "plate_index": len(plates),
@@ -670,7 +819,19 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
                 "licence": asset.get("licence") or {},
                 "attribution": str(entity.get("attribution") or ""),
                 "source_page": str(entity.get("url") or ""),
+                # `composite` says what the shot IS, and it stays true even with no
+                # plate found — the renderer needs to know it is holding a cut-out
+                # either way, and flipping it to false here would hide the missing
+                # plate behind a shot that merely looks flat.
                 "composite": bool(shot.composite),
+                # Where the background comes from, in preference order. The group is
+                # what makes it one purchase rather than one a shot: every composite in
+                # this entity's segment names the same group, so the batch generates the
+                # plate once and re-uses it.
+                "plate_group": entity["title"] if shot.composite else "",
+                "plate_prompt": plate_prompt if shot.composite else "",
+                "plate_asset": str(plate.get("name") or ""),
+                "plate_url": str(plate.get("url") or ""),
                 "overlays": list(shot.overlays),
                 "animate": bool(shot.animate),
                 "tier": STANDARD_TIER,
@@ -1106,6 +1267,10 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
     # animations mostly failed over to stills does not report the estimate as a cost.
     animation_usd = 0.0
     clips_by_model: dict[str, int] = {}
+    # One plate per canon segment, held across the loop. A `None` entry is cached too —
+    # a segment whose plate could not be made must not re-ask on every one of its
+    # twenty shots and log the same warning twenty times.
+    canon_plates: dict[str, Path | None] = {}
 
     for shot in shots:
         index = int(shot["scene_index"])
@@ -1162,6 +1327,10 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
             if asset_path is None:
                 degraded += 1
                 continue
+            plate_path = await _canon_plate(ctx, shot, canon_plates, image_provider,
+                                            width, height)
+            asset_path = await asyncio.to_thread(
+                _stand_subject, ctx, shot, slug, asset_path, plate_path, width, height)
             ctx.emit_artifact(
                 "image", asset_path, "image/png",
                 scene_index=index, plate_index=plate_index, role="shot",

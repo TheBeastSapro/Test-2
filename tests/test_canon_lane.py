@@ -371,3 +371,119 @@ async def test_discovery_without_a_search_provider_returns_nothing_not_a_guess()
     """An empty list is a caller's cue to ask which wiki. A constructed subdomain is a
     wrong answer wearing a right answer's clothes."""
     assert await canon.discover("Doors", search=None) == []
+
+
+# ------------------------------------------------------------- the shot reaches the disk
+
+
+class _CountingImages:
+    """An image provider that records every plate it was asked to make."""
+
+    def __init__(self, tmp_path: Path):
+        self.prompts: list[str] = []
+        self._tmp = tmp_path
+
+    async def generate(self, prompt, *, out_path, width, height):
+        from PIL import Image
+
+        from forgecast.providers import MediaResult
+
+        self.prompts.append(prompt)
+        path = Path(f"{out_path}.png")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (width, height), (40, 40, 60)).save(path)
+        return MediaResult(path=path, mime="image/png", credits=1, provider="stub")
+
+
+def _canon_shot(**over) -> dict:
+    shot = {"scene_index": 1, "plate_index": 0, "plates": 2, "planned_shots": 2,
+            "kind": "canon", "seconds": 3.0, "beat": "appearance",
+            "prompt": "Seek — appearance", "asset": "Seek2.png",
+            "asset_url": "https://static.example/Seek2.png",
+            "asset_page": "https://doors-game.fandom.com/wiki/File:Seek2.png",
+            "licence": {}, "attribution": "Seek — art from ... (licence not stated)",
+            "source_page": "https://doors-game.fandom.com/wiki/Seek",
+            "composite": True, "plate_group": "Seek",
+            "plate_prompt": "Background plate: a dark hotel corridor. Empty environment "
+                            "only. No creature, no figure, no person.",
+            "plate_asset": "Seeklight.jpeg",
+            "plate_url": "https://static.example/Seeklight.jpeg",
+            "overlays": [], "animate": False, "tier": "standard", "model": "",
+            "places": []}
+    shot.update(over)
+    return shot
+
+
+@pytest.mark.asyncio
+async def test_one_plate_is_bought_for_a_segment_and_not_one_per_shot(
+        tmp_path, monkeypatch):
+    """The reference reuses its plate across a creature's whole segment.
+
+    A plate a shot would pay twenty times over for a location the format only has one
+    of — and to the eye it reads as the creature teleporting between cuts.
+    """
+    from PIL import Image
+
+    def fake_fetch(ctx, shot, slug):
+        path = Path(ctx.path_for(f"{slug}.png"))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGBA", (600, 600), (200, 30, 30, 255)).save(path)
+        return path
+
+    monkeypatch.setattr(media_node, "_fetch_canon", fake_fetch)
+    images = _CountingImages(tmp_path)
+
+    context = _context(tmp_path, node="shots")
+    context.upstream_outputs["broll_plan"] = {
+        "shots": [_canon_shot(plate_index=index, scene_index=1 + index // 3)
+                  for index in range(6)]}
+    monkeypatch.setattr(context.registry, "image", lambda: images)
+
+    result = await media_node.shots_node(context)
+
+    assert len(images.prompts) == 1, images.prompts
+    assert len(result.output["shots"]) == 6
+    assert {shot["kind"] for shot in result.output["shots"]} == {"canon"}
+
+
+@pytest.mark.asyncio
+async def test_the_plate_prompt_forbids_the_subject_it_will_be_composited_under(
+        tmp_path, monkeypatch):
+    """A generation model handed scene text about a creature draws the creature.
+
+    The cut-out goes on top, so a plate with its own creature in it renders two — and
+    the second one is the generated depiction this whole lane exists to avoid.
+    """
+    prompt = media_node._plate_prompt(
+        {"title": "Seek"},
+        [{"visual_prompt": "Seek looms in a dark hotel corridor"}])
+
+    assert "No creature" in prompt
+    assert "No text, no logo, no interface" in prompt
+    assert "dark hotel corridor" in prompt
+
+
+@pytest.mark.asyncio
+async def test_a_subject_that_cannot_be_fetched_is_a_hole_and_never_a_substitute(
+        tmp_path, monkeypatch):
+    """The honest failure for a canon shot is a missing shot an operator can fix.
+
+    Falling through to generation would put an invented depiction of a named creature
+    on screen — which is the one substitution this audience reliably catches, arriving
+    through the error path rather than the happy one.
+    """
+    from forgecast.providers import ProviderError
+
+    monkeypatch.setattr(media_node, "_fetch_canon", lambda ctx, shot, slug: None)
+    images = _CountingImages(tmp_path)
+
+    context = _context(tmp_path, node="shots")
+    context.upstream_outputs["broll_plan"] = {"shots": [_canon_shot()]}
+    monkeypatch.setattr(context.registry, "image", lambda: images)
+
+    # A run whose only shot could not be fetched has produced no video, and saying so
+    # is right. The point of the test is what it did *not* do on the way there.
+    with pytest.raises(ProviderError):
+        await media_node.shots_node(context)
+
+    assert images.prompts == [], "a failed canon fetch bought a generated stand-in"
