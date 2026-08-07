@@ -150,19 +150,30 @@ def apply(clip_path: Path, out_path: Path, item: MotionPlan, *,
     if item.kind == "title":
         # A title lands after the first beat, not on frame one: cutting straight to
         # animated type gives the viewer nothing to read it against.
+        #
+        # Centre, never the preset's caption zone. `caption_zone` is the decision
+        # about where *narration* sits, and a title that inherited it was composited
+        # into the burned caption track — the video's own title and its first line of
+        # narration drawn over each other, on the opening scene of every long-form
+        # render whose preset captions in the bottom third. A title card is centre
+        # frame anyway; that is what makes it a card rather than a caption.
         start = min(0.4, seconds * 0.15)
         scene.add(*preset.caption(
             item.lines[0], start=start, width=width, height=height,
             duration=min(seconds - start, preset.hold + preset.entry_duration),
-            accent=True,
+            accent=True, zone="centre",
         ))
     elif item.kind == "lower_third":
+        # A lower third belongs in the lower third — that is its name — but the lower
+        # third now has narration burned across it, so it sits directly above the
+        # caption track instead of in it.
         start = min(0.5, seconds * 0.2)
         headline, *rest = item.lines
         scene.add(*preset.lower_third(
             headline, rest[0] if rest else "", start=start,
             width=width, height=height,
             duration=min(seconds - start, preset.hold + 1.4),
+            zone="above_captions",
         ))
     elif item.kind == "kinetic":
         per_line = max(0.6, (seconds - 0.3) / max(1, len(item.lines)))

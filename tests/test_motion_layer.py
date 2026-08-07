@@ -337,3 +337,135 @@ def test_learn_motion_reports_an_unreadable_profile_rather_than_raising(tmp_path
     broken = tmp_path / "broken.json"
     broken.write_text("{not json", encoding="utf-8")
     assert main(["learn-motion", str(broken), "--directory", str(tmp_path)]) == 1
+
+
+# ── keeping motion out of the burned narration track ────────────────────────────
+#
+# Captions are burned in by a separate pass after motion graphics, so nothing in the
+# motion module can see them. That is how the opening scene of every long-form render
+# came to draw the video's own title and its first line of narration on top of each
+# other: `title` asked the preset for a caption, the preset's `caption_zone` is where
+# *narration* goes, and the title landed exactly there. Measured off a real render —
+# the motion band spanned 0.75–0.90 of frame height and the caption cue sat inside it.
+
+def _vertical_span(element, height: int = 1080) -> tuple[float, float]:
+    """Top and bottom of an element as fractions of frame height.
+
+    Bands carry their own height. Text is measured from its size, which is what the
+    overlap is actually made of — a band clear of the captions with its type hanging
+    below it would pass a band-only check and still collide.
+    """
+    from forgecast.motion.compose import Band, Text
+
+    y = float(element.y if not hasattr(element.y, "at") else 0.5)
+    if isinstance(element, Band):
+        return y, y + element.height_fraction
+    if isinstance(element, Text):
+        half = (element.size / height) * 0.75      # cap height either side of centre
+        return y - half, y + half
+    return y, y
+
+
+@pytest.mark.parametrize("preset_name", sorted(LIBRARY))
+@pytest.mark.parametrize("kind,lines", [
+    ("title", ["Why deep-sea cables keep breaking"]),
+    ("lower_third", ["Why deep-sea cables keep breaking", "the mechanism"]),
+])
+def test_motion_never_composites_into_the_burned_caption_zone(preset_name, kind, lines):
+    from forgecast.motion.presets import CAPTION_SAFE_BOTTOM
+
+    preset = LIBRARY[preset_name]
+    width, height = 1920, 1080
+
+    if kind == "title":
+        elements = preset.caption(
+            lines[0], start=0.4, width=width, height=height, duration=3.0,
+            accent=True, zone="centre",
+        )
+    else:
+        elements = preset.lower_third(
+            lines[0], lines[1], start=0.5, width=width, height=height,
+            duration=4.0, zone="above_captions",
+        )
+
+    for element in elements:
+        _top, bottom = _vertical_span(element, height)
+        assert bottom <= CAPTION_SAFE_BOTTOM + 0.001, (
+            f"{preset_name}/{kind}: {type(element).__name__} reaches {bottom:.3f}, "
+            f"into the caption track that starts at {CAPTION_SAFE_BOTTOM}"
+        )
+
+
+def test_the_title_card_is_not_placed_by_the_caption_zone():
+    """The regression itself, stated as the rule it broke: `caption_zone` decides
+    where narration sits, and a title is not narration. A preset that captions in the
+    bottom third must still put its title clear of the bottom third."""
+    from forgecast.motion.presets import CAPTION_SAFE_BOTTOM
+
+    bottom_captioned = [p for p in LIBRARY.values() if p.caption_zone == "bottom_third"]
+    assert bottom_captioned, "no preset captions in the bottom third — rewrite this test"
+
+    for preset in bottom_captioned:
+        elements = preset.caption(
+            "Why deep-sea cables keep breaking", start=0.4, width=1920, height=1080,
+            duration=3.0, accent=True, zone="centre",
+        )
+        for element in elements:
+            _top, bottom = _vertical_span(element)
+            assert bottom <= CAPTION_SAFE_BOTTOM, preset.name
+
+
+def _elements_apply_composites(monkeypatch, item, preset, tmp_path):
+    """What `apply` would actually draw, without encoding anything.
+
+    The check has to run against `apply`, not against the preset. The defect was a
+    call site: the preset placed exactly where it was asked to, and `apply` asked for
+    the caption zone. A test that calls `preset.caption(zone="centre")` itself asserts
+    the fix while re-making the mistake it is guarding — it passes with the call site
+    reverted.
+    """
+    from forgecast.motion import Scene as MotionScene
+    from forgecast.render import motion_layer
+
+    captured: list = []
+    out = tmp_path / "out.mp4"
+
+    def fake_render(self, path, timeout=600.0):
+        captured.extend(self.elements)
+        return path
+
+    monkeypatch.setattr(MotionScene, "render", fake_render)
+    clip = tmp_path / "in.mp4"
+    clip.write_bytes(b"")
+    motion_layer.apply(clip, out, item, preset=preset, seconds=6.0,
+                       width=1920, height=1080, fps=30)
+    return captured
+
+
+@pytest.mark.parametrize("preset_name", sorted(LIBRARY))
+def test_apply_keeps_the_title_out_of_the_caption_track(monkeypatch, preset_name, tmp_path):
+    from forgecast.motion.presets import CAPTION_SAFE_BOTTOM
+
+    plan = MotionPlan(0, "title", ["Why deep-sea cables keep breaking"], "opening scene")
+    for element in _elements_apply_composites(monkeypatch, plan, LIBRARY[preset_name], tmp_path):
+        _top, bottom = _vertical_span(element)
+        assert bottom <= CAPTION_SAFE_BOTTOM + 0.001, (
+            f"{preset_name}: title {type(element).__name__} reaches {bottom:.3f}, "
+            f"into the caption track starting at {CAPTION_SAFE_BOTTOM}"
+        )
+
+
+@pytest.mark.parametrize("preset_name", sorted(LIBRARY))
+def test_apply_keeps_the_lower_third_above_the_caption_track(
+    monkeypatch, preset_name, tmp_path,
+):
+    from forgecast.motion.presets import CAPTION_SAFE_BOTTOM
+
+    plan = MotionPlan(1, "lower_third",
+                      ["Why deep-sea cables keep breaking", "the mechanism"],
+                      "names the subject early")
+    for element in _elements_apply_composites(monkeypatch, plan, LIBRARY[preset_name], tmp_path):
+        _top, bottom = _vertical_span(element)
+        assert bottom <= CAPTION_SAFE_BOTTOM + 0.001, (
+            f"{preset_name}: lower third {type(element).__name__} reaches {bottom:.3f}"
+        )

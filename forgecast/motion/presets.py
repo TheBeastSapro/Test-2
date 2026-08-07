@@ -125,12 +125,17 @@ class MotionPreset:
 
     def caption(self, text: str, *, start: float, width: int, height: int,
                 duration: float | None = None, accent: bool = False,
-                y_offset: float = 0.0, max_lines: int = 2) -> list:
+                y_offset: float = 0.0, max_lines: int = 2, zone: str = "") -> list:
         """A caption with the preset's entry move, plus its backing if any.
 
         `y_offset` nudges the line off the preset's zone, as a fraction of frame
         height. Two captions in the same zone otherwise draw on top of each other —
         which produced an unreadable overlap the first time a hook used two lines.
+
+        `zone` replaces the preset's zone outright, for an element that is not a
+        caption and must not follow the caption's placement. A title card is the
+        case: the preset decides where *captions* go, and a title that inherits that
+        decision lands in the burned narration track.
         """
         span = duration if duration is not None else self.hold
         size = max(14, int(self.text_height_ratio * height))
@@ -138,7 +143,7 @@ class MotionPreset:
         # unfitted caption is drawn straight off the edge of the frame. This is where
         # a 9:16 frame differs most from 16:9 — the same words need half the width.
         text, size = fit_text(text, size, width, max_lines=max_lines)
-        y = _ZONES.get(self.caption_zone, 0.82) + y_offset
+        y = _ZONES.get(zone or self.caption_zone, 0.82) + y_offset
         # A fade that does not fit its window would still be rising when `enable`
         # switches off, so the line would vanish mid-move instead of leaving.
         rise = min(self.entry_duration, span * 0.45)
@@ -197,13 +202,14 @@ class MotionPreset:
         )
 
     def lower_third(self, headline: str, subhead: str, *, start: float,
-                    width: int, height: int, duration: float = 4.0) -> list:
+                    width: int, height: int, duration: float = 4.0,
+                    zone: str = "") -> list:
         """Two stacked lines over a band, the second staggered behind the first."""
         size = max(16, int(self.text_height_ratio * height))
         headline, size = fit_text(headline, size, width, max_lines=1)
         subhead, sub_size = fit_text(subhead, max(12, int(size * 0.62)), width,
                                      max_lines=1)
-        y = _ZONES.get(self.caption_zone, 0.82)
+        y = _ZONES.get(zone or self.caption_zone, 0.82)
         elements: list = [Band(
             start=start, duration=duration,
             colour=f"black@{max(self.band_opacity, 0.55):.2f}",
@@ -300,7 +306,30 @@ class MotionPreset:
                 .at(self.entry_duration, rest, self.easing))
 
 
-_ZONES = {"bottom_third": 0.82, "centre": 0.5, "top_third": 0.16, "none": 0.82}
+#: The top of the burned narration track, as a fraction of frame height.
+#:
+#: Captions are burned in after motion graphics, by a separate pass, so nothing in
+#: this module can see them — which is how a title card and the first line of
+#: narration came to be drawn on top of each other in every long-form render. The
+#: measurement: `burn_subtitles` styles at MarginV=42 with an opaque box, and the
+#: cue block on a 1080-high frame occupied 0.74 downwards. This is that boundary,
+#: rounded down, and anything composited below it will be sat on.
+CAPTION_SAFE_BOTTOM = 0.72
+
+#: Where each named zone puts a line's centre.
+#:
+#: `above_captions` exists because "bottom third" and "clear of the captions" stopped
+#: being the same place once narration was burned in. It is the lower third for
+#: anything that is not itself the narration — a lower third naming a person or a
+#: place — and it is placed so its band ends where the caption track begins:
+#: `lower_third` draws a band from y-0.06 spanning 0.19, so 0.59 - 0.06 + 0.19 = 0.72.
+_ZONES = {
+    "bottom_third": 0.82,
+    "above_captions": 0.59,
+    "centre": 0.5,
+    "top_third": 0.16,
+    "none": 0.82,
+}
 
 
 def slug(name: str) -> str:
