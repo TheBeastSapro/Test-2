@@ -244,34 +244,44 @@ Two other patterns worth noting:
 
 ## What Forgecast would get wrong today
 
-Recorded as the gap list, so the work is against measurements rather than impressions.
+The gap list, kept current. Struck items name the commit that closed them, because a gap
+list that only grows is one nobody trusts, and one that quietly drops finished items
+loses the record of what the work was for.
 
-1. **It generates the subject instead of fetching it.** This is the big one. The format's
-   b-roll is *retrieval* — the canonical artwork off a fandom wiki page — and Forgecast
-   has no MediaWiki source at all. An audience that polices its own canon will reject a
-   generated Amber, and generation cannot produce a named entity it has never seen.
-2. **It researches the wrong place.** `research_node` resolves to Tavily/Brave with a
-   Wikipedia fallback. The source of truth for this genre is the franchise's fandom wiki,
-   which has a free structured API — infobox for the stats, sections for the beats, and
-   the image on the same page as the words describing it.
-3. **Captions.** Fixed since this document was first written: burning is now read off the
-   learned style rather than pinned on. The reference burns none, and burning a narration
-   track across the lower third would cover the name card, the stats and the gags.
-4. **No name card, no stat card, no speech bubble.** Three on-screen elements the format
-   is built from, and the motion library has none of them.
-5. **No gag layer at all.** The highest-engagement element in the reference — measured off
-   its own comments — has no representation anywhere in the pipeline.
-6. **Compositing.** The format cuts a subject out and moves one limb over a separate
-   plate. Forgecast renders whole frames; `layers.matte` can cut a subject but nothing
-   assembles a subject-over-plate shot with an independently animated part.
-7. **Transitions.** Forgecast's presets dissolve; this format hard-cuts exclusively.
-8. **Motion budget.** Forgecast decides animation per shot; this format spends it about
-   twice a minute, on the beat the narration names.
-9. **No comment mining.** The reference's topic pipeline is its own comment section, and
-   nothing in Forgecast reads comment text — only counts, for an engagement ratio.
-10. **Chapters.** The audience writes timestamp indexes by hand in the comments. Publishing
-    chapters is free, nothing generates them, and `vision/chapters.py` — which can read
-    them off a reference — has no production caller.
+1. ~~**It generates the subject instead of fetching it.**~~ Closed. `research/fandom.py`
+   reads the canonical artwork off the wiki, reachable as `read_fandom`. The format's
+   b-roll is retrieval, and an audience that polices its own canon will reject a
+   generated Amber.
+2. ~~**It researches the wrong place.**~~ Partly closed. The wiki reader exists and the
+   agent reaches for it; the pipeline's own `research_node` still resolves to
+   Tavily/Brave/Wikipedia and does not know about it. Open.
+3. ~~**Captions.**~~ Closed. Burning is read off the learned style, and the hook gate
+   previews what the render will actually produce.
+4. ~~**No name card, no stat card, no speech bubble.**~~ Closed. All three are
+   `MotionPlan` kinds; the stat card takes the wiki reader's rows unchanged.
+5. ~~**No gag layer at all.**~~ Closed. Bubbles are planned onto the story beat and
+   never onto the shot carrying the name card.
+6. ~~**Compositing.**~~ Closed. `layers/shot.py` places a subject on a plate, scaled by
+   its opaque region and anchored on a horizon.
+7. ~~**Transitions.**~~ Closed, and the original claim here was backwards: the renderer
+   always hard-cut, so this reference was reproduced by accident and a reference that
+   *dissolves* was the one being rendered wrong.
+8. **Motion budget.** Open. The segment planner rations motion to the story beat, but
+   the pipeline does not use the planner yet.
+9. ~~**No comment mining.**~~ Closed. `research/requests.py` tallies what the audience
+   asked for, reachable as `audience_requests`.
+10. **Chapters.** Open. The audience writes timestamp indexes by hand in the comments,
+    publishing chapters is free, nothing generates them, and `vision/chapters.py` — which
+    can read them off a reference — still has no production caller.
+
+### Still open, beyond the original list
+
+* **The planner is not in the pipeline.** `edit/segment.py` writes the shot list and the
+  agent can call it; `broll_plan` does not. Until it does, a run still decides each shot
+  at render time.
+* **The wiki's image is often a whole scene, not a cutout.** Amber's is the creature
+  between houses, shot through a window. So fetch-then-matte is a real step — and on
+  that asset the matte came back `usable=False` and was right to.
 
 ## Rights, unresolved
 
