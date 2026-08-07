@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -667,21 +668,42 @@ async def _offer_free_footage(ctx: NodeContext, beats: list[dict]) -> None:
 # the call site.
 
 
-def _scenes_for(entity: dict, scenes: list[dict]) -> list[dict]:
-    """The scenes this entity is the subject of.
+def _scenes_for(entity: dict, scenes: list[dict]) -> tuple[list[dict], str]:
+    """The scenes this entity is the subject of, and a warning when the match was loose.
 
     Matched on the entity's title appearing in the narration, which for this format is
     the join that exists: the script writes a segment per creature and says its name.
     `asked_for` is checked too, because the operator's spelling is what the beat outline
     and therefore the narration used, while `title` is what the wiki redirected to.
+
+    Whole words, and the name's own capitalisation first. Substring matching put the
+    wrong creature's artwork on screen on the first wiki this was pointed at: Doors has
+    entities called **Rush** and **Halt**, so "do not rush the last door" and "a halt in
+    the music" both claimed a segment. A creature is a proper noun and a script writes
+    it as one, so the capital is real evidence and not a formality.
+
+    The case-insensitive pass is the fallback rather than the rule, and it says so —
+    a script that lower-cases its names should still produce a video, and an operator
+    should be able to see why a scene was claimed.
     """
-    names = [str(entity.get("title") or ""), str(entity.get("asked_for") or "")]
-    names = [name.casefold() for name in names if name]
+    names = [name for name in (str(entity.get("title") or ""),
+                               str(entity.get("asked_for") or "")) if name]
     if not names:
-        return []
-    return [scene for scene in scenes
-            if any(name in str(scene.get("narration") or "").casefold()
-                   for name in names)]
+        return [], ""
+
+    def matches(scene: dict, flags: int) -> bool:
+        text = str(scene.get("narration") or "")
+        return any(re.search(rf"\b{re.escape(name)}\b", text, flags) for name in names)
+
+    exact = [scene for scene in scenes if matches(scene, 0)]
+    if exact:
+        return exact, ""
+
+    loose = [scene for scene in scenes if matches(scene, re.IGNORECASE)]
+    if not loose:
+        return [], ""
+    return loose, (f"matched on {len(loose)} scene(s) only by ignoring case — check "
+                   f"the narration is about it and not using the word")
 
 
 #: How much of the script's own visual direction goes into a plate prompt. The scene's
@@ -735,7 +757,9 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
     warnings: list[str] = []
 
     for entity in entities:
-        owned = _scenes_for(entity, scenes)
+        owned, loose = _scenes_for(entity, scenes)
+        if loose:
+            warnings.append(f"{entity['title']}: {loose}")
         if not owned:
             warnings.append(
                 f"{entity['title']}: fetched but no scene names it, so its artwork is "

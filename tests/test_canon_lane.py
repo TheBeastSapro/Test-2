@@ -560,3 +560,52 @@ def test_a_stat_row_of_prose_is_reduced_to_its_figures_and_never_invents_one():
     assert _figures("Immeasurable", STAT_VALUE_CHARS) == "Immeasurable"
     # Already fits, so it is never touched — including its European decimal comma.
     assert _figures("3,3 m", STAT_VALUE_CHARS) == "3,3 m"
+
+
+# ---------------------------------------------------- which scene an entity actually is
+
+
+RUSH = dict(SEEK, title="Rush", asked_for="Rush")
+
+
+def _scenes(*narrations):
+    return [{"index": index, "narration": text, "seconds": 20.0, "visual_prompt": "x"}
+            for index, text in enumerate(narrations)]
+
+
+def test_a_creature_named_after_a_common_word_does_not_claim_every_scene():
+    """Doors has entities called Rush and Halt.
+
+    Substring matching gave "do not rush the last door" and "a halt in the music" a
+    segment each — the wrong creature's artwork under narration about something else,
+    which is worse than the hole it fills and is exactly the error this audience
+    catches. A creature is a proper noun and a script writes it as one, so the capital
+    is evidence.
+    """
+    scenes = _scenes("Do not rush through the last door.",
+                     "Rush appears as a black smear in the corridor.",
+                     "Whatever you do, do not rush.")
+
+    owned, loose = media_node._scenes_for(RUSH, scenes)
+
+    assert [scene["index"] for scene in owned] == [1]
+    assert not loose
+
+
+def test_a_script_that_lower_cases_its_names_still_works_and_says_so():
+    """The fallback is a fallback, not the rule. A run should still produce a video —
+    and an operator should be able to see why a scene was claimed."""
+    scenes = _scenes("the rush comes down the corridor at you.",
+                     "Nothing to do with it.")
+
+    owned, loose = media_node._scenes_for(RUSH, scenes)
+
+    assert [scene["index"] for scene in owned] == [0]
+    assert "ignoring case" in loose
+
+
+def test_a_name_inside_a_longer_word_is_not_a_match():
+    """"Rushing" is not Rush, and "Seeker" is not Seek."""
+    owned, _ = media_node._scenes_for(RUSH, _scenes("Rushing water fills the room."))
+
+    assert owned == []
