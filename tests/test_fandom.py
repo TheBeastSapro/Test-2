@@ -158,3 +158,78 @@ def test_attribution_says_unknown_rather_than_assuming_a_licence():
     line = entity.attribution()
     assert "licence not stated" in line
     assert "File:Amber111.png" in line
+
+
+# ── reachability ────────────────────────────────────────────────────────────────
+#
+# This module was written, tested and committed with no caller — which is this
+# repository's most common defect and the one it names in its own docs. These tests are
+# the guard: a reader nothing can reach is a reader that does not exist.
+
+def test_the_reader_is_reachable_as_an_agent_tool():
+    from forgecast.agent import tools
+
+    assert "read_fandom" in tools.ALL_TOOLS
+
+
+def test_it_is_pre_allowed_because_it_only_reads():
+    """Keyless, fetches no file, spends nothing. It is also the lookup the agent should
+    be making *instead of* generating a picture of a named creature, and a check that
+    has to be asked for is a check that gets skipped."""
+    from forgecast.agent import tools
+
+    assert "read_fandom" in tools._READ_ONLY
+    assert "read_fandom" not in tools._WRITES
+
+
+def test_the_studio_method_exists_and_the_tool_calls_it():
+    import inspect
+
+    from forgecast.agent import tools
+    from forgecast.agent.studio import Studio
+
+    assert callable(getattr(Studio, "read_fandom", None))
+    assert "studio.read_fandom(" in inspect.getsource(tools.build_server)
+
+
+def test_the_tool_description_forbids_calling_the_art_cleared():
+    """The rights position is unresolved by design, so the one thing the description
+    must not let the agent do is summarise it into a verdict."""
+    import inspect
+
+    source = inspect.getsource(__import__("forgecast.agent.tools", fromlist=["x"]).build_server)
+    block = source[source.index('@tool("read_fandom"'):source.index("async def read_fandom")]
+
+    assert "never call an asset safe, cleared or free" in block
+    assert "CC-BY-SA" in block
+
+
+async def test_a_missing_entity_is_reported_rather_than_falling_through_to_generation():
+    """The substitution this whole module exists to prevent. An entity that cannot be
+    found must come back as a stated absence, not as an empty result a caller reads as
+    'go ahead and make one up'."""
+    from forgecast.agent.studio import Studio
+
+    async def nothing(site, wanted):
+        return None
+
+    import forgecast.research.fandom as reader
+
+    original = reader.lookup
+    reader.lookup = nothing
+    try:
+        answer = await Studio.read_fandom(object(), "some-wiki", "Nobody")
+    finally:
+        reader.lookup = original
+
+    assert answer["found"] is False
+    assert "generating a picture" in answer["note"]
+
+
+async def test_a_blank_argument_asks_for_what_is_missing():
+    from forgecast.agent.studio import Studio
+
+    answer = await Studio.read_fandom(object(), "", "Amber")
+
+    assert "error" in answer
+    assert ".fandom.com" in answer["error"], "say how to find the wiki name"

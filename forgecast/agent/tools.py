@@ -64,6 +64,13 @@ _READ_ONLY = (
     # informs is the operator's and is taken later, by a human, with the rights position
     # stated in words on every result.
     "locate_scene", "supplied_clips",
+    # Reading one canon entity off a fandom wiki: its own artwork, its stats, and the
+    # sections that are a segment's beats. Keyless, fetches no file and spends nothing.
+    # Pre-allowed for the reason `locate_scene` is — this is the lookup the agent should
+    # be making *instead of* generating a picture of a named creature, and a check it
+    # has to ask permission for is a check it learns to skip. Nothing it returns is
+    # cleared for use, and the rights position rides on every result in words.
+    "read_fandom",
     # Which engine will actually draw the motion scenes, per channel. Reading it is how
     # the agent can answer "why does this still look like ffmpeg" without changing
     # anything.
@@ -299,6 +306,28 @@ def build_server(studio):
     async def locate_scene(args):
         return _text(await studio.locate_scene(args.get("description") or "",
                                                limit=int(args.get("limit") or 6)))
+
+    @tool("read_fandom",
+          "Read one canon entity off a fandom wiki — 'Amber' on "
+          "'doctor-nowhere-creatures', 'Watchtower' on 'trevorhenderson'. Returns the "
+          "page's own artwork, its height and weight, and its Appearance / Behaviour / "
+          "How to Survive sections.\n\n"
+          "Use this instead of generating a picture whenever the video is about a NAMED "
+          "thing an audience already knows — a creature, a character, a vehicle, an SCP. "
+          "These audiences know what it looks like and correct the video when it is "
+          "wrong, so a generated depiction is an error rather than a style choice. The "
+          "page is also the script: its sections are the segment's beats in order, and "
+          "'How to Survive' is the wiki's own heading.\n\n"
+          "The wiki is the part of its URL before .fandom.com.\n\n"
+          "IMPORTANT: nothing here is cleared for use. Fandom text is CC-BY-SA, but the "
+          "art is often the original artist's copyright and these wikis usually state no "
+          "licence at all. Pass the attribution line through to the operator in full and "
+          "never call an asset safe, cleared or free.\n\n"
+          "Read-only, keyless, and spends nothing.",
+          {"wiki": str, "entity": str})
+    async def read_fandom(args):
+        return _text(await studio.read_fandom(args.get("wiki") or "",
+                                              args.get("entity") or ""))
 
     # ------------------------------------------------------------------- research
 

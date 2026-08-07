@@ -1151,6 +1151,58 @@ class Studio:
                       "run in words, and it never blocks publish.",
         }
 
+    async def read_fandom(self, wiki: str, entity: str) -> dict:
+        """One canon entity, as the four parts a segment is made of.
+
+        The measured shape of the genre this app targets: for a canon explainer, a
+        single fandom page carries the whole segment — its infobox image is the shot,
+        its height and weight are the stat card, and its Appearance / Behaviour / How
+        to Survive sections are the three narration beats in order.
+
+        Exposed as a tool rather than buried in a node because the entity list is a
+        judgement, not a query. Which seven creatures make a video is the operator's
+        call or the agent's, informed by what the audience asked for; this hands back
+        one entity at a time so that choice stays where it belongs.
+
+        Rights ride on the result and are never resolved here. Fandom's site content is
+        CC-BY-SA under their terms, and an image uploaded to a fandom wiki is frequently
+        the original artist's own copyright hosted under fair use or by permission. The
+        API usually returns no licence fields at all, so the honest output is the file
+        page and "not stated" — never a verdict this cannot support.
+        """
+        from ..research import fandom as wiki_reader
+
+        site = str(wiki or "").strip().lower().removesuffix(".fandom.com")
+        wanted = str(entity or "").strip()
+        if not site or not wanted:
+            return {"error": "Name the wiki and the entity — e.g. wiki "
+                             "'doctor-nowhere-creatures', entity 'Amber'. The wiki is the "
+                             "part of its URL before .fandom.com."}
+        try:
+            found = await wiki_reader.lookup(site, wanted)
+        except Exception as exc:                                   # pragma: no cover
+            return {"error": f"the wiki lookup failed: {exc}", "wiki": site,
+                    "entity": wanted}
+
+        if found is None:
+            return {
+                "wiki": site, "entity": wanted, "found": False,
+                "note": "No page on that wiki had both an image and a usable section. "
+                        "That is a real answer: without the canonical art this entity "
+                        "cannot carry a segment of this format, and generating a "
+                        "picture of a named creature an audience already knows is the "
+                        "one substitution they reliably catch.",
+            }
+        return {
+            **found.as_dict(),
+            "found": True,
+            "attribution": found.attribution(),
+            "rights": "Not cleared. Fandom text is CC-BY-SA under their terms; an image "
+                      "there is often the artist's own copyright, and this wiki stated "
+                      "no licence for it. Credit the page and the file, and treat the "
+                      "decision to use the art as the operator's.",
+        }
+
     def use_clip(self, run_id: int, scene_index: int, source: str, *,
                  start: float = 0.0, seconds: float = 0.0, note: str = "") -> dict:
         """Put a clip the operator chose into one scene of a run.
