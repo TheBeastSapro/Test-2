@@ -263,3 +263,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When a project carries its own measured reference for a domain, re-read the relevant section at the moment of each design choice inside that domain, not only at the start of the work. Treat a decision that *feels* like a local implementation detail as the most likely place to have skipped the reference, because those are the choices made without looking anything up. And for anything whose output is visual or otherwise perceptual, render one and look at it before committing: the defect here was obvious in under a second by eye and invisible to every automated check, including the ones written specifically for that code path.
 
 **Principle:** Research already done is only worth what it is re-read for. A measurement written down in an earlier session does not reach the decision it was made for unless it is deliberately consulted at that decision — and for perceptual output, looking at one artefact is a stronger check than any assertion about it.
+
+### Observation 17: A fixture written by whoever wrote the matcher validates it against itself
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** Testing a text-extraction module against twenty real inputs after it had passed a full suite of examples I had written myself.
+
+**Skill:** test-driven-development
+**Type:** open-source
+**Phase/Area:** Choosing what a matcher is tested against
+
+**Issue:** A module that pulls requests out of user-written text had a green suite of hand-written examples covering every pattern it matched. Pointed at twenty real inputs for the first time, one pass found three defects. The extractor required a word that half the real phrasings omit — every example I had invented happened to include it, because I wrote the examples while thinking about the pattern. A cleanup step stripped a token from both ends of a phrase, which is right at the front and wrong at the back, and it silently turned a real proper noun into something nobody had asked for and no search would find. And with nothing occurring twice, the summary reported that nothing had been asked for at all, to a reader whose users had just named three things — a false statement rather than a quiet one, on the module's single most important output. None of the three was subtle. All three were invisible to a suite whose inputs and whose matcher came out of the same head, in the same hour.
+
+**Suggested improvement:** For any component that parses text people wrote — comments, queries, free-form fields, scraped prose — get real samples into the test suite before believing the hand-written ones, and paste them verbatim rather than tidying them. Twenty is enough to be worth more than fifty invented ones. Treat a suite whose fixtures were authored alongside the matcher as a consistency check on your own assumptions, not as evidence about the input domain. When real samples do arrive, read what the component *missed* as carefully as what it caught: the misses are where the assumption lives. And check the summary line the same way as the extraction — a report that says "nothing found" when the parser found things is a defect in the output nobody thinks to test.
+
+**Principle:** A fixture and the code it exercises, written by the same person in the same sitting, share every assumption. Only inputs from outside that head can falsify them, so real samples are not a nice-to-have for a text matcher — they are the first test that carries any information.
