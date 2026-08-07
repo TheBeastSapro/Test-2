@@ -71,3 +71,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a diagnostic step before proposing visual direction: count distinct values per property class across the stylesheet and templates (font-size, spacing, transition duration, radius, colour) and count inline style attributes. Report the counts to the user. High cardinality in size and spacing with low cardinality in colour indicates a systematisation problem, not an art-direction problem — and those call for opposite responses. Use the measurement to decide which, rather than assuming a redesign.
 
 **Principle:** Subjective aesthetic complaints have measurable correlates. Counting how many distinct values a design actually uses distinguishes a system that needs systematising from one that needs redirecting — and the distinction matters, because treating the first as the second destroys sound work while leaving the real defect in place.
+
+### Observation 5: Run the product to its output before diagnosing it from source
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** Auditing a video-production app the user said was "not doing what I intend". Two prior turns diagnosed it by reading source and screenshotting pages in their default empty state, producing a confident but shallow list of styling defects.
+
+**Skill:** debugging-and-error-recovery
+**Type:** open-source
+**Phase/Area:** Reproduction — establishing what the software actually does
+
+**Issue:** Static reading and empty-state screenshots surfaced real but minor defects (spacing, column balance, a truncated status word). Driving the product all the way to its actual output — creating an account, a channel, and a run, then waiting out a twelve-minute render — surfaced the defect that mattered: the pipeline wrote a 23 MB finished video to disk and registered it as an artifact, and no screen in the application ever showed it or linked to it. Reading the preview page's source did not reveal this, because the code is correct for what it was written to do (simulate the plan pre-render); the bug is an absence, and absences are invisible in source. It only appeared when a run reached a state the empty app could never show. The user had already named this exact area as their worst friction, and two turns of source-reading had not found it.
+
+**Suggested improvement:** Add an explicit reproduction step before diagnosis on any product with a pipeline or multi-stage output: drive it end to end to a real artifact, including waiting for slow stages, and compare what exists on disk or in the database against what the interface exposes. Diff produced-artifacts against reachable-artifacts as a named check. Treat empty-state inspection as insufficient — most interesting states are the ones only reachable by actually completing the work.
+
+**Principle:** A defect of omission cannot be found by reading the code that omits it, because that code is locally correct. Run the product to its real output and compare what it produced against what it shows; the gap between the two is where this class of bug lives, and it is invisible from both the source and the empty state.
