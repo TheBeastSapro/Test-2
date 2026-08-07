@@ -273,16 +273,35 @@ def plan(entity: dict, *, seconds: float = 62.0, target_hold: float = 3.0,
                 asset=str(asset.get("name") or ""),
                 composite=bool(asset.get("portrait")),
                 overlays=overlays,
-                # Motion is rationed, not sprinkled. The reference animates about twice
-                # a minute and lands it on the beat the narration is describing, which
-                # is the story — an animated establisher is spend with nothing to show
-                # for it.
-                animate=beat == "behaviour" and position in (0, count // 2),
+                # Assigned after the whole segment exists — see below. It cannot be
+                # decided here because it depends on which shots turned out to be
+                # cut-outs, and this loop only knows about one.
+                animate=False,
                 note="",
             ))
             if asset.get("name"):
                 used.add(str(asset["name"]))
             index += 1
+
+    # Motion is rationed, not sprinkled: the reference animates about twice a minute and
+    # lands it on the beat the narration is describing, which is the story.
+    #
+    # Only onto a cut-out, which is the correction. The ration used to be "the story
+    # beat, positions 0 and half way", decided per shot — and the story beat opens on a
+    # wide, so the two shots it marked were the two with no subject to move. The
+    # renderer moves a subject against a still plate; handed a whole scene image it has
+    # nothing to separate, so every run planned two animated shots and rendered none,
+    # silently. The plan said one thing and the video was another, which is the failure
+    # this codebase is worst at seeing.
+    movable = [shot for shot in shots if shot.composite]
+    story = [shot for shot in movable if shot.beat == "behaviour"] or movable
+    if not story:
+        warnings.append("no cut-out in this segment, so nothing can move — every shot "
+                        "is a whole scene image and the renderer has no layer to "
+                        "separate")
+    for position in dict.fromkeys((0, len(story) // 2)):
+        if position < len(story):
+            story[position].animate = True
 
     # Gags go on the story beat, where the reference puts them, and never on the shot
     # carrying the name card — two things asking to be read at once is neither read.

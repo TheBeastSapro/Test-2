@@ -227,3 +227,43 @@ def test_a_beat_prefers_a_shape_and_is_never_restricted_to_one():
     assert appearance[0].startswith("tall")
     # ...and it does not repeat one while the gallery has pictures it has not used.
     assert len(set(appearance)) == len(appearance)
+
+
+def test_motion_is_only_planned_where_there_is_something_to_move():
+    """The ration used to land on exactly the shots that could not take it.
+
+    Motion was assigned per shot as "the story beat, positions 0 and half way", and the
+    story beat opens on a wide — so the two marked shots were the two with no cut-out in
+    them. The renderer moves a subject against a still plate; handed a whole scene image
+    it has no layer to separate. Every run planned two animated shots and rendered none,
+    and neither the plan nor the video said anything was wrong.
+
+    Found by running the real nodes against a real wiki page and counting the files that
+    came out: sixteen shots, two marked for motion, zero clips.
+    """
+    gallery = [{"name": f"wide{index}.png", "portrait": False} for index in range(6)]
+    gallery += [{"name": f"tall{index}.png", "portrait": True} for index in range(6)]
+    entity = {"title": "Seek", "gallery": gallery, "stats": {"height": "3,3 m"},
+              "beats": {"appearance": "tall " * 90, "behaviour": "moves " * 90,
+                        "survival": "hide " * 90}}
+
+    planned = plan(entity, seconds=62.0)
+
+    moving = [shot for shot in planned.shots if shot.animate]
+    assert moving, "nothing was marked for motion at all"
+    assert all(shot.composite for shot in moving), \
+        "a shot was marked for motion with no cut-out in it to move"
+
+
+def test_a_segment_with_no_cutout_says_so_rather_than_marking_a_shot_anyway():
+    """A page whose art is all scene shots cannot animate, and the honest output is a
+    warning — not two shots marked for a move the renderer will silently decline."""
+    entity = {"title": "Halt",
+              "gallery": [{"name": f"wide{index}.png", "portrait": False}
+                          for index in range(5)],
+              "stats": {}, "beats": {"behaviour": "moves " * 90}}
+
+    planned = plan(entity, seconds=40.0)
+
+    assert not any(shot.animate for shot in planned.shots)
+    assert any("nothing can move" in note for note in planned.warnings)
