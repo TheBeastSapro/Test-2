@@ -183,3 +183,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When about to apply a local override, first search for that same override elsewhere. Two occurrences is a coincidence worth noting; three is a finding about the shared rule, and the fix belongs there. Before writing the workaround, state what rule it is escaping and whether that rule should have applied here at all — a selector that is too broad, a default that is wrong, a base class doing two jobs. Where a symptom persists after the obvious targeted fix, treat the persistence as information: it usually means the cause sits one layer above where the fix was aimed.
 
 **Principle:** Repeated local workarounds are a distributed bug report about a shared rule. Counting them costs one search and converts N scattered patches into one correct change — and the version of the defect nobody worked around yet is fixed at the same time, which the N patches would each have missed.
+
+### Observation 12: A fixture that supplies the happy path hides the branch every new user takes
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** Driving an application end to end by hand, in the state a fresh install is in, against a suite of 2,400 passing tests.
+
+**Skill:** code-review-and-quality
+**Type:** open-source
+**Phase/Area:** Judging what a green suite actually covers
+
+**Issue:** A pipeline refused to run past its fifth of fifteen stages on a newly created account, making two thirds of the product unreachable and contradicting what the app's own interface promised on the page the user starts from. Every relevant test passed, including one named for driving a run to completion. The cause was a shared fixture: it set an optional field that the real creation paths — the CLI and the web form — both leave empty, and a guard downstream refused only when that field was absent. So every end-to-end test drove the one configuration a new user never has, and the failure was reachable in about ninety seconds by hand and not at all by the suite. The same session found the mirror image: a second copy of the guard, in another module with different wording, which the first fix did not touch and which the by-hand run surfaced immediately.
+
+**Suggested improvement:** When a shared fixture populates an optional field, check what the real creation paths do with it — if they leave it empty, the fixture is asserting a configuration the product may never be in, and at least one end-to-end test should be built from the constructor a user actually reaches rather than from the fixture. More generally: before trusting an end-to-end suite as coverage of "it works", run the thing by hand once from the state a new install is in. Treat "all tests pass" as evidence about the paths the fixtures describe, not about the paths users take. When a defect is found this way, search for other copies of the same guard before declaring it fixed — a rule worth stating once is usually stated twice.
+
+**Principle:** Fixtures encode assumptions, and the most expensive ones are the fields they helpfully fill in. A suite can be green, thorough, and entirely about a configuration no user is in — so the first run should be done by hand, from the default state, before the suite is believed.
