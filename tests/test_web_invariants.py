@@ -827,3 +827,59 @@ def test_the_menu_is_not_clipped_by_the_scrolling_thread_list():
             f"{_at(CHAT_HTML, template, menu_at)} the menu is inside the threads aside, "
             f"which is `display: none` under 1240px and scrolls above it")
     _report(offenders, "the row menu is placed where it will be clipped:")
+
+
+# ── errors, as a person sees them ───────────────────────────────────────────────
+#
+# A wrong address used to answer `{"detail":"Not Found"}` as text on a white page.
+# That is an API's error handed to a person: no navigation on it, nothing naming what
+# was missing, and no way back except the browser's own button. It is not a rare path
+# in a local app whose operator types URLs and keeps bookmarks — a renamed route turns
+# every saved link into one.
+
+def _client():
+    from fastapi.testclient import TestClient
+
+    from forgecast.api.main import create_app
+
+    return TestClient(create_app())
+
+
+def test_a_browser_gets_the_app_back_when_it_asks_for_a_page_that_is_not_there():
+    response = _client().get("/no-such-page", headers={"accept": "text/html"})
+
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith("text/html")
+    body = response.text
+    assert "detail" not in body[:200]      # not the JSON error, rendered as text
+    assert "There is no page here" in body
+    assert 'href="/"' in body              # a way back, on the page itself
+    assert "/no-such-page" in body         # and it says which address failed
+
+
+def test_a_json_caller_still_gets_json():
+    """The split is on Accept, so nothing that was parsing these responses breaks."""
+    response = _client().get("/no-such-page", headers={"accept": "application/json"})
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Not Found"}
+
+
+def test_the_api_answers_json_even_to_a_browser():
+    """`/api/...` is machine surface. A fetch() sending the browser's default Accept
+    must not start receiving a rendered page where it expects a payload."""
+    response = _client().get("/api/no-such-thing", headers={"accept": "text/html"})
+
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith("application/json")
+
+
+def test_every_status_the_error_page_claims_to_explain_has_copy_for_it():
+    """The fallback exists, but a status listed in the app's own routes and left to it
+    is a page that says "Something went wrong" where it could have said what."""
+    from forgecast.api.main import _ERROR_COPY
+
+    for code, (headline, detail) in _ERROR_COPY.items():
+        assert isinstance(code, int)
+        assert headline and not headline.endswith(".")   # a headline, not a sentence
+        assert len(detail) > 40                          # says something, not a label

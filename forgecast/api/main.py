@@ -6,8 +6,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .. import nodes  # noqa: F401 - registers node handlers
 from ..config import get_settings
@@ -35,6 +37,34 @@ from .routes_voice import router as voice_router
 from .routes_web import router as web_router
 
 log = logging.getLogger("forgecast.api")
+
+# What each status actually means to somebody looking at it, in this app's terms.
+# Starlette's own phrases are correct and useless — "Not Found" does not say what was
+# not found or what to do instead, and that is the whole job of an error page.
+_ERROR_COPY = {
+    404: ("There is no page here",
+          "The address does not match anything this app serves. If you followed a link "
+          "from somewhere, it is probably out of date — the studio below is the way "
+          "back in."),
+    403: ("You are not signed in to see this",
+          "This belongs to an account, and the current session is not it. Signing in "
+          "again is usually all this needs."),
+    405: ("That address does not take this kind of request",
+          "The page exists but the method does not. This normally means a form or a "
+          "bookmark is pointing at something that has since changed shape."),
+    500: ("Something failed on this machine",
+          "The error is recorded in the log. Nothing was charged and no run was "
+          "cancelled — a stage that failed can be retried from the run's own page."),
+}
+
+# The API surface, which keeps answering in JSON whatever the browser asks for. Matched
+# by prefix rather than by router, because the check runs inside an exception handler
+# where the route that would have matched is exactly the thing that did not exist.
+_API_PREFIXES = ("/api/", "/healthz", "/static/", "/local/", "/media/")
+
+
+def _is_api_path(path: str) -> bool:
+    return path.startswith(_API_PREFIXES)
 
 
 @asynccontextmanager
@@ -130,6 +160,54 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=502,
             content={"error": "provider_error", "provider": exc.provider, "detail": str(exc)},
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error_handler(request: Request, exc: StarletteHTTPException):
+        """An HTTP error, answered in the shape the caller asked for.
+
+        A browser that follows a stale bookmark used to get `{"detail":"Not Found"}`
+        rendered as text on a white page — an API's error handed to a person, with no
+        navigation on it and nothing saying what to do next. That is not a rare path in
+        a local app whose operator types URLs and keeps bookmarks.
+
+        The split is on Accept, not on the path prefix. `/api/...` is the obvious JSON
+        caller but not the only one: the chat's own fetches, the setup stream and any
+        script hitting a page route all want the JSON, and a page route can 404 too.
+        Whoever did not ask for HTML keeps the response they have always had.
+        """
+        wants_html = "text/html" in request.headers.get("accept", "")
+        if not wants_html or _is_api_path(request.url.path):
+            return await http_exception_handler(request, exc)
+
+        from ..auth import optional_user
+        from ..db import session_scope
+        from .routes_web import TEMPLATES, shell
+
+        code = exc.status_code
+        headline, detail = _ERROR_COPY.get(code, (
+            "Something went wrong",
+            str(exc.detail) if exc.detail else "No further detail was recorded.",
+        ))
+
+        # The shell needs a signed-in user and a session. Neither is guaranteed here —
+        # this handler runs for signed-out requests too — so the page falls back to a
+        # bare frame rather than raising a second error while reporting the first.
+        frame: dict = {"nav": "", "formats": [], "format_counts": {}, "credits": 0,
+                       "recent_runs": [], "user": None}
+        try:
+            with session_scope() as session:
+                user = optional_user(request, session)
+                if user is not None:
+                    frame = shell(session, user, "")
+        except Exception:                                          # pragma: no cover
+            log.debug("error page rendered without a shell", exc_info=True)
+
+        return TEMPLATES.TemplateResponse(
+            request, "error.html",
+            {**frame, "settings": settings, "code": code, "headline": headline,
+             "detail": detail, "path": request.url.path},
+            status_code=code,
         )
 
     @app.get("/healthz", include_in_schema=False)

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} · Forgecast{% endblock %}
+
+{% block body %}
+{# A wrong address inside your own app is an ordinary event — a stale bookmark, a link
+   from a chat, a typed path with a letter missing. It used to answer with raw JSON on a
+   white page, which is a browser looking at an API's error rather than an app looking
+   at a person's mistake: no way back, no navigation, and nothing to say what happened.
+
+   The whole shell renders around this, so the sidebar is right there and the recovery
+   is one click rather than the back button. #}
+<div class="card" style="max-width:640px;margin-top:12vh">
+  <div class="mono muted" style="font-size:var(--t-3xl);line-height:1">{{ code }}</div>
+  <h1 style="margin:10px 0 0">{{ headline }}</h1>
+  <p class="muted prose" style="margin:12px 0 0">{{ detail }}</p>
+
+  {% if path %}
+    <div class="codeblock mt-6">{{ path }}</div>
+  {% endif %}
+
+  <div class="row mt-6">
+    <a class="btn btn-primary" href="/">Back to the studio</a>
+    {% if code == 404 %}
+      <a class="btn" href="/files">Files</a>
+      <a class="btn" href="/settings">Settings</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
