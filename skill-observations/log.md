@@ -279,3 +279,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** For any component that parses text people wrote — comments, queries, free-form fields, scraped prose — get real samples into the test suite before believing the hand-written ones, and paste them verbatim rather than tidying them. Twenty is enough to be worth more than fifty invented ones. Treat a suite whose fixtures were authored alongside the matcher as a consistency check on your own assumptions, not as evidence about the input domain. When real samples do arrive, read what the component *missed* as carefully as what it caught: the misses are where the assumption lives. And check the summary line the same way as the extraction — a report that says "nothing found" when the parser found things is a defect in the output nobody thinks to test.
 
 **Principle:** A fixture and the code it exercises, written by the same person in the same sitting, share every assumption. Only inputs from outside that head can falsify them, so real samples are not a nice-to-have for a text matcher — they are the first test that carries any information.
+
+### Observation 18: A wired path can still do nothing, and only counting the output shows it
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** Connecting a planner to a renderer, where both had passing tests and the combination produced nothing.
+
+**Skill:** debugging-and-error-recovery
+**Type:** open-source
+**Phase/Area:** Verifying an integration after both sides are connected
+
+**Issue:** Two rules I had written, each correct alone, selected disjoint sets. One rationed an expensive treatment to a particular category of item; the other guaranteed that category always led with the one *kind* of item the treatment cannot be applied to. So the plan reported two items marked for the treatment, the renderer silently declined both, and the finished output had none. Nothing errored. The planner's tests passed — it marked what it was told to mark. The renderer's tests passed — it handled a markable item correctly. The defect existed only in the intersection, and neither module could see it, because each was individually behaving exactly as specified. I found it by running both stages against real input and *counting the files that came out*: sixteen planned, two marked, zero produced. Reading either module's code, or its logs, or its test suite, would not have surfaced it, and a reachability sweep would have called the path connected — because it was.
+
+**Suggested improvement:** After connecting two stages, do not stop at "the call happens". Run the pair on real input and count the artifacts each promised: N planned versus N produced, and compare the two numbers explicitly. Where one stage marks items for special handling and another consumes those marks, check that the selection criteria on both sides can actually overlap — write the intersection down as a sentence and see whether it is empty. And when a downstream stage silently degrades an item it cannot handle, that degradation should be counted and logged, not just performed; a stage that quietly returns the ordinary result for an unhandleable input is a stage that makes this class of defect invisible by design.
+
+**Principle:** Reachability is not effect. Two components can be connected, individually correct, individually tested, and jointly useless — when their selection criteria do not intersect. Only an end-to-end run that counts what came out against what was promised can tell the difference, so that count is the integration test, not the call.
