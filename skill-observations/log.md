@@ -151,3 +151,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a step before brainstorming: read the existing design record — stylesheet headers, token blocks, design docs, and any comment explaining why a choice was made — and treat documented constraints as part of the brief, ranking equal to the user's prompt. Then decide explicitly whether the work is direction-setting or systematising, and say which. Where a constraint forecloses an axis the skill would normally spend boldness on (no webfonts, a fixed palette, a required density), state what carries the design's character instead.
 
 **Principle:** In a codebase with history, part of the brief is already written into the source. Constraints recorded as rationale are binding, and reading them first distinguishes a design that needs redirecting from one that needs systematising — a distinction worth making early, because treating the second as the first destroys sound work while leaving the real defect untouched.
+
+### Observation 10: Render the artefact and look at it — a successful build is not evidence of a correct one
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** Connecting a large, fully-tested rendering module that had no caller, and separately migrating a set of templates onto a design scale. Both changes produced output that passed every check.
+
+**Skill:** debugging-and-error-recovery
+**Type:** open-source
+**Phase/Area:** Verifying work whose output is visual
+
+**Issue:** Two defects in one session survived a green build, a green test suite, a clean linter and a plausible-looking file size, and both were obvious within two seconds of looking at the rendered result. A helper returning a dataclass was passed where a path was expected, so one compositing layer silently dropped out of every frame — the video still encoded, at very nearly the expected size, because the module's designed behaviour is to skip a layer it cannot source. And a page migrated onto a type scale rendered correctly while still carrying the structural defects the migration was supposed to be a step toward fixing: a two-column grid splitting evenly for content that was not evenly split, and the page's primary action styled as a secondary. In both cases the mechanical check confirmed the mechanical change and said nothing about whether the result was right. Extracting one frame, and taking one screenshot, found what neither the suite nor the size nor the diff could.
+
+**Suggested improvement:** When a change produces something visual — a rendered frame, a composited video, a page, a chart, a document — add an explicit step that produces the artefact and inspects it, and treat that as part of the change rather than as optional confirmation. Do it before writing the summary, not after. Prefer inspecting the artefact to inspecting a proxy for it: a byte count, an exit code, or a passing assertion about structure can all be satisfied by output that is visibly wrong. Where degradation is designed in — a layer that skips, a fallback that substitutes — the proxy is especially weak, because the failure path is built to look like success.
+
+**Principle:** For visual output, a successful build is evidence the code ran, not evidence it produced the right thing. Look at the artefact. This matters most in code designed to degrade gracefully, where the failure path is deliberately indistinguishable from the success path by every signal except the output itself.
