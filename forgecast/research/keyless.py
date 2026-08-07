@@ -164,12 +164,18 @@ def channel_uploads(reference: str, *, limit: int = 50) -> ParseResult:
 
     url = _listing_url(reference)
 
+    from ..ytdlp import cookie_args
     command = [
         *binary, "--flat-playlist", "--dump-single-json",
         "--playlist-end", str(max(1, min(int(limit), 200))),
         # Without this every entry's timestamp is null and there is nothing to score.
         "--extractor-args", "youtubetab:approximate_date",
         "--no-warnings", "--ignore-config",
+        # The listing read is refused far less often than the media fetch — it is a page,
+        # not a stream — but it is refused, and when it is, the channel cannot be read at
+        # all. One source of cookies for both, so an operator who fixes the download does
+        # not have to discover the listing separately.
+        *cookie_args(),
         url,
     ]
     try:

@@ -58,6 +58,67 @@ def available() -> bool:
     return command() is not None
 
 
+# ----------------------------------------------------------------- cookies
+#
+# The app has been telling operators to supply cookies since the 403 hint was written,
+# and until now there was no way to supply them: the string in `vision.acquire` was the
+# only mention of the word in the codebase. Advice the app cannot act on is the same
+# defect as a missing button — the remedy exists in the operator's head and nowhere in
+# the software.
+#
+# It matters more than a nicety. Every measurement that reverse-engineers a reference's
+# editing — cuts per minute, motion, palette, grade — runs on decoded frames, so a
+# platform that refuses the download does not degrade the analysis, it removes it. The
+# engine is fine; it just never gets a file.
+#
+# Two ways in, deliberately. A browser is what an operator running this on their own
+# machine actually has, and `--cookies-from-browser` needs no export step. A file is
+# what a headless or containerised install has, and it is the only one that works when
+# there is no browser profile on the box at all.
+COOKIES_FROM_BROWSER = "FORGECAST_COOKIES_FROM_BROWSER"
+COOKIES_FILE = "FORGECAST_COOKIES_FILE"
+
+
+def cookie_args() -> list[str]:
+    """yt-dlp arguments carrying whatever cookies this install has, or nothing.
+
+    Returns `[]` when none is configured, so callers splice it in unconditionally and no
+    call site needs to know whether cookies are in play.
+
+    A configured file that does not exist returns nothing rather than raising. The
+    failure it would otherwise cause is a download that dies on an argument error
+    instead of on the block it was meant to clear, which reads as the fetch being
+    broken rather than as the setting being wrong — and `describe_cookies` is what
+    surfaces the misconfiguration, in the place the operator set it.
+    """
+    import os
+    from pathlib import Path
+
+    path = (os.environ.get(COOKIES_FILE) or "").strip()
+    if path and Path(path).is_file():
+        return ["--cookies", path]
+    browser = (os.environ.get(COOKIES_FROM_BROWSER) or "").strip()
+    if browser:
+        return ["--cookies-from-browser", browser]
+    return []
+
+
+def describe_cookies() -> str:
+    """One line on what cookies are configured, for a settings page or an error."""
+    import os
+    from pathlib import Path
+
+    path = (os.environ.get(COOKIES_FILE) or "").strip()
+    if path:
+        if Path(path).is_file():
+            return f"cookie file: {path}"
+        return f"cookie file set but not found: {path}"
+    browser = (os.environ.get(COOKIES_FROM_BROWSER) or "").strip()
+    if browser:
+        return f"cookies from browser: {browser}"
+    return "no cookies configured"
+
+
 def why_missing() -> str:
     """What to tell an operator when it really is absent.
 

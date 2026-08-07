@@ -140,11 +140,15 @@ class YtDlpSource(Source):
 
         # 480p is plenty: every measurement here runs on 160px-wide frames anyway,
         # and a smaller file is a faster, more reliable download.
+        from ..ytdlp import cookie_args
         cmd = [
             *binary, "--no-warnings", "--no-playlist",
             # The native downloader avoids handing the media fetch to ffmpeg, which
             # does not honour HTTPS_PROXY and fails with exit 8 behind one.
             "--downloader", "native",
+            # Whatever cookies this install has, or nothing at all. Spliced in
+            # unconditionally so this call site does not branch on the setting.
+            *cookie_args(),
             "-f", "bv*[height<=480]+ba/b[height<=480]/bv*+ba/b",
             "--merge-output-format", "mp4",
             "-o", str(workdir / "source.%(ext)s"),
@@ -156,11 +160,21 @@ class YtDlpSource(Source):
         if proc.returncode != 0:
             stderr = proc.stderr.decode(errors="replace")
             hint = ""
-            if "403" in stderr:
+            if "403" in stderr or "not a bot" in stderr:
+                # Say what cookies this install actually has. The hint used to advise
+                # supplying them without saying how, and with no way to — so an
+                # operator who had already set them could not tell whether they were
+                # being used, and one who had not was given homework with no form to
+                # fill in.
+                from ..ytdlp import COOKIES_FILE, COOKIES_FROM_BROWSER, describe_cookies
                 hint = (
-                    " — HTTP 403 on the media fetch usually means the platform is "
-                    "blocking this IP range rather than a bad URL. Run from a host "
-                    "with residential egress, or supply cookies."
+                    " — the platform refused the media fetch. This is usually the IP "
+                    "range rather than a bad URL: datacentre and VPS addresses get "
+                    f"blocked where a home connection does not. Currently {describe_cookies()}. "
+                    f"Set {COOKIES_FROM_BROWSER} to a browser you are signed into "
+                    "(chrome, firefox, edge, brave), or "
+                    f"{COOKIES_FILE} to an exported cookies.txt, and try again. "
+                    "Running the app on your own machine usually needs neither."
                 )
             raise AcquireError(f"yt-dlp failed: {stderr[-400:]}{hint}")
 
