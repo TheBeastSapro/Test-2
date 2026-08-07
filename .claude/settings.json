@@ -29,23 +29,18 @@
         "source": "github",
         "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
       }
+    },
+    "claude-plugins-official": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
+      }
     }
   },
   "enabledPlugins": {
     "claude-mem@thedotmack": true,
     "superpowers@superpowers-dev": true,
-    "ui-ux-pro-max@ui-ux-pro-max-skill": true
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
-          }
-        ]
-      }
-    ]
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "claude-code-setup@claude-plugins-official": true
   }
 }
