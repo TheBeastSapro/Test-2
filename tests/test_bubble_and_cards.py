@@ -10,6 +10,8 @@ reproduced everything except the reason anybody comments.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PIL import Image
 
 from forgecast.motion import bubble
@@ -133,3 +135,62 @@ def test_an_entity_with_no_stats_draws_no_card():
     """A page whose infobox had nothing must not put an empty label on screen."""
     assert stat_card(PRESET, {}, start=0.0, **FRAME) == []
     assert stat_card(PRESET, {"height": ""}, start=0.0, **FRAME) == []
+
+
+# ── reachability ────────────────────────────────────────────────────────────────
+#
+# All three shipped with no production caller — the defect this repository names in its
+# own docs, committed three times in one session by the changes that documented it.
+# `motion_layer.apply` dispatches on `MotionPlan.kind`, so these are kinds.
+
+def _elements_for(monkeypatch, tmp_path, kind, lines):
+    from forgecast.motion import Scene as MotionScene
+    from forgecast.render import motion_layer
+
+    captured: list = []
+    monkeypatch.setattr(MotionScene, "render",
+                        lambda self, path, timeout=600.0: (captured.extend(self.elements),
+                                                           path)[1])
+    clip = tmp_path / "in.mp4"
+    clip.write_bytes(b"")
+    motion_layer.apply(clip, tmp_path / "out.mp4",
+                       motion_layer.MotionPlan(0, kind, lines, ""),
+                       preset=PRESET, seconds=6.0, width=1920, height=1080)
+    return captured
+
+
+def test_the_name_card_is_reachable_from_the_render_path(monkeypatch, tmp_path):
+    elements = _elements_for(monkeypatch, tmp_path, "name_card", ["House Walker"])
+
+    assert elements
+    assert any(getattr(item, "text", "") == "House Walker" for item in elements)
+
+
+def test_the_stat_card_accepts_both_shapes_a_caller_produces(monkeypatch, tmp_path):
+    """"height: 23 m" is what a person types; "height  23 m" is what the wiki reader's
+    rows look like flattened. Understanding one of them would be a card that renders
+    empty for half its callers."""
+    colon = _elements_for(monkeypatch, tmp_path, "stat_card", ["height: 23 m"])
+    spaced = _elements_for(monkeypatch, tmp_path, "stat_card", ["height  23 m"])
+
+    assert [item.text for item in colon] == [item.text for item in spaced]
+    assert "23 m" in colon[0].text
+
+
+def test_a_bubble_becomes_a_card_with_a_real_file(monkeypatch, tmp_path):
+    from forgecast.motion.compose import ImageCard
+
+    elements = _elements_for(monkeypatch, tmp_path, "bubble",
+                             ["There's a good snack in this house"])
+
+    assert len(elements) == 1
+    assert isinstance(elements[0], ImageCard)
+    assert Path(elements[0].path).exists()
+
+
+def test_an_empty_gag_renders_nothing_rather_than_a_blank_card(monkeypatch, tmp_path):
+    assert _elements_for(monkeypatch, tmp_path, "bubble", ["   "]) == []
+
+
+def test_a_stat_card_with_no_usable_rows_draws_nothing(monkeypatch, tmp_path):
+    assert _elements_for(monkeypatch, tmp_path, "stat_card", ["height", ""]) == []

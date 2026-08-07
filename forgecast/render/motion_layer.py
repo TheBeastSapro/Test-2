@@ -27,7 +27,13 @@ from pathlib import Path
 
 from ..motion import MotionPreset
 from ..motion import Scene as MotionScene
-from ..motion.presets import LIBRARY, by_intensity, get
+from ..motion.presets import (
+    LIBRARY,
+    by_intensity,
+    get,
+    name_card,
+    stat_card,
+)
 from .ffmpeg import Scene as RenderScene
 
 log = logging.getLogger("forgecast.render.motion")
@@ -46,7 +52,8 @@ class MotionPlan:
     """What motion, if any, a scene gets — decided before anything renders."""
 
     scene_index: int
-    kind: str                  # title | lower_third | kinetic | none
+    kind: str                  # title | lower_third | kinetic | name_card
+                               # | stat_card | bubble | none
     lines: list[str]
     reason: str = ""
 
@@ -175,6 +182,45 @@ def apply(clip_path: Path, out_path: Path, item: MotionPlan, *,
             duration=min(seconds - start, preset.hold + 1.4),
             zone="above_captions",
         ))
+    elif item.kind == "name_card":
+        # The entity's name, top centre, on the segment's first shot. `lines[0]`.
+        scene.add(*name_card(preset, item.lines[0], start=min(0.3, seconds * 0.12),
+                             width=width, height=height,
+                             duration=min(seconds, preset.hold + preset.entry_duration)))
+    elif item.kind == "stat_card":
+        # Rows as "label  value", which is the shape `research.fandom` already produces
+        # and the shape a person types by hand. Split on the first run of whitespace or
+        # a colon so both "height: 23 m" and "height  23 m" arrive the same.
+        stats: dict[str, str] = {}
+        for line in item.lines:
+            label, _, value = str(line).partition(":")
+            if not value:
+                # Padded by two, not one. An empty line splits to [] and a single
+                # pad leaves a one-element list, which unpacks into two names and
+                # raises — on the exact input a caller is most likely to hand over.
+                parts = str(line).split(None, 1)
+                label, value = (parts + ["", ""])[:2]
+            if label.strip() and value.strip():
+                stats[label.strip().lower()] = value.strip()
+        scene.add(*stat_card(preset, stats, start=min(0.5, seconds * 0.2),
+                             width=width, height=height,
+                             duration=max(1.0, min(seconds - 0.5, preset.hold + 1.4))))
+    elif item.kind == "bubble":
+        # Drawn to a PNG beside the output and composited as a card, because a rounded
+        # shape with a tail is not something drawbox can make. Hashed filename, so a
+        # re-render of the same joke reuses the file instead of accumulating one per
+        # attempt.
+        from ..motion import bubble as speech
+
+        target = speech.path_for(item.lines[0], Path(out_path).parent)
+        drawn = speech.draw(item.lines[0], target, frame_width=width,
+                            frame_height=height,
+                            tail="right" if item.scene_index % 2 else "left")
+        if drawn is None:
+            return clip_path
+        span = max(1.2, min(seconds - 0.3, preset.hold + 0.8))
+        scene.add(preset.card(drawn, start=min(0.4, seconds * 0.15), width=width,
+                              duration=span))
     elif item.kind == "kinetic":
         per_line = max(0.6, (seconds - 0.3) / max(1, len(item.lines)))
         scene.add(*preset.kinetic(item.lines, start=0.2, width=width,
