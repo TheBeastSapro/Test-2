@@ -516,6 +516,7 @@ SEEDED_SLUGS = [
     "sound-design-method",
     "sound-designer",
     "storyboard-and-scene-breakdown",
+    "title-writing",
 ]
 
 
