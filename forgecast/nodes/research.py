@@ -14,7 +14,7 @@ from pathlib import Path
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..providers.base import ProviderError
 from ..providers.search import provider_for
-from ..research import research_topic
+from ..research import canon, research_topic
 from ..voice import casting_summary, render_samples, sample_line, shortlist, target_from_reference
 
 
@@ -68,7 +68,84 @@ async def research_node(ctx: NodeContext) -> NodeResult:
 
     # The prompt block travels in the output so the script node needs no re-derivation.
     payload["prompt_block"] = result.prompt_block()
+
+    await _canon_lane(ctx, payload, brief)
+
     return NodeResult(output=payload, credits=result.credits, provider=search.name)
+
+
+def _entity_names(ctx: NodeContext, brief: dict) -> list[str]:
+    """Which entities this run is about, from the run rather than from inference.
+
+    Run params first, because an operator who typed the list has settled it. Failing
+    that, the brief's beat names — for this format the beat *is* the creature, and the
+    outline that says "Amber / Sun Man / The Rake" is the entity list already written
+    down. Nothing is derived from the topic string: "seven scariest creatures" names
+    no creature, and a lane that invented seven would be doing the one thing this
+    module exists to stop.
+    """
+    supplied = ctx.params.get("entities")
+    if isinstance(supplied, str):
+        supplied = [part.strip() for part in supplied.split(",")]
+    if isinstance(supplied, (list, tuple)) and any(str(name).strip() for name in supplied):
+        return [str(name).strip() for name in supplied if str(name).strip()]
+
+    return [str(beat.get("name") or "").strip()
+            for beat in (brief.get("beats") or [])
+            if isinstance(beat, dict) and str(beat.get("name") or "").strip()]
+
+
+async def _canon_lane(ctx: NodeContext, payload: dict, brief: dict) -> None:
+    """Fetch the canon entities this run is about, when a wiki is named.
+
+    Off unless a wiki is configured, and it is never inferred. A wiki is a real
+    subdomain with no rule connecting it to a topic — Doors lives on `doors-game`, not
+    `doors` — so a run that has not been told which one gets the ordinary research path
+    and a line saying the lane is available. Guessing here would fetch somebody else's
+    abandoned fork and present it as canon.
+
+    Failures are logged and never raised. The canon lane is an enrichment: a run whose
+    wiki is unreachable should produce the video the open-web research supports, not
+    stop.
+    """
+    wiki = str(ctx.params.get("wiki")
+               or (ctx.channel.style_profile or {}).get("canon_wiki") or "").strip()
+    if not wiki:
+        return
+
+    names = _entity_names(ctx, brief)
+    if not names:
+        ctx.log(f"canon wiki {wiki!r} is set but nothing names the entities to read — "
+                "pass `entities` on the run, or give the brief's beats the creatures' "
+                "names", level="warning")
+        return
+
+    try:
+        found = await canon.gather(wiki, names)
+    except Exception as exc:                                       # pragma: no cover
+        ctx.log(f"the canon lane did not run: {exc}", level="warning")
+        return
+
+    payload["canon"] = found.as_dict()
+    counts = payload["canon"]["counts"]
+    ctx.log(
+        f"canon: {counts['usable']} of {counts['asked']} entities read off "
+        f"{wiki}.fandom.com with "
+        f"{sum(len(entity['gallery']) for entity in found.entities)} images — "
+        f"this art is fetched, not generated",
+        canon_wiki=wiki, canon_entities=counts["usable"],
+    )
+    for note in found.notes:
+        ctx.log(f"canon: {note}", level="warning")
+
+    # Written to disk beside the research, because the shot planner reads it and a
+    # human has to be able to check what the video is about to be made of — including
+    # the licence fields, which on these wikis are usually empty and never a verdict.
+    path = ctx.path_for("canon.json")
+    path.write_text(json.dumps(payload["canon"], indent=2, ensure_ascii=False),
+                    encoding="utf-8")
+    ctx.emit_artifact("json", path, "application/json",
+                      entities=counts["usable"], role="canon")
 
 
 @node_handler("voice_casting")

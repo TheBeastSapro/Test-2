@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from .. import operator_lane
 from ..config import get_settings
+from ..edit import segment as segment_planner
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..motion import paper
 from ..prompts import cast
@@ -378,6 +379,52 @@ def _concat_audio(clips: list[Path], out_path: Path) -> Path:
 # ---------------------------------------------------------------------- broll plan
 
 
+def _fetch_canon(ctx: NodeContext, shot: dict, slug: str) -> Path | None:
+    """Download one wiki asset. `None` if anything stops it.
+
+    Plain HTTP because that is what these are: a canonical file URL the MediaWiki API
+    handed back, on a host that serves it openly. No acquisition machinery, no
+    subprocess, nothing to fail at three in the morning except the network.
+
+    The file is written under the run and never cached across runs. A run's assets have
+    to be inspectable and re-checkable afterwards — the whole reason the licence is
+    unresolved is that a human may have to look — and a shared cache would leave the
+    picture that got published sitting in a directory no run owns.
+    """
+    import httpx
+
+    from ..research.fandom import USER_AGENT
+
+    url = str(shot.get("asset_url") or "")
+    if not url:
+        return None
+
+    suffix = Path(url.split("?")[0]).suffix.lower()
+    out = ctx.path_for(f"{slug}_canon{suffix if suffix in ('.png', '.jpg', '.jpeg', '.webp') else '.png'}")
+    try:
+        with httpx.Client(timeout=30.0, follow_redirects=True,
+                          headers={"User-Agent": USER_AGENT}) as client:
+            response = client.get(url)
+            response.raise_for_status()
+            out.write_bytes(response.content)
+    except Exception as exc:
+        ctx.log(f"{slug}: could not fetch {shot.get('asset') or url}: {exc}",
+                level="warning")
+        return None
+
+    # An HTML error page saved under a .png name is a file that exists, opens as
+    # nothing, and fails much later inside ffmpeg with a message about the codec.
+    try:
+        with Image.open(out) as image:
+            image.verify()
+    except Exception:
+        ctx.log(f"{slug}: {shot.get('asset') or url} did not arrive as an image",
+                level="warning")
+        out.unlink(missing_ok=True)
+        return None
+    return out
+
+
 def _fetch_footage(ctx: NodeContext, shot: dict, slug: str, seconds: float):
     """Get the chosen clip onto disk, muted and trimmed. `None` if anything stops it.
 
@@ -522,16 +569,154 @@ async def _offer_free_footage(ctx: NodeContext, beats: list[dict]) -> None:
                 + ("; ".join(sorted(reasons))[:220] if reasons else "no reason recorded"))
 
 
+# ------------------------------------------------------------------------- the canon
+#
+# When research fetched the entities off a wiki, the shot list for their scenes is
+# written rather than generated. That is not a saving so much as a correctness rule:
+# these audiences know what the creature looks like and correct the video when it is
+# wrong, so a generated depiction of a named entity is an error the comments find.
+#
+# `edit/segment.py` has written the shot list all along and nothing called it, which is
+# this codebase's own named defect — a module measured, tested and never read. This is
+# the call site.
+
+
+def _scenes_for(entity: dict, scenes: list[dict]) -> list[dict]:
+    """The scenes this entity is the subject of.
+
+    Matched on the entity's title appearing in the narration, which for this format is
+    the join that exists: the script writes a segment per creature and says its name.
+    `asked_for` is checked too, because the operator's spelling is what the beat outline
+    and therefore the narration used, while `title` is what the wiki redirected to.
+    """
+    names = [str(entity.get("title") or ""), str(entity.get("asked_for") or "")]
+    names = [name.casefold() for name in names if name]
+    if not names:
+        return []
+    return [scene for scene in scenes
+            if any(name in str(scene.get("narration") or "").casefold()
+                   for name in names)]
+
+
+def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
+    """Written shot lists for every scene an entity covers.
+
+    Returns the shots keyed by scene index, and a report worth logging. A scene no
+    entity claims is absent from the mapping and falls through to the generated path
+    below — a partly-canon video is normal, and forcing the rest through this lane
+    would mean inventing assets for it.
+    """
+    research = ctx.upstream_outputs.get("research") or {}
+    found = (research.get("canon") or {}).get("entities") or []
+    entities = [entity for entity in found if entity.get("usable")]
+    if not entities or not scenes:
+        return {}, {}
+
+    by_scene: dict[int, list[dict]] = {}
+    planned_segments: list[dict] = []
+    warnings: list[str] = []
+
+    for entity in entities:
+        owned = _scenes_for(entity, scenes)
+        if not owned:
+            warnings.append(
+                f"{entity['title']}: fetched but no scene names it, so its artwork is "
+                f"not on the timeline")
+            continue
+
+        # One plan across the entity's whole run of scenes rather than one per scene.
+        # A segment is the unit the reference cuts to — beats get a share of the
+        # *segment*, and planning each scene alone would restart the story beat every
+        # time the script broke a paragraph.
+        span = sum(float(scene["seconds"]) for scene in owned)
+        plan = segment_planner.plan(entity, seconds=span)
+        planned_segments.append({"title": entity["title"], "scenes": len(owned),
+                                 "shots": plan.shot_count, "seconds": round(span, 1),
+                                 "warnings": list(plan.warnings)})
+        warnings += [f"{entity['title']}: {note}" for note in plan.warnings]
+
+        gallery = {str(asset.get("name")): asset for asset in entity.get("gallery") or []}
+        # Each shot lands on whichever scene its start time falls in, so the shot list
+        # keeps the (scene_index, plate_index) shape everything downstream already
+        # reads. Boundaries are the scenes' own durations — the plan is laid over the
+        # script's clock, not the other way round.
+        bounds: list[tuple[float, dict]] = []
+        clock = 0.0
+        for scene in owned:
+            clock += float(scene["seconds"])
+            bounds.append((clock, scene))
+
+        at = 0.0
+        for shot in plan.shots:
+            scene = next((scene for edge, scene in bounds if at < edge), owned[-1])
+            asset = gallery.get(shot.asset) or {}
+            index = int(scene["index"])
+            plates = by_scene.setdefault(index, [])
+            by_scene[index] = plates
+            plates.append({
+                "scene_index": index,
+                "plate_index": len(plates),
+                "kind": "canon",
+                "seconds": round(shot.seconds, 2),
+                "beat": shot.beat,
+                # The prompt is not a generation instruction here — nothing is
+                # generated. It is what the shot IS, so a human reading the shot list
+                # can see it, and so a fallback further down has something to work from
+                # if the fetch fails.
+                "prompt": f"{entity['title']} — {shot.beat}",
+                "asset": shot.asset,
+                "asset_url": str(asset.get("url") or ""),
+                "asset_page": str(asset.get("page") or ""),
+                "licence": asset.get("licence") or {},
+                "attribution": str(entity.get("attribution") or ""),
+                "source_page": str(entity.get("url") or ""),
+                "composite": bool(shot.composite),
+                "overlays": list(shot.overlays),
+                "animate": bool(shot.animate),
+                "tier": STANDARD_TIER,
+                "model": "",
+                "places": [],
+            })
+            at += shot.seconds
+
+    # `plates` was written as the running length, which is what the position in the
+    # list means; the total per scene is only known once the scene is finished.
+    for plates in by_scene.values():
+        for plate in plates:
+            plate["plates"] = len(plates)
+            plate["planned_shots"] = len(plates)
+
+    return by_scene, {"segments": planned_segments, "warnings": warnings,
+                      "entities": len(entities)}
+
+
 @node_handler("broll_plan")
 async def broll_plan_node(ctx: NodeContext) -> NodeResult:
     script = ctx.output("script")
     scenes = script.get("scenes") or []
+
+    # Written first, because it decides what is left to plan. A scene whose artwork was
+    # fetched needs no prompt, and asking a model to write one would be paying for a
+    # description of a picture the run already has.
+    canon_by_scene, canon_report = _canon_shots(ctx, scenes)
+    to_plan = [scene for scene in scenes if int(scene["index"]) not in canon_by_scene]
+    if canon_by_scene:
+        ctx.log(
+            f"{len(canon_by_scene)} of {len(scenes)} scenes are canon — "
+            f"{sum(len(plates) for plates in canon_by_scene.values())} shots planned "
+            f"from fetched artwork across {canon_report['entities']} entities, "
+            f"nothing generated for them",
+            canon_scenes=len(canon_by_scene),
+        )
+        for note in canon_report["warnings"]:
+            ctx.log(f"canon: {note}", level="warning")
+
     payload = request_payload(
         ctx,
         scenes=[
             {"index": s["index"], "narration": s["narration"][:300],
              "visual_prompt": s.get("visual_prompt", ""), "seconds": s["seconds"]}
-            for s in scenes
+            for s in to_plan
         ],
     )
     # Who has to look the same in every shot they appear in. The script stage already
@@ -552,25 +737,31 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
     company = cast.build(raw, scenes)
     block = cast.planner_block(company)
 
-    data, credits, provider = await ask_json(
-        ctx,
-        role="Turn the script into a shot list a generation model can execute.",
-        schema_name="broll_plan",
-        payload=payload,
-        # The camera vocabulary is appended rather than written into the constant, so
-        # a move added to the catalogue reaches the planner without anyone remembering
-        # to update a second copy of the list.
-        #
-        # The cast goes in the same way and for the same reason, and it goes to the
-        # planner as well as onto the prompt afterwards. Stamping alone would leave the
-        # planner free to write "an older woman looks up" for someone locked as a
-        # seventy-year-old — the prompt then carries two descriptions of one person and
-        # the model resolves the contradiction however it likes.
-        instructions=(f"{BROLL_INSTRUCTIONS}\n\nCAMERA MOVES\n"
-                      f"{camera_moves.planner_vocabulary()}"
-                      + (f"\n\n{block}" if block else "")),
-        max_tokens=8192,
-    )
+    # Nothing left to plan means nothing to ask. A wholly canon video would otherwise
+    # pay planning tokens to describe pictures it already holds, and be handed back a
+    # shot list for an empty scene list.
+    if not to_plan:
+        data, credits, provider = {"shots": []}, 0, "canon"
+    else:
+        data, credits, provider = await ask_json(
+            ctx,
+            role="Turn the script into a shot list a generation model can execute.",
+            schema_name="broll_plan",
+            payload=payload,
+            # The camera vocabulary is appended rather than written into the constant, so
+            # a move added to the catalogue reaches the planner without anyone remembering
+            # to update a second copy of the list.
+            #
+            # The cast goes in the same way and for the same reason, and it goes to the
+            # planner as well as onto the prompt afterwards. Stamping alone would leave the
+            # planner free to write "an older woman looks up" for someone locked as a
+            # seventy-year-old — the prompt then carries two descriptions of one person and
+            # the model resolves the contradiction however it likes.
+            instructions=(f"{BROLL_INSTRUCTIONS}\n\nCAMERA MOVES\n"
+                          f"{camera_moves.planner_vocabulary()}"
+                          + (f"\n\n{block}" if block else "")),
+            max_tokens=8192,
+        )
     if company:
         ctx.log(f"planning to {len(company.characters)} locked "
                 f"{'likeness' if len(company.characters) == 1 else 'likenesses'}")
@@ -626,6 +817,14 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
     # ---- pass A: everything that is not money -------------------------------------
     beats: list[dict] = []
     for position, scene in enumerate(scenes):
+        # A canon scene's shots are already written, off pictures the run holds. It buys
+        # nothing, so it takes no plate, no tier and no place in the animation budget —
+        # and it must not reach the free-footage lane either, which would go looking for
+        # stock of a creature whose canonical art is already on the timeline.
+        if int(scene["index"]) in canon_by_scene:
+            planned_shots += len(canon_by_scene[int(scene["index"])])
+            continue
+
         planned = by_index.get(scene["index"], {})
         kind = str(planned.get("kind") or scene.get("visual_kind") or "image")
 
@@ -747,6 +946,16 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
                 }
             )
 
+    # Merged in scene order rather than appended, so the shot list reads as the timeline
+    # does. `shots_node` walks this in order and the render assembles in the order it is
+    # handed, so a canon block sitting at the end would cut the whole video out of
+    # sequence — the kind of defect that renders fine and is wrong.
+    if canon_by_scene:
+        shots = sorted(shots + [plate for plates in canon_by_scene.values()
+                                for plate in plates],
+                       key=lambda shot: (int(shot["scene_index"]),
+                                         int(shot.get("plate_index") or 0)))
+
     path = ctx.path_for("shot_list.json")
     path.write_text(json.dumps({"shots": shots}, indent=2, ensure_ascii=False), encoding="utf-8")
     ctx.emit_artifact("json", path, "application/json", shots=len(shots))
@@ -794,6 +1003,12 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
             "hero_shots": heroes,
             "plates": len(shots),
             "planned_shots": planned_shots,
+            # Reported separately from `plates` because they are a different kind of
+            # thing: a plate is something the run will pay a model for and a canon shot
+            # is a file somebody else already made, which is why it carries an
+            # attribution line and why `finalize` has to see it.
+            "canon_shots": sum(len(plates) for plates in canon_by_scene.values()),
+            "canon_scenes": len(canon_by_scene),
             "target_shot_seconds": round(spec.target_shot_seconds, 3),
             # What the animated shots in this plan cost, each priced on the model it will
             # actually run on and on the duration that endpoint will actually bill. It is
@@ -930,6 +1145,45 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                              "source": "operator", "seconds": seconds})
             ctx.log(f"scene {index}: using the clip you supplied "
                     f"({record.get('title') or supplied.name})")
+            continue
+
+        # A shot the plan wrote off fetched canon art. It generates nothing, so it comes
+        # before the still: buying a plate here would spend on a picture the run already
+        # has, and — the part that matters more than the money — replace the canonical
+        # art with an impression of it. These audiences know what the creature looks
+        # like and correct the video when it is wrong, so the generated version is not a
+        # cheaper shot, it is a wrong one.
+        #
+        # It never falls through to generation. When the fetch fails the shot is dropped
+        # and said so, because the honest failure for a canon shot is a missing shot the
+        # operator can fix, not a plausible substitute they will not notice.
+        if str(shot.get("kind")) == "canon":
+            asset_path = await asyncio.to_thread(_fetch_canon, ctx, shot, slug)
+            if asset_path is None:
+                degraded += 1
+                continue
+            ctx.emit_artifact(
+                "image", asset_path, "image/png",
+                scene_index=index, plate_index=plate_index, role="shot",
+                prompt=prompt[:300], seconds=seconds,
+                # "not stated" travels rather than being dropped. These wikis return no
+                # licence fields for most uploads and the file is frequently the
+                # original artist's copyright hosted under fair use — so `finalize`
+                # gets the file page and the unknown, never a verdict this cannot
+                # support.
+                licence=(shot.get("licence") or {}).get("LicenseShortName")
+                or "not stated",
+                attribution=shot.get("attribution", ""),
+                creator=(shot.get("licence") or {}).get("Artist", ""),
+                landing_url=shot.get("asset_page", ""),
+                source="fandom", sourced=True,
+            )
+            produced.append({"scene_index": index, "plate_index": plate_index,
+                             "path": str(asset_path), "kind": "canon",
+                             "source": "fandom", "seconds": seconds,
+                             "composite": bool(shot.get("composite")),
+                             "overlays": list(shot.get("overlays") or []),
+                             "beat": shot.get("beat", "")})
             continue
 
         # A beat the plan served from licensed footage. Fetched before the still, which
