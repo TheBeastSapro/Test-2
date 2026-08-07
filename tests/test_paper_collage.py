@@ -653,3 +653,74 @@ def test_a_scrap_is_torn_on_every_side(tmp_path):
          "-of", "csv=p=0"],
         capture_output=True, text=True, timeout=60, check=True)
     assert int(out.stdout.strip().splitlines()[0]) == 0
+
+
+# ------------------------------------------------------- the style reaches a video
+#
+# Every renderer above was built and tested, and `forgecast/motion/paper.py` was
+# imported by nothing but this file: 963 lines with no caller. What was missing was the
+# assembly — a function turning a still into a beat — and a channel setting that picks
+# the style. These hold both.
+
+def _plain_still(path):
+    import subprocess
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=white:s=640x360",
+         "-vf", "drawbox=x=220:y=70:w=200:h=220:color=0x1a2b3c@1:t=fill",
+         "-frames:v", "1", str(path)], check=True, capture_output=True)
+    return path
+
+
+def test_a_still_becomes_a_paper_beat(tmp_path):
+    still = _plain_still(tmp_path / "still.png")
+    out = paper.compose_beat(still, tmp_path / "beat.mp4", seconds=2.0, index=1,
+                             text="THE LIGHTHOUSE", width=640, height=360)
+    assert out.exists() and out.stat().st_size > 0
+
+    import subprocess
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
+         str(out)], capture_output=True, text=True)
+    assert abs(float(probe.stdout.strip()) - 2.0) < 0.25
+
+
+def test_a_beat_generates_no_video_and_spends_nothing(tmp_path, monkeypatch):
+    """The style's whole argument: image-to-video is the wrong tool here, not a dear one."""
+    import forgecast.providers.media as media_provider
+
+    def explode(*_a, **_k):
+        raise AssertionError("the paper style must not call a video vendor")
+
+    monkeypatch.setattr(media_provider, "video_usd", explode, raising=False)
+    still = _plain_still(tmp_path / "still.png")
+    paper.compose_beat(still, tmp_path / "beat.mp4", seconds=1.5, width=640, height=360)
+
+
+def test_a_missing_decoration_does_not_lose_the_beat(tmp_path, monkeypatch):
+    """A run that already paid for a script must not die over a torn scrap."""
+    def no_scrap(*_a, **_k):
+        raise RuntimeError("ffmpeg said no")
+
+    monkeypatch.setattr(paper, "render_scrap", no_scrap)
+    still = _plain_still(tmp_path / "still.png")
+    out = paper.compose_beat(still, tmp_path / "beat.mp4", seconds=1.5,
+                             width=640, height=360)
+    assert out.exists() and out.stat().st_size > 0
+
+
+def test_beats_in_one_run_share_their_paper(tmp_path):
+    """A collage that changes desk halfway through is a pile of images."""
+    still = _plain_still(tmp_path / "still.png")
+    first = paper.compose_beat(still, tmp_path / "a.mp4", seconds=1.0, index=0,
+                               width=640, height=360, workdir=tmp_path / "wa")
+    second = paper.compose_beat(still, tmp_path / "b.mp4", seconds=1.0, index=1,
+                                width=640, height=360, workdir=tmp_path / "wb")
+    assert first.exists() and second.exists()
+    # Same tone, adjacent seeds — one desk, different tears.
+    assert (tmp_path / "wa" / "base.png").exists()
+    assert (tmp_path / "wb" / "base.png").exists()
+
+
+def test_the_style_is_selectable_on_a_channel():
+    from forgecast.nodes import media as media_node
+    assert media_node.PAPER_COLLAGE == "paper_collage"

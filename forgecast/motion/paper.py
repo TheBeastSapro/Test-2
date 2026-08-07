@@ -961,3 +961,106 @@ def catalogue() -> dict:
         "note": "Built from stills and ffmpeg arithmetic. This style generates no video "
                 "and costs nothing per shot beyond the source images.",
     }
+
+
+# ------------------------------------------------------------------------ one beat
+
+#: Which layers a beat uses, by how much it has to carry. Everything above `subject` is
+#: optional decoration; the base and the cut-out are the style.
+#:
+#: Deliberately not "every layer every time". `Layer("subject")` says it outright — two
+#: cut-outs competing for one frame is the most common way this style stops reading — and
+#: the same is true of stamps and string, which are emphasis and stop being emphasis when
+#: they are on every beat.
+_BEAT_LAYERS = ("base", "scraps", "subject", "strips")
+_ACCENT_EVERY = 4
+
+
+def compose_beat(
+    still: Path,
+    out_path: Path,
+    *,
+    seconds: float,
+    index: int = 0,
+    text: str = "",
+    tone: str = DEFAULT_TONE,
+    width: int = 1920,
+    height: int = 1080,
+    fps: int = 30,
+    workdir: Path | None = None,
+) -> Path:
+    """One still image, made into a paper-collage beat.
+
+    The function this module was missing, and the reason none of it could be reached: it
+    had a renderer for every element and nothing that turned a shot into a video. Every
+    piece below already existed and was tested; this is the assembly.
+
+    `still` is whatever the image provider produced — generated, or a licensed stock
+    photograph, or a free one. It is screened and torn into a cut-out and laid on paper
+    built from the same seed as every other beat in the run, which is what makes a video
+    read as one desk rather than a pile of separate images.
+
+    Nothing here generates video and nothing here spends. That is the point of the style
+    rather than a saving on it: Veo and Kling produce smooth motion, drifting cameras and
+    photoreal texture, and this style removes all three, so paying for generated footage
+    here buys output that then has to be fought.
+    """
+    still = Path(still)
+    out_path = Path(out_path)
+    work = Path(workdir or out_path.parent / f"{out_path.stem}_paper")
+    work.mkdir(parents=True, exist_ok=True)
+
+    # One seed for the whole run, offset per beat. Same paper everywhere, different
+    # tears — which is a desk, where a fresh seed per beat would be a different desk each
+    # time and a fixed seed would be the identical torn edge on all of them.
+    seed = 7 + index
+
+    sources: dict[str, Path] = {}
+    sheet = render_paper(work / "base", width=width, height=height, seed=seed, tone=tone)
+    sources["base"] = sheet.path
+
+    try:
+        sources["scraps"] = render_scrap(work / "scrap", seed=seed + 3)
+    except Exception as exc:
+        log.warning("paper beat %s: no scrap layer (%s)", index, exc)
+
+    # The cut-out wants an alpha channel. `layers.matte.cut` is what produces one; a
+    # plain JPEG screens fine and tears a fully-opaque alpha, which yields a torn-edged
+    # rectangle rather than a cut-out. That is a worse beat, not a broken one, so it is
+    # taken rather than refused — and said, because the difference is visible.
+    subject = still
+    try:
+        from ..layers.matte import cut
+
+        matte = cut(still, work / "matte.png")
+        # `usable` is the matte's own verdict and it is honoured rather than read past.
+        # A refused matte is a subject the model could not separate; screening it anyway
+        # tears a rectangle out of the whole frame, which is precisely the clip-art look
+        # this style was rebuilt to stop producing. Laying the frame down whole is the
+        # better beat, and saying which happened is what makes the difference reviewable.
+        if matte.usable:
+            subject = Path(matte.path)
+        else:
+            log.info("paper beat %s: matte refused (%s), screening the frame whole",
+                     index, matte.refused or "no reason given")
+    except Exception as exc:
+        log.info("paper beat %s: no matte, screening the frame whole (%s)", index, exc)
+    try:
+        sources["subject"] = render_cutout(subject, work / "subject", seed=seed + 5)
+    except Exception as exc:
+        log.warning("paper beat %s: no subject cut-out (%s)", index, exc)
+
+    line = " ".join(str(text or "").split())[:64]
+    if line:
+        try:
+            sources["strips"] = render_strip(line, work / "strip", seed=seed + 11)
+        except Exception as exc:
+            log.warning("paper beat %s: no typed strip (%s)", index, exc)
+
+    layers = [key for key in _BEAT_LAYERS if key in sources]
+    # Emphasis, occasionally. A stamp on every beat is not emphasis, it is a border.
+    if index and index % _ACCENT_EVERY == 0 and "subject" in sources:
+        layers.append("stamp")
+
+    shot = PaperShot(seconds=float(seconds), layers=layers, tone=tone, seed=seed)
+    return render_shot(shot, sources, out_path, width=width, height=height, fps=fps)

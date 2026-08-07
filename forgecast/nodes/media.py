@@ -17,6 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 from .. import operator_lane
 from ..config import get_settings
 from ..graph.engine import NodeContext, NodeResult, node_handler
+from ..motion import paper
 from ..prompts import cast
 from ..prompts import moves as camera_moves
 from ..providers import ProviderError, VideoProvider, footage
@@ -45,6 +46,10 @@ Return JSON: {"concepts": [{"prompt", "text_overlay", "rationale"}]}
   rationale     one sentence on why this earns the click honestly."""
 
 MAX_MAP_MARKERS = 4
+
+#: The one visual style that replaces generated video rather than costing less than it.
+#: Set on a channel's `style_profile.visual_style`.
+PAPER_COLLAGE = "paper_collage"
 
 
 def known_places(value) -> list[str]:
@@ -863,6 +868,11 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
     provider = ""
     produced: list[dict] = []
     degraded = 0
+    # A channel-level look, not a per-shot one. The style's whole argument is that every
+    # cut-out in the video carries the identical halftone screen and sits on the same
+    # paper — a collage that changes desk halfway through is a pile of images.
+    paper_style = str((ctx.channel.style_profile or {}).get("visual_style") or "") \
+        == PAPER_COLLAGE
     # What the animation actually came to, per model. The plan quoted this before the
     # gate; this is the same arithmetic against the shots that survived, so a run whose
     # animations mostly failed over to stills does not report the estimate as a cost.
@@ -996,6 +1006,31 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                 degraded += 1
                 ctx.log(f"shot {index} map failed, falling back to the still: {exc}",
                         level="warning")
+
+        # The paper-collage style, where generated video is the wrong tool rather than an
+        # expensive one. Veo and Kling produce smooth motion, a drifting camera and
+        # photoreal texture; this style removes all three, so paying for a clip here buys
+        # output that then has to be fought. The still is screened, torn and laid on paper
+        # built from the run's own seed — ffmpeg arithmetic, no vendor, no spend.
+        if paper_style and plate is not None:
+            try:
+                beat = await asyncio.to_thread(
+                    paper.compose_beat, plate, ctx.path_for(f"{slug}_paper"),
+                    seconds=seconds, index=index,
+                    text=str(shot.get("on_screen_text") or ""),
+                    width=width, height=height,
+                    workdir=ctx.path_for(f"{slug}_paperwork"),
+                )
+                ctx.emit_artifact("video", beat, "video/mp4", scene_index=index,
+                                  plate_index=plate_index, role="shot", seconds=seconds,
+                                  style="paper_collage")
+                produced.append({"scene_index": index, "plate_index": plate_index,
+                                 "path": str(beat), "kind": "paper", "seconds": seconds})
+                continue
+            except Exception as exc:
+                degraded += 1
+                ctx.log(f"shot {index}: the paper composite failed, using the still "
+                        f"({exc})", level="warning")
 
         model = str(shot.get("model") or "")
         video_provider = video_providers.get(model) if shot["kind"] == "video" else None
