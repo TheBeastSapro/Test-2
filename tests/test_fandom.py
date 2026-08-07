@@ -233,3 +233,64 @@ async def test_a_blank_argument_asks_for_what_is_missing():
 
     assert "error" in answer
     assert ".fandom.com" in answer["error"], "say how to find the wiki name"
+
+
+# ── the gallery ─────────────────────────────────────────────────────────────────
+#
+# A page is not one picture. Amber's carries five, and the infobox pick is the smallest
+# of them, while a 62-second segment cut at two to four seconds a shot needs roughly
+# twenty. Returning one image is what turns an edit into a slideshow, and no amount of
+# Ken Burns on a single still fixes it.
+
+def test_wiki_chrome_is_never_a_shot_candidate():
+    """Every page carries the same logos, badges and placeholders. Without this they
+    outrank real artwork on pages whose art happens to be small."""
+    for name in ("Wiki-wordmark.png", "Site-logo.png", "Favicon.ico",
+                 "Placeholder_creature.png", "Stub_badge.png", "Spoiler-icon.png"):
+        assert not fandom._worth_fetching(name), name
+
+
+def test_real_artwork_passes_the_filter():
+    for name in ("Amber111.png", "Amber in the fog111.png",
+                 "IMG 20200304 212847.jpg", "Housewalker.webp"):
+        assert fandom._worth_fetching(name), name
+
+
+def test_animated_gifs_are_left_to_a_different_path():
+    """They arrive as reaction images and gag material rather than as the subject, and
+    this reader is the subject path."""
+    assert not fandom._worth_fetching("Reaction.gif")
+
+
+def test_an_asset_knows_whether_it_is_a_subject_or_a_shot():
+    """Square or taller is the shape a cut-out arrives in and wants compositing onto a
+    plate; a wide one is already a shot. That decides how it gets used, so it is
+    measured rather than guessed at each call site."""
+    square = fandom.Asset(name="a", url="u", page="p", width=2265, height=2265)
+    wide = fandom.Asset(name="b", url="u", page="p", width=1920, height=1080)
+    tall = fandom.Asset(name="c", url="u", page="p", width=1546, height=2048)
+
+    assert square.is_portrait_crop
+    assert tall.is_portrait_crop
+    assert not wide.is_portrait_crop
+
+
+def test_assets_sort_largest_first_by_pixels_not_by_edge():
+    """A 1546x2048 is a bigger asset than a 2000x900 despite the shorter long edge."""
+    tall = fandom.Asset(name="t", url="u", page="p", width=1546, height=2048)
+    wide = fandom.Asset(name="w", url="u", page="p", width=2000, height=900)
+
+    assert tall.pixels > wide.pixels
+
+
+def test_the_tool_returns_the_gallery_and_says_size_does_not_pick():
+    """Size orders the candidates; it does not choose between them. A tool that
+    presented the largest file as 'the' image would have reproduced the one-shot
+    problem with extra steps."""
+    import inspect
+
+    from forgecast.agent.studio import Studio
+
+    source = inspect.getsource(Studio.read_fandom)
+    assert '"gallery"' in source
+    assert "orders the candidates and does not pick" in source

@@ -435,3 +435,127 @@ async def lookup(wiki: str, query: str, *, timeout: float = 20.0) -> Entity | No
         if found is not None and found.usable:
             return found
     return None
+
+
+# ----------------------------------------------------------------------- the gallery
+#
+# A page is not one picture. Amber's carries five — the infobox portrait plus four
+# scene images from the gallery — and a 62-second segment cut at 2 to 4 seconds a shot
+# needs roughly twenty. Holding one image for a whole segment is the difference between
+# an edit and a slideshow, and it is what a Ken Burns push on a single still looks like
+# no matter how well the push is tuned.
+#
+# So the reader returns everything the page has and says how big each one is. Which to
+# use is an editorial decision, and the ranking below only orders the candidates.
+
+#: Below this on the short edge an image is a badge, an icon or a signature rather than
+#: a shot. Measured against the assets these wikis actually carry: the real ones are
+#: four figures on at least one edge, and the chrome is a couple of hundred pixels.
+MIN_EDGE = 400
+
+#: Filenames that are never a shot, matched case-insensitively as substrings. Wiki
+#: chrome travels with every page and would otherwise rank as a candidate.
+SKIP_NAMES = ("wiki-wordmark", "favicon", "site-logo", "sitelogo", "wiki.png",
+              "placeholder", "spoiler", "stub", "badge", "icon", "logo",
+              "under_construction", "userbox")
+
+#: Extensions worth fetching. Animated GIFs are excluded deliberately: they arrive as
+#: reaction images and gag material rather than as the subject, and this reader is the
+#: subject path.
+SHOT_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp")
+
+
+@dataclass
+class Asset:
+    """One image on a page, with enough about it to choose between candidates."""
+
+    name: str
+    url: str
+    page: str
+    width: int = 0
+    height: int = 0
+    licence: dict = field(default_factory=dict)
+
+    @property
+    def pixels(self) -> int:
+        return self.width * self.height
+
+    @property
+    def is_portrait_crop(self) -> bool:
+        """Roughly square or taller — the shape a subject cut-out arrives in.
+
+        Worth knowing because it decides how the asset is used: a square portrait is a
+        subject to composite onto a plate, and a 16:9 image is already a shot.
+        """
+        return self.height >= self.width * 0.92
+
+    def as_dict(self) -> dict:
+        return {"name": self.name, "url": self.url, "page": self.page,
+                "size": [self.width, self.height], "licence": self.licence,
+                "portrait": self.is_portrait_crop}
+
+
+def _worth_fetching(name: str) -> bool:
+    lowered = name.lower()
+    if not lowered.endswith(SHOT_EXTENSIONS):
+        return False
+    return not any(skip in lowered for skip in SKIP_NAMES)
+
+
+async def images(wiki: str, title: str, *, limit: int = 12,
+                 timeout: float = 25.0) -> list[Asset]:
+    """Every usable image on a page, largest first.
+
+    Ordered by pixel count because on these wikis the biggest file is reliably the one
+    somebody uploaded as artwork and the small ones are crops, thumbnails and chrome.
+    That is a heuristic and it is stated as one — it orders candidates, it does not
+    pick, and the caller still has to look.
+
+    Sizes come back in one batched `imageinfo` call rather than one per file, because a
+    page with a full gallery would otherwise be a dozen round trips against somebody
+    else's wiki for information they will hand over in a single request.
+    """
+    try:
+        data = await _api(wiki, {"action": "parse", "page": title,
+                                 "prop": "images"}, timeout=timeout)
+    except (httpx.HTTPError, ValueError) as exc:
+        log.info("fandom images failed on %s for %r: %s", wiki, title, exc)
+        return []
+    if "error" in data:
+        return []
+
+    names = [name for name in (data.get("parse", {}).get("images") or [])
+             if _worth_fetching(name)][:40]
+    if not names:
+        return []
+
+    titles = "|".join(f"File:{name}" for name in names)
+    try:
+        info = await _api(wiki, {
+            "action": "query", "titles": titles, "prop": "imageinfo",
+            "iiprop": "url|size|mime|extmetadata",
+        }, timeout=timeout)
+    except (httpx.HTTPError, ValueError) as exc:
+        log.info("fandom imageinfo batch failed on %s: %s", wiki, exc)
+        return []
+
+    found: list[Asset] = []
+    for page_data in (info.get("query", {}).get("pages") or {}).values():
+        detail = (page_data.get("imageinfo") or [{}])[0]
+        if not detail.get("url"):
+            continue
+        width, height = int(detail.get("width") or 0), int(detail.get("height") or 0)
+        if min(width, height) < MIN_EDGE:
+            continue
+        found.append(Asset(
+            name=str(page_data.get("title", "")).removeprefix("File:"),
+            url=detail["url"], page=detail.get("descriptionurl", ""),
+            width=width, height=height,
+            licence={k: v.get("value") for k, v in
+                     (detail.get("extmetadata") or {}).items()
+                     if k in ("LicenseShortName", "License", "UsageTerms", "Artist",
+                              "Credit", "Copyrighted")},
+        ))
+
+    found.sort(key=lambda asset: asset.pixels, reverse=True)
+    return found[:limit]

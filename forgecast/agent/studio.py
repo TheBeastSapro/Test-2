@@ -1193,9 +1193,22 @@ class Studio:
                         "picture of a named creature an audience already knows is the "
                         "one substitution they reliably catch.",
             }
+        # Every image on the page, not just the infobox one. A page carries a gallery —
+        # Amber's has five, and the infobox pick is the smallest of them — while a
+        # 62-second segment cut at two to four seconds a shot needs roughly twenty.
+        # Returning one picture is what makes an edit a slideshow, and no amount of Ken
+        # Burns on a single still fixes that.
+        gallery = await wiki_reader.images(site, found.title)
         return {
             **found.as_dict(),
             "found": True,
+            "gallery": [asset.as_dict() for asset in gallery],
+            "gallery_note": (
+                f"{len(gallery)} usable image(s) on this page, largest first. Size "
+                "orders the candidates and does not pick between them — a square or "
+                "taller one is a subject to cut out and composite onto a plate, a wide "
+                "one is already a shot. Use several across the segment."
+            ),
             "attribution": found.attribution(),
             "rights": "Not cleared. Fandom text is CC-BY-SA under their terms; an image "
                       "there is often the artist's own copyright, and this wiki stated "
