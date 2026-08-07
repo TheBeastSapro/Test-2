@@ -787,6 +787,61 @@ def _build_scene_clip(
     return concat_clips(pieces, target)
 
 
+def _join_scenes(clips: list[Path], scenes: list[Scene], out_path: Path, *,
+                 transition: str = "", dissolve_share: float = 0.0) -> Path:
+    """Put the scene clips end to end, dissolving the share the reference dissolves.
+
+    `render/transitions.py` was written complete — a catalogue, a planner that refuses
+    an overlap the shots cannot afford, an `available()` guard for an ffmpeg without
+    `xfade`, and a `hold_timeline` that keeps the bed the length the narration was
+    recorded against. It had no caller. Every video this app has ever made went through
+    `concat_clips`, which is a hard cut, so the transition a style measured off its
+    reference was recorded and never applied.
+
+    That mattered in the direction nobody checked. A reference that hard-cuts got hard
+    cuts and looked right by accident; a reference that dissolves got hard cuts too.
+
+    Which boundaries dissolve comes from `dissolve_share` — the measured fraction of the
+    reference's own joins that were not cuts. Spread evenly rather than taken from the
+    front, because a video that dissolves its first third and cuts the rest reads as two
+    edits stitched together.
+    """
+    if not clips:
+        raise RenderError("nothing to concatenate")
+
+    share = max(0.0, min(1.0, float(dissolve_share or 0.0)))
+    if len(clips) < 2 or not transition or share <= 0:
+        return concat_clips(clips, out_path)
+
+    from . import transitions as tr
+
+    # The style says `cut` or `dissolve`; the catalogue is named for editorial intent.
+    # Translating here rather than at the call site is what was missing — `get()` never
+    # raises and falls back to a hard cut, so an unmapped name silently produced the
+    # behaviour the wiring was meant to replace, and looked like it had worked.
+    key = tr.from_style(transition)
+    if key == tr.DEFAULT_KEY:
+        return concat_clips(clips, out_path)
+
+    if not tr.available():
+        log.info("this ffmpeg has no xfade — joining with hard cuts")
+        return concat_clips(clips, out_path)
+
+    durations = [float(scene.seconds) for scene in scenes[:len(clips)]]
+    boundaries = len(clips) - 1
+    wanted = round(boundaries * share)
+    # Evenly spaced: boundary i dissolves when its position in the run crosses the next
+    # multiple of the spacing. With share=0.5 and 8 boundaries that is every other one.
+    keys = ["cut"] * boundaries
+    if wanted:
+        step = boundaries / wanted
+        for index in range(wanted):
+            keys[min(boundaries - 1, int(index * step))] = key
+
+    joins = tr.plan(durations, keys)
+    return tr.join_clips(clips, joins, durations, out_path, hold_timeline=True)
+
+
 def assemble_video(
     scenes: list[Scene],
     out_path: Path,
@@ -797,6 +852,10 @@ def assemble_video(
     height: int = 720,
     avatar_path: Path | None = None,
     subtitles: bool = True,
+    # How this channel joins its shots, measured off its reference. Empty or "cut"
+    # keeps the hard-cut concat every render used before this existed.
+    transition: str = "",
+    dissolve_share: float = 0.0,
     motion_preset=None,
     motion_plans=None,
     motion_backend: str = "ffmpeg",
@@ -852,7 +911,8 @@ def assemble_video(
             )
         clips.append(target)
 
-    bed = concat_clips(clips, workdir / "bed.mp4")
+    bed = _join_scenes(clips, scenes, workdir / "bed.mp4",
+                       transition=transition, dissolve_share=dissolve_share)
 
     if avatar_path and avatar_path.exists():
         bed = overlay_video(bed, avatar_path, workdir / "bed_pip.mp4", fps=fps,

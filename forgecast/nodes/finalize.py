@@ -89,6 +89,9 @@ async def render_node(ctx: NodeContext) -> NodeResult:
     # estimates, because these are the numbers the audio track actually has — and
     # `plan_cuts` raises rather than letting the two disagree by a millisecond.
     spec = spec_for(ctx.channel.style_profile)
+    # The same learned block `spec` is built from, kept whole: the renderer needs
+    # two fields off it that `RenderSpec` does not carry.
+    learned = (ctx.channel.style_profile or {}).get("render_spec") or {}
     cuts = plan_cuts(beats, spec)
     rate = shots_per_minute(cuts)
 
@@ -157,6 +160,13 @@ async def render_node(ctx: NodeContext) -> NodeResult:
         encoder=str(ctx.params.get("encoder") or get_settings().video_encoder or ""),
         avatar_path=avatar_path,
         subtitles=bool(ctx.params.get("subtitles", True)),
+        # How this channel joins its shots, off the same learned spec the cutting
+        # rhythm comes from. `render/transitions.py` shipped complete and unreachable,
+        # so every video this app made was hard-cut regardless of what its reference
+        # did — which looked correct on a reference that hard-cuts and silently wrong
+        # on one that does not.
+        transition=str(learned.get("transition") or ""),
+        dissolve_share=float(learned.get("dissolve_share") or 0.0),
         motion_preset=preset,
         motion_plans=plans,
         motion_backend=backend_name,

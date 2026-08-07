@@ -195,6 +195,33 @@ def get(key: str) -> Transition:
     return BY_KEY.get((key or "").strip().lower(), BY_KEY[DEFAULT_KEY])
 
 
+#: The learned style's transition vocabulary, mapped onto this catalogue's.
+#:
+#: These are two different vocabularies and nothing joined them, which is the real
+#: reason this module went unused. `vision/profile.py` classifies a reference's joins as
+#: `cut` or `dissolve` — a binary, because that is what can be measured reliably off
+#: decoded frames. This catalogue is named for editorial intent. `get()` never raises
+#: and falls back to a hard cut, so a style asking for "dissolve" got silently hard-cut
+#: and looked like the feature working.
+#:
+#: `dissolve` maps to `soften` rather than to anything louder: a measured cross-dissolve
+#: is the join being hidden, and `fadeblack` or `zoomin` would be inventing an intent
+#: the measurement cannot support.
+STYLE_KEYS = {"dissolve": "soften", "fade": "soften", "cut": DEFAULT_KEY}
+
+
+def from_style(name: str) -> str:
+    """A catalogue key for whatever the learned style called it.
+
+    A name already in the catalogue passes through, so an operator or the agent can
+    still ask for `time_passes` by name.
+    """
+    wanted = (name or "").strip().lower()
+    if wanted in BY_KEY:
+        return wanted
+    return STYLE_KEYS.get(wanted, DEFAULT_KEY)
+
+
 def for_intensity(intensity: float) -> Transition:
     """The transition closest to a measured energy, for a learned style.
 
