@@ -154,3 +154,74 @@ def test_a_bad_wiki_comes_back_on_the_page_and_keeps_the_old_value(
     assert landed.status_code == 200
     assert "no wiki at nope123.fandom.com" in landed.text
     assert "doors-game.fandom.com" in landed.text   # the good one is still set
+
+
+# ------------------------------------------------- what to do when the name is wrong
+
+
+class _Search:
+    """A search provider that returns fandom links, as Tavily and Brave do."""
+
+    name = "stub-search"
+
+    def __init__(self, urls):
+        self.urls = urls
+        self.asked: list[str] = []
+
+    async def search(self, query):
+        self.asked.append(query)
+        return [{"url": url, "title": url} for url in self.urls]
+
+
+@pytest.mark.asyncio
+async def test_a_wrong_name_offers_wikis_that_do_exist(
+        session: Session, user: User, channel: Channel, monkeypatch):
+    """Discovery belongs on the failure, not on a button.
+
+    A "find my wiki" control is dead on a fresh install — Fandom's own cross-wiki
+    search sits behind a bot check, so this needs a search vendor — and the moment
+    somebody is stuck is the moment their guess just came back empty.
+    """
+    from forgecast.providers import search as search_module
+
+    finder = _Search(["https://doors-game.fandom.com/wiki/Seek",
+                      "https://community.fandom.com/wiki/Help"])
+    monkeypatch.setattr(search_module, "provider_for", lambda keys: finder)
+
+    async def probe(name, *, timeout=20.0):
+        return (canon.Wiki(name=name, title="DOORS Wiki", articles=321)
+                if name == "doors-game" else None)
+
+    monkeypatch.setattr(canon, "_probe", probe)
+
+    from forgecast.db import SessionLocal
+    result = await Studio(SessionLocal, user_id=user.id).set_canon_wiki(
+        channel.id, "doorsgame")
+
+    assert "no wiki at doorsgame.fandom.com" in result["error"]
+    assert "doors-game (DOORS Wiki, 321 articles)" in result["error"]
+    # Every suggestion was read out of a URL the search returned, never constructed —
+    # and fandom's own plumbing is not offered as a wiki about anything.
+    assert "community" not in result["error"]
+    session.refresh(channel)
+    assert "canon_wiki" not in (channel.style_profile or {})
+
+
+@pytest.mark.asyncio
+async def test_without_a_search_vendor_it_says_how_to_find_it_by_hand(
+        session: Session, user: User, channel: Channel, monkeypatch):
+    """The manual route works on every install, so it is always the last sentence."""
+    from forgecast.providers import search as search_module
+
+    monkeypatch.setattr(search_module, "provider_for", lambda keys: _Search([]))
+
+    async def probe(name, *, timeout=20.0):
+        return None
+
+    monkeypatch.setattr(canon, "_probe", probe)
+
+    from forgecast.db import SessionLocal
+    result = await Studio(SessionLocal, user_id=user.id).set_canon_wiki(
+        channel.id, "doorsgame")
+
+    assert "copy the part of the address before .fandom.com" in result["error"]

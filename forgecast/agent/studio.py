@@ -1100,6 +1100,41 @@ class Studio:
                        "banner, or POST /api/setup/extras/motion.",
         }
 
+    async def _wiki_suggestions(self, wanted: str) -> str:
+        """Wikis that do exist and might be the one meant, as a sentence, or "".
+
+        Attached to the failure rather than offered as a button, which is where it is
+        worth having: a "find my wiki" control is dead on a fresh install — Fandom's own
+        cross-wiki search sits behind a bot check, so discovery needs a search vendor —
+        and the moment somebody is actually stuck is the moment their guess just came
+        back empty.
+
+        Every name here was read out of a URL a search returned and then verified
+        against the live API, so nothing offered is a constructed subdomain. Without a
+        search vendor this returns the manual route, which works on every install.
+        """
+        from ..providers.registry import registry_for
+        from ..providers.search import provider_for
+        from ..research import canon
+
+        manual = (" Open the wiki in a browser and copy the part of the address before "
+                  ".fandom.com.")
+        try:
+            with self._session() as session:
+                user = self._user(session)
+                if user is None:
+                    return manual
+                keys = registry_for(session, user).user_keys
+            found = await canon.discover(wanted.replace("-", " "),
+                                         search=provider_for(keys), limit=3)
+        except Exception:                                          # pragma: no cover
+            return manual
+        if not found:
+            return manual
+        listed = ", ".join(f"{wiki.name} ({wiki.title}, {wiki.articles} articles)"
+                           for wiki in found)
+        return f" Wikis that do exist and might be it: {listed}.{manual}"
+
     async def set_canon_wiki(self, channel: Any, wiki: str) -> dict:
         """Name the wiki this channel's runs fetch their entities from.
 
@@ -1129,9 +1164,8 @@ class Studio:
             except Exception as exc:                               # pragma: no cover
                 return {"error": f"could not reach {wanted}.fandom.com: {exc}"}
             if found is None:
-                return {"error": f"there is no wiki at {wanted}.fandom.com. Open the "
-                                 f"wiki in a browser and copy the part of the address "
-                                 f"before .fandom.com."}
+                return {"error": f"there is no wiki at {wanted}.fandom.com."
+                                 + await self._wiki_suggestions(wanted)}
 
         with self._session() as session:
             user = self._user(session)
