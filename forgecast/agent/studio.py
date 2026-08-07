@@ -1151,6 +1151,60 @@ class Studio:
                       "run in words, and it never blocks publish.",
         }
 
+    def use_clip(self, run_id: int, scene_index: int, source: str, *,
+                 start: float = 0.0, seconds: float = 0.0, note: str = "") -> dict:
+        """Put a clip the operator chose into one scene of a run.
+
+        The lane `providers.footage` was built around and nothing ever called. It takes
+        a local file or a link the operator names, mutes it at ingest, and records that
+        they supplied it — and then `shots_node` uses it for that scene ahead of
+        anything it would otherwise search for or generate.
+
+        It establishes no licence and says so on the clip, in the credits file, and on
+        this reply. That is the design rather than a limitation: the rights judgment on
+        somebody else's footage belongs to the person publishing the video, and an app
+        that answered it with a filter would be answering a question it cannot see the
+        facts of. Publish is never blocked.
+        """
+        from .. import operator_lane
+
+        with self._session() as session:
+            user = self._user(session)
+            run = session.get(Run, int(run_id)) if user else None
+            if run is None or user is None or run.user_id != user.id:
+                return {"error": f"No run {run_id}."}
+        try:
+            record = operator_lane.take(
+                int(run_id), int(scene_index), source,
+                start=float(start or 0.0), seconds=float(seconds or 0.0), note=note)
+        except Exception as exc:
+            return {"error": f"could not take that clip: {exc}"}
+
+        return {
+            **record,
+            "using": f"scene {scene_index} of run {run_id} will use this clip instead of "
+                     f"generating or searching for one",
+            "rights": "Forgecast established no licence for this and does not claim one. "
+                      "It is recorded as operator-supplied, the run carries the reason in "
+                      "words, the credits file lists it separately from clips whose "
+                      "licence was checked, and publish is not blocked.",
+            "replace": f"Call this again for scene {scene_index} to swap it, or drop a "
+                       f"file at {record['path']} yourself.",
+        }
+
+    def supplied_clips(self, run_id: int) -> dict:
+        """Which scenes of a run the operator has supplied footage for."""
+        from .. import operator_lane
+
+        with self._session() as session:
+            user = self._user(session)
+            run = session.get(Run, int(run_id)) if user else None
+            if run is None or user is None or run.user_id != user.id:
+                return {"error": f"No run {run_id}."}
+        found = operator_lane.supplied(int(run_id))
+        return {"run_id": int(run_id), "scenes": found, "count": len(found),
+                "folder": str(operator_lane.folder(int(run_id)))}
+
     # ------------------------------------------------------------------ research
 
     def research_channel(self, reference: str, *, limit: int = 50) -> dict:

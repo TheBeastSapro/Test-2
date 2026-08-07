@@ -14,6 +14,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from .. import operator_lane
 from ..config import get_settings
 from ..graph.engine import NodeContext, NodeResult, node_handler
 from ..prompts import cast
@@ -878,6 +879,35 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
         prompt = shot["prompt"]
         seconds = float(shot.get("seconds") or 5.0)
         plate: Path | None = None
+
+        # A clip the operator supplied for this scene, which beats everything below it.
+        # They chose this shot; nothing here gets to prefer a generated impression of it
+        # or a stock match to the thing they actually wanted.
+        #
+        # Checked on plate 0 only. Later plates are alternative angles on the same beat
+        # and there is one supplied file, so re-using it would cut from one clip to
+        # itself. Those fall through and are generated as usual.
+        supplied = operator_lane.clip_for(ctx.run_id, index) if plate_index == 0 else None
+        if supplied is not None:
+            record = operator_lane.note_for(ctx.run_id, index)
+            ctx.emit_artifact(
+                "video", supplied, "video/mp4",
+                scene_index=index, plate_index=plate_index, role="shot",
+                seconds=seconds, operator_directed=True,
+                # The position, in words, on the artifact — which is what `finalize`
+                # reads to write the credits file and to list this in its own section
+                # rather than beside clips whose licence the app actually established.
+                licence=record.get("licence", "operator_supplied"),
+                attribution=record.get("attribution", ""),
+                creator=record.get("creator", ""),
+                flag_reason=record.get("flag_reason", ""),
+            )
+            produced.append({"scene_index": index, "plate_index": plate_index,
+                             "path": str(supplied), "kind": "operator",
+                             "source": "operator", "seconds": seconds})
+            ctx.log(f"scene {index}: using the clip you supplied "
+                    f"({record.get('title') or supplied.name})")
+            continue
 
         # A beat the plan served from licensed footage. Fetched before the still, which
         # inverts the rule three lines below and is the one place that is right: for a

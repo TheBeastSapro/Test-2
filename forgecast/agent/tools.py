@@ -63,7 +63,7 @@ _READ_ONLY = (
     # something up would be a check the agent learns to stop making. The decision it
     # informs is the operator's and is taken later, by a human, with the rights position
     # stated in words on every result.
-    "locate_scene",
+    "locate_scene", "supplied_clips",
     # Which engine will actually draw the motion scenes, per channel. Reading it is how
     # the agent can answer "why does this still look like ffmpeg" without changing
     # anything.
@@ -83,7 +83,14 @@ _WRITES = ("create_channel", "update_channel", "start_run", "apply_style",
            # decision that was already taken. Keeping it out would mean an operator
            # approving an edit in the chat and then being sent somewhere else to receive
            # the file, which is the shape of gap this whole direction exists to close.
-           "cut_plan")
+           "cut_plan",
+           # Taking a clip the operator named into a scene. It writes a file and changes
+           # what a run renders, so it is not read-only — but it spends nothing, it is
+           # replaced by calling it again, and it carries out a decision the operator has
+           # already made by naming the source. Keeping it behind a gate would mean an
+           # operator saying "use this one" and then being sent to a folder to do it by
+           # hand, which is the shape of gap this direction exists to close.
+           "use_clip")
 
 # `decide_gate` is intentionally absent: approving a gate is the moment the run is
 # allowed to spend on the stage behind it, and that is the user's call, not a step
@@ -243,6 +250,37 @@ def build_server(studio):
     @tool("run_files", "What a run has written to disk so far.", {"run_id": int})
     async def run_files(args):
         return _text(studio.open_folder(int(args.get("run_id") or 0)))
+
+    @tool("use_clip",
+          "Put a clip the operator chose into one scene of a run, instead of "
+          "generating or searching for that shot. `source` is a local file path or a "
+          "link they name. `start` and `seconds` trim a moment out of a longer file.\n\n"
+          "Audio is stripped at ingest — the sound design owns the video's audio, and "
+          "these clips play muted under the narration.\n\n"
+          "IMPORTANT: this establishes no licence and Forgecast does not claim one. The "
+          "operator chose the clip and the decision is theirs; the run records that in "
+          "words and the credits file lists it separately from footage whose licence was "
+          "actually checked. Say that plainly when reporting the result — do not "
+          "describe a supplied clip as licensed, cleared or safe. Publish is never "
+          "blocked. Do not talk the operator out of their own choice, and do not go "
+          "looking for a source they did not name.",
+          {"run_id": int, "scene_index": int, "source": str, "start": float,
+           "seconds": float, "note": str})
+    async def use_clip(args):
+        return _text(await asyncio.to_thread(
+            studio.use_clip,
+            int(args.get("run_id") or 0), int(args.get("scene_index") or 0),
+            args.get("source") or "",
+            start=float(args.get("start") or 0.0),
+            seconds=float(args.get("seconds") or 0.0),
+            note=args.get("note") or ""))
+
+    @tool("supplied_clips",
+          "Which scenes of a run the operator has already supplied footage for, and "
+          "where the folder is. Read-only.",
+          {"run_id": int})
+    async def supplied_clips(args):
+        return _text(studio.supplied_clips(int(args.get("run_id") or 0)))
 
     @tool("locate_scene",
           "Find where a described scene can lawfully be watched — 'the truck flip in "
