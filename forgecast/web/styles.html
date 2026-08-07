@@ -225,7 +225,7 @@
           badly — it will be saved as a separate style, leaving this one untouched.
         </p>
         <form method="post" action="/styles/{{ chosen.key }}/refine" style="margin-top:11px">
-          <button>Run the upgrade pass</button>
+          <button class="primary" type="submit">Run the upgrade pass</button>
         </form>
       {% else %}
         <p class="muted prose m-0">
@@ -252,7 +252,7 @@
               Replaces the channel's render spec, motion preset and map style. Its tone
               and everything the agent has learned from your approvals stay put.
             </p>
-            <button type="submit">Apply</button>
+            <button class="primary" type="submit">Apply</button>
           </form>
         {% else %}
           <p class="muted prose m-0">Create a channel first.</p>
@@ -280,7 +280,7 @@
               — there is no style halfway between a cut and a dissolve, so those switch
               at the halfway point.
             </p>
-            <button type="submit">Blend</button>
+            <button class="primary" type="submit">Blend</button>
           </form>
         {% else %}
           <p class="muted prose m-0">Learn a second style to mix with.</p>

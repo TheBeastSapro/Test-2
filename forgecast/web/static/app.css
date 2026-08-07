@@ -408,6 +408,29 @@ input:focus, select:focus, textarea:focus {
 input::placeholder, textarea::placeholder { color: var(--faint); }
 textarea { min-height: 84px; resize: vertical; }
 
+/* Checkboxes, radios and range thumbs are painted by the OS, and the OS default
+   is a blue that appears nowhere else in this app — one stray accent is enough to
+   make a themed surface look half-finished. `accent-color` re-tints the native
+   control without replacing it, so it keeps its own keyboard and screen-reader
+   behaviour. Range needs the same, hence the whole set rather than just boxes. */
+input[type="checkbox"], input[type="radio"], input[type="range"] {
+  accent-color: var(--accent-2);
+}
+/* A native file input renders as a full-width field with an unstyled OS button
+   inside it — the one control on the page still wearing the platform's chrome.
+   The field itself keeps the shared input skin; only the button needs saying. */
+input[type="file"] { padding: 7px 9px; cursor: pointer; }
+input[type="file"]::file-selector-button {
+  font: inherit; font-weight: 560; cursor: pointer;
+  margin-right: 11px; padding: 6px 13px;
+  border-radius: var(--radius-sm);
+  background: var(--raise-3); border: 1px solid var(--line-2); color: var(--text);
+  transition: background var(--motion-fast) var(--ease), border-color var(--motion-fast) var(--ease);
+}
+input[type="file"]::file-selector-button:hover {
+  background: var(--line); border-color: var(--faint);
+}
+
 button, .btn {
   font: inherit; font-weight: 560; cursor: pointer; width: auto;
   padding: 9px 17px; border-radius: var(--radius-sm);
