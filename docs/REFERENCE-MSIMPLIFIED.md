@@ -176,6 +176,20 @@ The important part is the ratio: motion is the exception, and it lands on the be
 narration is describing. This is a channel that pays for animation about twice a
 minute, not continuously.
 
+**Built, partly.** `render/layered.py` moves the subject across a still plate — one
+layer against another, which is what separates this from a Ken Burns push: push the
+frame and every pixel moves together, which is a camera move, and move the cut-out alone
+and it reads as the creature. Verified by sampling a rendered clip: peak difference 255
+in the subject region, 4 in the surrounding plate (h264 quantisation), and the corners
+byte-identical across every frame. It moves the *whole* cut-out, so Amber's arm moving
+independently of its torso is still out of reach — the warp is the open half, and
+particle overlays are untouched.
+
+The ration itself was the harder bug. `edit/segment.py` marked motion onto the story
+beat, which opens on a wide — so the two shots it marked were the two with no cut-out
+to move, and every run planned two clips and rendered none without either end saying
+so. Found by running the real nodes against Seek's page and counting the files.
+
 **Cutting.** Shots hold **2–4 seconds**, and the rhythm does not change between the
 hook and the body. **Hard cuts only** — no dissolves, no whip pans, no glitch
 transitions anywhere in the sample.
