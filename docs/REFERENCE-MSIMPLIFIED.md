@@ -80,6 +80,44 @@ same four parts in the same order:
    > "…stay away from windows at night, especially during fall and winter. Keep them
    > secured. If seen, do not look at it and create distance immediately."
 
+### The source: one fandom wiki page per segment
+
+The segment structure is not invented. It is the **section structure of the creature's
+fandom wiki page**, and both the script and the artwork come from the same page.
+
+Verified against `doctor-nowhere-creatures.fandom.com`, read through the MediaWiki API
+(`action=parse&page=Amber&prop=wikitext`). The page carries:
+
+| Wiki | Video |
+|---|---|
+| `image=Amber111.png` (1284×1284 PNG) | the creature cutout used in every Amber shot |
+| `height=Around 13 to 33 feet`, `weight=Approximately 456 lbs (206 kg)` | the on-screen stat card |
+| `==Appearance==` | the specification beat |
+| `==Behaviour==` | the encounter anecdote |
+| `==How to Survive==` | the survival block, verbatim as a section name |
+
+The prose tracks it closely. The wiki's Appearance section reads "a vaguely humanoid
+creature with a reddish-brown skin tone, disproportionately long arms and legs, long
+fingers strong enough to break glass, and an eye that can split open to reveal a large
+mouth in the middle of its chest. No discernible head is present." The narration reads
+"a tall, distorted humanoid with a reddish-brown body and extremely long limbs … it has
+no head, and its most disturbing feature is a large eye on its torso that can split open
+into a mouth. Its fingers are long and strong enough to break through windows."
+
+The anecdote is the wiki's too. The page records "A young man in a small town in
+*Tennessee* reported watching Amber break its hand through the window of his neighbor's
+home and retrieving a child that lived there and popping the child into its mouth." The
+video opens on exactly that encounter, dramatised into present tense.
+
+**One discrepancy, recorded rather than explained away.** The wiki gives Amber's height
+as 13–33 feet and its weight as 456 lbs. The video says "around 23 m" — roughly 75 feet
+— and does not state a weight for this creature. So the prose is taken from the page and
+the headline figure is not. This document does not know where the video's numbers come
+from, and does not guess.
+
+The channel's own name for its segments is on the page: **"How to Survive"** is a wiki
+section heading, not a scriptwriting choice.
+
 The stats and the survival block are the format's actual invention. The anecdote is
 what every horror-narration channel does; the switch into specification and then into
 instructions is what makes it feel like a briefing rather than a campfire story, and it
@@ -103,13 +141,31 @@ Measured by watching the first 150 seconds of the 1.9M-view video.
 
 **Assets, by share of screen time**
 
-| Kind | Share | Examples |
+| Kind | Share | Provenance |
 |---|---|---|
-| AI-generated stills | ~70% | the Amber creature (0:00), Housewalker (1:06), the highway creature (2:19) |
-| 2D illustration / stick figures | ~20% | walking man (0:02), baby icon (1:01) |
-| Stock backgrounds | ~10% | the highway plate (2:14) |
+| Creature artwork | ~70% | **sourced canonical art**, reused as PNG cutouts |
+| 2D illustration / stick figures | ~20% | the channel's own |
+| Background plates | ~10% | generated |
 
-No stock video, no fan art, no game capture, no wiki screenshots.
+This is the finding an earlier pass of this document got wrong, and the correction
+matters more than anything else here.
+
+The creatures are **not generated**. They are the original artworks — Doctor Nowhere's
+Amber, Trevor Henderson's House Walker — lifted as cutouts and composited over
+background plates. Verified three ways:
+
+* The audience knows the canon and polices it. One commenter corrects the video on Sun
+  Man's second form. A generated Amber would be wrong in ways this audience would say
+  out loud, and nobody does.
+* The same creature image is reused across every shot of that creature; only scale,
+  position and a puppet rotation change. Amber's arm at 0:13 moves independently of its
+  torso — a separate layer, not an image-to-video clip.
+* The cutouts are sharp, with clean edges and a lighting profile that does not match the
+  plate behind them. The *backgrounds* carry the generation artefacts — smeared texture,
+  incoherent architecture — and the creatures do not.
+
+So the format's asset pipeline is **retrieval, not generation**, for the thing the video
+is actually about. Generation is used only for the plate it stands on.
 
 **Motion.** Predominantly static images with a Ken Burns push. A small number of shots
 carry real animation — Amber's arm stretching (0:10), the Housewalker's legs (1:07) —
@@ -190,17 +246,42 @@ Two other patterns worth noting:
 
 Recorded as the gap list, so the work is against measurements rather than impressions.
 
-1. **Captions.** Forgecast burns narration captions on every render. This format burns
-   none, and burning them would cover the name cards, the stats and the gags. Needs to
-   be a property of the learned style, not a constant.
-2. **No name card, no stat card, no speech bubble.** Three on-screen elements this
-   format is built from, and the motion library has none of them.
-3. **No gag layer at all.** The highest-engagement element in the reference has no
-   representation anywhere in the pipeline.
-4. **Transitions.** Forgecast's presets dissolve; this format hard-cuts exclusively.
-5. **Motion budget.** Forgecast decides animation per shot; this format spends it about
+1. **It generates the subject instead of fetching it.** This is the big one. The format's
+   b-roll is *retrieval* — the canonical artwork off a fandom wiki page — and Forgecast
+   has no MediaWiki source at all. An audience that polices its own canon will reject a
+   generated Amber, and generation cannot produce a named entity it has never seen.
+2. **It researches the wrong place.** `research_node` resolves to Tavily/Brave with a
+   Wikipedia fallback. The source of truth for this genre is the franchise's fandom wiki,
+   which has a free structured API — infobox for the stats, sections for the beats, and
+   the image on the same page as the words describing it.
+3. **Captions.** Fixed since this document was first written: burning is now read off the
+   learned style rather than pinned on. The reference burns none, and burning a narration
+   track across the lower third would cover the name card, the stats and the gags.
+4. **No name card, no stat card, no speech bubble.** Three on-screen elements the format
+   is built from, and the motion library has none of them.
+5. **No gag layer at all.** The highest-engagement element in the reference — measured off
+   its own comments — has no representation anywhere in the pipeline.
+6. **Compositing.** The format cuts a subject out and moves one limb over a separate
+   plate. Forgecast renders whole frames; `layers.matte` can cut a subject but nothing
+   assembles a subject-over-plate shot with an independently animated part.
+7. **Transitions.** Forgecast's presets dissolve; this format hard-cuts exclusively.
+8. **Motion budget.** Forgecast decides animation per shot; this format spends it about
    twice a minute, on the beat the narration names.
-6. **No comment mining.** The reference's topic pipeline is its own comment section,
-   and nothing in Forgecast reads comments.
-7. **Chapters.** The audience writes timestamp indexes by hand. Publishing chapters is
-   free and nothing generates them.
+9. **No comment mining.** The reference's topic pipeline is its own comment section, and
+   nothing in Forgecast reads comment text — only counts, for an engagement ratio.
+10. **Chapters.** The audience writes timestamp indexes by hand in the comments. Publishing
+    chapters is free, nothing generates them, and `vision/chapters.py` — which can read
+    them off a reference — has no production caller.
+
+## Rights, unresolved
+
+Fandom's site content is CC-BY-SA by default under their terms, but an image uploaded to
+a fandom wiki is frequently the original artist's copyright and is hosted there under
+fair-use or by permission. The API's `extmetadata` for `Amber111.png` returned no licence
+fields, so **this document does not know what licence that image carries** and does not
+assume one.
+
+That is a real product constraint, not a footnote: a pipeline that pulls canonical
+artwork needs to record where each asset came from and surface it, the way
+`footage.attribution_markdown` already does for stock. What it must not do is assume the
+answer.
