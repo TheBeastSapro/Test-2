@@ -236,11 +236,18 @@ Two other patterns worth noting:
 
 * **Viewers write their own chapter lists.** Two of the top twenty comments are
   hand-made timestamp indexes. The video has no chapters; the audience made them.
-  That is unmet demand and a free structural signal.
+  That is unmet demand and a free structural signal. Re-read through NexLev on
+  2026-08-07 and both are still there, which is what the chapter writer now answers.
 * **The comments are the topic backlog.** "I wanna see the Bolid One", "Please make us
   see the Anchorage", "An explanation of some of the biggest SCPs would be awesome" —
   and *Creepiest SCPs Explained in 9 Minutes* and *Largest SCP Creatures Explained in
   8 Minutes* both exist. The end CTA asks for requests and the requests become videos.
+
+  Those three lines are now a test fixture. Run against `research/requests.py` they
+  found three defects in one pass — the miner needed "to see" and missed "I wanna see
+  the Bolid One", it stripped the "One" off a name, and with nothing named twice it
+  reported that nothing had been asked for at all. Everything it had been tested
+  against before was written by whoever wrote the matcher.
 
 ## What Forgecast would get wrong today
 
@@ -272,9 +279,12 @@ loses the record of what the work was for.
    and `broll_plan` now runs it, so the ration is what a run renders.
 9. ~~**No comment mining.**~~ Closed. `research/requests.py` tallies what the audience
    asked for, reachable as `audience_requests`.
-10. **Chapters.** Open. The audience writes timestamp indexes by hand in the comments,
-    publishing chapters is free, nothing generates them, and `vision/chapters.py` — which
-    can read them off a reference — still has no production caller.
+10. ~~**Chapters.**~~ Closed. `vision/chapters.py` writes an index as well as reading
+    one, and `final_review` puts it on the front of the description. The marks come from
+    the same scene-to-entity join that chose the artwork and from the *measured*
+    voiceover, and a list that breaks YouTube's rules is refused with the reason rather
+    than trimmed — a broken list is not a shorter list, it is a video with no chapters
+    and nothing saying so.
 
 ### Still open, beyond the original list
 
