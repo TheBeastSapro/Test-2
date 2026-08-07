@@ -167,3 +167,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When a change produces something visual — a rendered frame, a composited video, a page, a chart, a document — add an explicit step that produces the artefact and inspects it, and treat that as part of the change rather than as optional confirmation. Do it before writing the summary, not after. Prefer inspecting the artefact to inspecting a proxy for it: a byte count, an exit code, or a passing assertion about structure can all be satisfied by output that is visibly wrong. Where degradation is designed in — a layer that skips, a fallback that substitutes — the proxy is especially weak, because the failure path is built to look like success.
 
 **Principle:** For visual output, a successful build is evidence the code ran, not evidence it produced the right thing. Look at the artefact. This matters most in code designed to degrade gracefully, where the failure path is deliberately indistinguishable from the success path by every signal except the output itself.
+
+### Observation 11: A workaround repeated in three places is evidence about the shared rule, not about the three places
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** A pass over an app's templates for control styling and action hierarchy, driven by screenshots rather than by reading the stylesheet.
+
+**Skill:** code-review-and-quality
+**Type:** open-source
+**Phase/Area:** Deciding where a fix belongs
+
+**Issue:** Three separate templates each carried `style="width:auto"` on a checkbox. Read one at a time, each looks like a reasonable local nudge and invites a local fix — tidy the inline style into a class, move on. Read together, they are a measurement of the shared rule: the stylesheet's text-field skin selected on the bare `input` tag, so it was landing on checkboxes too, and every page that rendered one had had to escape it by hand. The same session had a second instance of the pattern. A checkbox rendered as a bright white rectangle on a near-black page, and the obvious reading — "the accent colour is not set" — was half right; `accent-color` had been added and the box was still white, because that property only tints the *checked* fill. The real cause was one level up again: no `color-scheme: dark` on `:root`, which is also why the select popups and scrollbars were light. Both fixes were one declaration in the shared layer, and both were invisible from any single call site.
+
+**Suggested improvement:** When about to apply a local override, first search for that same override elsewhere. Two occurrences is a coincidence worth noting; three is a finding about the shared rule, and the fix belongs there. Before writing the workaround, state what rule it is escaping and whether that rule should have applied here at all — a selector that is too broad, a default that is wrong, a base class doing two jobs. Where a symptom persists after the obvious targeted fix, treat the persistence as information: it usually means the cause sits one layer above where the fix was aimed.
+
+**Principle:** Repeated local workarounds are a distributed bug report about a shared rule. Counting them costs one search and converts N scattered patches into one correct change — and the version of the defect nobody worked around yet is fixed at the same time, which the N patches would each have missed.
