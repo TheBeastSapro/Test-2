@@ -215,3 +215,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When connecting a new path through a lookup that degrades rather than raises, assert on the *effect*, not on the call succeeding or on the shape of the result. Sample the output where the change should show — the pixels at the boundary, the field on the row, the branch in the log — and assert it differs from the unchanged case. Where two components use different vocabularies for the same concept, the mapping between them is the thing to test first, because a defaulting lookup will silently absorb every unmapped name. And treat a passing check against one live sample as untested until a second sample or a hand-built fixture agrees: a fallback can be satisfied by a coincidence in the data.
 
 **Principle:** Graceful degradation is correct behaviour and it destroys the signal that tells you whether new code ran. The more carefully a lookup is written to never fail, the less its success proves — so a newly connected path must be verified by the difference it makes, never by the absence of an error.
+
+### Observation 14: Check who calls it before you commit it, not after
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** A long autonomous session adding several modules to a codebase whose own documentation names "built but unreachable" as its most common defect.
+
+**Skill:** code-review-and-quality
+**Type:** open-source
+**Phase/Area:** The moment work is declared finished
+
+**Issue:** I shipped five new modules across one session. Four of them had no production caller at the moment I committed them — including in the commits whose messages quoted the project's rule about exactly this failure. Each was individually reasonable: the module was complete, tested against real data, and obviously about to be used by the next piece. The next piece was another module. Twice I caught it a commit later and wired it; once I caught three at the same time only because I finally ran a mechanical sweep — one grep per new module, asking who imports it, excluding the module itself and its tests. That sweep takes under a minute and would have caught every instance. The reason it kept happening is that "is this finished?" reads as a question about the code in front of you, and reachability is the one property that cannot be seen from there.
+
+**Suggested improvement:** Before committing a new module, run an explicit reachability check: grep for its import across the production tree, excluding the file itself and the test directory, and confirm a real caller exists. If none does, either wire it in the same commit or say plainly in the message that it is unreachable and name the commit that will connect it. Add the check to the definition of done for new files, alongside tests passing — and treat a caller that is only a test as no caller at all. Where the codebase already names this defect, assume you are about to commit it rather than assuming you are the exception.
+
+**Principle:** Reachability is invisible from inside the file being written, so it has to be checked from outside by a mechanical sweep rather than by judgement. Knowing a project's most common defect does not protect you from it; the sweep does, and it is cheap enough that there is no case for skipping it.
