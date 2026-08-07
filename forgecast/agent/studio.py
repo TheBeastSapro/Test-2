@@ -1100,6 +1100,68 @@ class Studio:
                        "banner, or POST /api/setup/extras/motion.",
         }
 
+    async def set_canon_wiki(self, channel: Any, wiki: str) -> dict:
+        """Name the wiki this channel's runs fetch their entities from.
+
+        Verified before it is stored, and this is the one setting in this class where
+        that is the right call rather than the cautious one. Every other setter here
+        stores an unavailable choice and reports the downgrade, because the run still
+        produces a video and the operator needs to know what they got. A wrong wiki does
+        not downgrade — it silently fetches nothing, on every run, for ever, and the only
+        symptom is a video that generated its creatures. A subdomain that answers
+        `siteinfo` is a wiki; one that does not is a typo, and the moment to say so is
+        now.
+
+        Blank clears it, which is the only way back to the ordinary research path.
+        """
+        from ..research import canon
+
+        wanted = str(wiki or "").strip().lower().removesuffix(".fandom.com").strip("/")
+        found = None
+        if wanted:
+            if "/" in wanted or " " in wanted:
+                return {"error": f"{wiki!r} is not a wiki name. Use the part of the "
+                                 f"URL before .fandom.com — for "
+                                 f"https://doors-game.fandom.com/wiki/Seek that is "
+                                 f"'doors-game'."}
+            try:
+                found = await canon._probe(wanted, timeout=20.0)
+            except Exception as exc:                               # pragma: no cover
+                return {"error": f"could not reach {wanted}.fandom.com: {exc}"}
+            if found is None:
+                return {"error": f"there is no wiki at {wanted}.fandom.com. Open the "
+                                 f"wiki in a browser and copy the part of the address "
+                                 f"before .fandom.com."}
+
+        with self._session() as session:
+            user = self._user(session)
+            if user is None:
+                return {"error": "No account."}
+            row = self._channel(session, user, channel)
+            if row is None:
+                return {"error": f"No channel matching {channel!r}."}
+            profile = dict(row.style_profile or {})
+            if wanted:
+                profile["canon_wiki"] = wanted
+            else:
+                profile.pop("canon_wiki", None)
+            # Reassigned rather than mutated, for the reason `set_motion_backend`
+            # records: SQLAlchemy does not see a mutation of the dict it handed out.
+            row.style_profile = profile
+            session.commit()
+            name = row.name
+
+        if not wanted:
+            return {"channel": name, "canon_wiki": "",
+                    "note": "cleared — runs research the open web as before"}
+        return {
+            "channel": name, "canon_wiki": wanted,
+            "title": found.title, "articles": found.articles, "url": found.url,
+            "note": (f"{found.title} — {found.articles} articles. Runs on this channel "
+                     f"will fetch their entities' artwork, stats and sections from it "
+                     f"rather than generating them."),
+        }
+
     # ------------------------------------------------------------------ scenes
 
     async def locate_scene(self, description: str, *, limit: int = 6) -> dict:

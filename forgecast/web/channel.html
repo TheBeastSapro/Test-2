@@ -81,6 +81,7 @@
      the numbers look like part of a form. */
   .method { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .method select { min-width: 240px; }
+  .method input[type=text] { flex: 1 1 220px; min-width: 0; }
   .method .n, .methodnote { color: var(--muted); font-size: var(--t-sm); line-height: 1.5; }
   .methodnote { margin: 10px 0 0; overflow-wrap: anywhere; }
   /* A warning here is never fatal — the style still loaded — so it is the app's amber
@@ -302,6 +303,50 @@
   <p class="methodnote">{{ scripting_folder.note }}
     Your documents are read where they are and are never copied into Forgecast,
     committed, or included in a package.</p>
+</div>
+
+{# The canon wiki. Off by default and stated as off, because the alternative — a page
+   that quietly picked a wiki from the niche — would fetch somebody else's abandoned
+   fork and present its artwork as canon. The setting is verified before it is stored,
+   which is why this form can report a typo instead of failing silently on every run
+   for ever. #}
+<h2>Canon wiki</h2>
+<div class="card">
+  <p class="muted prose" style="margin:0 0 12px;font-size:var(--t-md)">
+    For channels about a universe somebody else already documented — creatures, games,
+    lore. Runs read each entity's <b>artwork, height and weight, and its Appearance /
+    Behaviour / How to Survive sections</b> off the wiki and cut the segment from them,
+    instead of generating a picture of something the audience already knows the look of.
+    Leave it empty and runs research the open web exactly as before.
+  </p>
+  <form class="method" method="post" action="/c/{{ channel.id }}/canon-wiki">
+    <input type="text" name="canon_wiki" value="{{ canon_wiki }}"
+           placeholder="doors-game" spellcheck="false" autocapitalize="off"
+           aria-label="Fandom wiki this channel fetches its entities from">
+    <button class="primary">Save</button>
+    {% if saved == 'canon' %}<span class="n">Saved.</span>{% endif %}
+  </form>
+
+  {% if canon_error %}
+    <p class="methodwarn mt-5">{{ canon_error }}</p>
+  {% endif %}
+
+  <p class="methodnote">
+    {%- if canon_wiki %}
+      Fetching from <b>{{ canon_wiki }}.fandom.com</b>. Which entities a run reads is the
+      brief's beat names, or an <code>entities</code> list on the run.
+    {%- else %}
+      The part of the wiki's address before <code>.fandom.com</code> — for
+      <code>https://doors-game.fandom.com/wiki/Seek</code> that is
+      <code>doors-game</code>. Checked against the wiki when you save.
+    {%- endif %}
+  </p>
+  <p class="methodnote">
+    Rights are recorded and never assumed. Fandom's text is CC-BY-SA, but an image
+    uploaded to a wiki is often the artist's own copyright and the API usually states no
+    licence at all — so every asset arrives with its file page and, where that is all
+    there is, "not stated". Check before you publish.
+  </p>
 </div>
 
 {# The renderer. It was read on every run and writable only from one command-line flag,

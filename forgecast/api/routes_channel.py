@@ -42,6 +42,8 @@ pass wants a channel-scoped variant, not a second implementation.
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
@@ -268,6 +270,10 @@ def _context(session: Session, user: User, channel: Channel, view: str) -> dict:
         # command line rendered with ffmpeg for ever — including after installing the
         # alternative from inside the app.
         "motion_backend": motion_backend_state(channel),
+        # The wiki this channel's runs fetch their entities from, or "". Off by default
+        # and never inferred: a wiki is a real subdomain with no rule connecting it to a
+        # topic, and a guessed one fetches somebody else's abandoned fork.
+        "canon_wiki": str((channel.style_profile or {}).get("canon_wiki") or ""),
         # Which image-to-video models this channel's shots are generated on. Every entry
         # was already in the catalogue and none of them was reachable: the registry built
         # every video provider as `cls(api_key)`, so the slug the app shipped with was the
@@ -330,7 +336,8 @@ def channel_hub(
     return TEMPLATES.TemplateResponse(
         request, "channel.html",
         {**_context(session, user, channel, "hub"),
-         "saved": request.query_params.get("saved", "")},
+         "saved": request.query_params.get("saved", ""),
+         "canon_error": request.query_params.get("canon_error", "")},
     )
 
 
@@ -428,6 +435,33 @@ def save_delivery(
     channel.video_fps = resolve_fps(video_fps) if video_fps else 0
     session.commit()
     return RedirectResponse(f"/c/{channel_id}?saved=delivery", 303)
+
+
+@router.post("/c/{channel_id}/canon-wiki")
+async def save_canon_wiki(
+    channel_id: int,
+    canon_wiki: str = Form(""),
+    user: User = Depends(current_user),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    """Name the wiki this channel's runs fetch their entities from.
+
+    The error comes back on the page rather than as a 400, because every plausible
+    mistake here is a typo in a subdomain and a JSON error body is a dead end for
+    somebody who just wants to try `doors-game` instead of `doors`. Through `Studio`
+    like the other style-profile writers, so the chat and this form cannot disagree
+    about what the channel is set to.
+    """
+    from ..agent.studio import Studio
+    from ..db import SessionLocal
+
+    channel = owned_channel(session, user, channel_id)
+    result = await Studio(SessionLocal, user_id=user.id).set_canon_wiki(
+        channel.id, canon_wiki)
+    if result.get("error"):
+        return RedirectResponse(
+            f"/c/{channel_id}?canon_error={quote(result['error'])}", 303)
+    return RedirectResponse(f"/c/{channel_id}?saved=canon", 303)
 
 
 @router.post("/c/{channel_id}/motion-backend")
