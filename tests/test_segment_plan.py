@@ -198,3 +198,32 @@ def test_the_studio_hands_back_something_a_person_can_argue_with():
     source = inspect.getsource(Studio.plan_segment)
     assert '"shot_list"' in source
     assert "attribution" in source, "a plan built on somebody's art carries its credit"
+
+
+def test_a_beat_prefers_a_shape_and_is_never_restricted_to_one():
+    """Nine unused pictures beside a beat repeating three is the failure this format
+    is named for.
+
+    Measured on a real page: the Doors wiki's Figure carries twelve usable images of
+    which three are portrait crops. Filtering the appearance beat down to portraits
+    cycled those three across eight shots — one picture four times — with the rest of
+    the gallery untouched. The lead preference is right; the exclusion never was.
+    """
+    gallery = [{"name": f"wide{index}.png", "portrait": False} for index in range(9)]
+    gallery += [{"name": f"tall{index}.png", "portrait": True} for index in range(3)]
+    entity = {"title": "Figure", "gallery": gallery,
+              "stats": {"height": "9 ft"},
+              "beats": {"appearance": "tall" * 60, "behaviour": "moves" * 60,
+                        "survival": "hide" * 60}}
+
+    planned = plan(entity, seconds=62.0)
+
+    used = {shot.asset for shot in planned.shots if shot.asset}
+    assert len(used) == 12, f"only {len(used)} of 12 pictures reached the timeline"
+
+    appearance = [shot.asset for shot in planned.shots if shot.beat == "appearance"]
+    assert appearance, "no appearance beat was planned"
+    # It still LEADS on a portrait — that is the whole point of the preference.
+    assert appearance[0].startswith("tall")
+    # ...and it does not repeat one while the gallery has pictures it has not used.
+    assert len(set(appearance)) == len(appearance)

@@ -221,13 +221,38 @@ def plan(entity: dict, *, seconds: float = 62.0, target_hold: float = 3.0,
         count = max(1, round(span / _hold_for(beat, target_hold)))
         hold = span / count
 
-        # The story beat gets the wides where there are any — it is the beat that needs
-        # a place for the encounter to happen in. Everything else leads on the subject.
-        pool = (wides + subjects) if beat == "behaviour" and wides else (subjects or wides)
+        # A preference for what OPENS the beat, over the whole gallery — never a filter
+        # down to one shape. The story beat wants a place for the encounter to happen in,
+        # so it opens on a wide; the other two want to show the thing, so they open on a
+        # subject crop.
+        #
+        # This was `subjects or wides`, and on a real page it was the "one monster shot"
+        # failure with extra steps: Figure's gallery is twelve images of which three are
+        # portrait, so the appearance beat cycled those three across eight shots — the
+        # same picture four times — while nine unused images sat beside it. The
+        # preference is worth keeping and the exclusion never was.
+        leads = (wides or subjects) if beat == "behaviour" else (subjects or wides)
+        pool = (wides + subjects) if beat == "behaviour" else (subjects + wides)
+        # The opener is chosen from the preferred shape and the rest cycle on from it.
+        # Dropping the exclusion alone was not enough: with a cursor that carries across
+        # beats, ordering the pool by preference only shifts the cycle's phase, so the
+        # "preference" decided nothing and the appearance beat opened on whatever the
+        # arithmetic landed on. Anchoring the opener is what makes it a rule rather than
+        # a comment — and the cursor still advances between beats, so two beats do not
+        # open on the same frame.
+        chosen = _spread(pool, count, offset=cursor)
+        if leads and chosen and chosen[0] not in leads:
+            opener = leads[cursor % len(leads)]
+            # Swapped rather than inserted, so the beat keeps its shot count and the
+            # opener does not appear twice in the first few cuts.
+            if opener in chosen:
+                position_of = chosen.index(opener)
+                chosen[0], chosen[position_of] = chosen[position_of], chosen[0]
+            else:
+                chosen[0] = opener
         # The cycle carries across beats rather than restarting. Per-beat round-robin
         # put the same picture on shots 0, 7 and 17 of a 21-shot segment — three
         # separate moments that all opened on the identical frame.
-        chosen = _spread(pool, count, offset=cursor)
         # `+ 1`, not `+ count`. Advancing by the beat's own length realigns the cycle
         # whenever that length is a multiple of the gallery size — with five images and
         # a ten-shot beat, the next beat opened on the identical frame the segment
