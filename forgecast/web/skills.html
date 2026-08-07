@@ -34,22 +34,22 @@
                  margin-top: 16px; }
   .editor-foot .note { font-size: var(--t-sm); color: var(--faint); }
   .fmt { font-size: var(--t-sm); color: var(--muted); line-height: 1.55; margin: 14px 0 0;
-         max-width: 74ch; }
+         }
   .fmt code { color: var(--text); }
 </style>
 {% endblock %}
 
 {% block body %}
 <h1>Skills</h1>
-<p class="muted" style="margin-top:0;max-width:74ch">
+<p class="muted prose mt-0">
   A skill is a named instruction document the agent loads when it applies — how to write
   a hook, how to structure a reveal, what a caption card may do. Styles are
   <em>measured</em> off a creator's videos and should not be hand-edited. These are the
   other half: craft, written as prose, argued with, and edited here.
 </p>
 
-{% if saved %}<div class="banner good" style="margin-top:16px">Saved · {{ saved }}</div>{% endif %}
-{% if error %}<div class="banner" style="margin-top:16px">{{ error }}</div>{% endif %}
+{% if saved %}<div class="banner good mt-6">Saved · {{ saved }}</div>{% endif %}
+{% if error %}<div class="banner mt-6">{{ error }}</div>{% endif %}
 
 <div class="skills">
 
@@ -68,7 +68,7 @@
         </div>
       {% endfor %}
     </div>
-    <a class="btn w-full" style="margin-top:12px" href="/skills-library?new=1">
+    <a class="btn w-full mt-5" href="/skills-library?new=1">
       Add a skill</a>
   </div>
 
@@ -111,7 +111,7 @@
 
     {% if chosen and not creating %}
       <form method="post" action="/skills-library/{{ chosen.slug }}/delete"
-            style="margin-top:14px"
+            class="mt-6"
             onsubmit="return confirm('Delete {{ chosen.name }}? The agent stops loading it.')">
         <button class="danger btn-sm">Delete this skill</button>
       </form>

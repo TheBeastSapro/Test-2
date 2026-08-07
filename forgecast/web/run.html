@@ -54,7 +54,7 @@
 <div class="row" style="justify-content:space-between;align-items:flex-start">
   <div>
     <h1>{{ run.topic }}</h1>
-    <div class="row muted" style="font-size:var(--t-md)">
+    <div class="row muted t-md">
       <span class="mono">run {{ run.id }}</span>
       <span>·</span><span class="mono">{{ run.pipeline }}</span>
       <span>·</span>
@@ -75,7 +75,7 @@
   </div>
 </div>
 
-{% if run.error %}<div class="banner" style="margin-top:16px">{{ run.error }}</div>{% endif %}
+{% if run.error %}<div class="banner mt-6">{{ run.error }}</div>{% endif %}
 
 <h2>Pipeline</h2>
 <div class="card graph-wrap">
@@ -145,13 +145,13 @@
           <span class="muted">· {{ scene.get("seconds", 0) }}s ·
           {{ scene.get("visual_kind", "image") }}</span></summary>
         <p style="margin:8px 0 4px">{{ scene.get("narration", "") }}</p>
-        <p class="muted" style="font-size:var(--t-md);margin:0">
+        <p class="muted prose" style="font-size:var(--t-md);margin:0">
           Visual: {{ scene.get("visual_prompt", "") }}
         </p>
       </details>
     {% endfor %}
     {% if out.get("scenes", [])|length > 6 %}
-      <p class="muted" style="font-size:var(--t-md)">
+      <p class="muted prose t-md">
         …{{ out.get("scenes", [])|length - 6 }} more scenes. Full script in Artifacts below.
       </p>
     {% endif %}
@@ -172,7 +172,7 @@
     {% set meta = out.get("metadata", {}) %}
     {% for artifact in artifacts if artifact.kind == "video" and artifact.meta.get("role") == "final" %}
       <video controls preload="metadata" src="{{ artifact.url }}"></video>
-      <p class="muted" style="font-size:var(--t-md)">
+      <p class="muted prose t-md">
         {{ '%.1f'|format(out.get("duration_seconds", 0)) }}s ·
         {{ artifact.size_label }}
       </p>
@@ -184,7 +184,7 @@
       <dt>Tags</dt><dd class="muted mono">{{ meta.get("tags", [])|join(", ") }}</dd>
     </dl>
     {% for issue in out.get("compliance_issues", []) %}
-      <p class="muted" style="font-size:var(--t-md);margin:4px 0">
+      <p class="muted prose" style="font-size:var(--t-md);margin:4px 0">
         <strong>{{ issue.get("severity", "") }}</strong> · {{ issue.get("detail", "") }}
       </p>
     {% endfor %}
@@ -206,7 +206,7 @@
     <label for="feedback">Revision instructions <span class="muted">(only if rejecting)</span></label>
     <textarea id="feedback" name="feedback"
               placeholder="Tighten the hook; drop the third beat."></textarea>
-    <p class="muted" style="font-size:var(--t-sm)">
+    <p class="muted prose t-sm">
       Rejecting re-runs this stage with your note and resets everything downstream of it.
       The note is remembered for future runs on this channel.
     </p>
@@ -251,7 +251,7 @@
   </table>
 </div>
 {% else %}
-<div class="card"><p class="muted" style="margin:0">Nothing produced yet.</p></div>
+<div class="card"><p class="muted prose m-0">Nothing produced yet.</p></div>
 {% endif %}
 
 <script>

@@ -122,6 +122,71 @@
 
    Three rules already did this by hand, in three places, without anyone naming
    it. Naming it is the whole change. */
+/* One measure for prose, because there were seven.
+   ────────────────────────────────────────────────────────────────────────────
+   `max-width` on a paragraph was being restated inline on every paragraph that
+   needed it — 21 times across five templates, at 70ch, 72ch, 74ch, 46ch and
+   22ch, with 62ch and 66ch already in this file for the same job. Seven answers
+   to one question, and the reason the pages read as slightly different products:
+   a line length is one of the few things a reader notices without being able to
+   say why.
+
+   68ch, which is inside the 45–75 band prose is comfortable in and wide enough
+   that the app's longer explanations do not turn into a column. `ch` rather than
+   px so it tracks the type scale rather than fighting it.
+
+   `.prose pre` is included deliberately. A code block spanning 1170px beside
+   paragraphs wrapping at 700 was the visible defect on Settings, and two
+   measures on one page reads as a layout accident whichever one is right. */
+.prose,
+.setting-why,
+.conn-gives {
+  max-width: 68ch;
+}
+.prose pre, .prose ul, .prose ol { max-width: 68ch; }
+
+/* A block of commands or output, as a component rather than as six inline
+   declarations on every `<pre>` that needs one. Settings carried the whole treatment
+   inline — background, border, radius, padding, wrapping, size — which is how a code
+   block ends up 1170px wide on a page whose prose stops at 68 characters.
+
+   `pre-wrap`, because these hold shell commands that must not be cut off, and a
+   horizontal scrollbar inside a settings panel is a command nobody can read. */
+.codeblock {
+  margin: var(--s-5) 0 0;
+  padding: var(--s-5);
+  max-width: 68ch;
+  background: var(--raise-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-2);
+}
+
+/* A small utility layer, for the handful of one-property declarations that were being
+   written inline dozens of times.
+   ────────────────────────────────────────────────────────────────────────────
+   Deliberately small and deliberately not a framework. These seven exist because the
+   templates asked for them: `margin-top:0` appeared 22 times, `font-size` at one of two
+   steps 34 times, and a top margin of 10, 12, 14 or 16px 29 times between them — four
+   values for one idea, none of them on the spacing scale.
+
+   That last point is the reason this is worth doing at all. Snapping those to `--s-5`
+   and `--s-6` is what makes vertical rhythm a property of the app rather than of
+   whichever paragraph you happen to be looking at. Anything more specific than this
+   stays a real class with a real name. */
+.t-xs   { font-size: var(--t-xs); }
+.t-sm   { font-size: var(--t-sm); }
+.t-md   { font-size: var(--t-md); }
+.m-0    { margin: 0; }
+.mt-0   { margin-top: 0; }
+.mt-5   { margin-top: var(--s-5); }
+.mt-6   { margin-top: var(--s-6); }
+
 .measure,
 .pane .kv span:last-child,
 td.num, th.num {
@@ -653,7 +718,7 @@ button.danger:hover { background: #1a1011; border-color: #6b2f2f; }
 .setting-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .setting-name { font-size: var(--t-md); font-weight: 550; }
 .setting-why { font-size: var(--t-sm); color: var(--muted); margin-top: 6px; line-height: 1.5;
-               max-width: 62ch; }
+               }
 .setting-val { display: inline-flex; align-items: center; gap: 5px; }
 .setting-val input { width: 92px; text-align: right; }
 .setting-val em { font-style: normal; color: var(--faint); font-size: var(--t-sm); }
@@ -665,7 +730,7 @@ button.danger:hover { background: #1a1011; border-color: #6b2f2f; }
 .conn:last-child { border-bottom: 0; }
 .conn-head { display: flex; align-items: center; gap: 10px; }
 .conn-head b { font-size: var(--t-base); font-weight: 600; }
-.conn-gives { font-size: var(--t-sm); color: var(--muted); margin: 5px 0 0; max-width: 66ch; }
+.conn-gives { font-size: var(--t-sm); color: var(--muted); margin: 5px 0 0; }
 .conn-where { font-size: var(--t-sm); color: var(--faint); margin: 6px 0 0; }
 
 /* What connecting a service grants the agent, on the row that grants it. Indented and

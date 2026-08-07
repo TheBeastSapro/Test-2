@@ -163,9 +163,9 @@
       {% if settings and settings.is_mock %}<span class="pill mock">mock</span>{% endif %}
     </div>
     {% if settings and settings.local_mode %}
-      <button class="ghost btn-sm w-full" style="margin-top:10px" onclick="forgecastQuit()">Quit</button>
+      <button class="ghost btn-sm w-full mt-5" onclick="forgecastQuit()">Quit</button>
     {% else %}
-      <form method="post" action="/logout" style="margin-top:10px">
+      <form method="post" action="/logout" class="mt-5">
         <button class="ghost btn-sm w-full">Sign out</button>
       </form>
     {% endif %}

@@ -3,12 +3,12 @@
 
 {% block body %}
 <h1>Settings</h1>
-<p class="muted" style="margin-top:0;max-width:70ch">
+<p class="muted prose mt-0">
   Everything the app needs to reach the outside world, and — the half that is easy to
   skip and expensive to miss — what it will actually use for each job.
 </p>
 
-{% if saved %}<div class="banner good" style="margin-top:16px">Saved · {{ saved.replace('+', ' ') }}</div>{% endif %}
+{% if saved %}<div class="banner good mt-6">Saved · {{ saved.replace('+', ' ') }}</div>{% endif %}
 
 <div class="split" style="margin-top:26px">
   <div class="split-nav">
@@ -28,8 +28,8 @@
        could not tell you the other two were installed at all. #}
     <section data-panel="agent" id="agent">
       <div class="card">
-        <h3 style="margin-top:0">Which agent answers</h3>
-        <p class="muted" style="max-width:70ch;font-size:var(--t-md)">
+        <h3 class="mt-0">Which agent answers</h3>
+        <p class="muted prose t-md">
           Every one of these signs in to a plan you already pay for, through that
           vendor's own CLI and its own browser flow. No API key is pasted here and you
           should not create one. Sign in to as many as you like — the chat uses whichever
@@ -53,9 +53,7 @@
 
             <p class="conn-gives" data-role="headline">Checking your sign-in…</p>
             <p class="conn-gives" data-role="detail"></p>
-            <pre data-role="fixes" hidden
-                 style="margin-top:11px;background:var(--raise-2);border:1px solid var(--line);
-                        border-radius:8px;padding:13px;white-space:pre-wrap;font-size:var(--t-sm)"></pre>
+            <pre class="codeblock" data-role="fixes" hidden></pre>
 
             <p class="conn-where">{{ agent.signin }}</p>
             {% if agent.limits %}
@@ -69,7 +67,7 @@
           </div>
         {% endfor %}
 
-        <p class="muted" style="font-size:var(--t-sm);margin:18px 0 0;max-width:70ch">
+        <p class="muted prose" style="font-size:var(--t-sm);margin:18px 0 0;">
           If <code>ANTHROPIC_API_KEY</code> or <code>CODEX_API_KEY</code> is set anywhere
           in your environment it takes priority over the matching subscription and
           silently bills an API account per token. Both are checked above, and an empty
@@ -81,13 +79,13 @@
     <!-- ═════════════════════════════════════════════════════ CONNECTORS -->
     <section data-panel="connectors" hidden>
       <div class="card">
-        <h3 style="margin-top:0">Connectors</h3>
-        <p class="muted" style="max-width:70ch;font-size:var(--t-md)">
+        <h3 class="mt-0">Connectors</h3>
+        <p class="muted prose t-md">
           A connector hands the agent another service's tools. Connect NexLev and it
           can query the niche finder and pull outliers itself, in the same
           conversation, instead of asking you to paste numbers.
         </p>
-        <p class="muted" style="max-width:70ch;font-size:var(--t-sm)">
+        <p class="muted prose t-sm">
           This is not the same as a provider key below. A provider key lets the
           <em>pipeline</em> call a vendor; a connector lets the <em>agent</em> call
           one. They fail separately, so they are configured separately.
@@ -208,16 +206,16 @@
       <div class="card">
         <div class="row" style="justify-content:space-between;align-items:flex-start">
           <div>
-            <h3 style="margin:0"><span class="dot dot-idle" id="cloud-dot"
+            <h3 class="m-0"><span class="dot dot-idle" id="cloud-dot"
                   style="margin-right:8px"></span><span id="cloud-headline">Checking…</span></h3>
-            <div class="muted" style="font-size:var(--t-sm)" id="cloud-where"></div>
+            <div class="muted t-sm" id="cloud-where"></div>
           </div>
           <label class="mini-toggle" title="Off means this install never opens a socket to GitHub.">
             <input type="checkbox" id="cloud-on"><span></span>On
           </label>
         </div>
 
-        <p class="muted" style="margin:14px 0 0;max-width:70ch;font-size:var(--t-md)">
+        <p class="muted prose" style="margin:14px 0 0;font-size:var(--t-md)">
           Mirrors your work into a <strong>private</strong> GitHub repository so it
           survives this machine. Scripts, briefs, shot lists, captions, learned styles
           and channel memory go. <strong>Renders do not</strong> — GitHub refuses files
@@ -227,7 +225,7 @@
           again from the work; the work is the part that took thinking.
         </p>
 
-        <div class="row" style="margin-top:16px">
+        <div class="row mt-6">
           <button class="primary" id="cloud-connect">Connect GitHub</button>
           <button id="cloud-plan">What would be sent</button>
           <button id="cloud-now">Back up now</button>
@@ -240,11 +238,11 @@
         <div id="cloud-code" hidden
              style="margin-top:14px;background:var(--raise-2);border:1px solid var(--line);
                     border-radius:8px;padding:14px">
-          <div style="font-size:var(--t-md)" id="cloud-code-say"></div>
+          <div class="t-md" id="cloud-code-say"></div>
           <div class="mono" id="cloud-code-value"
                style="font-size:var(--t-xl);letter-spacing:.16em;margin-top:8px"></div>
           <a id="cloud-code-link" target="_blank" rel="noopener"
-             style="font-size:var(--t-sm)">Open GitHub to enter it →</a>
+             class="t-sm">Open GitHub to enter it →</a>
         </div>
 
         <div class="muted" id="cloud-say" style="font-size:var(--t-sm);margin-top:14px"></div>
@@ -254,7 +252,7 @@
           <div class="setting-why">Private, always. This holds your scripts and your
             channel memory, and a public default would be a disclosure caused by a
             checkbox nobody read.</div>
-          <div class="keyrow" style="margin-top:10px">
+          <div class="keyrow mt-5">
             <input id="cloud-repo" placeholder="forgecast-backup" autocomplete="off">
             <button class="primary" id="cloud-repo-save">Create / use</button>
           </div>
@@ -272,8 +270,8 @@
          subprocess during a page render lets one wedged CLI hold up every other panel,
          and this one talks to the network too. #}
       <div class="card" id="minimax-voice">
-        <h3 style="margin-top:0">MiniMax narration — on your plan</h3>
-        <p class="muted" style="font-size:var(--t-md);max-width:70ch">
+        <h3 class="mt-0">MiniMax narration — on your plan</h3>
+        <p class="muted prose t-md">
           Signs in with the MiniMax subscription you already pay for, so narration comes
           out of that allowance instead of an API balance. The key box below does the
           opposite: it bills per character. Set a channel's voice vendor to
@@ -286,7 +284,7 @@
           </span>
         </div>
         <div class="setting-why" id="mmx-detail"></div>
-        <div class="keyrow" style="margin-top:10px">
+        <div class="keyrow mt-5">
           <button type="button" onclick="mmxCheck()">Check</button>
           <button type="button" class="primary" id="mmx-login" hidden
                   onclick="mmxLogin()">Sign in</button>
@@ -297,8 +295,8 @@
       </div>
 
       <div class="card">
-        <h3 style="margin-top:0">Provider keys</h3>
-        <p class="muted" style="font-size:var(--t-md);max-width:70ch">
+        <h3 class="mt-0">Provider keys</h3>
+        <p class="muted prose t-md">
           Encrypted at rest with the key in <code>.env</code>, and used the moment they
           are saved. Submitting an empty field disconnects that provider.
         </p>
@@ -313,13 +311,13 @@
                 {% else %}<span class="dot dot-idle" style="margin-right:7px"></span>{% endif %}
                 {{ field.label }}
               </span>
-              <span class="muted" style="font-size:var(--t-sm)">{{ field.where }}</span>
+              <span class="muted t-sm">{{ field.where }}</span>
             </div>
             <div class="setting-why">Unlocks {{ field.unlocks }}.
               {% if field.masked %}Currently <code>{{ field.masked }}</code>.
               {% elif field.from_env %}Coming from <code>.env</code> for the whole install.{% endif %}
             </div>
-            <div class="keyrow" style="margin-top:10px">
+            <div class="keyrow mt-5">
               <input type="password" name="api_key" autocomplete="off"
                      placeholder="{{ field.masked or field.hint or 'paste the key' }}">
               <button class="primary">{{ 'Replace' if field.masked else 'Save' }}</button>
@@ -328,7 +326,7 @@
         {% endfor %}
 
         <h3 style="margin:26px 0 0">Installation keys</h3>
-        <p class="muted" style="font-size:var(--t-md)">
+        <p class="muted prose t-md">
           These describe this machine rather than your account, so they are written to
           <code>.env</code> and take effect immediately.
         </p>
@@ -340,10 +338,10 @@
                 <span class="dot {{ 'dot-ok' if env_values.get(field.key) else 'dot-idle' }}"
                       style="margin-right:7px"></span>{{ field.label }}
               </span>
-              <span class="muted" style="font-size:var(--t-sm)">{{ field.where }}</span>
+              <span class="muted t-sm">{{ field.where }}</span>
             </div>
             <div class="setting-why">Unlocks {{ field.unlocks }}.</div>
-            <div class="keyrow" style="margin-top:10px">
+            <div class="keyrow mt-5">
               {#- Three shapes, because these are not all keys. A fixed set of words is a
                   select — typing "nvidea" into a text box silently falls back to the CPU
                   and nothing says why. A path or a plain value is a readable text field:
@@ -378,12 +376,12 @@
     <!-- ═══════════════════════════════════════════════════ CAPABILITIES -->
     <section data-panel="capabilities" hidden>
       <div class="card">
-        <h3 style="margin-top:0">What will actually be used</h3>
-        <p class="muted" style="font-size:var(--t-md);max-width:70ch">
+        <h3 class="mt-0">What will actually be used</h3>
+        <p class="muted prose t-md">
           Resolved through the real provider registry rather than inferred from which
           keys exist — inference is how a report ends up disagreeing with the run.
         </p>
-        <table style="margin-top:14px">
+        <table class="mt-6">
           <thead><tr><th>Stage</th><th>Vendor</th><th>Why</th></tr></thead>
           <tbody>
             {% for row in capabilities %}
@@ -404,9 +402,9 @@
     <!-- ══════════════════════════════════════════════════════ INSTANCE -->
     <section data-panel="instance" hidden>
       <div class="card">
-        <h3 style="margin-top:0">Mode</h3>
+        <h3 class="mt-0">Mode</h3>
         <form method="post" action="/settings/instance">
-          <p class="muted" style="font-size:var(--t-md);max-width:70ch">
+          <p class="muted prose t-md">
             {% if is_mock %}
               <strong style="color:var(--warn)">Mock.</strong> No provider is called and
               nothing is charged. Runs complete end to end with placeholder script,
@@ -422,7 +420,7 @@
             <option value="mock" {{ 'selected' if is_mock }}>Mock — nothing is charged</option>
             <option value="live" {{ 'selected' if not is_mock }}>Live — real calls, real spend</option>
           </select>
-          <div style="margin-top:14px"><button class="primary">Save mode</button></div>
+          <div class="mt-6"><button class="primary">Save mode</button></div>
         </form>
 
         <h3 style="margin:26px 0 0">Where your work lives</h3>

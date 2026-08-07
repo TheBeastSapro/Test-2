@@ -71,7 +71,7 @@
 
 {% block body %}
 <h1>MCP Activity</h1>
-<p class="muted" style="margin-top:0;max-width:70ch">
+<p class="muted prose mt-0">
   Every tool call the agent has made for you, across every conversation. The chat shows
   these one thread at a time, which answers what it just did — this answers what it
   spends its calls on.
@@ -149,7 +149,7 @@
     {% endif %}
   </form>
 
-  <div style="margin-top:16px">
+  <div class="mt-6">
     {% if not total %}
       <p class="log-none">
         No MCP activity yet. The moment the agent reads a channel, scores a cohort or

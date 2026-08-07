@@ -3,14 +3,14 @@
 {% block body %}
 
 <h1>{{ format.icon }} {{ format.label }}</h1>
-<p class="muted" style="margin-top:0">
+<p class="muted prose mt-0">
   {{ format.blurb }} Everything on this tab is {{ format.aspect_ratio }} —
   the pipeline, the length and the aspect are already chosen, so a new run only needs
   a topic.
 </p>
 
 {% if other_channels %}
-  <p class="muted" style="font-size:var(--t-md);margin-top:-4px">
+  <p class="muted prose" style="font-size:var(--t-md);margin-top:-4px">
     {{ other_channels|length }} channel(s) live on the other tab.
   </p>
 {% endif %}
@@ -28,7 +28,7 @@
        top of this page, which on a format tab with channels already in it puts the box
        below the fold — and a "create a channel" control that lands somewhere you still
        have to search is the same dead end as no control. #}
-    <h2 id="new-channel" style="margin-top:0">New channel</h2>
+    <h2 id="new-channel" class="mt-0">New channel</h2>
     <form action="/" method="get" style="margin-bottom:6px">
       <label for="model_on">Model it on a YouTube channel</label>
       <div class="keyrow">
@@ -37,7 +37,7 @@
         <button class="primary" type="submit">Read it</button>
       </div>
       <input type="hidden" name="fmt" value="{{ format.slug }}">
-      <p class="muted" style="font-size:var(--t-sm);margin:8px 0 0">
+      <p class="muted prose" style="font-size:var(--t-sm);margin:8px 0 0">
         I read what they actually publish — upload length, recent titles, which videos
         beat their own cohort — and set the channel up from that. You only tell me the
         niche in your own words.
@@ -76,13 +76,13 @@
       <input id="voice_id" name="voice_id" placeholder="leave blank in mock mode">
       <label for="avatar_id">Avatar ID <span class="muted">(HeyGen, optional)</span></label>
       <input id="avatar_id" name="avatar_id">
-      <div style="margin-top:16px"><button type="submit">Create channel</button></div>
+      <div class="mt-6"><button type="submit">Create channel</button></div>
     </form>
     </details>
   </div>
 
   <div class="card">
-    <h2 style="margin-top:0">Start a run</h2>
+    <h2 class="mt-0">Start a run</h2>
     {% if channels %}
       <form method="post" action="/runs">
         <label for="channel_id">Channel</label>
@@ -103,7 +103,7 @@
           <span class="muted">— 0 keeps the channel's own target</span></label>
         <input id="target_seconds" name="target_seconds" type="number"
                value="0" min="0" max="{{ format.length_max }}">
-        <div style="margin-top:16px"><button type="submit">Queue run</button></div>
+        <div class="mt-6"><button type="submit">Queue run</button></div>
       </form>
     {% else %}
       <p class="muted">
@@ -161,7 +161,7 @@
   </table>
 </div>
 {% else %}
-<div class="card"><p class="muted" style="margin:0">No {{ format.label|lower }} runs yet.</p></div>
+<div class="card"><p class="muted prose m-0">No {{ format.label|lower }} runs yet.</p></div>
 {% endif %}
 
 {% endblock %}

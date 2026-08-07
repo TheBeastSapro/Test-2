@@ -3,7 +3,7 @@
 {% block body %}
 <div style="max-width:390px;margin:8vh auto">
   <h1>Forgecast</h1>
-  <p class="muted" style="margin-top:0">
+  <p class="muted prose mt-0">
     Describe a video. Approve each step. Publish what you own.
   </p>
 
@@ -16,7 +16,7 @@
       <label for="password">Password</label>
       <input id="password" name="password" type="password" required
              autocomplete="current-password" minlength="8">
-      <div class="row" style="margin-top:16px">
+      <div class="row mt-6">
         <button name="action" value="login" type="submit">Sign in</button>
         {% if settings and settings.allow_signup %}
         <button name="action" value="signup" type="submit" class="ghost">Create account</button>
@@ -25,13 +25,13 @@
     </form>
   </div>
   {% if settings and not settings.allow_signup %}
-  <p class="muted" style="font-size:var(--t-md);margin-top:14px">
+  <p class="muted prose" style="font-size:var(--t-md);margin-top:14px">
     This is a private instance — registration is closed. The owner creates accounts
     with <code>forgecast bootstrap</code>.
   </p>
   {% endif %}
   {% if settings and settings.is_mock %}
-  <p class="muted" style="font-size:var(--t-md);margin-top:14px">
+  <p class="muted prose" style="font-size:var(--t-md);margin-top:14px">
     Running in <strong>mock mode</strong>: no provider is ever called and nothing is
     ever charged.
   </p>

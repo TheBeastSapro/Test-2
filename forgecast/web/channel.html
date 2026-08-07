@@ -237,7 +237,7 @@
   {% endif %}
 {% else %}
   <div class="card">
-    <p class="muted" style="margin:0">
+    <p class="muted prose m-0">
       Nothing has run on this channel yet. Start one from the
       <a href="/f/{{ format.slug }}">{{ format.label }} workspace</a>, where the
       pipeline and the aspect are already chosen — or just ask in
@@ -256,7 +256,7 @@
                                  | list | first %}
 <h2>Scripting method</h2>
 <div class="card">
-  <p class="muted" style="margin:0 0 12px;font-size:var(--t-md)">
+  <p class="muted prose" style="margin:0 0 12px;font-size:var(--t-md)">
     What every script written for {{ channel.name }} is structured to — the payoff
     schedule, how questions are opened and closed, how beats are joined, and which
     constructions are banned. Applied at the brief and the script, on every run.
@@ -283,7 +283,7 @@
     {# Stated plainly rather than hidden, because the run still produces a script: it is
        written to the house method, and a page that said nothing would leave the operator
        reading a script they cannot account for. #}
-    <p class="methodwarn" style="margin-top:12px">
+    <p class="methodwarn mt-5">
       <b>{{ chosen.name }}</b> could not be loaded — {{ chosen.reason }}. Scripts are
       being written to the house method until it is back.
     </p>
@@ -311,7 +311,7 @@
    time and the setting alone would not tell you that had happened. #}
 <h2>Motion renderer</h2>
 <div class="card">
-  <p class="muted" style="margin:0 0 12px;font-size:var(--t-md)">
+  <p class="muted prose" style="margin:0 0 12px;font-size:var(--t-md)">
     Which engine draws the titles, lower thirds and reveals over each shot. It changes
     what motion graphics are possible on this channel, not what is written or narrated.
   </p>
@@ -332,12 +332,12 @@
     {# The downgrade, said where the choice is made. It was a log warning, which meant
        the operator's evidence that the renderer had fallen back was a video that looked
        the same as before. #}
-    <p class="methodwarn" style="margin-top:12px">
+    <p class="methodwarn mt-5">
       This channel is set to <b>{{ motion_backend.asked_for }}</b>, which is not
       installed here — {{ motion_backend.missing }} is missing, so renders fall back to
       <b>{{ motion_backend.will_use }}</b> until it is.
     </p>
-    <div class="method" style="margin-top:10px">
+    <div class="method mt-5">
       <button type="button" onclick="installMotion(this)">Install</button>
       <span class="n" id="motion-install-note">{{ motion_backend.label }} —
         about {{ motion_backend.megabytes }} MB, once.</span>
@@ -357,7 +357,7 @@
    long-form format was the single one shipping at the lower resolution. #}
 <h2>Delivery</h2>
 <div class="card">
-  <p class="muted" style="margin:0 0 12px;font-size:var(--t-md)">
+  <p class="muted prose" style="margin:0 0 12px;font-size:var(--t-md)">
     The frame and the frame rate every video on this channel is exported at. Both change
     how long a render takes; neither changes what is written, narrated or generated.
   </p>
@@ -411,7 +411,7 @@
    with costing nothing as the second argument rather than the first. #}
 <h2>Footage first</h2>
 <div class="card">
-  <p class="muted" style="margin:0 0 12px;font-size:var(--t-md)">
+  <p class="muted prose" style="margin:0 0 12px;font-size:var(--t-md)">
     Before any shot is generated, Forgecast searches licensed and public-domain footage
     for one that actually depicts it. A beat served this way costs nothing, and it is a
     real clip rather than a model's impression of one. Only beats already planned to
@@ -448,7 +448,7 @@
 
 <h2>Image-to-video model</h2>
 <div class="card">
-  <p class="muted" style="margin:0 0 12px;font-size:var(--t-md)">
+  <p class="muted prose" style="margin:0 0 12px;font-size:var(--t-md)">
     Which models animate this channel's shots. It is around 90% of what a video costs,
     and the same script runs from about ${{ '%.0f'|format(video_models[0].typical_video_usd) }}
     to ${{ '%.0f'|format(video_models[-1].typical_video_usd) }} depending on these two
@@ -522,7 +522,7 @@
 
 <h2>Elsewhere</h2>
 <div class="card">
-  <p class="muted" style="margin:0;font-size:var(--t-md)">
+  <p class="muted prose" style="margin:0;font-size:var(--t-md)">
     {# Said out loud rather than implied. None of these four pages takes a channel, so
        linking to them as if they arrived filtered would be the page lying about what
        the next click does — and a "Research for this channel" link that quietly shows

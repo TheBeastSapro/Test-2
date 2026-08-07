@@ -61,7 +61,7 @@
 {% block body %}
 
 <h1>Styles</h1>
-<p class="muted" style="margin-top:0">
+<p class="muted prose mt-0">
   An editing style is a whole edit kept as data — cut rhythm, transitions, grade,
   caption discipline, motion. Learn one from a creator's videos, then apply it,
   mix it with another, or improve on it.
@@ -75,7 +75,7 @@
 <div class="card" id="learn">
   <h2 style="margin:0 0 4px;text-transform:none;letter-spacing:0;font-size:var(--t-xl);color:var(--text)">
     Learn one from a creator</h2>
-  <p class="muted" style="margin:0 0 14px;font-size:var(--t-md)">
+  <p class="muted prose" style="margin:0 0 14px;font-size:var(--t-md)">
     Several videos by the same creator rather than one — a single video is an anecdote,
     and a style is what survives across their work. Each is measured on its own, so one
     file that cannot be read costs one reference instead of the attempt.
@@ -83,17 +83,17 @@
 
   <label for="pick">Videos</label>
   <input type="file" id="pick" multiple accept="video/*">
-  <p class="muted" style="font-size:var(--t-sm);margin:6px 0 0">
+  <p class="muted prose" style="font-size:var(--t-sm);margin:6px 0 0">
     Uploaded to this machine and measured here. Nothing is sent to a provider and no
     credits are spent.
   </p>
 
-  <label for="links" style="margin-top:14px">Or links, one per line</label>
+  <label for="links" class="mt-6">Or links, one per line</label>
   <textarea id="links" rows="2"></textarea>
 
   <ul class="refs" id="reflist"></ul>
 
-  <label for="stylename" style="margin-top:14px">Call it</label>
+  <label for="stylename" class="mt-6">Call it</label>
   <input id="stylename">
 
   <label style="margin-top:12px;display:flex;align-items:center;gap:8px;font-weight:400">
@@ -103,7 +103,7 @@
 
   <div class="row" style="margin-top:14px;gap:10px;align-items:center">
     <button id="learnbtn" class="primary" type="button">Learn</button>
-    <span class="muted" id="learnnote" style="font-size:var(--t-sm)"></span>
+    <span class="muted" id="learnnote" class="t-sm"></span>
   </div>
 
   <div class="learnlog" id="learnlog" hidden></div>
@@ -112,7 +112,7 @@
 {% if not styles %}
   <div class="card">
     <strong>Nothing learned yet.</strong>
-    <p class="muted" style="margin-bottom:0">
+    <p class="muted prose" style="margin-bottom:0">
       Measuring a reference takes a few minutes per video — it decodes the whole thing
       to read cut rhythm, grade, captions and motion out of the pixels. What comes back
       describes the reference, including where the reference is bad; the upgrade pass
@@ -142,7 +142,7 @@
         <div>
           <h2 style="margin:0 0 2px;text-transform:none;letter-spacing:0;font-size:var(--t-xl);color:var(--text)">
             {{ chosen.name }}</h2>
-          <div class="muted" style="font-size:var(--t-md)">{{ chosen.summary() }}</div>
+          <div class="muted t-md">{{ chosen.summary() }}</div>
         </div>
         <form method="post" action="/styles/{{ chosen.key }}/delete"
               onsubmit="return confirm('Delete {{ chosen.name }}?')">
@@ -150,7 +150,7 @@
         </form>
       </div>
 
-      <div class="facts" style="margin-top:16px">
+      <div class="facts mt-6">
         {% set weak = chosen.spread or {} %}
         <div class="fact {{ 'weak' if weak.get('target_shot_seconds', 0) > 0.5 }}">
           <b>Shot length</b>
@@ -194,7 +194,7 @@
       {% if weak %}
         {% set unsure = weak.items() | selectattr('1', 'gt', 0.5) | map(attribute='0') | list %}
         {% if unsure %}
-          <p class="muted" style="font-size:var(--t-sm);margin-bottom:0">
+          <p class="muted prose" style="font-size:var(--t-sm);margin-bottom:0">
             The references disagreed about {{ unsure | join(', ') }} — the amber panels.
             This creator has no consistent rule there, so the median is weak evidence.
           </p>
@@ -207,7 +207,7 @@
     <h2>Departures from the reference</h2>
     <div class="card">
       {% if refinements %}
-        <p class="muted" style="margin-top:0;font-size:var(--t-md)">
+        <p class="muted prose" style="margin-top:0;font-size:var(--t-md)">
           Measured from the reference, then changed — each one because the reference
           crossed from a choice into a defect.
         </p>
@@ -220,7 +220,7 @@
           </div>
         {% endfor %}
       {% elif chosen.provenance.get('origin') == 'learned' %}
-        <p class="muted" style="margin:0">
+        <p class="muted prose m-0">
           Saved as measured. Run the upgrade pass to fix anything the reference does
           badly — it will be saved as a separate style, leaving this one untouched.
         </p>
@@ -228,7 +228,7 @@
           <button>Run the upgrade pass</button>
         </form>
       {% else %}
-        <p class="muted" style="margin:0">
+        <p class="muted prose m-0">
           None — {{ 'a blend inherits its parents' if chosen.provenance.get('origin') == 'blend'
                      else 'the reference was already inside every guard rail' }}.
         </p>
@@ -237,7 +237,7 @@
 
     <div class="grid two" style="margin-top:22px">
       <div class="card">
-        <h2 style="margin-top:0">Apply to a channel</h2>
+        <h2 class="mt-0">Apply to a channel</h2>
         {% if channels %}
           <form method="post" action="/styles/{{ chosen.key }}/apply">
             <label for="channel_id">Channel</label>
@@ -248,19 +248,19 @@
                 </option>
               {% endfor %}
             </select>
-            <p class="muted" style="font-size:var(--t-sm)">
+            <p class="muted prose t-sm">
               Replaces the channel's render spec, motion preset and map style. Its tone
               and everything the agent has learned from your approvals stay put.
             </p>
             <button type="submit">Apply</button>
           </form>
         {% else %}
-          <p class="muted" style="margin:0">Create a channel first.</p>
+          <p class="muted prose m-0">Create a channel first.</p>
         {% endif %}
       </div>
 
       <div class="card">
-        <h2 style="margin-top:0">Mix with another</h2>
+        <h2 class="mt-0">Mix with another</h2>
         {% if styles | length > 1 %}
           <form method="post" action="/styles/{{ chosen.key }}/blend">
             <label for="other">Blend with</label>
@@ -272,10 +272,10 @@
             <label for="weight">How much of it — 0 keeps this one, 1 takes theirs</label>
             <input id="weight" name="weight" type="range" min="0" max="1" step="0.05"
                    value="0.5" oninput="document.getElementById('wv').textContent = this.value">
-            <div class="muted" style="font-size:var(--t-sm)">weight <span id="wv">0.5</span></div>
+            <div class="muted t-sm">weight <span id="wv">0.5</span></div>
             <label for="name">Call it</label>
             <input id="name" name="name" placeholder="{{ chosen.name }} x …">
-            <p class="muted" style="font-size:var(--t-sm)">
+            <p class="muted prose t-sm">
               Numbers interpolate. Transitions, caption position and the palette do not
               — there is no style halfway between a cut and a dissolve, so those switch
               at the halfway point.
@@ -283,7 +283,7 @@
             <button type="submit">Blend</button>
           </form>
         {% else %}
-          <p class="muted" style="margin:0">Learn a second style to mix with.</p>
+          <p class="muted prose m-0">Learn a second style to mix with.</p>
         {% endif %}
       </div>
     </div>

@@ -110,7 +110,7 @@
 {% block body %}
 
 <h1>Research</h1>
-<p class="muted" style="margin-top:0">
+<p class="muted prose mt-0">
   Find what actually outperformed, then work out what is transferable about it.
   The scoring is arithmetic — the model is only asked the part arithmetic cannot answer.
 </p>
@@ -127,11 +127,11 @@
                 style="min-height:0;font-size:var(--t-md)"
                 placeholder="@handle, channel URL or UC… id — one per line for several"></textarea>
       {% if not can_fetch %}
-        <p class="muted" style="font-size:var(--t-sm);margin:6px 0 0">
+        <p class="muted prose" style="font-size:var(--t-sm);margin:6px 0 0">
           {{ fetch_note }} Or paste the numbers below — they score the same way.
         </p>
       {% else %}
-        <p class="muted" style="font-size:var(--t-sm);margin:6px 0 0">
+        <p class="muted prose" style="font-size:var(--t-sm);margin:6px 0 0">
           Several competitors are read in one go and each is scored against its own
           median, never a shared one.
           {% if fetch_note %}<br>{{ fetch_note }}{% endif %}
@@ -143,7 +143,7 @@
         <textarea id="videos" {% if not can_fetch %}disabled{% endif %} rows="3"
                   style="min-height:0;font-size:var(--t-md)"
                   placeholder="video links you already think are the ones worth copying — one per line"></textarea>
-        <p class="muted" style="font-size:var(--t-sm);margin:6px 0 0">
+        <p class="muted prose" style="font-size:var(--t-sm);margin:6px 0 0">
           Fetched alongside the channels above, and listed by name in the results so you
           can see they were. They are kept out of the medians — a video you picked
           because it outperformed would otherwise help set the bar it is measured
@@ -164,13 +164,13 @@
     </div>
   </div>
 
-  <label for="pasted" style="margin-top:14px">…or paste the numbers</label>
+  <label for="pasted" class="mt-6">…or paste the numbers</label>
   <textarea id="pasted" style="min-height:130px;font-family:ui-monospace,Menlo,monospace;font-size:var(--t-sm)"
             placeholder="title,views,published,duration&#10;Why cables keep breaking,240000,2026-05-02,612"></textarea>
 
   <details class="help" style="margin-top:8px">
     <summary>What can I paste?</summary>
-    <p class="muted" style="font-size:var(--t-md)">
+    <p class="muted prose t-md">
       CSV, tab-separated (a spreadsheet paste works), or JSON. Column names are matched
       loosely — <code>views</code>/<code>viewCount</code>/<code>plays</code> all work,
       as do <code>1.2M</code> and <code>3 weeks ago</code>. Every row needs a title, a
@@ -182,7 +182,7 @@
   "publishedAt": "2026-05-02", "duration": "PT10M12S"}]</pre>
   </details>
 
-  <div class="row" style="margin-top:14px">
+  <div class="row mt-6">
     <button id="score" class="primary">Score</button>
     <span class="muted" id="status"></span>
   </div>
@@ -351,7 +351,7 @@ function render(payload) {
   // reconstructed dates and one computed from measured timestamps look identical in a
   // table, so the difference has to be stated rather than left to be inferred.
   if (payload.via) {
-    parts.push(`<p class="muted" style="margin:0 0 14px;font-size:var(--t-md)">${esc(payload.via)}</p>`);
+    parts.push(`<p class="muted prose" style="margin:0 0 14px;font-size:var(--t-md)">${esc(payload.via)}</p>`);
   }
 
   parts.push(fetched(payload));
@@ -392,7 +392,7 @@ function render(payload) {
   const outliers = payload.outliers || [];
   if (!outliers.length) {
     parts.push(`<div class="card"><strong>No outliers.</strong>
-      <p class="muted" style="margin-bottom:0">Scored ${payload.count} video(s). Nothing
+      <p class="muted prose" style="margin-bottom:0">Scored ${payload.count} video(s). Nothing
       beat its cohort by 3x or more — which is a real answer, not a failure. Normal
       variance between videos on one channel runs to 2x without meaning anything.
       ${payload.note ? esc(payload.note) : ""}</p></div>`);
@@ -419,13 +419,13 @@ function render(payload) {
       parts.push(`<tr class="out" id="row-${index}">
         <td>
           <div>${item.priority ? '<span class="tag pasted">pasted</span> ' : ""}${esc(item.title)}</div>
-          <div class="muted" style="font-size:var(--t-sm)">
+          <div class="muted t-sm">
             ${item.channel ? esc(item.channel) + " · " : ""}
             ${item.cohort === "short" ? "Short" : "Long-form"} ·
             ${item.views.toLocaleString()} views
             ${item.reliable ? "" : ' · <span style="color:var(--warn)">unreliable</span>'}
           </div>
-          ${(item.notes || []).map((n) => `<div class="muted" style="font-size:var(--t-sm)">— ${esc(n)}</div>`).join("")}
+          ${(item.notes || []).map((n) => `<div class="muted t-sm">— ${esc(n)}</div>`).join("")}
         </td>
         <td>
           <div class="mline">
@@ -447,7 +447,7 @@ function render(payload) {
     });
     parts.push("</tbody></table></div></div>");
     if (s.unreliable) {
-      parts.push(`<p class="muted" style="font-size:var(--t-md)">${s.unreliable} of these are
+      parts.push(`<p class="muted prose t-md">${s.unreliable} of these are
         marked unreliable; the note on the row says why — either a cohort too small for
         the median to mean much, or a publish date that had to be guessed.</p>`);
     }
@@ -485,7 +485,7 @@ async function ideas(index, title, multiple, band) {
 
   const parts = [];
   if (payload.mechanism) {
-    parts.push(`<p style="margin-top:0"><strong>Why it worked.</strong> ${esc(payload.mechanism)}</p>`);
+    parts.push(`<p class="mt-0"><strong>Why it worked.</strong> ${esc(payload.mechanism)}</p>`);
   }
   if ((payload.transferable || []).length) {
     parts.push("<p class='muted' style='font-size:var(--t-md);margin:4px 0'><strong>Transfers:</strong> " +
@@ -506,7 +506,7 @@ async function ideas(index, title, multiple, band) {
       </div>
     </div>`);
   }
-  parts.push(`<p class="muted" style="font-size:var(--t-sm);margin-bottom:0">
+  parts.push(`<p class="muted prose" style="font-size:var(--t-sm);margin-bottom:0">
     ${esc(payload.provider || "")}${payload.credits ? " · " + payload.credits + " credits" : ""}</p>`);
   box.innerHTML = parts.join("");
 }
