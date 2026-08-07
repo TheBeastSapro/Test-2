@@ -12,15 +12,15 @@
   .plan header { display: flex; align-items: baseline; gap: 8px; padding: 11px 14px;
                  border-bottom: 1px solid var(--line); background: var(--raise-2);
                  position: static; }
-  .plan h3 { margin: 0; font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+  .plan h3 { margin: 0; font-size: var(--t-md); letter-spacing: .06em; text-transform: uppercase;
              color: var(--muted); font-weight: 600; }
-  .plan .count { margin-left: auto; font-size: 12px; color: var(--muted); }
+  .plan .count { margin-left: auto; font-size: var(--t-sm); color: var(--muted); }
   .plan .bar { height: 2px; background: var(--line); }
   .plan .bar i { display: block; height: 100%; background: var(--ok); width: 0;
-                 transition: width .35s ease; }
+                 transition: width var(--motion-slow) var(--ease); }
   .plan ol { list-style: none; margin: 0; padding: 6px 0; max-height: 62vh; overflow-y: auto; }
   .plan li { display: flex; gap: 9px; align-items: flex-start; padding: 6px 14px;
-             font-size: 13.5px; line-height: 1.4; }
+             font-size: var(--t-md); line-height: 1.4; }
   .plan .mark { flex: none; width: 16px; text-align: center; margin-top: 1px; }
   /* Done is not cancelled. A finished step used to be struck through, so a run that
      completed all thirteen stages presented as thirteen crossed-out lines — the visual
@@ -43,7 +43,7 @@
      "no voice to narrate with: the casting gate selected none…" is the clause after the
      colon, which is exactly what an ellipsis eats. */
   .plan li { flex-wrap: wrap; }
-  .plan .why { flex-basis: 100%; margin: 3px 0 2px 25px; font-size: 12px;
+  .plan .why { flex-basis: 100%; margin: 3px 0 2px 25px; font-size: var(--t-sm);
                line-height: 1.45; color: var(--err); }
 
   /* ------------------------------------------------------- the finished video */
@@ -56,14 +56,14 @@
   .final-partial { border-top-color: var(--warn); }
   .final header { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
                   border-bottom: 1px solid var(--line); background: var(--raise-2); }
-  .final-what { font-size: 13px; font-weight: 600; color: var(--text); }
-  .final-meta { font-family: var(--mono); font-size: 11.5px; color: var(--faint); }
+  .final-what { font-size: var(--t-md); font-weight: 600; color: var(--text); }
+  .final-meta { font-family: var(--mono); font-size: var(--t-xs); color: var(--faint); }
   /* Capped so an 8-minute video does not push the plan off the screen on a laptop, and
      letterboxed on black rather than cropped — this is the deliverable, so it is shown
      whole. */
   .final video { display: block; width: 100%; max-height: 64vh;
                  background: #000; object-fit: contain; }
-  .final-note { margin: 0; padding: 9px 14px; font-size: 12.5px; color: var(--warn);
+  .final-note { margin: 0; padding: 9px 14px; font-size: var(--t-sm); color: var(--warn);
                 border-top: 1px solid var(--line); background: var(--raise-2); }
 
   /* ---------------------------------------------------------------- player */
@@ -72,7 +72,7 @@
   .stage header { display: flex; align-items: center; gap: 10px; padding: 9px 13px;
                   border-bottom: 1px solid var(--line); background: var(--raise-2);
                   position: static; }
-  .stage header .name { font-size: 13px; font-weight: 600; }
+  .stage header .name { font-size: var(--t-md); font-weight: 600; }
   .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
   .dot.live { background: var(--ok); box-shadow: 0 0 7px var(--ok); }
   #frame { position: relative; width: 100%; background: #000; overflow: hidden; }
@@ -97,20 +97,20 @@
            border-radius: 50%; background: var(--accent); }
   #scrub::-moz-range-thumb { width: 13px; height: 13px; border: 0; border-radius: 50%;
            background: var(--accent); }
-  .clock { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
+  .clock { font-family: ui-monospace, Menlo, monospace; font-size: var(--t-sm);
            color: var(--muted); flex: none; }
   .ticks { display: flex; gap: 2px; padding: 0 13px 11px; }
   .ticks i { height: 4px; border-radius: 2px; background: var(--raise-2);
              border: 1px solid var(--line); cursor: pointer; }
   .ticks i.on { background: var(--accent-dim); border-color: var(--accent); }
-  .caption { padding: 9px 13px; border-top: 1px solid var(--line); font-size: 13px;
+  .caption { padding: 9px 13px; border-top: 1px solid var(--line); font-size: var(--t-md);
              color: var(--muted); min-height: 38px; }
 
   /* -------------------------------------------------------------- timeline */
   #timeline { border-top: 1px solid var(--line); background: #0b0e14; }
   #timeline[hidden] { display: none; }
   .tl-ruler { position: relative; height: 20px; border-bottom: 1px solid var(--line);
-              font-size: 10px; color: var(--muted); user-select: none; }
+              font-size: var(--t-2xs); color: var(--muted); user-select: none; }
   .tl-ruler span { position: absolute; top: 4px; transform: translateX(-50%);
                    padding: 0 3px; }
   .tl-ruler span::before { content: ""; position: absolute; left: 50%; top: -4px;
@@ -123,10 +123,10 @@
   .tl-clip.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .tl-clip .meta { position: absolute; inset: auto 0 0 0;
                    background: linear-gradient(transparent, rgba(0,0,0,.85));
-                   padding: 10px 5px 3px; font-size: 10px; line-height: 1.25;
+                   padding: 10px 5px 3px; font-size: var(--t-2xs); line-height: 1.25;
                    color: #dfe4ee; white-space: nowrap; overflow: hidden;
                    text-overflow: ellipsis; }
-  .tl-clip .badge { position: absolute; top: 3px; left: 3px; font-size: 9px;
+  .tl-clip .badge { position: absolute; top: 3px; left: 3px; font-size: var(--t-2xs);
                     padding: 1px 5px; border-radius: 999px; background: rgba(0,0,0,.7);
                     border: 1px solid var(--accent-dim); color: var(--accent); }
   .tl-clip .badge.none { color: var(--muted); border-color: var(--line); }
@@ -138,9 +138,9 @@
              pointer-events: none; z-index: 3; }
   .tl-head::before { content: ""; position: absolute; top: 0; left: -4px;
                      border: 4px solid transparent; border-top-color: var(--err); }
-  .tl-lane { font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  .tl-lane { font-size: var(--t-2xs); letter-spacing: .08em; text-transform: uppercase;
              color: var(--muted); padding: 0 9px 3px; }
-  .notice { padding: 10px 13px; border-top: 1px solid var(--line); font-size: 12.5px;
+  .notice { padding: 10px 13px; border-top: 1px solid var(--line); font-size: var(--t-sm);
             color: var(--muted); }
   .notice ul { margin: 6px 0 0; padding-left: 18px; }
 </style>
@@ -219,7 +219,7 @@
     <header>
       <span class="dot" id="stage-dot"></span>
       <span class="name">Preview</span>
-      <span class="muted" id="stage-note" style="font-size:12px"></span>
+      <span class="muted" id="stage-note" style="font-size:var(--t-sm)"></span>
       <span class="spacer" style="flex:1"></span>
       <button class="ghost" style="padding:4px 10px" id="tl-toggle"
               aria-expanded="false">▾ Timeline</button>
@@ -623,7 +623,7 @@ async function reload() {
     const response = await fetch("/api/runs/{{ run.id }}/preview");
     if (!response.ok) {
       frame.innerHTML =
-        '<div id="empty">Nothing to preview yet.<br><span style="font-size:12.5px">' +
+        '<div id="empty">Nothing to preview yet.<br><span style="font-size:var(--t-sm)">' +
         'The preview appears once the script stage has finished.</span></div>';
       return;
     }

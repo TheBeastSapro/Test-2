@@ -3,7 +3,13 @@
 
 {% block head %}
 <style>
-  .band { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;
+  /* The ask: a wide column for what you paste, a narrow one for the one number that
+     shapes it. `--s-6` between them because they are two halves of one question rather
+     than two sections. */
+  .askgrid { display: grid; grid-template-columns: minmax(0, 1fr) 300px;
+             gap: var(--s-6); align-items: start; }
+  @media (max-width: 900px) { .askgrid { grid-template-columns: 1fr; } }
+  .band { font-size: var(--t-xs); padding: 2px 8px; border-radius: 999px; font-weight: 600;
           border: 1px solid var(--line); white-space: nowrap; }
   .band.strong { color: #ff8a5c; border-color: #6b3319; background: #2a1710; }
   .band.clear  { color: var(--ok);   border-color: #1f4b38; background: #10201a; }
@@ -14,7 +20,7 @@
      range, when there is one, always gets its own line rather than racing the pill
      for what is left of the cell. */
   .mline { display: flex; align-items: center; gap: 7px; }
-  .mrange { font-size: 11px; color: var(--muted); margin-top: 3px; white-space: nowrap; }
+  .mrange { font-size: var(--t-xs); color: var(--muted); margin-top: 3px; white-space: nowrap; }
   /* A source with no like or comment counts. Dimmer than a number and underlined like
      a footnote, because a bare em dash in a column of percentages reads as zero. */
   .unknown { color: var(--faint); border-bottom: 1px dotted var(--line-2); cursor: help; }
@@ -36,10 +42,10 @@
      than as a table because that is what it is: one line per reference asked for. */
   .fetched li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap;
                 padding: 5px 0; border-bottom: 1px dashed var(--line);
-                font-size: 13.5px; }
+                font-size: var(--t-md); }
   .fetched li:last-child { border-bottom: 0; }
   .fetched ul { list-style: none; margin: 8px 0 0; padding: 0; }
-  .tag { font-size: 11px; padding: 2px 7px; border-radius: 999px; font-weight: 600;
+  .tag { font-size: var(--t-xs); padding: 2px 7px; border-radius: 999px; font-weight: 600;
          border: 1px solid var(--line); background: var(--raise-2);
          color: var(--muted); white-space: nowrap; }
   /* Accent, not another band colour: "you pasted this" is not a fifth grade of outlier,
@@ -54,9 +60,9 @@
   .synth li { padding: 9px 0; border-bottom: 1px dashed var(--line); }
   .synth li:last-child { border-bottom: 0; }
   .synth ul { list-style: none; margin: 6px 0 0; padding: 0; }
-  .synth .s { font-size: 13.5px; }
-  .synth .d { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
-  .scope { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600;
+  .synth .s { font-size: var(--t-md); }
+  .synth .d { font-size: var(--t-sm); color: var(--muted); margin-top: 3px; }
+  .scope { font-size: var(--t-xs); padding: 2px 8px; border-radius: 999px; font-weight: 600;
            border: 1px solid var(--line); white-space: nowrap; margin-right: 7px;
            color: var(--muted); background: var(--raise-2); }
   /* Three colours for three claims, because they are not degrees of the same thing.
@@ -70,34 +76,34 @@
   .scope.picks { color: var(--accent); border-color: var(--accent-dim);
                  background: var(--accent-dim); }
   .synth details { margin-top: 10px; }
-  .synth details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  .synth details summary { cursor: pointer; color: var(--muted); font-size: var(--t-md); }
   .synth details ul { margin-top: 6px; }
-  .synth details li { font-size: 12.5px; color: var(--muted); }
+  .synth details li { font-size: var(--t-sm); color: var(--muted); }
   .base-strip { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
   /* Grows to share a row with the other cohort, but does not stretch to 1100px to
      hold three words when a channel only has one. */
   .base-card { flex: 1 1 220px; max-width: 340px; background: var(--raise-2);
                border: 1px solid var(--line); border-radius: var(--radius);
-               padding: 10px 13px; font-size: 13px; }
-  .base-card b { display: block; font-size: 11px; text-transform: uppercase;
+               padding: 10px 13px; font-size: var(--t-md); }
+  .base-card b { display: block; font-size: var(--t-xs); text-transform: uppercase;
                  letter-spacing: .08em; color: var(--muted); font-weight: 600; }
-  .base-card .n { font-size: 19px; font-weight: 650; }
+  .base-card .n { font-size: var(--t-xl); font-weight: 650; }
   .base-card.unreliable { border-color: #5c4a1e; }
   .ideas { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
   .idea { padding: 8px 0; border-bottom: 1px dashed var(--line); }
   .idea:last-child { border-bottom: 0; }
   .idea .t { font-weight: 600; }
   .idea .t.long { color: var(--warn); }
-  .idea .w { font-size: 12.5px; color: var(--muted); }
+  .idea .w { font-size: var(--t-sm); color: var(--muted); }
   tr.out td { vertical-align: top; }
   .rowactions { display: flex; gap: 6px; }
-  .rowactions button { padding: 4px 9px; font-size: 12px; }
+  .rowactions button { padding: 4px 9px; font-size: var(--t-sm); }
   .spin { display: inline-block; animation: spin 1.1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  details.help summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  details.help summary { cursor: pointer; color: var(--muted); font-size: var(--t-md); }
   details.help pre { background: var(--raise-2); border: 1px solid var(--line);
                      border-radius: 7px; padding: 10px; overflow-x: auto;
-                     font-size: 12px; }
+                     font-size: var(--t-sm); }
 </style>
 {% endblock %}
 
@@ -110,18 +116,22 @@
 </p>
 
 <div class="card">
-  <div class="grid two">
+  {# Not `grid two`. That is 1fr/1fr, and what actually goes in these columns is three
+     textareas, four paragraphs and the submit on one side against a single number field
+     on the other — so half the card was empty and the form read as though it had failed
+     to load. The right column is sized to what it holds. #}
+  <div class="askgrid">
     <div>
       <label for="channel">Fetch channels</label>
       <textarea id="channel" {% if not can_fetch %}disabled{% endif %} rows="3"
-                style="min-height:0;font-size:13px"
+                style="min-height:0;font-size:var(--t-md)"
                 placeholder="@handle, channel URL or UC… id — one per line for several"></textarea>
       {% if not can_fetch %}
-        <p class="muted" style="font-size:12.5px;margin:6px 0 0">
+        <p class="muted" style="font-size:var(--t-sm);margin:6px 0 0">
           {{ fetch_note }} Or paste the numbers below — they score the same way.
         </p>
       {% else %}
-        <p class="muted" style="font-size:12.5px;margin:6px 0 0">
+        <p class="muted" style="font-size:var(--t-sm);margin:6px 0 0">
           Several competitors are read in one go and each is scored against its own
           median, never a shared one.
           {% if fetch_note %}<br>{{ fetch_note }}{% endif %}
@@ -131,9 +141,9 @@
       <div class="subbox">
         <label for="videos">…and specific videos</label>
         <textarea id="videos" {% if not can_fetch %}disabled{% endif %} rows="3"
-                  style="min-height:0;font-size:13px"
+                  style="min-height:0;font-size:var(--t-md)"
                   placeholder="video links you already think are the ones worth copying — one per line"></textarea>
-        <p class="muted" style="font-size:12.5px;margin:6px 0 0">
+        <p class="muted" style="font-size:var(--t-sm);margin:6px 0 0">
           Fetched alongside the channels above, and listed by name in the results so you
           can see they were. They are kept out of the medians — a video you picked
           because it outperformed would otherwise help set the bar it is measured
@@ -155,12 +165,12 @@
   </div>
 
   <label for="pasted" style="margin-top:14px">…or paste the numbers</label>
-  <textarea id="pasted" style="min-height:130px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px"
+  <textarea id="pasted" style="min-height:130px;font-family:ui-monospace,Menlo,monospace;font-size:var(--t-sm)"
             placeholder="title,views,published,duration&#10;Why cables keep breaking,240000,2026-05-02,612"></textarea>
 
   <details class="help" style="margin-top:8px">
     <summary>What can I paste?</summary>
-    <p class="muted" style="font-size:13px">
+    <p class="muted" style="font-size:var(--t-md)">
       CSV, tab-separated (a spreadsheet paste works), or JSON. Column names are matched
       loosely — <code>views</code>/<code>viewCount</code>/<code>plays</code> all work,
       as do <code>1.2M</code> and <code>3 weeks ago</code>. Every row needs a title, a
@@ -173,7 +183,7 @@
   </details>
 
   <div class="row" style="margin-top:14px">
-    <button id="score">Score</button>
+    <button id="score" class="primary">Score</button>
     <span class="muted" id="status"></span>
   </div>
 </div>
@@ -270,7 +280,7 @@ function fetched(payload) {
   }
 
   return `<div class="card fetched"><strong>Fetched ${headline}</strong>
-    ${priority.length ? `<div class="muted" style="font-size:12.5px;margin-top:4px">
+    ${priority.length ? `<div class="muted" style="font-size:var(--t-sm);margin-top:4px">
       The pasted ones are scored against their own channel's median, kept out of it, and
       ranked above the channel's own at the same multiple.</div>` : ""}
     <ul>${rows.join("")}</ul></div>`;
@@ -311,7 +321,7 @@ function synthesis(payload) {
   </li>`;
 
   const parts = [`<div class="card synth"><strong>What they have in common</strong>
-    <div class="muted" style="font-size:12.5px;margin-top:4px">${esc(synth.headline)}</div>`];
+    <div class="muted" style="font-size:var(--t-sm);margin-top:4px">${esc(synth.headline)}</div>`];
 
   if (findings.length) {
     parts.push(`<ul>${findings.map(row).join("")}</ul>`);
@@ -341,7 +351,7 @@ function render(payload) {
   // reconstructed dates and one computed from measured timestamps look identical in a
   // table, so the difference has to be stated rather than left to be inferred.
   if (payload.via) {
-    parts.push(`<p class="muted" style="margin:0 0 14px;font-size:13px">${esc(payload.via)}</p>`);
+    parts.push(`<p class="muted" style="margin:0 0 14px;font-size:var(--t-md)">${esc(payload.via)}</p>`);
   }
 
   parts.push(fetched(payload));
@@ -363,7 +373,7 @@ function render(payload) {
   parts.push('<h2 style="margin-top:22px">Baseline</h2>');
   for (const [channel, cohorts] of groups) {
     if (channel) {
-      parts.push(`<div class="muted" style="font-size:12.5px;margin:10px 0 5px">${esc(channel)}</div>`);
+      parts.push(`<div class="muted" style="font-size:var(--t-sm);margin:10px 0 5px">${esc(channel)}</div>`);
     }
     parts.push('<div class="base-strip">');
     for (const [name, base] of Object.entries(cohorts)) {
@@ -372,7 +382,7 @@ function render(payload) {
         <b>${name === "short" ? "Shorts" : "Long-form"} median</b>
         <span class="n">${Math.round(base.median_views_per_day).toLocaleString()}</span>
         <span class="muted"> views/day</span>
-        <div class="muted" style="font-size:12px;margin-top:3px">
+        <div class="muted" style="font-size:var(--t-sm);margin-top:3px">
           ${base.sample_size} video${base.sample_size === 1 ? "" : "s"}${base.note ? " · " + esc(base.note) : ""}
         </div></div>`);
     }
@@ -409,13 +419,13 @@ function render(payload) {
       parts.push(`<tr class="out" id="row-${index}">
         <td>
           <div>${item.priority ? '<span class="tag pasted">pasted</span> ' : ""}${esc(item.title)}</div>
-          <div class="muted" style="font-size:12px">
+          <div class="muted" style="font-size:var(--t-sm)">
             ${item.channel ? esc(item.channel) + " · " : ""}
             ${item.cohort === "short" ? "Short" : "Long-form"} ·
             ${item.views.toLocaleString()} views
             ${item.reliable ? "" : ' · <span style="color:var(--warn)">unreliable</span>'}
           </div>
-          ${(item.notes || []).map((n) => `<div class="muted" style="font-size:12px">— ${esc(n)}</div>`).join("")}
+          ${(item.notes || []).map((n) => `<div class="muted" style="font-size:var(--t-sm)">— ${esc(n)}</div>`).join("")}
         </td>
         <td>
           <div class="mline">
@@ -437,7 +447,7 @@ function render(payload) {
     });
     parts.push("</tbody></table></div></div>");
     if (s.unreliable) {
-      parts.push(`<p class="muted" style="font-size:13px">${s.unreliable} of these are
+      parts.push(`<p class="muted" style="font-size:var(--t-md)">${s.unreliable} of these are
         marked unreliable; the note on the row says why — either a cohort too small for
         the median to mean much, or a publish date that had to be guessed.</p>`);
     }
@@ -445,7 +455,7 @@ function render(payload) {
 
   if ((payload.skipped || []).length) {
     parts.push(`<h2>Skipped ${payload.skipped.length} row(s)</h2>
-      <div class="card"><ul class="muted" style="margin:0;font-size:13px">` +
+      <div class="card"><ul class="muted" style="margin:0;font-size:var(--t-md)">` +
       payload.skipped.map((r) => `<li>${esc(r)}</li>`).join("") + "</ul></div>");
   }
 
@@ -478,25 +488,25 @@ async function ideas(index, title, multiple, band) {
     parts.push(`<p style="margin-top:0"><strong>Why it worked.</strong> ${esc(payload.mechanism)}</p>`);
   }
   if ((payload.transferable || []).length) {
-    parts.push("<p class='muted' style='font-size:13px;margin:4px 0'><strong>Transfers:</strong> " +
+    parts.push("<p class='muted' style='font-size:var(--t-md);margin:4px 0'><strong>Transfers:</strong> " +
       payload.transferable.map(esc).join(" · ") + "</p>");
   }
   if ((payload.avoid || []).length) {
-    parts.push("<p class='muted' style='font-size:13px;margin:4px 0'><strong>Does not transfer:</strong> " +
+    parts.push("<p class='muted' style='font-size:var(--t-md);margin:4px 0'><strong>Does not transfer:</strong> " +
       payload.avoid.map(esc).join(" · ") + "</p>");
   }
   for (const idea of payload.ideas || []) {
     parts.push(`<div class="idea">
       <div class="t ${idea.too_long ? "long" : ""}">${esc(idea.title)}
-        <span class="muted" style="font-weight:400;font-size:12px">${idea.title.length} chars${idea.too_long ? " — long for mobile" : ""}</span>
+        <span class="muted" style="font-weight:400;font-size:var(--t-sm)">${idea.title.length} chars${idea.too_long ? " — long for mobile" : ""}</span>
       </div>
       <div class="w">${esc(idea.angle)}${idea.why ? " — " + esc(idea.why) : ""}</div>
       <div style="margin-top:5px">
-        <a href="/?topic=${encodeURIComponent(idea.title)}"><button class="ghost" style="padding:3px 9px;font-size:12px">Start a run</button></a>
+        <a href="/?topic=${encodeURIComponent(idea.title)}"><button class="ghost" style="padding:3px 9px;font-size:var(--t-sm)">Start a run</button></a>
       </div>
     </div>`);
   }
-  parts.push(`<p class="muted" style="font-size:12px;margin-bottom:0">
+  parts.push(`<p class="muted" style="font-size:var(--t-sm);margin-bottom:0">
     ${esc(payload.provider || "")}${payload.credits ? " · " + payload.credits + " credits" : ""}</p>`);
   box.innerHTML = parts.join("");
 }

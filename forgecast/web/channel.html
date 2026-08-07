@@ -8,7 +8,7 @@
      spans the window. Inside a padded `main` that rule stops short of both edges and
      reads as a stray line. */
   .crumbline { display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
-               font-size: 12.5px; margin: 0 0 18px; }
+               font-size: var(--t-sm); margin: 0 0 18px; }
   .crumbline .seg { color: var(--text-2); }
   .crumbline .seg::before { content: "/ "; color: var(--faint); }
   .crumbline a.seg:hover { color: var(--accent); text-decoration: none; }
@@ -25,7 +25,7 @@
   /* One word and one dot, in the app's own status colours: mint is what `running`
      already looks like everywhere else, violet is what a gate already looks like.
      A fifth colour invented here would mean the same thing in two hues. */
-  .state { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px;
+  .state { display: inline-flex; align-items: center; gap: 7px; font-size: var(--t-sm);
            letter-spacing: .02em; color: var(--muted); }
   .state i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint);
              display: inline-block; flex: none; }
@@ -38,14 +38,14 @@
   @keyframes hubpulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
   @media (prefers-reduced-motion: reduce) { .state.producing i { animation: none } }
 
-  .hubsub { color: var(--muted); font-size: 13px; margin: 7px 0 0; }
+  .hubsub { color: var(--muted); font-size: var(--t-md); margin: 7px 0 0; }
   .hubsub b { color: var(--text-2); font-weight: 550; }
 
   /* The nav that makes this a place: it lives inside the channel, so both entries
      keep the id and neither can drop you back into an account-wide list. */
   .hubnav { display: flex; gap: 4px; margin: 20px 0 0;
             border-bottom: 1px solid var(--line); }
-  .hubnav a { padding: 9px 13px; font-size: 13px; color: var(--text-2);
+  .hubnav a { padding: 9px 13px; font-size: var(--t-md); color: var(--text-2);
               border-bottom: 2px solid transparent; margin-bottom: -1px; }
   .hubnav a:hover { color: var(--text); text-decoration: none; }
   .hubnav a.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 550; }
@@ -55,11 +55,11 @@
            grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); }
   .tile { background: var(--raise); border: 1px solid var(--line);
           border-radius: var(--radius); padding: 14px 16px; }
-  .tile b { display: block; font-size: 10.5px; font-weight: 620; letter-spacing: .09em;
+  .tile b { display: block; font-size: var(--t-2xs); font-weight: 620; letter-spacing: .09em;
             text-transform: uppercase; color: var(--faint); }
-  .tile .v { font-size: 23px; font-weight: 620; letter-spacing: -.02em; margin-top: 5px;
+  .tile .v { font-size: var(--t-2xl); font-weight: 620; letter-spacing: -.02em; margin-top: 5px;
              font-variant-numeric: tabular-nums; }
-  .tile .n { font-size: 11.5px; color: var(--muted); line-height: 1.45; margin-top: 3px; }
+  .tile .n { font-size: var(--t-xs); color: var(--muted); line-height: 1.45; margin-top: 3px; }
   /* Only the tile that can ask you for something is allowed to shout, and only when
      it has something to ask. A permanently violet "waiting on you: 0" trains you to
      stop seeing the one tile that matters. */
@@ -70,24 +70,24 @@
           grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
   .away a { display: flex; align-items: baseline; gap: 9px; padding: 11px 13px;
             background: var(--raise-2); border: 1px solid var(--line);
-            border-radius: var(--radius-sm); color: var(--text); font-size: 13.5px; }
+            border-radius: var(--radius-sm); color: var(--text); font-size: var(--t-md); }
   .away a:hover { border-color: var(--line-2); background: var(--raise-3);
                   text-decoration: none; }
-  .away a .ic { color: var(--accent); font-size: 12px; }
-  .away a span.w { color: var(--faint); font-size: 11.5px; margin-left: auto; }
+  .away a .ic { color: var(--accent); font-size: var(--t-sm); }
+  .away a span.w { color: var(--faint); font-size: var(--t-xs); margin-left: auto; }
 
   /* The scripting method. It is one control, so it is one row rather than a card with a
      heading — a settings panel on a page whose job is four numbers and a run list makes
      the numbers look like part of a form. */
   .method { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .method select { min-width: 240px; }
-  .method .n, .methodnote { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  .method .n, .methodnote { color: var(--muted); font-size: var(--t-sm); line-height: 1.5; }
   .methodnote { margin: 10px 0 0; overflow-wrap: anywhere; }
   /* A warning here is never fatal — the style still loaded — so it is the app's amber
      rather than its error red. A document that did not load reads as a smaller method,
      not as a broken page, and colouring it as a failure would train the operator to
      ignore the line that names which of their sixteen files is missing. */
-  .methodwarn { color: var(--gate); font-size: 12.5px; margin: 8px 0 0; }
+  .methodwarn { color: var(--gate); font-size: var(--t-sm); margin: 8px 0 0; }
   .methodwarn li { margin: 2px 0; overflow-wrap: anywhere; }
 </style>
 <script>
@@ -256,7 +256,7 @@
                                  | list | first %}
 <h2>Scripting method</h2>
 <div class="card">
-  <p class="muted" style="margin:0 0 12px;font-size:13px">
+  <p class="muted" style="margin:0 0 12px;font-size:var(--t-md)">
     What every script written for {{ channel.name }} is structured to — the payoff
     schedule, how questions are opened and closed, how beats are joined, and which
     constructions are banned. Applied at the brief and the script, on every run.
@@ -311,7 +311,7 @@
    time and the setting alone would not tell you that had happened. #}
 <h2>Motion renderer</h2>
 <div class="card">
-  <p class="muted" style="margin:0 0 12px;font-size:13px">
+  <p class="muted" style="margin:0 0 12px;font-size:var(--t-md)">
     Which engine draws the titles, lower thirds and reveals over each shot. It changes
     what motion graphics are possible on this channel, not what is written or narrated.
   </p>
@@ -357,7 +357,7 @@
    long-form format was the single one shipping at the lower resolution. #}
 <h2>Delivery</h2>
 <div class="card">
-  <p class="muted" style="margin:0 0 12px;font-size:13px">
+  <p class="muted" style="margin:0 0 12px;font-size:var(--t-md)">
     The frame and the frame rate every video on this channel is exported at. Both change
     how long a render takes; neither changes what is written, narrated or generated.
   </p>
@@ -411,7 +411,7 @@
    with costing nothing as the second argument rather than the first. #}
 <h2>Footage first</h2>
 <div class="card">
-  <p class="muted" style="margin:0 0 12px;font-size:13px">
+  <p class="muted" style="margin:0 0 12px;font-size:var(--t-md)">
     Before any shot is generated, Forgecast searches licensed and public-domain footage
     for one that actually depicts it. A beat served this way costs nothing, and it is a
     real clip rather than a model's impression of one. Only beats already planned to
@@ -448,7 +448,7 @@
 
 <h2>Image-to-video model</h2>
 <div class="card">
-  <p class="muted" style="margin:0 0 12px;font-size:13px">
+  <p class="muted" style="margin:0 0 12px;font-size:var(--t-md)">
     Which models animate this channel's shots. It is around 90% of what a video costs,
     and the same script runs from about ${{ '%.0f'|format(video_models[0].typical_video_usd) }}
     to ${{ '%.0f'|format(video_models[-1].typical_video_usd) }} depending on these two
@@ -522,7 +522,7 @@
 
 <h2>Elsewhere</h2>
 <div class="card">
-  <p class="muted" style="margin:0;font-size:13px">
+  <p class="muted" style="margin:0;font-size:var(--t-md)">
     {# Said out loud rather than implied. None of these four pages takes a channel, so
        linking to them as if they arrived filtered would be the page lying about what
        the next click does — and a "Research for this channel" link that quietly shows

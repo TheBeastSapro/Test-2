@@ -27,7 +27,7 @@
       <button class="primary w-full btn-sm" id="btn-new">＋ New chat</button>
     </div>
     <div class="list" id="thread-list">
-      <div class="muted" style="padding:10px 11px;font-size:12.5px">Loading…</div>
+      <div class="muted" style="padding:10px 11px;font-size:var(--t-sm)">Loading…</div>
     </div>
   </aside>
 
@@ -49,7 +49,7 @@
          style="margin:0 0 12px;border-color:var(--line-2);display:flex;
                 align-items:center;gap:12px;flex-wrap:wrap">
       <span class="dot dot-warn"></span>
-      <span id="missing-text" style="flex:1;min-width:220px;font-size:13.5px"></span>
+      <span id="missing-text" style="flex:1;min-width:220px;font-size:var(--t-md)"></span>
       <span id="missing-bar" hidden
             style="flex:1 1 160px;height:6px;border-radius:999px;background:var(--raise-3)">
         <span id="missing-fill"
@@ -67,7 +67,7 @@
          style="margin:0 0 12px;border-color:var(--line-2);display:flex;
                 align-items:center;gap:12px;flex-wrap:wrap">
       <span class="dot dot-warn"></span>
-      <span id="agent-setup-text" style="flex:1;min-width:220px;font-size:13.5px"></span>
+      <span id="agent-setup-text" style="flex:1;min-width:220px;font-size:var(--t-md)"></span>
       <button id="agent-setup-login" class="btn-sm primary" hidden>Sign in</button>
       <button id="agent-setup-check" class="btn-sm">Check again</button>
       <a class="btn btn-sm" href="/settings#agent">Settings</a>
@@ -107,7 +107,7 @@
           </button>
         </div>
       </div>
-      <p class="sub" id="engine-note" style="margin:6px 2px 0;font-size:12px"></p>
+      <p class="sub" id="engine-note" style="margin:6px 2px 0;font-size:var(--t-sm)"></p>
     </div>
   </section>
 
@@ -149,7 +149,7 @@
          Shown rather than documented, because the alternative is someone leaving
          "Confirm calls" ticked on a backend that has no way to honour it. #}
       <ul class="sub" id="engine-limits" hidden
-          style="margin:10px 0 0;padding-left:16px;font-size:12px"></ul>
+          style="margin:10px 0 0;padding-left:16px;font-size:var(--t-sm)"></ul>
     </div>
   </aside>
 

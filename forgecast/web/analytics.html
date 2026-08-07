@@ -10,18 +10,18 @@
            grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); }
   .tile { background: var(--raise); border: 1px solid var(--line);
           border-radius: var(--radius); padding: 14px 16px; }
-  .tile b { display: block; font-size: 10.5px; font-weight: 620; letter-spacing: .09em;
+  .tile b { display: block; font-size: var(--t-2xs); font-weight: 620; letter-spacing: .09em;
             text-transform: uppercase; color: var(--faint); }
-  .tile .v { font-size: 23px; font-weight: 620; letter-spacing: -.02em; margin-top: 5px;
+  .tile .v { font-size: var(--t-2xl); font-weight: 620; letter-spacing: -.02em; margin-top: 5px;
              font-variant-numeric: tabular-nums; }
-  .tile .n { font-size: 11.5px; color: var(--muted); line-height: 1.45; margin-top: 3px; }
+  .tile .n { font-size: var(--t-xs); color: var(--muted); line-height: 1.45; margin-top: 3px; }
   /* Withheld figures are muted and italic so a gap never reads as a zero. */
-  .tile .v.thin { font-size: 14px; font-weight: 500; color: var(--muted);
+  .tile .v.thin { font-size: var(--t-base); font-weight: 500; color: var(--muted);
                   font-style: italic; letter-spacing: 0; }
 
   .bars { display: grid; gap: 11px; margin-top: 16px; }
   .barrow { display: grid; grid-template-columns: 132px 1fr 118px; gap: 12px;
-            align-items: center; font-size: 13px; }
+            align-items: center; font-size: var(--t-md); }
   @media (max-width: 720px) { .barrow { grid-template-columns: 106px 1fr; }
                               .barrow .amt { grid-column: 2; text-align: left; } }
   .barrow .lbl { color: var(--text); overflow: hidden; text-overflow: ellipsis;
@@ -30,31 +30,31 @@
            border: 1px solid var(--line); overflow: hidden; display: flex; }
   .track i { display: block; height: 100%; background: var(--accent); }
   .track i.sent { background: var(--err); }
-  .barrow .amt { font-size: 12.5px; color: var(--muted); text-align: right;
+  .barrow .amt { font-size: var(--t-sm); color: var(--muted); text-align: right;
                  font-variant-numeric: tabular-nums; }
   .barrow .amt em { font-style: normal; color: var(--text); }
 
   .chan { padding: 17px 0; border-bottom: 1px solid var(--line); }
   .chan:last-child { border-bottom: 0; }
   .chan-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-  .chan-top h3 { margin: 0; font-size: 14.5px; }
-  .chan-top .fmt { font-size: 11px; color: var(--faint); }
+  .chan-top h3 { margin: 0; font-size: var(--t-base); }
+  .chan-top .fmt { font-size: var(--t-xs); color: var(--faint); }
   .chan-facts { display: grid; gap: 10px; margin-top: 11px;
                 grid-template-columns: repeat(auto-fit, minmax(124px, 1fr)); }
-  .fact b { display: block; font-size: 10.5px; letter-spacing: .08em;
+  .fact b { display: block; font-size: var(--t-2xs); letter-spacing: .08em;
             text-transform: uppercase; color: var(--faint); font-weight: 620; }
-  .fact .v { font-size: 15.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .fact .v.thin { font-size: 12.5px; font-weight: 500; color: var(--muted);
+  .fact .v { font-size: var(--t-base); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .fact .v.thin { font-size: var(--t-sm); font-weight: 500; color: var(--muted);
                   font-style: italic; }
-  .died { font-size: 12.5px; color: var(--muted); margin-top: 11px; }
+  .died { font-size: var(--t-sm); color: var(--muted); margin-top: 11px; }
   .died b { color: var(--err); font-weight: 600; }
   /* A note that belongs to the bar above it, so it hangs off the bottom of that row
      rather than reading as the next row's label. */
-  .subnote { font-size: 12.5px; color: var(--muted); margin-top: -4px; }
+  .subnote { font-size: var(--t-sm); color: var(--muted); margin-top: -4px; }
   .subnote b { color: var(--err); font-weight: 600; }
-  .flag { font-size: 11px; color: var(--warn); border: 1px solid var(--warn);
+  .flag { font-size: var(--t-xs); color: var(--warn); border: 1px solid var(--warn);
           border-radius: 999px; padding: 1px 8px; }
-  .thin-note { font-size: 12.5px; color: var(--muted); max-width: 72ch;
+  .thin-note { font-size: var(--t-sm); color: var(--muted); max-width: 72ch;
                margin: 12px 0 0; }
 </style>
 {% endblock %}
@@ -118,7 +118,7 @@
 <h2>Where the credits went</h2>
 <div class="card">
   <h3 style="margin-top:0">By stage, across the whole account</h3>
-  <p class="muted" style="font-size:12.5px;margin:0;max-width:72ch">
+  <p class="muted" style="font-size:var(--t-sm);margin:0;max-width:72ch">
     Read from the credit ledger, so a stage that ran twice because you revised it is
     counted twice, and a stage that was refunded is not billed for what it gave back.
     This is the number that says which stage is expensive — and the one to look at
@@ -143,7 +143,7 @@
 <h2>Gate behaviour</h2>
 <div class="card">
   <h3 style="margin-top:0">Approved versus sent back, per stage</h3>
-  <p class="muted" style="font-size:12.5px;margin:0;max-width:72ch">
+  <p class="muted" style="font-size:var(--t-sm);margin:0;max-width:72ch">
     A stage you send back more often than you accept is a prompt with a bug in it, not
     a stage that needs more babysitting. Mint is approved, red is revised.
   </p>
@@ -225,7 +225,7 @@
 
       {% if row.started %}
         <div class="barrow" style="margin-top:12px">
-          <span class="lbl muted" style="font-size:12px">finished</span>
+          <span class="lbl muted" style="font-size:var(--t-sm)">finished</span>
           <span class="track"><i style="width:{{ row.complete_pct }}%"></i></span>
           <span class="amt">{{ row.complete_pct | round | int }}%{% if row.in_flight %} · {{ row.in_flight }} still going{% endif %}</span>
         </div>

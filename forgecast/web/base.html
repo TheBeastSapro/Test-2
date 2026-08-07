@@ -139,7 +139,7 @@
           {% set short = {'running': 'run', 'completed': 'done', 'failed': 'fail',
                           'queued': 'queue', 'cancelled': 'stop',
                           'awaiting_approval': 'gate'} %}
-          <span class="status {{ item.status.value }}" style="padding:0 6px;font-size:9.5px"
+          <span class="status {{ item.status.value }}" style="padding:0 6px;font-size:var(--t-2xs)"
                 title="{{ item.status.value.replace('_', ' ') }}"
                 >{{ short.get(item.status.value, item.status.value) }}</span>
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ item.topic }}</span>
@@ -154,7 +154,7 @@
        names whichever backend is selected, because a chip reading "Claude connected"
        while ChatGPT is answering is the same lie one layer down. #}
     <a href="/settings#agent" id="claude-chip"
-       style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px">
+       style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:var(--t-sm)">
       <span class="dot dot-idle" id="claude-dot"></span>
       <span id="claude-text">checking the agent…</span>
     </a>
@@ -179,7 +179,7 @@
                border-bottom:1px solid var(--line);background:var(--raise)">
   <span class="mark" style="display:flex;align-items:center;gap:10px;font-weight:620">
     <i style="width:24px;height:24px;border-radius:7px;display:grid;place-items:center;
-              font-style:normal;font-size:12px;font-weight:700;color:var(--on-accent);
+              font-style:normal;font-size:var(--t-sm);font-weight:700;color:var(--on-accent);
               background:linear-gradient(150deg,var(--accent),#0d9488)">◆</i> Forgecast
   </span>
   <span class="grow"></span>

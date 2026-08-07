@@ -29,7 +29,7 @@
     <section data-panel="agent" id="agent">
       <div class="card">
         <h3 style="margin-top:0">Which agent answers</h3>
-        <p class="muted" style="max-width:70ch;font-size:13px">
+        <p class="muted" style="max-width:70ch;font-size:var(--t-md)">
           Every one of these signs in to a plan you already pay for, through that
           vendor's own CLI and its own browser flow. No API key is pasted here and you
           should not create one. Sign in to as many as you like — the chat uses whichever
@@ -55,7 +55,7 @@
             <p class="conn-gives" data-role="detail"></p>
             <pre data-role="fixes" hidden
                  style="margin-top:11px;background:var(--raise-2);border:1px solid var(--line);
-                        border-radius:8px;padding:13px;white-space:pre-wrap;font-size:12.5px"></pre>
+                        border-radius:8px;padding:13px;white-space:pre-wrap;font-size:var(--t-sm)"></pre>
 
             <p class="conn-where">{{ agent.signin }}</p>
             {% if agent.limits %}
@@ -69,7 +69,7 @@
           </div>
         {% endfor %}
 
-        <p class="muted" style="font-size:12.5px;margin:18px 0 0;max-width:70ch">
+        <p class="muted" style="font-size:var(--t-sm);margin:18px 0 0;max-width:70ch">
           If <code>ANTHROPIC_API_KEY</code> or <code>CODEX_API_KEY</code> is set anywhere
           in your environment it takes priority over the matching subscription and
           silently bills an API account per token. Both are checked above, and an empty
@@ -82,12 +82,12 @@
     <section data-panel="connectors" hidden>
       <div class="card">
         <h3 style="margin-top:0">Connectors</h3>
-        <p class="muted" style="max-width:70ch;font-size:13px">
+        <p class="muted" style="max-width:70ch;font-size:var(--t-md)">
           A connector hands the agent another service's tools. Connect NexLev and it
           can query the niche finder and pull outliers itself, in the same
           conversation, instead of asking you to paste numbers.
         </p>
-        <p class="muted" style="max-width:70ch;font-size:12.5px">
+        <p class="muted" style="max-width:70ch;font-size:var(--t-sm)">
           This is not the same as a provider key below. A provider key lets the
           <em>pipeline</em> call a vendor; a connector lets the <em>agent</em> call
           one. They fail separately, so they are configured separately.
@@ -192,7 +192,7 @@
                   {{ 'Update' if item.connected else 'Connect' }}</button>
               {% endif %}
             </div>
-            <div class="muted" style="font-size:12.5px;margin-top:8px" id="test-{{ item.key }}">
+            <div class="muted" style="font-size:var(--t-sm);margin-top:8px" id="test-{{ item.key }}">
               {{ item.note }}</div>
           </div>
         {% endfor %}
@@ -210,14 +210,14 @@
           <div>
             <h3 style="margin:0"><span class="dot dot-idle" id="cloud-dot"
                   style="margin-right:8px"></span><span id="cloud-headline">Checking…</span></h3>
-            <div class="muted" style="font-size:12.5px" id="cloud-where"></div>
+            <div class="muted" style="font-size:var(--t-sm)" id="cloud-where"></div>
           </div>
           <label class="mini-toggle" title="Off means this install never opens a socket to GitHub.">
             <input type="checkbox" id="cloud-on"><span></span>On
           </label>
         </div>
 
-        <p class="muted" style="margin:14px 0 0;max-width:70ch;font-size:13px">
+        <p class="muted" style="margin:14px 0 0;max-width:70ch;font-size:var(--t-md)">
           Mirrors your work into a <strong>private</strong> GitHub repository so it
           survives this machine. Scripts, briefs, shot lists, captions, learned styles
           and channel memory go. <strong>Renders do not</strong> — GitHub refuses files
@@ -240,14 +240,14 @@
         <div id="cloud-code" hidden
              style="margin-top:14px;background:var(--raise-2);border:1px solid var(--line);
                     border-radius:8px;padding:14px">
-          <div style="font-size:13px" id="cloud-code-say"></div>
+          <div style="font-size:var(--t-md)" id="cloud-code-say"></div>
           <div class="mono" id="cloud-code-value"
-               style="font-size:22px;letter-spacing:.16em;margin-top:8px"></div>
+               style="font-size:var(--t-xl);letter-spacing:.16em;margin-top:8px"></div>
           <a id="cloud-code-link" target="_blank" rel="noopener"
-             style="font-size:12.5px">Open GitHub to enter it →</a>
+             style="font-size:var(--t-sm)">Open GitHub to enter it →</a>
         </div>
 
-        <div class="muted" id="cloud-say" style="font-size:12.5px;margin-top:14px"></div>
+        <div class="muted" id="cloud-say" style="font-size:var(--t-sm);margin-top:14px"></div>
 
         <div class="setting" style="margin-top:6px">
           <div class="setting-top"><span class="setting-name">Repository</span></div>
@@ -273,7 +273,7 @@
          and this one talks to the network too. #}
       <div class="card" id="minimax-voice">
         <h3 style="margin-top:0">MiniMax narration — on your plan</h3>
-        <p class="muted" style="font-size:13px;max-width:70ch">
+        <p class="muted" style="font-size:var(--t-md);max-width:70ch">
           Signs in with the MiniMax subscription you already pay for, so narration comes
           out of that allowance instead of an API balance. The key box below does the
           opposite: it bills per character. Set a channel's voice vendor to
@@ -298,7 +298,7 @@
 
       <div class="card">
         <h3 style="margin-top:0">Provider keys</h3>
-        <p class="muted" style="font-size:13px;max-width:70ch">
+        <p class="muted" style="font-size:var(--t-md);max-width:70ch">
           Encrypted at rest with the key in <code>.env</code>, and used the moment they
           are saved. Submitting an empty field disconnects that provider.
         </p>
@@ -313,7 +313,7 @@
                 {% else %}<span class="dot dot-idle" style="margin-right:7px"></span>{% endif %}
                 {{ field.label }}
               </span>
-              <span class="muted" style="font-size:12px">{{ field.where }}</span>
+              <span class="muted" style="font-size:var(--t-sm)">{{ field.where }}</span>
             </div>
             <div class="setting-why">Unlocks {{ field.unlocks }}.
               {% if field.masked %}Currently <code>{{ field.masked }}</code>.
@@ -328,7 +328,7 @@
         {% endfor %}
 
         <h3 style="margin:26px 0 0">Installation keys</h3>
-        <p class="muted" style="font-size:13px">
+        <p class="muted" style="font-size:var(--t-md)">
           These describe this machine rather than your account, so they are written to
           <code>.env</code> and take effect immediately.
         </p>
@@ -340,7 +340,7 @@
                 <span class="dot {{ 'dot-ok' if env_values.get(field.key) else 'dot-idle' }}"
                       style="margin-right:7px"></span>{{ field.label }}
               </span>
-              <span class="muted" style="font-size:12px">{{ field.where }}</span>
+              <span class="muted" style="font-size:var(--t-sm)">{{ field.where }}</span>
             </div>
             <div class="setting-why">Unlocks {{ field.unlocks }}.</div>
             <div class="keyrow" style="margin-top:10px">
@@ -379,7 +379,7 @@
     <section data-panel="capabilities" hidden>
       <div class="card">
         <h3 style="margin-top:0">What will actually be used</h3>
-        <p class="muted" style="font-size:13px;max-width:70ch">
+        <p class="muted" style="font-size:var(--t-md);max-width:70ch">
           Resolved through the real provider registry rather than inferred from which
           keys exist — inference is how a report ends up disagreeing with the run.
         </p>
@@ -406,7 +406,7 @@
       <div class="card">
         <h3 style="margin-top:0">Mode</h3>
         <form method="post" action="/settings/instance">
-          <p class="muted" style="font-size:13px;max-width:70ch">
+          <p class="muted" style="font-size:var(--t-md);max-width:70ch">
             {% if is_mock %}
               <strong style="color:var(--warn)">Mock.</strong> No provider is called and
               nothing is charged. Runs complete end to end with placeholder script,

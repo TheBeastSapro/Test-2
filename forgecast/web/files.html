@@ -13,7 +13,7 @@
   .fb-tree { position: sticky; top: 22px; max-height: calc(100vh - 120px);
              display: flex; flex-direction: column; }
   .fb-head { padding: 13px 15px; border-bottom: 1px solid var(--line); }
-  .fb-head .where { font-family: var(--mono); font-size: 11px; color: var(--faint);
+  .fb-head .where { font-family: var(--mono); font-size: var(--t-xs); color: var(--faint);
                     margin-top: 5px; overflow: hidden; text-overflow: ellipsis;
                     white-space: nowrap; }
   .fb-scroll { overflow: auto; padding: 8px 6px 12px; flex: 1; min-height: 0; }
@@ -21,27 +21,27 @@
   .kids { margin-left: 13px; border-left: 1px solid var(--line); padding-left: 5px; }
   .node { display: flex; align-items: center; gap: 7px; width: 100%;
           padding: 5px 8px; border: 0; background: none; border-radius: var(--radius-sm);
-          font-size: 13px; color: var(--text-2); text-align: left; cursor: pointer; }
+          font-size: var(--t-md); color: var(--text-2); text-align: left; cursor: pointer; }
   .node:hover { background: var(--raise-2); border-color: transparent; color: var(--text); }
   .node.on { background: var(--accent-dim); color: var(--accent); }
-  .node .tw { width: 11px; flex: none; color: var(--faint); font-size: 9px; }
+  .node .tw { width: 11px; flex: none; color: var(--faint); font-size: var(--t-2xs); }
   .node .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-  .node .sz { font-size: 10.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .node .sz { font-size: var(--t-2xs); color: var(--faint); font-variant-numeric: tabular-nums; }
   .node.dir .nm { font-weight: 550; color: var(--text); }
   .node.on .nm { color: var(--accent); }
 
   .fb-view { min-height: 0; }
   .fb-title { padding: 15px 18px; border-bottom: 1px solid var(--line);
               display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .fb-title b { font-size: 14.5px; font-weight: 600; }
-  .fb-facts { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .fb-title b { font-size: var(--t-base); font-weight: 600; }
+  .fb-facts { font-size: var(--t-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
   .fb-body { padding: 18px; }
-  .fb-empty { color: var(--muted); font-size: 13.5px; padding: 34px 18px;
+  .fb-empty { color: var(--muted); font-size: var(--t-md); padding: 34px 18px;
               text-align: center; }
-  .fb-note { font-size: 12.5px; color: var(--warn); margin: 0 0 12px; }
+  .fb-note { font-size: var(--t-sm); color: var(--warn); margin: 0 0 12px; }
   .fb-body pre { margin: 0; background: var(--raise-2); border: 1px solid var(--line);
                  border-radius: var(--radius-sm); padding: 14px; overflow: auto;
-                 max-height: 66vh; font-family: var(--mono); font-size: 12.5px;
+                 max-height: 66vh; font-family: var(--mono); font-size: var(--t-sm);
                  line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
   .fb-body img, .fb-body video { max-width: 100%; border-radius: var(--radius-sm);
                                  border: 1px solid var(--line); display: block; }
@@ -66,7 +66,7 @@
 <div class="fb">
   <div class="fb-tree">
     <div class="fb-head">
-      <b style="font-size:13px">Storage</b>
+      <b style="font-size:var(--t-md)">Storage</b>
       <div class="where" title="{{ storage_dir }}">{{ storage_dir | tail(38) }}</div>
     </div>
     <div class="fb-scroll" id="tree"></div>
@@ -131,14 +131,14 @@
     if (!listing.entries.length) {
       const none = document.createElement('div');
       none.className = 'muted';
-      none.style.cssText = 'font-size:12px;padding:5px 9px';
+      none.style.cssText = 'font-size:var(--t-sm);padding:5px 9px';
       none.textContent = 'empty';
       into.appendChild(none);
     }
     if (listing.truncated) {
       const cut = document.createElement('div');
       cut.className = 'muted';
-      cut.style.cssText = 'font-size:11.5px;padding:5px 9px;color:var(--warn)';
+      cut.style.cssText = 'font-size:var(--t-xs);padding:5px 9px;color:var(--warn)';
       cut.textContent = `${listing.skipped} more not shown`;
       into.appendChild(cut);
     }
@@ -155,14 +155,14 @@
     twist.textContent = '▾';
     if (kids.dataset.loaded) return;
 
-    kids.innerHTML = '<div class="muted" style="font-size:12px;padding:5px 9px">reading…</div>';
+    kids.innerHTML = '<div class="muted" style="font-size:var(--t-sm);padding:5px 9px">reading…</div>';
     try {
       const r = await fetch('/api/files/list?path=' + encodeURIComponent(path));
       if (!r.ok) throw new Error('that folder is no longer there');
       draw(await r.json(), kids);
       kids.dataset.loaded = '1';
     } catch (e) {
-      kids.innerHTML = `<div class="muted" style="font-size:12px;padding:5px 9px;color:var(--err)">${esc(e.message)}</div>`;
+      kids.innerHTML = `<div class="muted" style="font-size:var(--t-sm);padding:5px 9px;color:var(--err)">${esc(e.message)}</div>`;
     }
   }
 

@@ -10,7 +10,7 @@
 </p>
 
 {% if other_channels %}
-  <p class="muted" style="font-size:13px;margin-top:-4px">
+  <p class="muted" style="font-size:var(--t-md);margin-top:-4px">
     {{ other_channels|length }} channel(s) live on the other tab.
   </p>
 {% endif %}
@@ -37,7 +37,7 @@
         <button class="primary" type="submit">Read it</button>
       </div>
       <input type="hidden" name="fmt" value="{{ format.slug }}">
-      <p class="muted" style="font-size:12.5px;margin:8px 0 0">
+      <p class="muted" style="font-size:var(--t-sm);margin:8px 0 0">
         I read what they actually publish — upload length, recent titles, which videos
         beat their own cohort — and set the channel up from that. You only tell me the
         niche in your own words.
@@ -45,7 +45,7 @@
     </form>
 
     <details style="margin-top:18px">
-      <summary class="muted" style="cursor:pointer;font-size:13px">
+      <summary class="muted" style="cursor:pointer;font-size:var(--t-md)">
         or fill it in by hand</summary>
     <form method="post" action="/channels">
       <label for="name">Name</label>

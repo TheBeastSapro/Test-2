@@ -12,9 +12,9 @@
   .shelf a:last-child { border-bottom: 0; }
   .shelf a:hover { background: var(--raise-2); text-decoration: none; }
   .shelf a.on { background: var(--accent-dim); }
-  .shelf .nm { font-weight: 600; font-size: 14px; }
-  .shelf .sm { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
-  .origin { font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+  .shelf .nm { font-weight: 600; font-size: var(--t-base); }
+  .shelf .sm { font-size: var(--t-xs); color: var(--muted); line-height: 1.35; }
+  .origin { font-size: var(--t-2xs); text-transform: uppercase; letter-spacing: .08em;
             padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line);
             color: var(--muted); }
   .origin.learned { color: var(--accent); border-color: var(--accent-dim); }
@@ -24,17 +24,17 @@
            gap: 10px; }
   .fact { background: var(--raise-2); border: 1px solid var(--line);
           border-radius: 8px; padding: 9px 11px; }
-  .fact b { display: block; font-size: 10.5px; text-transform: uppercase;
+  .fact b { display: block; font-size: var(--t-2xs); text-transform: uppercase;
             letter-spacing: .08em; color: var(--muted); font-weight: 600; }
-  .fact .v { font-size: 17px; font-weight: 620; }
-  .fact .n { font-size: 11.5px; color: var(--muted); }
+  .fact .v { font-size: var(--t-lg); font-weight: 620; }
+  .fact .n { font-size: var(--t-xs); color: var(--muted); }
   .fact.weak { border-color: #5c4a1e; }
-  .dep { padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
+  .dep { padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: var(--t-md); }
   .dep:last-child { border-bottom: 0; }
-  .dep .f { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .dep .f { font-family: ui-monospace, Menlo, monospace; font-size: var(--t-sm); }
   .dep .was { color: var(--muted); text-decoration: line-through; }
   .dep .now { color: var(--ok); font-weight: 600; }
-  .dep .why { color: var(--muted); font-size: 12.5px; }
+  .dep .why { color: var(--muted); font-size: var(--t-sm); }
   .swatches { display: flex; gap: 5px; margin-top: 6px; }
   .swatches i { width: 26px; height: 20px; border-radius: 4px;
                 border: 1px solid var(--line); }
@@ -44,14 +44,14 @@
      attributable rather than being "it failed". */
   .refs { list-style: none; padding: 0; margin: 8px 0 0; }
   .refs li { display: flex; align-items: baseline; gap: 8px; padding: 5px 0;
-             border-bottom: 1px dashed var(--line); font-size: 12.5px;
+             border-bottom: 1px dashed var(--line); font-size: var(--t-sm);
              overflow-wrap: anywhere; }
   .refs li:last-child { border-bottom: 0; }
   .refs .drop { margin-left: auto; color: var(--muted); background: none;
-                border: 0; cursor: pointer; font-size: 12px; padding: 0 2px; }
+                border: 0; cursor: pointer; font-size: var(--t-sm); padding: 0 2px; }
   .refs .drop:hover { color: var(--err); }
   .learnlog { background: var(--raise-2); border: 1px solid var(--line);
-              border-radius: 7px; padding: 10px; margin-top: 12px; font-size: 12.5px;
+              border-radius: 7px; padding: 10px; margin-top: 12px; font-size: var(--t-sm);
               max-height: 190px; overflow-y: auto; overflow-wrap: anywhere;
               color: var(--muted); }
   .learnlog div { padding: 1px 0; }
@@ -73,9 +73,9 @@
    homework this app removes everywhere else, and it left the whole vision package —
    three thousand lines that measure a reference — with no way in from the application. #}
 <div class="card" id="learn">
-  <h2 style="margin:0 0 4px;text-transform:none;letter-spacing:0;font-size:19px;color:var(--text)">
+  <h2 style="margin:0 0 4px;text-transform:none;letter-spacing:0;font-size:var(--t-xl);color:var(--text)">
     Learn one from a creator</h2>
-  <p class="muted" style="margin:0 0 14px;font-size:13px">
+  <p class="muted" style="margin:0 0 14px;font-size:var(--t-md)">
     Several videos by the same creator rather than one — a single video is an anecdote,
     and a style is what survives across their work. Each is measured on its own, so one
     file that cannot be read costs one reference instead of the attempt.
@@ -83,7 +83,7 @@
 
   <label for="pick">Videos</label>
   <input type="file" id="pick" multiple accept="video/*">
-  <p class="muted" style="font-size:12.5px;margin:6px 0 0">
+  <p class="muted" style="font-size:var(--t-sm);margin:6px 0 0">
     Uploaded to this machine and measured here. Nothing is sent to a provider and no
     credits are spent.
   </p>
@@ -103,7 +103,7 @@
 
   <div class="row" style="margin-top:14px;gap:10px;align-items:center">
     <button id="learnbtn" class="primary" type="button">Learn</button>
-    <span class="muted" id="learnnote" style="font-size:12.5px"></span>
+    <span class="muted" id="learnnote" style="font-size:var(--t-sm)"></span>
   </div>
 
   <div class="learnlog" id="learnlog" hidden></div>
@@ -140,9 +140,9 @@
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:flex-start">
         <div>
-          <h2 style="margin:0 0 2px;text-transform:none;letter-spacing:0;font-size:19px;color:var(--text)">
+          <h2 style="margin:0 0 2px;text-transform:none;letter-spacing:0;font-size:var(--t-xl);color:var(--text)">
             {{ chosen.name }}</h2>
-          <div class="muted" style="font-size:13px">{{ chosen.summary() }}</div>
+          <div class="muted" style="font-size:var(--t-md)">{{ chosen.summary() }}</div>
         </div>
         <form method="post" action="/styles/{{ chosen.key }}/delete"
               onsubmit="return confirm('Delete {{ chosen.name }}?')">
@@ -194,7 +194,7 @@
       {% if weak %}
         {% set unsure = weak.items() | selectattr('1', 'gt', 0.5) | map(attribute='0') | list %}
         {% if unsure %}
-          <p class="muted" style="font-size:12.5px;margin-bottom:0">
+          <p class="muted" style="font-size:var(--t-sm);margin-bottom:0">
             The references disagreed about {{ unsure | join(', ') }} — the amber panels.
             This creator has no consistent rule there, so the median is weak evidence.
           </p>
@@ -207,7 +207,7 @@
     <h2>Departures from the reference</h2>
     <div class="card">
       {% if refinements %}
-        <p class="muted" style="margin-top:0;font-size:13px">
+        <p class="muted" style="margin-top:0;font-size:var(--t-md)">
           Measured from the reference, then changed — each one because the reference
           crossed from a choice into a defect.
         </p>
@@ -248,7 +248,7 @@
                 </option>
               {% endfor %}
             </select>
-            <p class="muted" style="font-size:12.5px">
+            <p class="muted" style="font-size:var(--t-sm)">
               Replaces the channel's render spec, motion preset and map style. Its tone
               and everything the agent has learned from your approvals stay put.
             </p>
@@ -272,10 +272,10 @@
             <label for="weight">How much of it — 0 keeps this one, 1 takes theirs</label>
             <input id="weight" name="weight" type="range" min="0" max="1" step="0.05"
                    value="0.5" oninput="document.getElementById('wv').textContent = this.value">
-            <div class="muted" style="font-size:12.5px">weight <span id="wv">0.5</span></div>
+            <div class="muted" style="font-size:var(--t-sm)">weight <span id="wv">0.5</span></div>
             <label for="name">Call it</label>
             <input id="name" name="name" placeholder="{{ chosen.name }} x …">
-            <p class="muted" style="font-size:12.5px">
+            <p class="muted" style="font-size:var(--t-sm)">
               Numbers interpolate. Transitions, caption position and the palette do not
               — there is no style halfway between a cut and a dissolve, so those switch
               at the halfway point.
