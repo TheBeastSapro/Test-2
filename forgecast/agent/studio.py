@@ -1100,6 +1100,57 @@ class Studio:
                        "banner, or POST /api/setup/extras/motion.",
         }
 
+    # ------------------------------------------------------------------ scenes
+
+    async def locate_scene(self, description: str, *, limit: int = 6) -> dict:
+        """Where a described scene can lawfully be watched, and what is known about using it.
+
+        `research/scenes.py` has been able to answer this since it was written and had no
+        caller: not a node, not a route, and — despite what its own note claims — not an
+        agent tool either. This is that tool. It is the "YouTube clips when I ask for
+        them" path, and asking is what makes it operator-directed.
+
+        It returns coordinates, never a file. A URL, an in and an out, in the argument
+        names `vision.acquire.acquire` and `footage.strip_audio` already take, because
+        the app has four things that fetch already and a fifth would be a fourth copy of
+        the same subprocess call.
+
+        Nothing here is ever `commercially_safe`. A Movieclips upload IS licensed —
+        Fandango owns the channel and studios licensed the clips to it — and it does not
+        follow that the scene may be re-cut into someone's video. Those are two questions
+        and this answers the first. The rights position rides on every result in words,
+        and publish is never blocked: whether a two-second cut is fair dealing where the
+        operator lives is their call, and a filter written here cannot make it.
+        """
+        from ..research.scenes import locate
+
+        wanted = str(description or "").strip()
+        if not wanted:
+            return {"error": "Describe the scene — what happens in it, and which film or "
+                             "channel it is from if you know."}
+        try:
+            found = await locate(wanted, limit=max(1, min(int(limit), 12)))
+        except Exception as exc:
+            return {"error": f"the scene lookup failed: {exc}", "description": wanted}
+
+        if not found:
+            return {
+                "description": wanted,
+                "matches": [],
+                "note": "Nothing legitimate matched. That is a real answer rather than a "
+                        "failure — the sources here are an allow-list of studio channels, "
+                        "press kits and YouTube's Creative Commons filter, and there is no "
+                        "lane that reaches further when those come back empty.",
+            }
+        return {
+            "description": wanted,
+            "matches": [match.as_dict() for match in found],
+            "handoff": found[0].handoff(),
+            "rights": "None of these is cleared for re-use. Each says what IS established "
+                      "about its upload; the decision to cut it in is yours, it flags the "
+                      "run in words, and it never blocks publish.",
+        }
+
     # ------------------------------------------------------------------ research
 
     def research_channel(self, reference: str, *, limit: int = 50) -> dict:

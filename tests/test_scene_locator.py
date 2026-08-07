@@ -574,3 +574,74 @@ def test_as_dict_carries_the_rights_position_and_the_confidence_together():
         assert key in payload, key
     assert payload["commercially_safe"] is False
     assert payload["timecode"] == "00:00:00.000-00:02:28.000"
+
+
+# ------------------------------------------------------- the locator reaches the agent
+#
+# §8 of docs/BROLL-SCENE-LOCATOR.md said the locator "is reachable from the agent". It
+# was not: 31 tools were declared and none of them was this one, so the only way to reach
+# 928 tested lines was to import them in Python. These hold the connection, and hold that
+# connecting it did not quietly turn a lookup into a clearance.
+
+def test_the_locator_is_declared_as_an_agent_tool():
+    from forgecast.agent import tools as agent_tools
+    assert "locate_scene" in agent_tools.ALL_TOOLS
+
+
+def test_looking_a_scene_up_needs_no_permission():
+    """It fetches nothing, cuts nothing and spends nothing.
+
+    A check the agent must ask permission for is a check it stops making, and then it
+    guesses where a scene is instead of looking.
+    """
+    from forgecast.agent import tools as agent_tools
+    assert f"mcp__{agent_tools.SERVER_NAME}__locate_scene" in agent_tools.ALLOWED
+
+
+@pytest.mark.asyncio
+async def test_an_empty_description_asks_rather_than_searching(monkeypatch):
+    from forgecast.agent.studio import Studio
+    out = await Studio.locate_scene(object.__new__(Studio), "  ")
+    assert "error" in out
+
+
+@pytest.mark.asyncio
+async def test_nothing_found_is_reported_as_an_answer_not_a_failure(monkeypatch):
+    """There is no lane that reaches further when the licensed ones come back empty."""
+    from forgecast.agent import studio as studio_mod
+    from forgecast.research import scenes as scenes_mod
+
+    async def nothing(*_a, **_k):
+        return []
+
+    monkeypatch.setattr(scenes_mod, "locate", nothing)
+    out = await studio_mod.Studio.locate_scene(
+        object.__new__(studio_mod.Studio), "a scene that does not exist")
+    assert out["matches"] == []
+    assert "error" not in out
+    assert "allow-list" in out["note"]
+
+
+@pytest.mark.asyncio
+async def test_every_result_carries_the_rights_position(monkeypatch):
+    """A licensed upload is never handed over as a licence to re-cut."""
+    from forgecast.agent import studio as studio_mod
+    from forgecast.research import scenes as scenes_mod
+
+    match = scenes_mod.SceneMatch(
+        url="https://www.youtube.com/watch?v=x", title="The scene",
+        source="licensed_channel", licence="licensed_distribution",
+        channel="Movieclips", film="The Dark Knight", confidence=0.9,
+    )
+
+    async def found(*_a, **_k):
+        return [match]
+
+    monkeypatch.setattr(scenes_mod, "locate", found)
+    out = await studio_mod.Studio.locate_scene(
+        object.__new__(studio_mod.Studio), "the truck flip in The Dark Knight")
+
+    assert out["matches"][0]["commercially_safe"] is False
+    assert "None of these is cleared for re-use" in out["rights"]
+    # The handoff is coordinates in the names the fetch path already takes.
+    assert set(out["handoff"]) == {"reference", "start", "seconds", "note"}

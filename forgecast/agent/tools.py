@@ -56,6 +56,14 @@ _READ_ONLY = (
     # *before* a two-gigabyte upload, and a check the agent must ask permission for is a
     # check it stops making.
     "editing_tools", "read_video", "edit_plans",
+    # Where a described scene can lawfully be watched. It searches allow-listed studio
+    # channels, press kits and YouTube's Creative Commons filter and returns coordinates
+    # — a URL, an in and an out — and no result it returns is ever cleared for re-use.
+    # It fetches nothing, cuts nothing and spends nothing, so asking permission to look
+    # something up would be a check the agent learns to stop making. The decision it
+    # informs is the operator's and is taken later, by a human, with the rights position
+    # stated in words on every result.
+    "locate_scene",
     # Which engine will actually draw the motion scenes, per channel. Reading it is how
     # the agent can answer "why does this still look like ffmpeg" without changing
     # anything.
@@ -235,6 +243,24 @@ def build_server(studio):
     @tool("run_files", "What a run has written to disk so far.", {"run_id": int})
     async def run_files(args):
         return _text(studio.open_folder(int(args.get("run_id") or 0)))
+
+    @tool("locate_scene",
+          "Find where a described scene can lawfully be watched — 'the truck flip in "
+          "The Dark Knight', 'the Falcon 9 booster landing on the drone ship'. Searches "
+          "studio channels, Movieclips, press kits and YouTube's Creative Commons "
+          "filter, and returns a URL with an in and an out point plus what is actually "
+          "known about the right to use it.\n\n"
+          "IMPORTANT: none of these results is cleared for re-use. A studio-licensed "
+          "upload is the right place to WATCH a scene and says nothing about cutting it "
+          "into a video — those are two questions and this answers the first. Report the "
+          "rights position in the operator's own words rather than summarising it away, "
+          "and never describe a result as safe, cleared, or licensed for use. The "
+          "decision is the operator's; it flags the run and never blocks publish.\n\n"
+          "Read-only and spends nothing.",
+          {"description": str, "limit": int})
+    async def locate_scene(args):
+        return _text(await studio.locate_scene(args.get("description") or "",
+                                               limit=int(args.get("limit") or 6)))
 
     # ------------------------------------------------------------------- research
 
