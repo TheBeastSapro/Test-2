@@ -72,9 +72,18 @@
     <strong>No runs yet, so there is nothing measured.</strong>
     <p class="muted prose" style="margin:8px 0 0;">
       This page fills itself in from work that has actually happened: it cannot
-      estimate, and it will not invent a baseline. Start a run from a format workspace
-      and the first numbers appear as soon as it finishes.
+      estimate, and it will not invent a baseline. Start a run and the first numbers
+      appear as soon as it finishes.
     </p>
+    {# An empty state that names the next step and does not offer it leaves the reader
+       to go and find it. The workspaces are already in the shell's context, so the
+       page can just hand them over. #}
+    <div class="row mt-6">
+      {% for item in formats %}
+        <a class="btn {{ 'btn-primary' if loop.first }}" href="/f/{{ item.slug }}">
+          Start a {{ item.label|lower }} run</a>
+      {% endfor %}
+    </div>
   </div>
 {% else %}
 

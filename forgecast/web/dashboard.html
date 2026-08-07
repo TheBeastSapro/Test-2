@@ -108,7 +108,10 @@
     {% else %}
       <p class="muted">
         No {{ format.label|lower }} channel yet — a run needs a persona to inherit.
-        Create one on the left{% if other_channels %}, or switch to the other tab{% endif %}.
+        {# "on the left" was the whole instruction, and the two cards stack on a narrow
+           window, where there is no left. The anchor is right either way. #}
+        <a href="#new-channel">Create one</a>{% if other_channels %},
+        or switch to the other tab{% endif %}.
       </p>
     {% endif %}
   </div>
