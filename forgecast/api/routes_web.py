@@ -473,6 +473,8 @@ def gate_form(
     feedback: str = Form(""),
     title: str = Form(""),
     privacy_status: str = Form(""),
+    chosen_title: str = Form(""),
+    own_title: str = Form(""),
     user: User = Depends(current_user),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
@@ -488,8 +490,22 @@ def gate_form(
         if decision == "revise":
             engine.revise(session, node, feedback or "please try a different approach")
         else:
-            # Let the operator edit publish metadata at the final gate.
             overrides: dict = {}
+
+            # The title chosen at the brief gate. Written back as `working_title`
+            # because that is the key the script stage already reads — the choice has
+            # to land where the run looks, not in a field beside it that nothing
+            # consults. `__own__` is the sentinel the "write your own" row posts, so
+            # an empty box cannot silently blank the title.
+            if node.type == "brief" and chosen_title:
+                picked = own_title.strip() if chosen_title == "__own__" else chosen_title
+                if picked:
+                    brief = dict(node.output or {})
+                    if picked != brief.get("working_title"):
+                        brief["working_title"] = picked[:100]
+                        overrides.update(brief)
+
+            # Let the operator edit publish metadata at the final gate.
             if node.type == "final_review" and (title or privacy_status):
                 metadata = dict((node.output or {}).get("metadata") or {})
                 if title:

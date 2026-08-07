@@ -91,6 +91,24 @@
      the labels, which is how "Beat 6 · hook" ends up being the most informative thing
      on screen. Collapsing still earns its place on the script gate below, where each
      row is a paragraph. */
+  /* The title picker. Each option is a whole clickable row, because the thing being
+     chosen is the sentence, not the 15px circle beside it. */
+  .titles { border: 0; padding: 0; margin: 0 0 6px; }
+  .titles legend { font-size: var(--t-xs); letter-spacing: .07em;
+                   text-transform: uppercase; color: var(--muted); padding: 0; }
+  .title-option { display: flex; align-items: flex-start; gap: var(--s-4);
+                  margin: 0; padding: 10px 0; border-top: 1px solid var(--line);
+                  cursor: pointer; }
+  .title-option > input { margin-top: 4px; }
+  .title-option > span { display: flex; flex-direction: column; gap: 3px;
+                         max-width: 68ch; }
+  .title-option b { font-weight: 560; font-size: var(--t-lg); }
+  .title-option .muted { font-size: var(--t-md); }
+  .title-option input[type="text"] { margin-top: 4px; max-width: 46ch; }
+  .title-option:hover { border-top-color: var(--line-2); }
+  /* The chosen row, said with the accent the rest of the app uses for "this one". */
+  .title-option:has(input[type="radio"]:checked) b { color: var(--accent); }
+
   .beat-row { border-top: 1px solid var(--line); padding: 9px 0; }
   .beat-row .beat-head { font-size: var(--t-md); }
   .beat-row p { margin: 3px 0 0; color: var(--text-2); font-size: var(--t-md);
@@ -177,8 +195,41 @@
   {% set out = gate.output or {} %}
 
   {% if gate.type == "brief" %}
+    {# The title is chosen here, before anything is researched or written, because
+       everything downstream is an attempt to deliver it. Offering one title made this
+       a gate you could only accept: there was nothing to compare it against, so
+       "approve" meant "I have not thought about the title" and there was no way to
+       tell that apart from agreement. #}
+    {% set titles = out.get("title_options") or [] %}
+    {% if titles %}
+      <fieldset class="titles">
+        <legend>Title</legend>
+        {% for option in titles %}
+          <label class="title-option">
+            <input type="radio" name="chosen_title" value="{{ option.title }}"
+                   {{ 'checked' if loop.first }}>
+            <span>
+              <b>{{ option.title }}</b>
+              <span class="muted t-sm">{{ option.title|length }} characters{% if option.device %}
+                · {{ option.device }}{% endif %}</span>
+              {% if option.why %}<span class="muted">{{ option.why }}</span>{% endif %}
+            </span>
+          </label>
+        {% endfor %}
+        <label class="title-option">
+          <input type="radio" name="chosen_title" value="__own__">
+          <span>
+            <b>Write your own</b>
+            <input type="text" name="own_title" maxlength="100"
+                   placeholder="{{ out.get('working_title', '') }}"
+                   oninput="this.closest('label').querySelector('input[type=radio]').checked = true">
+          </span>
+        </label>
+      </fieldset>
+    {% else %}
+      <dl class="kv"><dt>Working title</dt><dd>{{ out.get("working_title", "—") }}</dd></dl>
+    {% endif %}
     <dl class="kv">
-      <dt>Working title</dt><dd>{{ out.get("working_title", "—") }}</dd>
       <dt>Angle</dt><dd>{{ out.get("angle", "—") }}</dd>
       <dt>Hook</dt><dd>{{ out.get("hook", "—") }}</dd>
       <dt>Promise</dt><dd>{{ out.get("promise", "—") }}</dd>

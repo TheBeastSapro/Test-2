@@ -26,7 +26,20 @@ from ._common import ask_json, request_payload, target_seconds
 BRIEF_INSTRUCTIONS = """Produce a production brief for one video.
 
 Return JSON with exactly these keys:
-  working_title   string, under 70 characters, no clickbait the video cannot deliver
+  working_title   string, under 70 characters, no clickbait the video cannot deliver.
+                  This is your recommendation, and it must be one of title_options.
+  title_options   array of 3-5 objects: {title, device, why}
+                  title   under 70 characters, and it has to survive being read at
+                          thumbnail size — the first 40 characters carry the click
+                  device  the one thing this title does, named plainly: a specific
+                          number, a named antagonist, a withheld outcome, a
+                          contradiction, a stated stake, a question the thumbnail
+                          answers. One device per title, not three stacked.
+                  why     one sentence on what makes this one work, in terms of the
+                          video's own promise. A title the video does not deliver is
+                          a worse outcome than a dull one.
+                  Make them genuinely different from each other. Five phrasings of the
+                  same device is one option, not five.
   angle           string, the specific claim or lens that makes this video worth making
   audience        string, who this is for
   hook            string, the first spoken sentence of the video
@@ -101,6 +114,66 @@ def scripting_block(ctx: NodeContext, seconds: int, *, only: tuple[str, ...] = (
         ctx.channel.scripting_style, target_seconds=seconds, only=only)
 
 
+#: Most titles this stage will ever offer. More than this and the gate stops being a
+#: choice and becomes a reading task — and the operator picks the first one, which is
+#: the outcome a single title already had.
+MAX_TITLE_OPTIONS = 5
+
+
+def _title_options(brief: dict) -> list[dict]:
+    """The titles to offer at the gate, with the recommendation first.
+
+    Normalised rather than trusted. The gate is the only place a title is chosen, so a
+    model that answers with four strings instead of four objects, or that recommends a
+    title it did not list, must still produce a list somebody can pick from — a gate
+    that renders empty because the JSON came back in a slightly different shape is a
+    decision point that silently stops being one.
+
+    The working title is guaranteed to be in the list and first, because it is what the
+    rest of the run uses if nobody chooses. An option nobody can see is not on offer,
+    and a default that is not on the ballot cannot be compared against the alternatives.
+    """
+    recommended = str(brief.get("working_title") or "").strip()
+
+    options: list[dict] = []
+    seen: set[str] = set()
+    for raw in brief.get("title_options") or []:
+        if isinstance(raw, str):
+            item = {"title": raw, "device": "", "why": ""}
+        elif isinstance(raw, dict):
+            item = {
+                "title": str(raw.get("title") or "").strip(),
+                "device": str(raw.get("device") or "").strip(),
+                "why": str(raw.get("why") or "").strip(),
+            }
+        else:
+            continue
+        key = item["title"].casefold()
+        if not item["title"] or key in seen:
+            continue
+        seen.add(key)
+        options.append(item)
+
+    if not recommended:
+        return options[:MAX_TITLE_OPTIONS]
+
+    key = recommended.casefold()
+    if key not in seen:
+        options.insert(0, {"title": recommended, "device": "",
+                           "why": "the writer's own recommendation"})
+    else:
+        # Matched case-insensitively, so the listed option may differ from the
+        # recommendation only in capitalisation. Take the recommendation's exact text
+        # and the option's reasoning: the row is pre-selected, so its value is what a
+        # plain approve posts back as the working title — and a chooser that quietly
+        # re-cases the title when nobody touched it is a change the operator did not
+        # make and cannot see they made.
+        options.sort(key=lambda item: item["title"].casefold() != key)
+        options[0] = {**options[0], "title": recommended}
+
+    return options[:MAX_TITLE_OPTIONS]
+
+
 @node_handler("brief")
 async def brief_node(ctx: NodeContext) -> NodeResult:
     seconds = target_seconds(ctx)
@@ -136,6 +209,7 @@ async def brief_node(ctx: NodeContext) -> NodeResult:
     if not isinstance(beats, list) or len(beats) < 2:
         raise ProviderError("brief came back without a usable beat outline")
     data.setdefault("target_duration_seconds", seconds)
+    data["title_options"] = _title_options(data)
 
     path = ctx.path_for("brief.json")
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")

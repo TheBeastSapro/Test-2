@@ -34,6 +34,14 @@ ROOT = Path(__file__).resolve().parent.parent
 # first heading passes a length check and teaches nothing, and these four are load-bearing
 # rules rather than prose — the Sample Gate is the app's cost protection.
 LOAD_BEARING: dict[str, tuple[str, ...]] = {
+    # What makes this document decidable rather than a list of opinions: that several
+    # titles are written and one is chosen (a single title can only be accepted), the
+    # named devices that make the options genuinely different, and the four checks — a
+    # title failing one of them is a signal the topic is not ready, not a cue to keep
+    # rewriting the title.
+    "title-writing.md": ("Write several, then choose", "A withheld outcome",
+                         "Four checks before a title is chosen",
+                         "Do not lift a competitor's title"),
     # The three findings that make this document reproducible rather than descriptive:
     # which structural unit repeats, that the sync between picture and narration is the
     # rule worth carrying, and that the template transfers while the content does not.

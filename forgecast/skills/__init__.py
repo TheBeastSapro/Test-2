@@ -575,6 +575,15 @@ DATA_DIR = Path(__file__).resolve().parent / "data"
 
 SHIPPED_DOCS: tuple[tuple[str, str, str], ...] = (
     (
+        "Title writing",
+        "Writing or choosing a video's title, picking between title candidates at the "
+        "brief gate, and whenever a video's impressions are healthy but its "
+        "click-through rate is below the channel's own median. Covers the devices, the "
+        "shape, and the four checks a title has to pass. Not for thumbnails — the pair "
+        "is the click, but they are separate decisions.",
+        "title-writing.md",
+    ),
+    (
         "Reverse-engineer a reference format",
         "Before writing for a channel modelled on a creator: whether the runtime is "
         "one throughline or an anthology of repeating segments, the segment template, "

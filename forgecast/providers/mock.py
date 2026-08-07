@@ -108,6 +108,23 @@ class MockLLM(LLMProvider):
         beats = max(4, min(12, target // 60))
         return {
             "working_title": f"{topic}: What Nobody Tells You",
+            # Four devices rather than four phrasings, so the picker at the brief gate
+            # can be seen doing its job offline — a mock that answers with one title
+            # four times would render a chooser with nothing to choose between.
+            "title_options": [
+                {"title": f"{topic}: What Nobody Tells You",
+                 "device": "withheld outcome",
+                 "why": "Names the gap without promising a number the video has to hit."},
+                {"title": f"The Real Reason {topic}",
+                 "device": "single cause",
+                 "why": "Commits to one explanation, which the beat outline can deliver."},
+                {"title": f"{topic} — And Why It Keeps Happening",
+                 "device": "stated stake",
+                 "why": "Says the recurrence is the story, not the incident."},
+                {"title": f"What Actually Happens When {topic}",
+                 "device": "mechanism",
+                 "why": "Promises the how, which is what the middle beats are."},
+            ],
             "angle": f"A grounded, evidence-first walk through {topic.lower()}.",
             "audience": "Curious adults who want substance without filler",
             "hook": f"Most explanations of {topic.lower()} skip the part that matters.",
