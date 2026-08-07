@@ -103,3 +103,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add an explicit step when a failure carries a specific stated cause: call the producing function in isolation and inspect what it actually returns before investigating the cause the message names. Treat any error whose text asserts a cause that the raising code did not distinguish — a falsy-filter collapsing "absent" and "present but unusable" into one branch — as an unverified claim. When the reproduction contradicts the message, fixing the message is part of the fix, not a cleanup.
 
 **Principle:** An error message is a hypothesis written by someone who did not have the failing data. Where a guard collapses several distinct conditions into one branch, the message can only name one of them and will name the wrong one whenever the other occurs. Reproduce the call and look at the real values before spending any effort on the cause the text asserts.
+
+### Observation 7: Audit for built-but-unreachable capability, and exclude dispatch-registered symbols first
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** A large agent-built application felt to its author like it was "not doing what I intend". Three separate defects turned out to be the same shape: a capability fully implemented and tested at the library layer, with no caller anywhere in the application.
+
+**Skill:** code-review-and-quality
+**Type:** open-source
+**Phase/Area:** Auditing a codebase produced largely by agents
+
+**Issue:** Agent-written code is unusually prone to a specific defect: a module is built to a good standard, tested thoroughly, committed with a coherent rationale — and never wired to anything. Each piece passes review in isolation because nothing is wrong with it; the defect is the absent edge between it and the rest of the system, which no file-scoped review can see. Three instances were confirmed here: a 963-line visual style with 655 lines of tests, imported only by its test; a publishing OAuth flow whose two entry points were never called, so the publish stage could only ever succeed in mock mode; and a footage-ingest lane referenced only from tests. The codebase's own history showed the author had already caught a fourth instance by hand, meaning this recurs and is not a one-off. A cheap static sweep — public symbols whose name appears nowhere outside their defining module — surfaced all of them in one pass. The sweep's first version was badly wrong, reporting pipeline stages as unreachable when they are registered by decorator and dispatched by string, which would have been a confident false alarm had it been reported unverified.
+
+**Suggested improvement:** Add a reachability sweep to the review of any large or agent-generated codebase: list public symbols not referenced outside their own module, then subtract every indirection the project actually uses before reporting anything — decorator registries, `__all__` exports, string dispatch tables, subclass overrides of framework hooks, and plugin entry points. Confirm each survivor by tracing one concrete call path by hand. Report survivors ranked by the size of the capability stranded, not by symbol count.
+
+**Principle:** In a codebase assembled incrementally by agents, the likeliest serious defect is not broken code but unreachable code — each part correct, the edge between them never built. Reachability is a whole-program property and is invisible to file-scoped review, so it needs its own explicit pass. Any automated sweep for it must first subtract the project's indirection mechanisms, or it will confidently report the framework's own dispatch as dead code.
