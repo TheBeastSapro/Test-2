@@ -266,6 +266,32 @@
         {{ tells.get("words", 0) }} words, rhythm
         {{ '%.2f'|format(tells.get("rhythm", 0)) }}.</p>
     {% endif %}
+
+    {# What the research stands behind. Ungrounded is not the same as false — a script
+       may legitimately say something the research did not reach — so this reports and
+       the person decides, which is what the gate is for. #}
+    {% set ground = out.get("grounding") or {} %}
+    {% if ground.get("findings") %}
+      <div class="banner mt-6" style="border-color:var(--warn)">
+        <b>{{ ground["findings"]|length }} assertion(s) the research does not support</b>
+        <span class="muted">· {{ ground.get("supported", 0) }} of
+          {{ ground.get("checked", 0) }} grounded, from
+          {{ ground.get("claims_available", 0) }} verified claim(s)</span>
+        {% for item in ground["findings"][:8] %}
+          <div class="beat-row">
+            <div class="beat-head">{{ item.kind }}
+              <span class="muted">· {{ item.token }}</span></div>
+            <p class="mono t-sm">“{{ item.sentence }}”</p>
+          </div>
+        {% endfor %}
+        <p class="muted prose t-sm">A figure the research did not reach is not
+          automatically wrong — but it is not sourced either, and this is the last gate
+          before it is voiced.</p>
+      </div>
+    {% elif ground.get("checked") %}
+      <p class="muted prose t-sm m-0">All {{ ground["checked"] }} checkable assertion(s)
+        appear in the research.</p>
+    {% endif %}
     <dl class="kv">
       <dt>Title</dt><dd>{{ out.get("title", "—") }}</dd>
       <dt>Length</dt>

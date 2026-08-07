@@ -77,7 +77,23 @@ TRICOLON = re.compile(
     r"\b[\w'-]+(?:\s+[\w'-]+){0,3},\s+[\w'-]+(?:\s+[\w'-]+){0,3},\s+(?:and|or)\s+",
     re.I)
 
-_SENTENCE = re.compile(r"[^.!?]+[.!?]*")
+#: Sentence boundaries, ignoring the full stops that are not ones.
+#:
+#: The naive `[^.!?]+[.!?]*` splits "$2.4 million" into "$2" and ".4 million" — which
+#: made every decimal in a script two sentences, wrecked the rhythm statistic on any
+#: script containing money or measurements, and hid the figure itself from the
+#: grounding check, because "$2" is a trivial number and ".4" no longer parsed as one.
+#: Found by a figure that should have been flagged and silently was not.
+#:
+#: So: a full stop between two digits is consumed as ordinary text rather than treated
+#: as a boundary. Deliberately only that case — abbreviations would need a word list to
+#: keep current, and this is a splitter for narration, not a parser for prose in general.
+#: Two details that each cost a wrong attempt. Python's lookbehind must be fixed width,
+#: so the digit before the point is matched rather than looked behind at. And the decimal
+#: branch has to come FIRST: alternation is ordered, so with `[^.!?]` leading it the digit
+#: is consumed before the decimal branch is ever tried, leaving the cursor on the point
+#: with nothing left to match — a fix that reads correctly and changes nothing.
+_SENTENCE = re.compile(r"(?:\d\.(?=\d)|[^.!?])+[.!?]*")
 
 
 @dataclass

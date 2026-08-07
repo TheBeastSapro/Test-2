@@ -339,8 +339,27 @@ async def script_node(ctx: NodeContext) -> NodeResult:
     # one cheap chance to disagree.
     from ..scripting.tells import check as check_tells
 
-    report = check_tells(" ".join(scene.get("narration", "") for scene in scenes))
+    narration = " ".join(scene.get("narration", "") for scene in scenes)
+    report = check_tells(narration)
     data["tells"] = report.as_dict()
+
+    # And whether the research stands behind the script's hard claims. `research_node`
+    # already logs the case it fears — "no verifiable claims found, the script will be
+    # written without factual assertions rather than with invented ones" — and that log
+    # is a hope, because nothing then read the script back. A model asked for a
+    # documentary supplies numbers, since the genre expects them, and a fabricated
+    # figure looks exactly like a sourced one.
+    from ..scripting.grounding import check as check_grounding
+
+    claims = (ctx.upstream_outputs.get("research") or {}).get("verified_claims") or []
+    grounded = check_grounding(narration, claims)
+    data["grounding"] = grounded.as_dict()
+    if grounded.findings:
+        ctx.log(f"{len(grounded.findings)} assertion(s) the research does not support "
+                f"({grounded.supported}/{grounded.checked} grounded)", level="warning")
+        for item in grounded.findings[:6]:
+            ctx.log(f"  {item.kind} {item.token!r}: {item.sentence[:90]}",
+                    level="warning")
     if report.tells:
         ctx.log(f"{len(report.tells)} writing tell(s) to look at — see the gate",
                 level="warning")
