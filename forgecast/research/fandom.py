@@ -232,15 +232,49 @@ def _template_fields(body: str) -> dict:
     return fields
 
 
+def heading_key(raw: str) -> str:
+    """A heading reduced to the words in it, lowercased.
+
+    Headings carry markup, and on some wikis they carry nothing else. The Doors wiki
+    writes `== {{icons|overview}} Appearance ==` and `== [[The Mines]] ==`; keyed raw,
+    those become `{{icons|overview}} appearance`, which matches no alias in
+    `BEAT_SECTIONS` and never will. That page is 76,000 characters of exactly the
+    sections this module wants and it read as zero beats — not a wiki this could not
+    handle, a wiki it silently declined to.
+
+    So the same stripping the body gets, plus a leading-punctuation trim for the
+    bullet and icon glyphs that survive it. Found by reading the headings two live
+    wikis actually return rather than the ones the fixtures were written from.
+    """
+    return re.sub(r"^[\W_]+", "", _strip(raw).replace("\n", " ")).strip().lower()
+
+
 def parse_sections(wikitext: str) -> dict:
-    """`== Heading ==` blocks, keyed by lowercased heading."""
+    """`== Heading ==` blocks, keyed by the heading's words, lowercased.
+
+    A section runs to the next heading *at its own level or shallower*, so it carries
+    its subsections. Stopping at the first `===` instead cost most of the prose on any
+    wiki that breaks a section down: the Doors page's `Behaviour` is one paragraph
+    followed by a subsection per area of the game, and reading only to the first
+    subheading returned the paragraph and left the behaviour on the floor.
+
+    First occurrence wins. Two headings can normalise to one key — that page carries
+    four separate `Appearance` headings, one per form — and the one written first is
+    the one the page leads with.
+    """
     out: dict[str, str] = {}
-    matches = list(re.finditer(r"^={2,}\s*(.+?)\s*={2,}\s*$", wikitext, flags=re.M))
+    matches = list(re.finditer(r"^(={2,6})\s*(.+?)\s*={2,6}\s*$", wikitext, flags=re.M))
     for position, match in enumerate(matches):
-        end = matches[position + 1].start() if position + 1 < len(matches) else len(wikitext)
+        depth = len(match.group(1))
+        end = len(wikitext)
+        for later in matches[position + 1:]:
+            if len(later.group(1)) <= depth:
+                end = later.start()
+                break
         body = _strip(wikitext[match.end():end])
-        if body:
-            out[match.group(1).strip().lower()] = body
+        key = heading_key(match.group(2))
+        if body and key and key not in out:
+            out[key] = body
     return out
 
 

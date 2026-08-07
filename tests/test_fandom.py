@@ -294,3 +294,72 @@ def test_the_tool_returns_the_gallery_and_says_size_does_not_pick():
     source = inspect.getsource(Studio.read_fandom)
     assert '"gallery"' in source
     assert "orders the candidates and does not pick" in source
+
+
+# --------------------------------------------------------------- headings with markup
+#
+# Both failures below were found the same way the two at the top of this file were: by
+# running the reader against a wiki it had not been written from. `doors-game` is 76,000
+# characters of exactly the sections this module wants, and it read as zero beats.
+
+# doors-game.fandom.com/wiki/Seek — heading shapes copied from the live page. Every
+# `==` heading on that wiki is prefixed with an icon template, and its sections break
+# down into per-area subsections.
+DOORS = """{{Infobox entity|name=Seek|image=Seek2.png|type=Hostile (Lethal)}}
+
+=={{icons|overview}} Appearance==
+Seek is an entity consisting of an amorphous, black, slime-like substance.
+
+=={{icons|behavior}} Behavior==
+Seek's chase is triggered on entering the room.
+
+==={{icons|hotel}} [[The Hotel]]===
+In the Hotel, Seek's chase begins at Door 30 and runs to Door 40.
+
+===[[The Mines]]===
+In the Mines, the chase is longer and the corridors branch.
+
+=={{icons|trivia}} Trivia==
+Seek's design was revealed before release.
+"""
+
+
+def test_a_heading_wrapped_in_markup_still_names_its_beat():
+    """`== {{icons|overview}} Appearance ==` is an Appearance section.
+
+    Keyed raw it becomes `{{icons|overview}} appearance`, which matches no alias in
+    BEAT_SECTIONS and never would. The Doors wiki writes every heading that way, so the
+    whole wiki read as a page with no readable sections — not a wiki the reader could
+    not handle, one it silently declined to.
+    """
+    sections = fandom.parse_sections(DOORS)
+
+    assert "appearance" in sections
+    assert "behavior" in sections
+    assert fandom.heading_key("{{icons|overview}} Appearance") == "appearance"
+    assert fandom.heading_key("[[The Mines]]") == "the mines"
+    assert set(fandom.beats_from(sections)) == {"appearance", "behaviour"}
+
+
+def test_a_section_carries_its_subsections():
+    """A `==` section runs to the next heading at its level or shallower.
+
+    Stopping at the first `===` returned Seek's one-line lead and left the twelve
+    thousand characters of actual behaviour on the floor — the narration beat is the
+    section *and* what it breaks down into.
+    """
+    behaviour = fandom.parse_sections(DOORS)["behavior"]
+
+    assert "chase is triggered" in behaviour
+    assert "Door 30" in behaviour       # the Hotel subsection
+    assert "corridors branch" in behaviour  # and the Mines one
+    # ...but not the next `==` section, which is a different beat entirely.
+    assert "design was revealed" not in behaviour
+
+
+def test_a_repeated_heading_keeps_the_one_the_page_leads_with():
+    """Pages carry a heading per form — Seek's has four Appearances. Whichever the dict
+    happened to end on is not a decision; the first is."""
+    twice = "==Appearance==\nThe first form is tall.\n\n==Appearance==\nThe second is not.\n"
+
+    assert fandom.parse_sections(twice)["appearance"] == "The first form is tall."
