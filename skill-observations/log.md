@@ -119,3 +119,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a reachability sweep to the review of any large or agent-generated codebase: list public symbols not referenced outside their own module, then subtract every indirection the project actually uses before reporting anything — decorator registries, `__all__` exports, string dispatch tables, subclass overrides of framework hooks, and plugin entry points. Confirm each survivor by tracing one concrete call path by hand. Report survivors ranked by the size of the capability stranded, not by symbol count.
 
 **Principle:** In a codebase assembled incrementally by agents, the likeliest serious defect is not broken code but unreachable code — each part correct, the edge between them never built. Reachability is a whole-program property and is invisible to file-scoped review, so it needs its own explicit pass. Any automated sweep for it must first subtract the project's indirection mechanisms, or it will confidently report the framework's own dispatch as dead code.
+
+### Observation 8: Prefer the cheapest evidence that answers the question, and check what the subject already publishes
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** An application needed to learn a reference video's structure in order to reproduce its format. Its implementation downloaded and decoded the video, which failed against a datacenter IP block.
+
+**Skill:** source-driven-development
+**Type:** open-source
+**Phase/Area:** Choosing a measurement method before implementing one
+
+**Issue:** The measurement path was built as full media acquisition and frame analysis — expensive, slow, dependent on a fetch that a platform can refuse, and it did refuse. Considerable effort went into working around the block (alternate extractor clients, format selectors, cookie advice the application had no mechanism to honour) before checking whether the quantity being measured was published directly. It was: the creator lists chapter timestamps in the video description, which yields the segment count and every segment boundary exactly, free, from a metadata call. Two videos read this way gave a complete structural profile — eight segments each, boundaries to the second, no cold open — that the decode path had never once produced. Worse, the answer this cheap path gives is strictly better: chapter marks are the creator's own declaration of where segments begin, whereas frame analysis infers boundaries and can be wrong. The expensive method was not merely a costlier route to the same answer, it was a less reliable one.
+
+**Suggested improvement:** Before building or debugging an expensive measurement path, enumerate what the subject already publishes about itself — metadata, descriptions, chapter marks, sitemaps, feeds, declared schemas — and check whether any of it answers the question directly. Where a cheap declarative source exists, make it the primary path and the expensive inference the fallback for subjects that lack it. When an error message advises a remedy (\"supply cookies\"), verify the codebase actually implements a way to supply it before treating that as the route forward.
+
+**Principle:** Reach for the cheapest evidence that answers the question, and check what the subject declares about itself before inferring it. A declared value is usually both cheaper and more authoritative than a measured one; time spent unblocking an expensive inference path is wasted when the answer is published in plain text. Effort spent circumventing a refusal should first be spent asking whether the refused resource was needed at all.
