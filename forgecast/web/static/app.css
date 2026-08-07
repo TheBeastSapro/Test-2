@@ -31,6 +31,12 @@
 [hidden] { display: none !important; }
 
 :root {
+  /* Tells the UA to paint its own widgets dark. accent-color only reaches the
+     checked fill of a checkbox — the empty box, the select popup and the
+     scrollbars stay in the light palette without this, which is why an unticked
+     filter read as a white chip on a near-black page. */
+  color-scheme: dark;
+
   --bg:        #08090a;
   --raise:     #0e1110;
   --raise-2:   #141817;
@@ -412,9 +418,31 @@ textarea { min-height: 84px; resize: vertical; }
    is a blue that appears nowhere else in this app — one stray accent is enough to
    make a themed surface look half-finished. `accent-color` re-tints the native
    control without replacing it, so it keeps its own keyboard and screen-reader
-   behaviour. Range needs the same, hence the whole set rather than just boxes. */
+   behaviour. Range needs the same, hence the whole set rather than just boxes.
+
+   The width/padding reset matters more than it looks. The text-field skin above
+   selects on the bare `input` tag, so it was landing on boxes too — stretching
+   them to the full column and inflating them by 9px of padding, and handing them
+   a background the UA then ignored, which is why an unchecked box rendered as a
+   pale rectangle on a near-black page. Three templates had each worked around it
+   locally with `style="width:auto"`; the same defect three times is a sign the
+   rule was wrong, not the pages. */
 input[type="checkbox"], input[type="radio"], input[type="range"] {
   accent-color: var(--accent-2);
+  width: auto; padding: 0; background: none; border: none;
+}
+input[type="checkbox"], input[type="radio"] {
+  width: 15px; height: 15px; margin: 0; flex: none; cursor: pointer;
+}
+input[type="range"] { width: 100%; cursor: pointer; }
+
+/* A checkbox and its wording are one control, so the whole line is the label and
+   the whole line is the hit target. Written out twice by hand before this, which
+   is how the two ended up with different weights and different gaps. */
+label.check {
+  display: flex; align-items: center; gap: var(--s-4);
+  font-size: var(--t-md); color: var(--text); font-weight: 400;
+  margin: var(--s-5) 0 0; cursor: pointer;
 }
 /* A native file input renders as a full-width field with an unstyled OS button
    inside it — the one control on the page still wearing the platform's chrome.

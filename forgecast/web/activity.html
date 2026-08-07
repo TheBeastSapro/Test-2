@@ -28,9 +28,10 @@
   .log-filters { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
   .log-filters label { margin: 0 0 5px; }
   .log-filters select { min-width: 220px; }
-  .log-check { display: flex; align-items: center; gap: 7px; font-size: var(--t-md);
-               color: var(--text-2); padding-bottom: 9px; }
-  .log-check input { width: auto; }
+  /* `.check` carries the layout. This only says what is different about a
+     checkbox living in a filter bar: it sits on the row's baseline with the
+     selects rather than starting a new block under a label. */
+  label.log-check { margin: 0; padding-bottom: 9px; color: var(--text-2); }
 
   .log-call { border-bottom: 1px solid var(--line); }
   .log-call:last-child { border-bottom: 0; }
@@ -138,7 +139,7 @@
         {% endfor %}
       </select>
     </div>
-    <label class="log-check" for="failed">
+    <label class="check log-check" for="failed">
       <input type="checkbox" id="failed" name="failed" value="1"
              {{ 'checked' if failures_only }}>
       Failures only
