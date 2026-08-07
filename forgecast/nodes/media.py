@@ -15,6 +15,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from ..graph.engine import NodeContext, NodeResult, node_handler
+from ..prompts import cast
 from ..prompts import moves as camera_moves
 from ..providers import ProviderError, VideoProvider
 from ..providers.media import (
@@ -368,6 +369,24 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
             for s in scenes
         ],
     )
+    # Who has to look the same in every shot they appear in. The script stage already
+    # worked this out and wrote it to `script.cast` — and until now nothing downstream
+    # read it. Forgecast computed the locked likenesses, logged "cast locked: N recurring
+    # faces", saved them to disk, and then planned and generated every shot without them.
+    # The one thing the module exists to prevent is a second, contradictory description
+    # of a recurring character, and that is exactly what a planner with no cast writes.
+    #
+    # `script["cast"]` is the *built* cast, not the planner's raw answer: the script node
+    # overwrites its own key with `company.as_dict()` at content.py:213. Handing that
+    # straight back to `build` produces a cast of two characters called "characters" and
+    # "walk_ons", which is what the first version of this did and what its test caught.
+    # `Character.as_dict` emits name, description and scenes, so the character list is
+    # already a shape `build` accepts — it is the wrapper around it that is not.
+    stored = script.get("cast")
+    raw = stored.get("characters") if isinstance(stored, dict) else stored
+    company = cast.build(raw, scenes)
+    block = cast.planner_block(company)
+
     data, credits, provider = await ask_json(
         ctx,
         role="Turn the script into a shot list a generation model can execute.",
@@ -376,10 +395,20 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
         # The camera vocabulary is appended rather than written into the constant, so
         # a move added to the catalogue reaches the planner without anyone remembering
         # to update a second copy of the list.
+        #
+        # The cast goes in the same way and for the same reason, and it goes to the
+        # planner as well as onto the prompt afterwards. Stamping alone would leave the
+        # planner free to write "an older woman looks up" for someone locked as a
+        # seventy-year-old — the prompt then carries two descriptions of one person and
+        # the model resolves the contradiction however it likes.
         instructions=(f"{BROLL_INSTRUCTIONS}\n\nCAMERA MOVES\n"
-                      f"{camera_moves.planner_vocabulary()}"),
+                      f"{camera_moves.planner_vocabulary()}"
+                      + (f"\n\n{block}" if block else "")),
         max_tokens=8192,
     )
+    if company:
+        ctx.log(f"planning to {len(company.characters)} locked "
+                f"{'likeness' if len(company.characters) == 1 else 'likenesses'}")
 
     by_index = {}
     for shot in data.get("shots") or []:
@@ -460,6 +489,11 @@ async def broll_plan_node(ctx: NodeContext) -> NodeResult:
 
         prompt = str(planned.get("prompt") or scene.get("visual_prompt") or "").strip() \
             or f"cinematic b-roll: {scene['narration'][:120]}"
+        # The locked likenesses for the people actually in this scene, appended to the
+        # prompt the planner wrote. Only this scene's characters: every locked face costs
+        # words in every prompt carrying it, and a prompt holding six descriptions has
+        # pushed its own subject out of the model's attention.
+        prompt = cast.stamp(prompt, company.in_scene(scene["index"]))
         for plate_index in range(plates):
             shots.append(
                 {
