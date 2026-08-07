@@ -283,3 +283,100 @@ def test_an_operator_directed_clip_is_recorded_in_its_own_section(tmp_path: Path
     assert "Operator-directed footage" in text
     assert "licence not established here" in text
     assert any("operator-directed" in line for line in ctx.logs)
+
+
+# ------------------------------------------------- choosing free footage over paying
+
+def _clip(**over):
+    base = dict(url="https://x.test/a.mp4", title="undersea cable on the seabed",
+                creator="someone", licence="pexels", source="pexels",
+                landing_url="https://x.test/a", seconds=12.0, width=1920,
+                tags=["undersea", "cable", "seabed"])
+    base.update(over)
+    return footage.FootageClip(**base)
+
+
+def test_a_safe_relevant_clip_is_preferred_to_generating():
+    chosen, why = footage.best_for([_clip()], query="undersea cable seabed",
+                                   seconds=6.0, width=1280)
+    assert chosen is not None
+    assert "pexels" in why
+
+
+def test_an_unsafe_clip_is_never_chosen_however_well_it_matches():
+    """A perfect match under a licence a monetised edit breaches is still refused."""
+    for licence in ("by-nc", "by-nd", "by-sa", ""):
+        chosen, why = footage.best_for([_clip(licence=licence)],
+                                       query="undersea cable seabed",
+                                       seconds=6.0, width=1280)
+        assert chosen is None, f"{licence!r} must not be usable"
+        assert "monetised" in why
+
+
+def test_an_operator_clip_is_never_chosen_by_the_free_lane():
+    """The operator lane is a human decision; it must not be reached by a search."""
+    chosen, _ = footage.best_for([_clip(operator_directed=True, licence="cc0")],
+                                 query="undersea cable seabed", seconds=6.0, width=1280)
+    assert chosen is None
+
+
+def test_a_clip_that_does_not_depict_the_subject_loses_to_generation():
+    """The "Blue Grass Chemical Agent-Destruction" failure, in the footage lane."""
+    stray = _clip(title="Blue Grass Chemical Agent-Destruction Pilot Plant",
+                  tags=["kentucky", "munitions"])
+    chosen, why = footage.best_for([stray], query="undersea cable seabed",
+                                   seconds=6.0, width=1280)
+    assert chosen is None
+    assert "generating is more likely to be right" in why
+
+
+def test_a_clip_narrower_than_the_frame_is_refused():
+    chosen, why = footage.best_for([_clip(width=640)], query="undersea cable seabed",
+                                   seconds=6.0, width=1280)
+    assert chosen is None
+    assert "narrower" in why
+
+
+def test_a_clip_shorter_than_the_beat_is_refused():
+    chosen, why = footage.best_for([_clip(seconds=2.0)], query="undersea cable seabed",
+                                   seconds=6.0, width=1280)
+    assert chosen is None
+    assert "shorter" in why
+
+
+def test_unknown_dimensions_are_not_a_disqualification():
+    """NASA and Archive report neither width nor duration. Unknown is not too small."""
+    chosen, _ = footage.best_for([_clip(width=0, seconds=0.0)],
+                                 query="undersea cable seabed", seconds=6.0, width=1280)
+    assert chosen is not None
+
+
+def test_nothing_found_says_so_rather_than_failing_quietly():
+    chosen, why = footage.best_for([], query="anything", seconds=6.0, width=1280)
+    assert chosen is None
+    assert "no footage source answered" in why
+
+
+def test_a_clip_owing_no_credit_wins_a_tie():
+    owing = _clip(licence="by", url="https://x.test/owing.mp4")
+    free = _clip(licence="cc0", url="https://x.test/free.mp4")
+    chosen, _ = footage.best_for([owing, free], query="undersea cable seabed",
+                                 seconds=6.0, width=1280)
+    assert chosen.url == "https://x.test/free.mp4"
+
+
+def test_the_fetch_reference_prefers_a_landing_page_over_a_directory():
+    """Archive's `url` is a download directory; yt-dlp has an extractor for the page."""
+    archive = _clip(url="https://archive.org/download/thing",
+                    landing_url="https://archive.org/details/thing", licence="publicdomain")
+    assert archive.fetch_reference() == "https://archive.org/details/thing"
+    assert _clip().fetch_reference() == "https://x.test/a.mp4"
+
+
+def test_relevance_is_one_implementation_shared_with_the_still_lane():
+    from forgecast.providers import stock
+    clip = _clip()
+    asset = stock.StockAsset(url="", title=clip.title, creator="", licence="cc0",
+                             licence_url="", attribution="", source="", landing_url="",
+                             tags=list(clip.tags))
+    assert clip.relevance_to("undersea cable seabed") == asset.relevance_to("undersea cable seabed")

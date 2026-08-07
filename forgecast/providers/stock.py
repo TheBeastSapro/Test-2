@@ -62,28 +62,7 @@ class StockAsset:
     tags: list[str] = field(default_factory=list)
 
     def relevance_to(self, query: str) -> tuple[str, float]:
-        """How much of the query this asset's own words actually account for.
-
-        Measured, not inferred. Grading by how far the query had to be relaxed turned
-        out to be a poor proxy: Openverse returns *something* for almost any three
-        words, so a lightly-shortened query still produced "Blue Grass Chemical
-        Agent-Destruction" for a film about undersea cables. Comparing the query
-        against the asset's title and tags catches that, because a genuinely relevant
-        result shares vocabulary with the request and an irrelevant one does not.
-        """
-        wanted = {word for word in query.lower().split() if len(word) > 2}
-        if not wanted:
-            return "weak", 0.0
-        haystack = f"{self.title} {' '.join(self.tags)}".lower()
-        hits = sum(1 for word in wanted if word in haystack)
-        ratio = hits / len(wanted)
-        if ratio >= 0.6:
-            return "exact", ratio
-        if ratio >= 0.34:
-            return "close", ratio
-        if ratio > 0:
-            return "relaxed", ratio
-        return "weak", 0.0
+        return relevance(query, title=self.title, tags=self.tags)
 
     @property
     def needs_attribution(self) -> bool:
@@ -189,7 +168,7 @@ class OpenverseProvider(ImageProvider):
         # Each rung gives up one constraint: length first, then the aspect filter,
         # then all but the most distinctive word. Failing at the top rung and stopping
         # was leaving perfectly findable subjects unillustrated.
-        query = _to_query(prompt)
+        query = to_query(prompt)
         words = query.split()
         attempts: list[tuple[str, bool]] = [(query, True)]
         if len(words) > 3:
@@ -331,12 +310,49 @@ class OpenverseProvider(ImageProvider):
         return "\n".join(lines)
 
 
-def _to_query(prompt: str) -> str:
+def relevance(query: str, *, title: str = "", tags: list[str] | None = None
+              ) -> tuple[str, float]:
+    """How much of the query a result's own words actually account for.
+
+    Measured, not inferred. Grading by how far the query had to be relaxed turned out to
+    be a poor proxy: Openverse returns *something* for almost any three words, so a
+    lightly-shortened query still produced "Blue Grass Chemical Agent-Destruction" for a
+    film about undersea cables. Comparing the query against the result's title and tags
+    catches that, because a genuinely relevant result shares vocabulary with the request
+    and an irrelevant one does not.
+
+    Module-level rather than a method, because footage answers the same question about
+    the same two fields. Two implementations of "does this depict the subject" would
+    differ the first time either was tuned, and then a clip and a still would disagree
+    about the same search — with the clip's answer deciding whether money is spent.
+    """
+    wanted = {word for word in query.lower().split() if len(word) > 2}
+    if not wanted:
+        return "weak", 0.0
+    haystack = f"{title} {' '.join(tags or [])}".lower()
+    hits = sum(1 for word in wanted if word in haystack)
+    ratio = hits / len(wanted)
+    if ratio >= 0.6:
+        return "exact", ratio
+    if ratio >= 0.34:
+        return "close", ratio
+    if ratio > 0:
+        return "relaxed", ratio
+    return "weak", 0.0
+
+
+def to_query(prompt: str) -> str:
     """Turn a generative prompt into a search term.
 
     Generative prompts are long and full of camera and lighting language that a stock
     index cannot use. Stripping it to concrete nouns is the difference between results
     and none.
+
+    Public, because the footage lane searches on the same prompts. The alternative was
+    asking the shot planner for a `search_query` field beside each prompt, which doubles
+    the planning tokens for a beat and creates a second description of one shot that can
+    drift from the prompt the generator actually uses — and when the two disagree, the
+    free lane searches for one thing while the fallback generates another.
     """
     noise = {
         "cinematic", "establishing", "shot", "illustrating", "moody", "lighting",

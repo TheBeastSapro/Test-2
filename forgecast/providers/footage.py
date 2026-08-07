@@ -142,6 +142,31 @@ class FootageClip:
     def needs_attribution(self) -> bool:
         return self.licence.lower() in ATTRIBUTION_REQUIRED or self.operator_directed
 
+    def relevance_to(self, query: str) -> tuple[str, float]:
+        """Whether this clip depicts what was asked for, on its own words.
+
+        Delegates to `stock.relevance` rather than repeating it. Two implementations of
+        "does this depict the subject" would differ the first time either was tuned, and
+        then a clip and a still would disagree about the same search — with the clip's
+        answer deciding whether money is spent.
+        """
+        from .stock import relevance
+        return relevance(query, title=self.title, tags=self.tags)
+
+    def fetch_reference(self) -> str:
+        """What to hand `vision.acquire.acquire` to get the file.
+
+        The landing page is preferred over the raw `url` for sources whose `url` is not
+        a media file — Internet Archive's is a download *directory* and NASA's is a
+        collection manifest. `acquire` refuses a non-media URL through its direct path
+        and hands anything http to yt-dlp, which has an extractor for archive.org
+        details pages and none for a directory listing.
+        """
+        media_suffixes = (".mp4", ".mov", ".webm", ".m4v", ".mkv")
+        if self.url.lower().split("?")[0].endswith(media_suffixes):
+            return self.url
+        return self.landing_url or self.url
+
     def credit_line(self) -> str:
         """One line for `attribution.md`. Never empty for a clip that needs one.
 
@@ -528,3 +553,78 @@ def attribution_markdown(clips: list[FootageClip]) -> str:
         )
         lines.extend(f"- {clip.credit_line()}" for clip in directed)
     return "\n".join(lines)
+
+
+# ----------------------------------------------------------------------- choosing one
+
+#: How well a clip must match before it is preferred to generating the shot.
+#:
+#: Higher than the still lane's bar, and the asymmetry is the point rather than taste.
+#: A still that matches loosely still beats the still lane's alternative, which is a
+#: captioned colour card. A clip that matches loosely loses to *generation*, which will
+#: depict the prompt exactly. So the free lane only wins when it is actually right, and
+#: "cheaper" is never on its own a reason to show the wrong picture.
+#:
+#: `close` is `stock.relevance`'s existing band boundary at ratio >= 0.34, not a new
+#: number invented here.
+MIN_GRADE = ("exact", "close")
+
+
+def best_for(
+    clips: list[FootageClip],
+    *,
+    query: str,
+    seconds: float = 0.0,
+    width: int = 0,
+) -> tuple[FootageClip | None, str]:
+    """The clip worth using instead of generating this shot, and why not when there is none.
+
+    Three tests, in the order they cost: may we use it, does it depict the subject, is it
+    big enough and long enough. Each is an existing measurement — nothing here is a new
+    judgement about footage, only about whether to prefer it.
+
+    A dimension or duration of zero means *unknown*, not disqualified. NASA and Internet
+    Archive report neither, and refusing every clip whose length nobody wrote down would
+    silently reduce the free lane to the two vendors that fill the field in. Unknown
+    duration is re-checked against the real file after download, where it is knowable.
+
+    Returns the reason as well as the clip so the planner can say why a beat stayed
+    paid — a free lane that silently declines is indistinguishable from one that never ran.
+    """
+    if not clips:
+        return None, "no footage source answered"
+
+    safe = [clip for clip in clips if clip.commercially_safe]
+    if not safe:
+        return None, f"{len(clips)} found, none usable in a monetised edit"
+
+    big_enough = [
+        clip for clip in safe
+        # `width` is the render width; a clip narrower than the frame would be upscaled.
+        if not (width and clip.width and clip.width < width)
+    ]
+    if not big_enough:
+        return None, f"{len(safe)} usable, all narrower than the {width}px frame"
+
+    long_enough = [
+        clip for clip in big_enough
+        # A tenth of slack: a clip a few frames short of the beat is trimmed to fit by
+        # the same path that trims a long one, and refusing it would reject a good match
+        # over rounding.
+        if not (seconds and clip.seconds and clip.seconds < seconds * 0.9)
+    ]
+    if not long_enough:
+        return None, f"{len(big_enough)} usable, all shorter than the {seconds:.1f}s beat"
+
+    graded = [(clip, *clip.relevance_to(query)) for clip in long_enough]
+    matching = [(clip, grade, ratio) for clip, grade, ratio in graded if grade in MIN_GRADE]
+    if not matching:
+        best = max(graded, key=lambda row: row[2], default=(None, "weak", 0.0))
+        return None, (f"{len(long_enough)} usable, best only matched {best[1]} "
+                      f"({best[2]:.2f}) — generating is more likely to be right")
+
+    # Ties go to the clip that owes no credit, then to the wider one — `find`'s own sort
+    # rule, applied again here because the filters above may have changed the order.
+    matching.sort(key=lambda row: (-row[2], row[0].needs_attribution, -row[0].width))
+    chosen, grade, ratio = matching[0]
+    return chosen, f"{chosen.source} match {grade} ({ratio:.2f})"
