@@ -76,6 +76,10 @@ _READ_ONLY = (
     # supposed to happen BEFORE the expensive ones, and a planning step the
     # agent has to ask permission for is a planning step it skips.
     "plan_segment",
+    # Tallying what a video's comments asked for. Pure counting over text the
+    # caller already has — no fetch, no spend — and it is the step that should
+    # happen before a topic is chosen for a channel that has an audience.
+    "audience_requests",
     # Which engine will actually draw the motion scenes, per channel. Reading it is how
     # the agent can answer "why does this still look like ffmpeg" without changing
     # anything.
@@ -354,6 +358,21 @@ def build_server(studio):
             args.get("wiki") or "", args.get("entity") or "",
             seconds=float(args.get("seconds") or 62.0),
             gags=args.get("gags") or []))
+
+    @tool("audience_requests",
+          "Tally what a video's comments actually asked for — which creature, topic or "
+          "follow-up is being requested by name, how often, and with how many likes.\n\n"
+          "Fetch the comments with whatever comment tool you have, then pass them here. "
+          "This counts; it does not fetch. It returns names with counts and the comments "
+          "they came from, so the result is checkable rather than a plausible summary.\n\n"
+          "Worth doing before choosing a topic for a channel that has an audience: on the "
+          "format this was built against, the comment section IS the topic backlog — the "
+          "video asks which creature to cover next and the comments answer by name.\n\n"
+          "Counts are not a ranking. What to make next is the operator's call.\n\n"
+          "Read-only, spends nothing.",
+          {"comments": list})
+    async def audience_requests(args):
+        return _text(studio.audience_requests(args.get("comments") or []))
 
     # ------------------------------------------------------------------- research
 

@@ -1247,6 +1247,35 @@ class Studio:
                     "anything is made — that is the whole point of having one.",
         }
 
+    def audience_requests(self, comments: list) -> dict:
+        """What a video's comments asked for, tallied.
+
+        Takes the comments rather than fetching them, because the agent already has a
+        tool that can — and a fifth thing in this app that shells out to yt-dlp would be
+        a fourth copy of the same subprocess call. Hand it whatever a comment tool
+        returned.
+
+        This is the reference format's actual growth loop, and it was the one part of it
+        nothing here could see: that channel ends every video asking which creature to
+        cover next, its comments answer by name, and two of the names are already
+        published videos. `research/outliers.py` reads comment counts for an engagement
+        ratio and nothing has ever read the text.
+        """
+        from ..research.requests import read
+
+        rows = list(comments or [])
+        if not rows:
+            return {"error": "No comments passed. Fetch them first, then hand them "
+                             "here — this tallies, it does not fetch."}
+        backlog = read(rows)
+        return {
+            **backlog.as_dict(),
+            "summary": backlog.as_text(),
+            "note": "Counts, not a ranking. A name asked for four hundred times is a "
+                    "strong signal and still not an instruction — what to make next is "
+                    "the operator's call.",
+        }
+
     def use_clip(self, run_id: int, scene_index: int, source: str, *,
                  start: float = 0.0, seconds: float = 0.0, note: str = "") -> dict:
         """Put a clip the operator chose into one scene of a run.
