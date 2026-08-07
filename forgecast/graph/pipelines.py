@@ -116,6 +116,32 @@ def animation_reserve(
     return worst_setups * dearest_sample, worst_shots
 
 
+def burns_captions(render_spec: dict | None) -> bool:
+    """Whether this channel burns the narration onto the picture.
+
+    Read off the learned style rather than configured, like every other decision that
+    can be measured. `EditingStyle` has carried `captions` since it was first learned —
+    it is a majority vote over what the reference's own frames do — and
+    `to_render_spec` has always emitted it. Nothing read it. Both pipelines pinned
+    `params={"subtitles": True}`, so a reference measured as caption-free still got
+    captions burned over it, and the measurement was recorded and overruled in the same
+    run.
+
+    That is not a small stylistic default. On the format this was found against, the
+    screen carries the subject's name, its dimensions, and speech-bubble jokes, and the
+    voice carries the prose; burning a narration track across the lower third covers all
+    three. A channel measured as caption-free is telling you where its screen budget
+    goes.
+
+    Absent a learned style there is no measurement to honour, and captions stay on —
+    that is the safer default for an unmeasured channel and it is what every existing
+    run did.
+    """
+    if not render_spec:
+        return True
+    return bool(render_spec.get("captions", True))
+
+
 def faceless_longform(
     *, target_seconds: int = 480, use_avatar: bool = False, publish: bool = True,
     standard_model: str = "", hero_model: str = "", sourcing: dict | None = None,
@@ -295,7 +321,7 @@ def faceless_longform(
             type="render",
             title="Render final video",
             depends_on=tuple(render_deps),
-            params={"subtitles": True},
+            params={"subtitles": burns_captions(render_spec)},
             max_attempts=2,
         )
     )
@@ -430,7 +456,7 @@ def faceless_shorts(*, target_seconds: int = 45, publish: bool = True,
         NodeSpec(
             key="render", type="render", title="Render vertical video",
             depends_on=("shots", "voice", "sound"),
-            params={"subtitles": True},
+            params={"subtitles": burns_captions(render_spec)},
             max_attempts=2,
         ),
         NodeSpec(

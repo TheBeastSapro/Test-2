@@ -75,6 +75,7 @@ import json
 from pathlib import Path
 
 from ..graph.engine import NodeContext, NodeResult, node_handler
+from ..graph.pipelines import burns_captions
 from ..providers import ProviderError
 from ..render import ffmpeg as ff
 from ..style.editing import HOOK_SECONDS, WritingBudget, writing_budget
@@ -284,10 +285,16 @@ async def hook_node(ctx: NodeContext) -> NodeResult:
         workdir=workdir,
         narration_path=narration_path,
         width=width, height=height, fps=fps,
-        # Burned, because the captions are part of what is being judged: a hook that
-        # reads well and captions badly is a hook that fails on the platform where most
-        # of it is watched muted.
-        subtitles=True,
+        # Captioned exactly as the finished video will be, because the captions are part
+        # of what is being judged: a hook that reads well and captions badly is a hook
+        # that fails on the platform where most of it is watched muted.
+        #
+        # It was pinned on, which made the argument backwards on a channel measured as
+        # caption-free. The operator approved an opening with a caption track, and the
+        # render then produced one without — so the one frame they were shown to judge
+        # was the one frame guaranteed not to match. A gate that previews something the
+        # run will not make is worse than no preview.
+        subtitles=burns_captions((ctx.channel.style_profile or {}).get("render_spec")),
     )
     length = await asyncio.to_thread(ff.ffprobe_duration, out_path)
     ctx.emit_artifact("video", out_path, "video/mp4", role="hook",

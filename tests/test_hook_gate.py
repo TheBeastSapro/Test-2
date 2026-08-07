@@ -187,12 +187,22 @@ def test_the_scene_length_comes_from_the_audio_rather_than_the_estimate():
     assert "spoken.duration_seconds" in source
 
 
-def test_captions_are_burned_because_they_are_part_of_what_is_judged():
-    """A hook that reads well and captions badly fails on the platform where most of it
-    is watched muted."""
+def test_the_hook_is_captioned_exactly_as_the_render_will_be():
+    """Captions are part of what is being judged — a hook that reads well and captions
+    badly fails on the platform where most of it is watched muted.
+
+    This used to assert `subtitles=True`, which was right for as long as every channel
+    burned captions. It stopped being right once the decision came off the reference:
+    on a channel measured as caption-free, pinning the hook on meant the operator
+    approved an opening with a caption track and the render produced one without, so
+    the single frame they were given to judge was the one guaranteed not to match. The
+    rule is not "burned" — it is "the same as the render".
+    """
     import inspect
 
-    assert "subtitles=True" in inspect.getsource(hook.hook_node)
+    source = inspect.getsource(hook.hook_node)
+    assert "subtitles=True" not in source
+    assert "subtitles=burns_captions(" in source
 
 
 def test_the_approval_is_made_against_what_it_commits_to():
