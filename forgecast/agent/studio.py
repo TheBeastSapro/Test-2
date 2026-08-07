@@ -1216,6 +1216,37 @@ class Studio:
                       "decision to use the art as the operator's.",
         }
 
+    async def plan_segment(self, wiki: str, entity: str, *, seconds: float = 62.0,
+                           gags: list | None = None) -> dict:
+        """The shot list for one entity's segment, before anything is rendered.
+
+        Reads the page and plans against it in one call, because the plan is only worth
+        as much as the assets it was written for — a shot list produced without knowing
+        how many pictures the page has is a guess with a table around it.
+
+        Returns the list as text as well as data. The text is the form a plan gets
+        argued with: a person can read twenty-one lines and say "the numbers are too
+        late" in seconds, and cannot do that to a render.
+        """
+        found = await self.read_fandom(wiki, entity)
+        if not found.get("found"):
+            return found
+
+        from ..edit.segment import plan as plan_segment_for
+
+        segment = plan_segment_for(
+            found, seconds=max(10.0, min(float(seconds or 62.0), 600.0)),
+            gags=[str(line) for line in (gags or []) if str(line).strip()],
+        )
+        return {
+            **segment.as_dict(),
+            "shot_list": segment.as_text(),
+            "attribution": found.get("attribution", ""),
+            "rights": found.get("rights", ""),
+            "note": "Nothing is rendered or fetched by this. Change the plan before "
+                    "anything is made — that is the whole point of having one.",
+        }
+
     def use_clip(self, run_id: int, scene_index: int, source: str, *,
                  start: float = 0.0, seconds: float = 0.0, note: str = "") -> dict:
         """Put a clip the operator chose into one scene of a run.

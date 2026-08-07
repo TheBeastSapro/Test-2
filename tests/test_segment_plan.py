@@ -161,3 +161,40 @@ def test_the_dict_and_the_text_describe_the_same_plan():
 
     assert payload["shot_count"] == len(payload["shots"]) == segment.shot_count
     assert isinstance(segment, Segment)
+
+
+# ── reachability ────────────────────────────────────────────────────────────────
+#
+# The planner is only worth having if the agent reaches for it before the expensive
+# stages. A planning step nothing can call is a planning step that does not happen.
+
+def test_the_planner_is_reachable_as_an_agent_tool():
+    from forgecast.agent import tools
+
+    assert "plan_segment" in tools.ALL_TOOLS
+    assert "plan_segment" in tools._READ_ONLY
+
+
+def test_the_tool_tells_the_agent_to_plan_before_making_anything():
+    """The description is the only thing that puts this step in the right order. If it
+    reads as an optional report, it gets called after the shots exist, which is exactly
+    when a plan is worthless."""
+    import inspect
+
+    from forgecast.agent import tools
+
+    source = inspect.getsource(tools.build_server)
+    block = source[source.index('@tool("plan_segment"'):source.index("async def plan_segment")]
+
+    assert "BEFORE anything is rendered" in block
+    assert "spends nothing" in block
+
+
+def test_the_studio_hands_back_something_a_person_can_argue_with():
+    import inspect
+
+    from forgecast.agent.studio import Studio
+
+    source = inspect.getsource(Studio.plan_segment)
+    assert '"shot_list"' in source
+    assert "attribution" in source, "a plan built on somebody's art carries its credit"

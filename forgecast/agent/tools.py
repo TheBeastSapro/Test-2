@@ -71,6 +71,11 @@ _READ_ONLY = (
     # has to ask permission for is a check it learns to skip. Nothing it returns is
     # cleared for use, and the rights position rides on every result in words.
     "read_fandom",
+    # Writing the shot list. Reads a page and does arithmetic; renders,
+    # fetches and spends nothing. Pre-allowed because it is the step that is
+    # supposed to happen BEFORE the expensive ones, and a planning step the
+    # agent has to ask permission for is a planning step it skips.
+    "plan_segment",
     # Which engine will actually draw the motion scenes, per channel. Reading it is how
     # the agent can answer "why does this still look like ffmpeg" without changing
     # anything.
@@ -328,6 +333,27 @@ def build_server(studio):
     async def read_fandom(args):
         return _text(await studio.read_fandom(args.get("wiki") or "",
                                               args.get("entity") or ""))
+
+    @tool("plan_segment",
+          "Write the shot list for one entity's segment BEFORE anything is rendered — "
+          "which picture carries which beat, how long each shot holds, where the name "
+          "and the numbers land, which shot is worth animating, and where a gag can "
+          "go.\n\n"
+          "Use this before generating or fetching anything for a canon segment. An "
+          "editor writes the shot list first because deciding it on paper is cheap and "
+          "deciding it in a timeline is not, and because a plan can be read and argued "
+          "with in seconds while a render cannot. It reads the wiki page and plans "
+          "against the pictures that actually exist, so it will tell you when a page is "
+          "too thin to carry a segment instead of producing a slideshow.\n\n"
+          "`gags` are speech-bubble lines. They land on the story beat and never on the "
+          "shot carrying the name card.\n\n"
+          "Read-only, renders nothing, fetches nothing, spends nothing.",
+          {"wiki": str, "entity": str, "seconds": float, "gags": list})
+    async def plan_segment(args):
+        return _text(await studio.plan_segment(
+            args.get("wiki") or "", args.get("entity") or "",
+            seconds=float(args.get("seconds") or 62.0),
+            gags=args.get("gags") or []))
 
     # ------------------------------------------------------------------- research
 
