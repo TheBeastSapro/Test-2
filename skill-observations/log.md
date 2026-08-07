@@ -199,3 +199,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When a shared fixture populates an optional field, check what the real creation paths do with it — if they leave it empty, the fixture is asserting a configuration the product may never be in, and at least one end-to-end test should be built from the constructor a user actually reaches rather than from the fixture. More generally: before trusting an end-to-end suite as coverage of "it works", run the thing by hand once from the state a new install is in. Treat "all tests pass" as evidence about the paths the fixtures describe, not about the paths users take. When a defect is found this way, search for other copies of the same guard before declaring it fixed — a rule worth stating once is usually stated twice.
 
 **Principle:** Fixtures encode assumptions, and the most expensive ones are the fields they helpfully fill in. A suite can be green, thorough, and entirely about a configuration no user is in — so the first run should be done by hand, from the default state, before the suite is believed.
+
+### Observation 13: A graceful fallback makes a broken wiring indistinguishable from a working one
+
+**Status:** OPEN
+**Date:** 2026-08-07
+**Session context:** Connecting several measured-but-unread settings to the code that should act on them, in a codebase whose lookups are all written to degrade rather than raise.
+
+**Skill:** debugging-and-error-recovery
+**Type:** open-source
+**Phase/Area:** Verifying that a newly connected path actually took effect
+
+**Issue:** Three times in one session I wired a measurement to its consumer, ran the code, got a result with entirely plausible numbers, and had produced nothing. Each time the cause was a well-written fallback. A lookup documented as "never raises — a name from a newer build should give the quietest possible output rather than stopping work that has already been paid for" returned the default when handed a name from a *different vocabulary*, so the new path produced byte-identical output to the old one. The output's duration, size and structure were all correct; only the pixels differed, and they differed by being unchanged. The same shape appeared in a settings lookup that defaulted to "on" and a section matcher that fell back to a sibling alias — in the last case the live sample I was testing against happened to contain the sibling, so the code appeared to work for a reason unrelated to what I had written, and only a hand-built fixture exposed it.
+
+**Suggested improvement:** When connecting a new path through a lookup that degrades rather than raises, assert on the *effect*, not on the call succeeding or on the shape of the result. Sample the output where the change should show — the pixels at the boundary, the field on the row, the branch in the log — and assert it differs from the unchanged case. Where two components use different vocabularies for the same concept, the mapping between them is the thing to test first, because a defaulting lookup will silently absorb every unmapped name. And treat a passing check against one live sample as untested until a second sample or a hand-built fixture agrees: a fallback can be satisfied by a coincidence in the data.
+
+**Principle:** Graceful degradation is correct behaviour and it destroys the signal that tells you whether new code ran. The more carefully a lookup is written to never fail, the less its success proves — so a newly connected path must be verified by the difference it makes, never by the absence of an error.
