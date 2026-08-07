@@ -142,6 +142,13 @@
           <span class="status {{ item.status.value }}" style="padding:0 6px;font-size:var(--t-2xs)"
                 title="{{ item.status.value.replace('_', ' ') }}"
                 >{{ short.get(item.status.value, item.status.value) }}</span>
+          {# The run's own number, because the topic is not an identifier. Iterating on a
+             channel means several runs of one topic, and this rail rendered five rows
+             that all read "Why deep-sea cables keep …" — a list where every entry looks
+             the same is a list nobody can pick from, and the status chip does not
+             separate them either once two runs are at the same stage. #}
+          <span class="mono" style="color:var(--faint);font-size:var(--t-2xs);flex:none"
+                >{{ item.id }}</span>
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ item.topic }}</span>
         </a>
       {% endfor %}

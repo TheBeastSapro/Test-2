@@ -374,7 +374,13 @@ main.flush { padding: 0; max-width: none; height: 100vh; }
 }
 .card + .card { margin-top: 14px; }
 
-.grid { display: grid; gap: 14px; }
+/* Cards size to their own content instead of to the tallest one in the row. Grid
+   stretches items by default, which on a two-up of a short card and a tall one leaves
+   the short one with a void under its last control — several hundred pixels of nothing
+   that reads as a panel that failed to load rather than as a card that is simply
+   shorter. Rows that genuinely want matched heights say so with `.grid.even`. */
+.grid { display: grid; gap: 14px; align-items: start; }
+.grid.even { align-items: stretch; }
 .grid.two { grid-template-columns: 1fr 1fr; }
 .grid.three { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 900px) { .grid.two, .grid.three { grid-template-columns: 1fr; } }
