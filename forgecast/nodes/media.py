@@ -502,6 +502,30 @@ def _stand_subject(ctx: NodeContext, shot: dict, slug: str, subject: Path,
     if not shot.get("composite") or plate_path is None:
         return subject
 
+    # The shots the planner rationed motion to. `animate` has been on the shot list
+    # since the planner was written and nothing read it, so the ration decided nothing
+    # — every canon shot was a still whatever the plan said.
+    #
+    # The subject moves and the plate does not, which is the reference's own
+    # construction and the thing a whole-frame push cannot fake: push the frame and it
+    # reads as a camera move, move the cut-out alone and it reads as the creature. The
+    # phase is per shot so two cuts of one creature never start the same move together.
+    if shot.get("animate"):
+        from ..render.layered import drift_clip
+
+        seconds = float(shot.get("seconds") or 3.0)
+        try:
+            return drift_clip(
+                subject, plate_path, ctx.path_for(f"{slug}_drift.mp4"),
+                seconds=seconds, width=width, height=height,
+                phase=float(int(shot.get("plate_index") or 0)) * 1.7,
+            )
+        except Exception as exc:
+            # Down to the still, never out. A shot that would have moved and is instead
+            # held is a slightly duller video; a missing shot is a hole.
+            ctx.log(f"{slug}: {shot.get('asset')} could not be animated ({exc}) — "
+                    f"holding it as a still", level="warning")
+
     out = ctx.path_for(f"{slug}_composite.png")
     try:
         place(subject, plate_path, out, width=width, height=height)
@@ -1372,8 +1396,15 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                                             width, height)
             asset_path = await asyncio.to_thread(
                 _stand_subject, ctx, shot, slug, asset_path, plate_path, width, height)
+            # Whatever it actually came out as. A shot the planner marked for motion is
+            # a clip, and labelling it an image would send `finalize` looking for the
+            # attribution on the wrong kind — the credits file collects a sourced
+            # shot's line off the "video" artifact, which is where this asset's
+            # unresolved licence has to appear.
+            moved = asset_path.suffix.lower() == ".mp4"
             ctx.emit_artifact(
-                "image", asset_path, "image/png",
+                "video" if moved else "image",
+                asset_path, "video/mp4" if moved else "image/png",
                 scene_index=index, plate_index=plate_index, role="shot",
                 prompt=prompt[:300], seconds=seconds,
                 # "not stated" travels rather than being dropped. These wikis return no

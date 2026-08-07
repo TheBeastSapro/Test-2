@@ -182,3 +182,87 @@ def place(subject_path: Path | str, plate_path: Path | str, out_path: Path | str
     return Placed(path=str(target), width=width, height=height,
                   subject_box=placed_box,
                   layers=[str(plate_path), str(subject_path)])
+
+
+# --------------------------------------------------------------------- layer motion
+#
+# `Placed.subject_box` has carried a docstring since this module was written saying the
+# motion layer needs it "to push the subject on its own track" — and nothing used it.
+# This is that track.
+#
+# What it is, precisely, because the temptation is to claim more. The subject drifts
+# across a *still* plate: one layer moving against another, which is the thing the
+# reference does and the thing a whole-frame Ken Burns push cannot fake. Push the whole
+# frame and every pixel moves together, which reads as a camera move. Move the subject
+# alone and it reads as the creature moving, because that is what it is.
+#
+# What it is not: a warp, a puppet rig, or an image-to-video clip. The reference's Amber
+# stretches an arm independently of its torso, and this does not do that — it moves the
+# whole cut-out. Said plainly here so the gap stays visible instead of being quietly
+# absorbed into "motion, done".
+
+#: How far the subject travels, as a fraction of frame width. Small on purpose: at this
+#: size it reads as the thing breathing or swaying, and past about 3% it reads as the
+#: picture sliding, which is worse than a static shot.
+DRIFT_X = 0.018
+
+#: The vertical component, as a fraction of frame height. Smaller than the horizontal
+#: because the subject's feet are on a horizon, and a creature whose contact point rises
+#: and falls is a creature hovering.
+DRIFT_Y = 0.006
+
+#: Seconds for one full cycle. Slower than the shot so no shot ever shows a return —
+#: a drift that visibly reverses is a loop, and a loop is the thing that reads as cheap.
+DRIFT_PERIOD = 14.0
+
+
+def prepared(subject_path: Path | str, plate_path: Path | str, out_dir: Path | str, *,
+             width: int = 1920, height: int = 1080,
+             subject_height: float = SUBJECT_HEIGHT, horizon: float = HORIZON,
+             offset_x: float = 0.0, shadow: bool = True) -> dict:
+    """The two layers of a shot, sized and positioned, ready to be composited elsewhere.
+
+    Split out of `place` rather than duplicating its arithmetic: a second copy of the
+    scale-and-anchor rules is how a still and its animated version come to put the same
+    creature at two different sizes in one video.
+
+    Returns the plate (with the contact shadow already in it) and the subject as a
+    transparent PNG at final pixel size, plus where the subject goes. The shadow is baked
+    into the plate at the rest position — the drift is a fraction of the frame and the
+    shadow is a soft ellipse, so a shadow that tracked it exactly would be a third input
+    and no visible difference.
+    """
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    subject = Image.open(subject_path).convert("RGBA")
+    plate = Image.open(plate_path).convert("RGB")
+
+    scale = max(width / plate.width, height / plate.height)
+    plate = plate.resize((max(1, round(plate.width * scale)),
+                          max(1, round(plate.height * scale))), Image.LANCZOS)
+    left, top = (plate.width - width) // 2, (plate.height - height) // 2
+    frame = plate.crop((left, top, left + width, top + height)).convert("RGBA")
+
+    box = opaque_box(subject)
+    factor = (height * subject_height) / max(1, box[3] - box[1])
+    subject = subject.resize((max(1, round(subject.width * factor)),
+                              max(1, round(subject.height * factor))), Image.LANCZOS)
+    box = tuple(round(value * factor) for value in box)
+
+    opaque_w = box[2] - box[0]
+    paste_x = round(width / 2 - box[0] - opaque_w / 2 + offset_x * width)
+    paste_y = round(height * horizon - box[3])
+    placed_box = (paste_x + box[0], paste_y + box[1], paste_x + box[2], paste_y + box[3])
+
+    if shadow:
+        frame = Image.alpha_composite(
+            frame, _contact_shadow((width, height), placed_box, height))
+
+    plate_file = out / "plate.png"
+    subject_file = out / "subject.png"
+    frame.convert("RGB").save(plate_file)
+    subject.save(subject_file)
+    return {"plate": str(plate_file), "subject": str(subject_file),
+            "x": paste_x, "y": paste_y, "width": width, "height": height,
+            "subject_box": list(placed_box)}
