@@ -206,6 +206,27 @@ class EditingStyle:
     # times the video it actually opens with.
     narrative: dict = field(default_factory=dict)
 
+    # -- sound ---------------------------------------------------------------------
+    # The reference's measured audio, kept whole rather than reduced.
+    #
+    # `music_bed`, `music_gain_db` and `duck_depth_db` above are what pooling *decided*
+    # from this; these are what it decided from. `style.sound.brief_from` needs the dicts
+    # — bed level against voice, ducking depth, cue placement, where the cuts sit against
+    # the beat — and it was written to take exactly the shapes `StyleProfile` stores,
+    # "because that is what a learned style has on disk months later".
+    #
+    # It had nothing to take them from. `learn()` read `profile["audio"]`, reduced it to
+    # the three scalars, and dropped the rest; `to_channel_profile` never wrote either
+    # key. So `nodes/sound.py`'s measured branch could not fire from a learned style at
+    # all, and every run fell through to `recommend(niche)` — under a message reading
+    # "no reference video has been analysed", on channels where one had been.
+    #
+    # On the style rather than the channel for `sourcing`'s reason, unchanged: it is a
+    # property of the look. Two channels modelled on one creator mix to that creator's
+    # levels because there is one measurement.
+    audio: dict = field(default_factory=dict)
+    beat_alignment: dict = field(default_factory=dict)
+
     # -- bookkeeping -------------------------------------------------------------
     # How much the references disagreed, per field, 0..1. A high number means this
     # creator has no consistent rule here and the median is not worth much.
@@ -308,6 +329,14 @@ class EditingStyle:
             # a style learned before this existed, or from a reference too thin to
             # measure, must not overwrite a channel's working numbers with an empty dict.
             profile["sourcing"] = dict(self.sourcing)
+        if self.audio:
+            # Carried whole, so the sound stage can read the measurement instead of
+            # falling back to a niche convention while reporting that nothing was
+            # measured. Guarded like the two above: a style learned before this existed
+            # must not overwrite a channel's working numbers with an empty dict.
+            profile["audio"] = dict(self.audio)
+        if self.beat_alignment:
+            profile["beat_alignment"] = dict(self.beat_alignment)
         if self.narrative:
             # How this look narrates, carried onto the channel for exactly the reason
             # above: the stage that writes the script, the gate that watches the opening
@@ -446,6 +475,12 @@ def learn(
             [bool(item.get("has_music") or item.get("music")) for item in audios], False),
         sourcing=_sourcing_of(profiles),
         narrative=_narrative_of(profiles),
+        # The richest single measurement rather than a pooled one. These are
+        # correlated readings of one mix — a bed level averaged against
+        # another reference's ducking depth describes a mix neither creator
+        # made — so the reference with the most in it wins outright.
+        audio=_richest(profiles, "audio"),
+        beat_alignment=_richest(profiles, "beat_alignment"),
         notes=list(notes or []),
     )
 
@@ -502,6 +537,19 @@ def _palette_of(profiles: list[dict]) -> list[dict]:
         if score > best_score:
             best, best_score = list(palette), score
     return best
+
+
+def _richest(profiles: list[dict], key: str) -> dict:
+    """The fullest copy of one measurement across the references, or {}.
+
+    Not pooled. `sourcing` and `narrative` average because their fields are independent
+    scalars; a mix is not — bed level, ducking depth and cue placement are one decision
+    read three ways, and averaging across creators produces a mix nobody made. So the
+    reference that measured the most wins, and the rest are ignored rather than blended.
+    """
+    found = [dict(profile.get(key) or {}) for profile in profiles]
+    usable = [item for item in found if item]
+    return max(usable, key=len) if usable else {}
 
 
 def _sourcing_of(profiles: list[dict]) -> dict:
