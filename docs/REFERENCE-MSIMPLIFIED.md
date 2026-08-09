@@ -181,9 +181,26 @@ layer against another, which is what separates this from a Ken Burns push: push 
 frame and every pixel moves together, which is a camera move, and move the cut-out alone
 and it reads as the creature. Verified by sampling a rendered clip: peak difference 255
 in the subject region, 4 in the surrounding plate (h264 quantisation), and the corners
-byte-identical across every frame. It moves the *whole* cut-out, so Amber's arm moving
-independently of its torso is still out of reach — the warp is the open half, and
-particle overlays are untouched.
+byte-identical across every frame.
+
+The cut-out also **leans**, half a degree, pivoting on its feet. The pivot is the whole
+of that effect and I had it backwards until I measured: `rotate` turns an image about
+its own centre, so a creature turned about its waist swings crown and feet in opposite
+directions and almost nothing reads — 3.09px of crown travel against a 2.07px rounding
+floor. Moving the pivot to the contact point takes the same half-degree to 8.22px at the
+crown with the feet planted. (`perspective` was the obvious first try and exposes no
+time variable at all, so a time-varying shear through that filter is not available.)
+
+**Atmosphere** is built too — `render/particles.py` draws falling snow in two layers at
+two speeds, and a drifting fog sheet. Both are named per entity by the operator, because
+the source material carries no signal to choose them from: across nine real creature
+pages on three wikis only three contain any weather word and each appears exactly once,
+one "fog" in Seek's 13,471 characters. That is recorded rather than retried.
+
+**Still open:** every move here is rigid. Amber's arm moving independently of its torso
+needs the cut-out segmented into parts, which nothing in this tree can do — it is a
+part-segmentation model, not a filter, and it is the honest boundary of what layer
+motion reaches without one.
 
 The ration itself was the harder bug. `edit/segment.py` marked motion onto the story
 beat, which opens on a wide — so the two shots it marked were the two with no cut-out
