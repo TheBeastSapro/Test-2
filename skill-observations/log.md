@@ -342,3 +342,78 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When designing a reconstruction benchmark, identify up front which candidates win it trivially and label them as the floor rather than entering them in the ranking. Pair every similarity metric with an at-least-one excess metric that detects output the input did not contain, since similarity scores punish invention and conservatism identically. Always confirm the excess metric against the rendered output, because the mechanism of invention (added texture, restyling, sharpened edges) determines whether it matters.
 
 **Principle:** In a reconstruction benchmark, the method that cannot invent always scores best and is usually not the answer. Rank on what a candidate ADDS that the ground truth does not have, not only on how close it stays.
+
+### Observation 23: A spec that names an artifact's fields and its consumers can still name no producer
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Building a well-specified ingestion stage from a written build packet
+**Skill:** New skill candidate: spec-implementation-audit
+**Type:** open-source
+**Phase/Area:** Reading a specification before implementing it
+
+**Issue:** The build packet described a data file in two separate places: a repo-layout table said the file holds "sections with time ranges", and a later section required those same time ranges as an argument to every lookup, warning that omitting them causes a specific class of wrong result. But the packet's own code sketch for the tool that writes that file never produced the time-range fields, and no other specified tool produced them either. The field had two documented consumers and zero producers. Nothing in the packet flagged this: each section was internally consistent, and the gap was only visible by tracking one field across three sections that were written at different times.
+
+**Suggested improvement:** Before implementing from a spec, build a field-level producer/consumer table for every data artifact the spec defines: for each field, which specified step writes it and which read it. Fields with consumers but no producer are the missing work; fields with producers but no consumers are dead weight worth questioning. Do this as a reading pass, not during implementation, because in the middle of writing a tool the natural move is to invent the missing field silently and never report the gap.
+
+**Principle:** Specs are usually consistent within a section and incomplete across sections. The cheapest defect scan is to follow one data field end to end through the whole document and check that something actually writes it.
+
+### Observation 24: An observation the agent only skims is not a control; the mitigation has to sit where the action happens
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Building a human approval gate for a media pipeline. Needed to stop a background HTTP server and ran `pkill -f "<script>.py serve"`, which killed the agent's own shell because the shell's command line contained the pattern. The session had already read the observation log at start-up and Observation 7 in that same log documents this exact failure mode by name.
+**Skill:** task-observer
+**Type:** open-source
+**Phase/Area:** Session Start Protocol, step 2 ("Scan OPEN observations and active principles; hold them in awareness")
+
+**Issue:** At session start the agent listed the log's `### Observation N:` headers to find the highest number and to see what was open. It read the titles, not the bodies. Observation 7's title names the hazard, but recognising a one-line title as relevant requires already knowing you are about to do the thing it warns about, and the `pkill` was typed forty minutes later in the middle of unrelated work. "Hold them in awareness" is a memory instruction, and memory is exactly what fails under cognitive load, which is the same reason the skill already replaced its soft logging prompts with hard tool-call checkpoints.
+
+**Suggested improvement:** Treat operational hazards differently from methodology insights at review time. When an observation describes a concrete command or tool invocation that fails in a specific way, the review should not leave it as prose in the log: it should be promoted into a place that fires at the moment of use, such as a settings.json hook, a shell alias or wrapper, an entry in the project's CLAUDE.md command notes, or a pre-approved safe alternative in the permission list. Add a `**Mitigation surface:**` field to the observation format for this class, naming where the fix must live for it to actually bind, and have the weekly review refuse to mark such an observation ACTIONED while its only home is the log.
+
+**Principle:** A written warning binds behaviour only if the reader encounters it at the moment of the action. For hazards attached to a specific command or tool call, the durable fix is a control at the point of use; leaving it as narrative in a log that gets skimmed at session start reproduces the failure the log was supposed to prevent.
+
+### Observation 25: A batch API's response order is not the request order, and ordering that carries meaning must be reattached by key
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Running an unrun crawler that enumerated a wiki page's images, then hydrated them through a batched metadata endpoint. Page order was a documented signal in the spec: the first images on the page are the canonical debut images and later ones are variants. The crawler recorded each item's position using the loop index over the batch response.
+**Skill:** source-driven-development
+**Type:** open-source
+**Phase/Area:** integrating a third-party read API
+
+**Issue:** The batch call takes a pipe-joined list of titles and the code assumed the response came back in that order. It does not: the request order began with a screenshot file and the response began with a completely different file, and the two sequences disagreed at nearly every position. Because the resulting field was still a clean ascending integer sequence, the output looked correct in the JSON and in every summary. Nothing failed, nothing warned, and the one signal the spec called out as canon-bearing was silently replaced with an arbitrary internal ordering. It would have been found only by a human noticing the wrong image ranked first, weeks later.
+
+**Suggested improvement:** When hydrating an ordered list through a batch endpoint, never derive position from enumerate() over the response. Build an explicit rank map from the ordered request keys, attach the rank to each returned record by that key, and sort. Add a verification step to the integration checklist: for any batch call, print the request sequence beside the response sequence once and confirm they match before trusting positional data. Note that key matching usually needs the provider's normalisation rules applied first, since responses commonly come back canonicalised rather than verbatim.
+
+**Principle:** Set-shaped APIs make no ordering promise even when they usually look ordered. Any meaning carried by position must be reattached from the request side by key, and a positional field that is silently wrong is more dangerous than one that is missing, because it still validates.
+
+### Observation 26: A regenerator that writes a file humans also edit must merge and must invalidate, never rewrite
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** A crawler wrote a JSON record per downloaded asset, containing both machine fields (path, hash, source URL, dimensions) and human fields (a written description, a review decision, an approval flag). The file was explicitly the durable artifact and the downloaded binaries were a disposable cache. Re-running the crawler rebuilt the file from scratch.
+**Skill:** api-and-interface-design
+**Type:** open-source
+**Phase/Area:** designing the contract of a tool that regenerates a shared artifact
+
+**Issue:** Re-running the fetch step destroyed every human-entered field with no warning and no prompt. The failure is invisible at the moment it happens, because the regenerated file is structurally valid and the counts are identical; the loss only surfaces later when someone opens the review page and finds it blank. The design had inverted its own stated priority: the document said the JSON was the durable artifact and the binaries were rebuildable, but the code treated the JSON as the rebuildable thing.
+
+**Suggested improvement:** For any tool that regenerates a file carrying human-owned fields, make the contract explicit in three parts. (1) Split the schema into machine-owned and human-owned field sets and write them down in the code, not just in comments. (2) Default to merging on a stable identity key, with destructive regeneration behind an explicit flag rather than being the default behaviour. (3) Decide and document what invalidates a human decision: if the underlying artifact's content hash changed, a prior approval refers to something that no longer exists and must be voided and reported, not carried forward, because carrying it forward is worse than losing it.
+
+**Principle:** When one file mixes generated and human-authored fields, the generator owns only its own fields. Regeneration must merge on identity, destructive rewrites must be opt-in, and any human judgement about content must be voided when the content it referred to changes.
+
+### Observation 27: A warning treatment applied in the resting state destroys the signal it exists to carry
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Building a review page where each item carried four blocking-category checkboxes. The brief said the blocking categories had to be shown in red and be impossible to miss, so the checkbox group was given a red border and a red heading on every card.
+**Skill:** frontend-design
+**Type:** open-source
+**Phase/Area:** designing alert and severity states
+
+**Issue:** Rendering the page showed the mistake immediately: every card was red, so red became the page's background condition, and the one item that actually carried a blocking flag was indistinguishable from the twenty-six that did not. The instruction "show these in red and make them impossible to miss" had been implemented literally on the control rather than on the state, which produced the exact opposite of the requirement. It was only caught by screenshotting the built page and looking at it; the code read as though it satisfied the brief.
+
+**Suggested improvement:** Add a rule to the alert-and-severity guidance: severity styling belongs to the state, never to the affordance that can produce the state. The control that sets a flag stays neutral until the flag is set; then the styling escalates on the whole containing element, and preferably adds a marker readable while scrolling past rather than only on close inspection. Add a review question for any severity work: if every item were in this state, would the styling still communicate anything? If not, the styling is on the wrong element. Pair it with a standing instruction to render and look at the result, because this class of error is invisible in source and obvious in a screenshot.
+
+**Principle:** Emphasis is relative. A treatment that appears on every item carries no information, so severity must attach to the exception rather than to the mechanism that creates it, and any design where the alarm state is also the resting state has inverted its own purpose.

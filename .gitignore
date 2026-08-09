@@ -39,5 +39,9 @@ horror-pipeline/projects/*/audio/
 # ...but the approval record itself must always be committed.
 !horror-pipeline/projects/*/materials/*.json
 
+# The contact sheet is 1.3 MB of inlined base64 regenerated from that JSON by
+# `tools/contact_sheet.py build`. Derived, not source.
+horror-pipeline/projects/*/materials/contact-sheet.html
+
 # competitor research: extracted frames and sprite tiles are a rebuildable cache
 horror-pipeline/research/*/frames/
