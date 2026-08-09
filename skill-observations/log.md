@@ -192,3 +192,123 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When recording measurements that will be consumed as configuration, tag each value with how it was obtained — sampled/computed, counted from a specific frame or timestamp, or estimated by eye — and carry that tag into the config file, not just the prose document. Flag eye-estimated counts and colours as provisional by default, since those are the classes that fail. Before any stored profile is used as authoritative config, run a cheap re-verification pass on exactly those provisional fields. A blanket assertion that a document is "measured" should be treated as a claim about the document's intent, not about any individual value in it.
 
 **Principle:** Provenance belongs on the value, not on the document. A file-level claim of "measured" cannot distinguish computed values from eye estimates, and it is the eye estimates — counts and colours — that quietly become wrong configuration.
+
+### Observation 13: Segmentation quality must be judged by anatomy-region probes, never by global alpha statistics
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Evaluating automatic background-removal models for creature artwork; a prior agent had ranked candidates on global transparent/opaque/soft-edge percentages
+**Skill:** New skill candidate: matte-quality-evaluation
+**Type:** open-source
+**Phase/Area:** Choosing an evaluation metric for a segmentation or extraction output
+
+**Issue:** The candidate with the best-looking global alpha statistics (97.84% transparent, tight bounding box) was in fact the worst matte: it had deleted both of the subject's limbs. Amputation and background bleed move global percentages in OPPOSITE directions, so a single global number cannot separate "clean" from "mutilated" — a tight bounding box reads as precision when it is actually loss. The fix was to hand-place a dozen small probe boxes on the source image, each visually confirmed to sit on a specific anatomical feature (each limb, each extremity) or on unambiguous background, and to report per-region pass/fail. That immediately exposed failures the global numbers had scored as wins, including one region (a gap enclosed by the subject) that every global metric ignored.
+
+**Suggested improvement:** For any task that evaluates a spatial mask, mattes, crop, or region-extraction output, require a per-region probe set derived from the source before any ranking, and forbid ranking on aggregate coverage numbers alone. Probe boxes must be visually verified by rendering them onto a contrast-enhanced copy of the source and looking at it, because a probe placed on the wrong pixels silently invalidates every subsequent comparison. Include at least one probe on an enclosed background region (a gap the subject surrounds), which is the case aggregate metrics are structurally blind to.
+
+**Principle:** An aggregate score over a spatial output cannot distinguish losing the signal from keeping the noise, because both errors move the aggregate the same way. Evaluate spatial outputs at the locations that carry the meaning, and verify the locations by eye before trusting anything measured at them.
+
+### Observation 14: A benchmark must label which inputs are pathological, or one hard case silently picks the winner
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Comparing background-removal models across two source images, one of which is an extreme worst case
+**Skill:** New skill candidate: matte-quality-evaluation
+**Type:** open-source
+**Phase/Area:** Selecting and reporting on a test corpus
+
+**Issue:** Two test inputs were given equal weight in a model comparison. One was a typical, well-separated subject; the other was an extreme outlier where part of the subject is genuinely unrecoverable by any method. Every candidate scored poorly on the outlier, which compressed the spread between them and made a strong general-purpose winner look barely adequate. Worse, it framed the whole exercise as a tooling failure when the real finding was that the outlier is not a valid input for this treatment at all — no tool choice would ever fix it. The correct output was two conclusions, not one: a winner ranked on the representative case, and a separate admission-control rule that keeps inputs like the outlier out of the pipeline.
+
+**Suggested improvement:** When assembling a benchmark corpus, label each input as typical or pathological BEFORE running any candidate, and report per-input results separately rather than as a pooled score. Where an input turns out to be pathological, the deliverable should include an admission-control rule — how to recognise such inputs cheaply up front — as a first-class result alongside the ranking. Never let a single hard case decide a ranking, and never report a pooled average that hides which input drove it.
+
+**Principle:** A pathological input tests the boundary of the problem, not the quality of the solution. Separate "which candidate is best" from "which inputs belong in this pipeline at all" — pooling them produces a ranking that is both pessimistic and unactionable.
+
+### Observation 15: Proxy failure classes must be checked against helper services' own logs, not just the primary tool's output
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Unblocking yt-dlp YouTube downloads behind an agent egress proxy
+**Skill:** New skill candidate: proxied-environment-debugging
+**Type:** open-source
+**Phase/Area:** Diagnosis of network failures in multi-process toolchains
+
+**Issue:** yt-dlp reported only a generic `PoTokenProviderError ... HTTPError 500` from its PO token provider plugin. The real cause was visible only in the *provider server's* own stdout log: a `405 Method Not Allowed` from the egress proxy, which the environment's README explicitly documents as "axios older than 1.16.1". The primary tool's error message flattened a specific, documented, fixable proxy failure class into an opaque upstream 500. Reading the helper process's log turned an apparent dead end into a one-line `npm install axios@latest` fix.
+
+**Suggested improvement:** When a toolchain spans multiple processes (primary CLI + helper daemon/sidecar), and the primary reports a generic upstream 5xx, always read the helper's own log before concluding the approach failed. Additionally, when an environment ships a README enumerating proxy failure classes, grep that README for the *helper's* observed status code, not just the primary tool's.
+
+**Principle:** An error surfaced by process A about process B is a summary, not a diagnosis. In multi-process failures, the authoritative error lives in the log of the process that actually made the failing request — always read it before declaring an approach unworkable.
+
+### Observation 16: Verify whether a gatekeeper error is local-policy or remote before attributing it to the remote service
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Diagnosing HTTP 403 on a CDN behind an agent egress proxy
+**Skill:** New skill candidate: proxied-environment-debugging
+**Type:** open-source
+**Phase/Area:** Root-cause attribution
+
+**Issue:** A 403 was assumed to be remote bot detection. In a proxied environment a 403 can equally be the *egress proxy's* policy denial, and the two demand opposite responses (work the remote problem vs. report the blocked host and stop). The cheap discriminating test — a direct CONNECT to the CDN host, observing whether the tunnel establishes and whether the body is a genuine remote error page — was not run until late, after substantial effort had gone into remote-side fixes. It took one curl to settle and confirmed the remote attribution.
+
+**Suggested improvement:** Add an early, explicit disambiguation step to any network-failure workflow in a proxied environment: before investing in remote-side workarounds, issue a direct request to the failing host and classify the response as (a) proxy tunnel refused/denied, or (b) tunnel established with a genuine remote response. Record which one, then proceed. Cost is one command; it can invalidate an entire line of work.
+
+**Principle:** When two independent gatekeepers can emit the same status code, attribution must be established by test before it is used as a premise. Run the cheapest discriminating experiment first — a wrong premise about *who* rejected you invalidates every subsequent step.
+
+### Observation 17: Enumerate every client/variant of an API before accepting the first response's capability ceiling
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Extracting a YouTube storyboard sprite-sheet track to analyse a video frame-by-frame without a metered multimodal tool
+**Skill:** New skill candidate: media-asset-extraction
+**Type:** open-source
+**Phase/Area:** Source discovery
+
+**Issue:** The same metadata endpoint returned materially different asset inventories depending on which client identity was requested. Three of four working client variants exposed a maximum storyboard tile of 160x90; only the fourth exposed a 320x180 level — a 4x pixel-area difference that decided whether on-screen text could be read at all. Had the first successful client's response been treated as the capability ceiling, the entire analysis would have been done at unusable resolution and several findings (label text, box border presence, corner radius) would have been impossible.
+
+**Suggested improvement:** In any asset-extraction workflow that supports multiple client/user-agent/API-version identities, enumerate ALL of them and diff the returned asset inventories before selecting a source. Treat the union, not the first success, as the available set. Log which variant produced the richest inventory so the next run starts there.
+
+**Principle:** A capability ceiling observed through one client identity is a property of that identity, not of the service. When identity is a free parameter, sweep it before concluding what is available.
+
+### Observation 18: Test the physical/legibility explanation for a stylistic rule before adopting a semantic one
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Deriving the rule that decides which background colour a reference video uses for its non-scene cards
+**Skill:** New skill candidate: reference-teardown
+**Type:** open-source
+**Phase/Area:** Rule inference from samples
+
+**Issue:** A prior pass over ~11% of the runtime produced a semantic trigger rule — one content class routes to a black card, another to a white card — and encoded it as a programmable content-to-canvas mapping. Full-runtime measurement showed the mapping was an artefact of the sample: the identical content classes appeared on BOTH canvas colours elsewhere. The actual predictor was mechanical — subject luminance. Pale subjects went on the dark canvas, dark subjects on the light one, with clean separation on a measured luminance statistic. The semantic rule was a coincidence of which creature happened to occupy the sampled minute.
+
+**Suggested improvement:** When inferring a production rule from observed samples, explicitly generate and test the boring physical hypothesis (contrast, legibility, fit, safe area, file constraints) alongside the interesting semantic one, and prefer the physical one unless the semantic one survives a sample that varies the physical variable independently. Note in the writeup which alternatives were tested and rejected.
+
+**Principle:** Rules inferred from a narrow sample tend to encode the sample's incidental correlations as intent. Before attributing a design choice to meaning, check whether a mechanical constraint predicts it — mechanical explanations generalise, semantic ones invented from small samples usually do not.
+
+### Observation 19: When several installs of a tool coexist, verify which one is executing before trusting any capability result
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Installing a yt-dlp plugin to unblock media downloads
+**Skill:** New skill candidate: proxied-environment-debugging
+**Type:** open-source
+**Phase/Area:** Environment setup / capability verification
+
+**Issue:** Two installs of the same CLI were present: the one first on `PATH` (a `uv`-managed tool install) and a second under system site-packages. `pip install <plugin>` placed the plugin where only the *second* could see it. Running the `PATH` binary reported `Plugin directories: none` and would have silently produced a false negative — "the plugin approach doesn't work" — when in fact the plugin was installed correctly and simply invisible to the binary being invoked. Separately, the same tool's JS-runtime detection ignored `PATH` entirely (it probed the Python scripts directory first and returned on first hit), so a newer runtime that *was* installed kept being reported as an unsupported older version until it was named by absolute path.
+
+**Suggested improvement:** Before concluding that an installed component doesn't work, run the tool's own capability/verbose output and confirm it lists the component as loaded (e.g. a "plugin directories" or "providers" line). Prefer absolute paths to the specific install being configured. Treat `which <tool>` as one candidate among several, not as the answer — enumerate installs when a plugin or extension is involved.
+
+**Principle:** Installing a component and the tool *loading* it are two different facts. Verify the second directly from the tool's own introspection output; otherwise a packaging mismatch masquerades as a failed approach and closes off a line of work that was actually working.
+
+### Observation 20: Define the success signal before running a retry experiment, or the experiment measures the wrong thing
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Testing whether retrying a request could defeat a rotating-egress-IP mismatch
+**Skill:** New skill candidate: proxied-environment-debugging
+**Type:** open-source
+**Phase/Area:** Experiment design
+
+**Issue:** A 25-iteration retry experiment was run to test a hypothesis, but the request client was not configured to follow redirects. Every iteration recorded HTTP 302 — an intermediate hop — which is neither the success nor the failure state. The whole run produced no usable evidence and had to be repeated, and the repeat run was itself lost to a rate limit triggered partly by the wasted first run. The experiment also issued an extra diagnostic request per iteration, doubling the request volume against a rate-limited endpoint for information that was already known.
+
+**Suggested improvement:** Before running any loop-based experiment, write down explicitly what the success observation looks like and what the failure observation looks like, and confirm the measurement actually distinguishes them on a single trial run first. Then run the loop. Also budget requests against rate-limited endpoints: strip per-iteration diagnostics that don't change the conclusion.
+
+**Principle:** An experiment is only worth its request budget if its measurement can distinguish the outcomes it was designed to separate. Validate the measurement on one trial before spending the budget on many — especially against rate-limited resources, where a wasted run also degrades the conditions for the retry.
