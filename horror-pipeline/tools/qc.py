@@ -71,6 +71,9 @@ DEADZONE_BAD_S = 8.0              # hard fail on one asset
 
 SHOT_MAX_S = 8.0                  # never > 8 s on one asset
 SHOT_HOUSE_S = 6.5                # house headroom (style.MAX_SHOT_LEN)
+ASSET_BASELINE_S = 1.0            # baseline for "the picture is now a different
+ASSET_CHANGE_PCT = 60.0           # picture" -- crosses a dissolve, a hard cut
+                                  # comparison between adjacent frames does not
 
 LUFS_LO, LUFS_HI = -16.0, -14.0
 TRUE_PEAK_MAX = -1.0
@@ -176,19 +179,83 @@ def extract_samples(path, work):
 # ----------------------------------------------------------------------------
 # Motion / dead zones
 # ----------------------------------------------------------------------------
+def cache_path(work, name):
+    return os.path.join(work, f"_cache_{name}.json")
+
+
+def cached(work, name, n_expect, build):
+    """Cache the two expensive per-frame passes in the workdir.
+
+    Re-running QC against the same cut with a different edit sheet -- which is
+    exactly what the build loop does -- must not re-decode 17k frames and re-run
+    2,300 tesseract invocations to answer a question about pop spelling."""
+    p = cache_path(work, name)
+    if os.path.exists(p):
+        try:
+            with open(p) as f:
+                d = json.load(f)
+            if d.get("n") == n_expect:
+                log(f"      reusing cached {name} ({n_expect} frames)")
+                return d["v"]
+        except (ValueError, KeyError):
+            pass
+    v = build()
+    with open(p, "w") as f:
+        json.dump({"n": n_expect, "v": v}, f)
+    return v
+
+
 def motion_series(d2, files):
-    deltas, prev = [], None
+    """Two series from one read of the sampled frames.
+
+    `deltas` is the adjacent-sample (0.5 s) change that the motion and dead-zone
+    numbers are defined on. `baseline` is the same statistic against the frame
+    ASSET_BASELINE_S earlier, which is what finds a shot boundary on an edit that
+    joins its shots with dissolves instead of hard cuts."""
+    k = max(1, int(round(ASSET_BASELINE_S * MOTION_SAMPLE_FPS)))
+    deltas, baseline, buf = [], [], []
     for fn in files:
         g = cv2.imread(os.path.join(d2, fn), cv2.IMREAD_GRAYSCALE)
         if g is None:
             continue
         g = g.astype(np.float32) / 255.0
-        if prev is not None:
-            deltas.append(100.0 * float((np.abs(g - prev) > MOTION_PIXEL_DELTA).mean()))
-        prev = g
-    deltas = np.array(deltas, dtype=np.float64)
-    times = np.arange(len(deltas)) / MOTION_SAMPLE_FPS
-    return deltas, times
+        buf.append(g)
+        if len(buf) > k + 1:
+            buf.pop(0)
+        if len(buf) >= 2:
+            deltas.append(100.0 * float((np.abs(g - buf[-2]) > MOTION_PIXEL_DELTA).mean()))
+        if len(buf) >= k + 1:
+            baseline.append(100.0 * float((np.abs(g - buf[0]) > MOTION_PIXEL_DELTA).mean()))
+        else:
+            baseline.append(0.0)
+    return (np.array(deltas, dtype=np.float64),
+            np.array(baseline, dtype=np.float64))
+
+
+def asset_changes(baseline, duration):
+    """When did the picture become a DIFFERENT picture?
+
+    Adjacent-frame cut detection only fires on a hard cut. Measured on the
+    reference cut, that found 80 boundaries in 581 s and a 'longest single shot'
+    of 46.4 s -- which is wrong: sampling that span shows a night street plate at
+    t=30 and a white-canvas skeleton composite at t=50. The shots are joined by
+    dissolves, and a 0.5 s dissolve moves only a few percent of pixels per frame,
+    so no adjacent-frame delta ever crosses 60%. Comparing each sample against
+    the one ASSET_BASELINE_S earlier crosses the dissolve and sees the change.
+
+    Hard cuts are still what the SFX-sync check uses: that one needs the exact
+    instant of the transient, and a dissolve does not have one."""
+    dt = 1.0 / MOTION_SAMPLE_FPS
+    ev = []
+    for i, v in enumerate(baseline):
+        if v > ASSET_CHANGE_PCT:
+            t = i * dt
+            if not ev or t - ev[-1] > ASSET_BASELINE_S:
+                ev.append(t)
+    marks = [0.0] + ev + [duration]
+    spans = [(a, b, b - a) for a, b in zip(marks, marks[1:]) if b > a]
+    spans.sort(key=lambda s: -s[2])
+    return ev, spans
 
 
 def dead_zones(deltas, times):
@@ -238,15 +305,29 @@ def _plate_bounds(im):
     return int(xs.min()), int(xs.max()), int(ys.min()), int(ys.max())
 
 
+CANVAS_MEAN = 200          # a white canvas reads this bright or brighter
+CANVAS_MIN_AREA = 0.08     # ...and has to be a real margin, not a hairline
+
+
 def content_box(d2, files, max_probe=120):
-    """Median plate box over sampled frames.
+    """Find the dark image box inside the white canvas, if there is one.
 
     The reference took the box from the first frame only. Sampling and taking the
-    median costs nothing and stops one atypical opening frame (a full-bleed title
-    card, a fade-from-black) from fixing a wrong ROI for the entire measurement."""
+    median costs nothing and stops one atypical opening frame (a title card, a
+    fade-from-black) from fixing a wrong ROI for the whole measurement.
+
+    Then a second test the reference did not need: a box is only the right ROI if
+    what surrounds it is actually a bright canvas. This house also ships
+    full-bleed cinematic cuts, and on those _plate_bounds happily returns the
+    bounding box of whatever the darkest region happens to be. Measuring inside
+    THAT would bias the mean down and manufacture 'dark and flat' defects on a
+    correctly graded night shot -- the mirror image of the bug the content-box
+    rule exists to prevent. So: bright margin => boxed layout, use the box;
+    otherwise the frame IS the content, use the whole frame."""
     step = max(1, len(files) // max_probe)
+    probes = files[::step]
     boxes = []
-    for fn in files[::step]:
+    for fn in probes:
         g = cv2.imread(os.path.join(d2, fn), cv2.IMREAD_GRAYSCALE)
         if g is None:
             continue
@@ -254,44 +335,97 @@ def content_box(d2, files, max_probe=120):
         if b:
             boxes.append(b)
     if not boxes:
-        return None, 0.0
+        return None, 0.0, "no dark box found; measuring the whole frame"
     b = np.median(np.array(boxes), axis=0).astype(int)
-    g = cv2.imread(os.path.join(d2, files[0]), cv2.IMREAD_GRAYSCALE)
-    h, w = g.shape[:2]
-    cover = ((b[1] - b[0]) * (b[3] - b[2])) / float(w * h)
-    return (int(b[0]), int(b[1]), int(b[2]), int(b[3])), float(cover)
+    g0 = cv2.imread(os.path.join(d2, probes[0]), cv2.IMREAD_GRAYSCALE)
+    h, w = g0.shape[:2]
+    x0, x1, y0, y1 = (int(b[0]), int(b[1]), int(b[2]), int(b[3]))
+    cover = ((x1 - x0) * (y1 - y0)) / float(w * h)
+    margin = 1.0 - cover
+    if margin < CANVAS_MIN_AREA:
+        return None, cover, f"box covers {cover:.0%} of the frame: full-bleed layout"
+    vals = []
+    for fn in probes[: min(len(probes), 40)]:
+        g = cv2.imread(os.path.join(d2, fn), cv2.IMREAD_GRAYSCALE)
+        if g is None:
+            continue
+        m = np.ones(g.shape, bool)
+        m[y0:y1, x0:x1] = False
+        vals.append(float(g[m].mean()))
+    outside = float(np.median(vals)) if vals else 0.0
+    if outside < CANVAS_MEAN:
+        return None, cover, (f"margin around the box reads {outside:.0f}/255, not a "
+                             f"white canvas: full-bleed layout, measuring whole frame")
+    return (x0, x1, y0, y1), cover, (f"boxed layout: canvas margin {outside:.0f}/255, "
+                                     f"box covers {cover:.0%}")
+
+
+_LEVELS = np.arange(256, dtype=np.float64)
+
+
+def _hist(img):
+    return cv2.calcHist([img], [0], None, [256], [0, 256]).ravel()
+
+
+def _from_hist(hist):
+    """Exact mean and p95 from a 256-bin histogram. np.percentile on a 1080p ROI
+    17k times is minutes of wall clock; calcHist is milliseconds and, for uint8,
+    the bins ARE the levels, so the result is exact, not approximate."""
+    n = hist.sum()
+    if n <= 0:
+        return 0.0, 0.0, 0.0
+    mean = float((hist * _LEVELS).sum() / n)
+    p95 = float(np.searchsorted(np.cumsum(hist), 0.95 * n))
+    return mean, p95, float(n)
 
 
 def _hist_stats(roi):
-    """Exact mean and p95 from the 256-bin histogram. np.percentile on a 1080p
-    ROI 17k times is minutes of wall clock; calcHist is milliseconds and, for
-    uint8, the bins ARE the levels, so the result is exact, not approximate."""
-    hist = cv2.calcHist([roi], [0], None, [256], [0, 256]).ravel()
-    n = hist.sum()
-    if n <= 0:
-        return 0.0, 0.0
-    lv = np.arange(256, dtype=np.float64)
-    mean = float((hist * lv).sum() / n)
-    c = np.cumsum(hist)
-    p95 = float(np.searchsorted(c, 0.95 * n))
-    return mean, p95
+    m, p, _ = _from_hist(_hist(roi))
+    return m, p
 
 
-def full_rate_walk(path, fps, box, progress_every=3000):
-    """Cut detection and per-frame luminance in one decode."""
+def frame_luma(g):
+    """Content-box luminance for ONE frame, with the box decided per frame.
+
+    This cut mixes layouts: white-canvas cutouts on some shots, full-bleed
+    photographic on others, sometimes inside the same section. A single global
+    box is wrong for both halves. So decide per frame, using the same test as
+    content_box(): a dark box is the right ROI only when what surrounds it is
+    actually a bright canvas. Otherwise the frame IS the content.
+
+    The margin histogram is the full-frame histogram minus the box histogram, so
+    the extra work is one more calcHist, not a masked reduction."""
+    hf = _hist(g)
+    fmean, _, ntot = _from_hist(hf)
+    b = _plate_bounds(g)
+    if b:
+        x0, x1, y0, y1 = b
+        roi = g[y0:y1, x0:x1]
+        if roi.size:
+            hb = _hist(roi)
+            hm = hf - hb
+            marea = max(hm.sum(), 0.0) / max(ntot, 1.0)
+            if marea >= CANVAS_MIN_AREA:
+                mmean, _, _ = _from_hist(np.maximum(hm, 0))
+                if mmean >= CANVAS_MEAN:
+                    bmean, bp95, _ = _from_hist(hb)
+                    return bmean, bp95, fmean, True
+    fm, fp95, _ = _from_hist(hf)
+    return fm, fp95, fmean, False
+
+
+def full_rate_walk(path, fps, progress_every=3000):
+    """Cut detection and per-frame content-box luminance in one decode."""
     cap = cv2.VideoCapture(path)
-    cuts, lum, prevf, idx = [], [], None, 0
+    cuts, lum, prevf, idx, boxed = [], [], None, 0, 0
     t0 = time.time()
     while True:
         ok, frame = cap.read()
         if not ok:
             break
         g = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        roi = g[box[2]:box[3], box[0]:box[1]] if box else g
-        if roi.size == 0:
-            roi = g
-        m, p95 = _hist_stats(roi)
-        fm, _ = _hist_stats(g)
+        m, p95, fm, used_box = frame_luma(g)
+        boxed += 1 if used_box else 0
         lum.append((idx / fps, m, p95, fm))
         gf = g.astype(np.float32) / 255.0
         small = cv2.resize(gf, (320, 180), interpolation=cv2.INTER_AREA)
@@ -309,7 +443,7 @@ def full_rate_walk(path, fps, box, progress_every=3000):
     for c in cuts:
         if not ded or c - ded[-1] > 3 / fps:
             ded.append(c)
-    return ded, lum
+    return ded, lum, boxed
 
 
 def shot_lengths(cuts, duration):
@@ -493,7 +627,7 @@ def wordlike(ns):
     Only used to decide whether a DISCOVERED pop counts toward per-section
     density. Matching against a sheet's intended strings deliberately does not
     use it -- a half-read during the 0.2 s pop-in still proves the pop rendered."""
-    if len(ns) < 3:
+    if len(ns) < 4:
         return False
     body = ns.replace(" ", "")
     if not body:
@@ -502,6 +636,19 @@ def wordlike(ns):
     if alnum < 0.75 * len(body):
         return False
     return bool(re.search(r"[aeiou]", ns)) or bool(re.search(r"\d", ns))
+
+
+def is_fragment(ns, persistent_strings):
+    """A word of the persistent section title read on its own ('Head' out of
+    'Siren Head') is furniture, not an editor-added keyword pop."""
+    w = set(ns.split())
+    if not w:
+        return True
+    for p in persistent_strings:
+        pw = set(p.split())
+        if w < pw:
+            return True
+    return False
 
 
 def _cluster(reps_in):
@@ -652,11 +799,16 @@ def pop_events(per_t, cid, sections, persistent, per_sec_persistent):
                     break
             if hit is not None:
                 hit["end"] = t
-                hit["n"] += 1
+                # count distinct SAMPLE TIMES, not reads: pass A and pass B both
+                # read the same frame, so counting reads would let a single-frame
+                # OCR artefact look like a pop that held for two samples.
+                hit["times"].add(t)
                 hit["reads"].add(s)
             else:
-                events.append({"start": t, "end": t, "n": 1, "text": s,
-                               "text_n": ns, "reads": {s}, "section": sec})
+                events.append({"start": t, "end": t, "text": s, "text_n": ns,
+                               "reads": {s}, "times": {t}, "section": sec})
+    for ev in events:
+        ev["n"] = len(ev["times"])
     return events
 
 
@@ -691,7 +843,19 @@ def match_pops(events, intended):
     return missing, misspelled, used
 
 
-def pop_taper(events, sections):
+def counts_as_pop(ev, persistent_strings):
+    """Does this OCR event count toward per-section pop density?
+
+    Deliberately stricter than the intended-pop matcher: with no sheet to compare
+    against, plate grain would otherwise be counted as editor work. A pop must
+    hold across at least two distinct 0.5 s samples (real pops are on screen ~2 s
+    = about four samples), be word-shaped, and not be a fragment of the standing
+    title."""
+    return (ev["n"] >= POP_MIN_SAMPLES and wordlike(ev["text_n"])
+            and not is_fragment(ev["text_n"], persistent_strings))
+
+
+def pop_taper(events, sections, persistent_strings):
     """Pop count per section, plus the taper rule.
 
     A plain per-section floor does not catch a lazy finale: a floor of 2 passes a
@@ -703,8 +867,7 @@ def pop_taper(events, sections):
         return None
     counts = [0] * len(sections)
     for ev in events:
-        # a single-sample read, or a read that is not word-shaped, is plate grain
-        if ev["n"] < POP_MIN_SAMPLES or not wordlike(ev["text_n"]):
+        if not counts_as_pop(ev, persistent_strings):
             continue
         i = ev["section"]
         if i is not None and 0 <= i < len(counts):
@@ -769,8 +932,8 @@ def verdict_table(rows):
 
 
 def load_sheet(args, duration):
-    """Returns (intended_pops, sections, source_note)."""
-    intended, sections, notes = None, None, []
+    """Returns (intended_pops, sections, shots, source_note)."""
+    intended, sections, shots, notes = None, None, None, []
     if args.sheet:
         with open(args.sheet) as f:
             sd = json.load(f)
@@ -780,6 +943,8 @@ def load_sheet(args, duration):
             sections = [{"name": s.get("name", f"S{i+1}"),
                          "t0": float(s["t0"]), "t1": float(s["t1"])}
                         for i, s in enumerate(sd["sections"])]
+        if sd.get("shots"):
+            shots = [(float(x["t0"]), float(x["t1"])) for x in sd["shots"]]
         notes.append(f"sheet={os.path.basename(args.sheet)}")
     if args.pops_file:
         with open(args.pops_file) as f:
@@ -798,10 +963,85 @@ def load_sheet(args, duration):
             sections = [{"name": f"S{i+1}", "t0": a, "t1": b}
                         for i, (a, b) in enumerate(zip(marks, marks[1:]))]
         notes.append("sections=explicit")
-    return intended, sections, ", ".join(notes) if notes else "no sheet supplied"
+    return (intended, sections, shots,
+            ", ".join(notes) if notes else "no sheet supplied")
+
+
+def selftest():
+    """Assertions on the exact behaviours that have already produced a wrong
+    verdict on a real cut. Rules stated in a docstring get 'simplified' out;
+    rules stated as assertions do not."""
+    fails = []
+
+    def check(name, cond, detail=""):
+        print(f"  {'ok  ' if cond else 'FAIL'} {name}{'  ' + detail if detail else ''}")
+        if not cond:
+            fails.append(name)
+
+    # 1. dead zones are never merged across a high-motion sample
+    d = np.array([1.0] * 8 + [50.0] + [1.0] * 8)
+    t = np.arange(len(d)) / MOTION_SAMPLE_FPS
+    z = dead_zones(d, t)
+    check("dead zones: not merged across a spike", len(z) == 2,
+          f"got {len(z)} zones of {[round(x['dur'], 1) for x in z]}s "
+          f"(merging would give one 8.5s zone)")
+    check("dead zones: each run measured on its own", all(x["dur"] == 4.0 for x in z))
+    # a genuinely continuous low run is still one zone
+    z2 = dead_zones(np.array([1.0] * 17), np.arange(17) / MOTION_SAMPLE_FPS)
+    check("dead zones: a continuous low run is one zone",
+          len(z2) == 1 and z2[0]["dur"] == 8.5)
+
+    # 2. dark frames need a low p95 as well as a low mean
+    lum = [(0.0, 16.0, 101.0, 200.0), (0.5, 16.0, 40.0, 200.0)]
+    dark = [r for r in lum if r[1] < DARK_MEAN]
+    flat = [r for r in dark if r[2] < DARK_P95_OK]
+    check("dark: mean 16 with p95 101 is not a defect", len(dark) == 2 and len(flat) == 1)
+
+    # 3. a two-pass read of ONE frame is not a pop that held for two samples
+    per_t = {0.0: ["Bridge Worm", "Bridge Worm"], 0.5: ["ees"], 1.0: ["ees"]}
+    frames, _a, cid = per_frame_clusters(per_t, rep_min_count=1)
+    ev = pop_events(per_t, cid, [], set(), [])
+    bw = [e for e in ev if e["text_n"].startswith("bridge")]
+    check("pops: two passes on one frame count as one sample",
+          bool(bw) and bw[0]["n"] == 1)
+    check("pops: a 3-letter grain read is not word-shaped", not wordlike("ees"))
+    check("pops: a title fragment is not a pop",
+          is_fragment("head", {"siren head"}) and not is_fragment("alien", {"siren head"}))
+
+    # 4. the taper rule catches a lazy finale that a plain floor lets through
+    secs = [{"name": f"S{i}", "t0": i * 10.0, "t1": (i + 1) * 10.0} for i in range(4)]
+
+    def mk(counts):
+        out = []
+        for i, n in enumerate(counts):
+            for k in range(n):
+                out.append({"text_n": f"canon fact {i}{k}", "n": 4, "section": i,
+                            "start": 0.0, "end": 0.0})
+        return out
+
+    lazy = pop_taper(mk([6, 6, 6, 2]), secs, set())
+    check("taper: 6/6/6/2 fails the taper rule", not lazy["taper_ok"],
+          f"last {lazy['last']} vs median {lazy['median']} "
+          f"(needs {lazy['need']:.1f})")
+    check("taper: 6/6/6/2 passes a plain floor of 2, which is why the floor "
+          "is not enough", lazy["floor_ok"])
+    ok = pop_taper(mk([6, 5, 6, 5]), secs, set())
+    check("taper: 6/5/6/5 passes", ok["taper_ok"] and ok["floor_ok"])
+
+    # 5. longest shot spans the head and tail, not just gaps between cuts
+    sp = shot_lengths([10.0, 12.0], 30.0)
+    check("longest shot: tail after the last cut counts",
+          abs(sp[0][2] - 18.0) < 1e-9, f"got {sp[0][2]:.1f}s")
+
+    print(f"\nselftest: {len(fails)} failure(s)" + (f" -> {fails}" if fails else ""))
+    return 1 if fails else 0
 
 
 def main():
+    if "--selftest" in sys.argv:
+        print("\n=== qc.py selftest: the rules that have already cost a "
+              "wrong verdict ===")
+        sys.exit(selftest())
     ap = argparse.ArgumentParser(description="Stage 6 measured QC")
     ap.add_argument("video")
     ap.add_argument("--workdir", default=None)
@@ -823,7 +1063,7 @@ def main():
 
     sp = probe(path)
     fps = sp["fps"] or 30.0
-    intended, sections_in, sheet_note = load_sheet(args, sp["duration"])
+    intended, sections_in, shots_in, sheet_note = load_sheet(args, sp["duration"])
     print(f"\n=== QC: {os.path.basename(path)} "
           f"({sp['duration']:.2f}s, {sp['size_mb']:.1f} MB) === [{sheet_note}]\n")
 
@@ -831,18 +1071,37 @@ def main():
     d2, files = extract_samples(path, work)
     log(f"      {len(files)} frames")
 
-    log("[2/7] motion + dead zones")
-    deltas, times = motion_series(d2, files)
+    log("[2/7] motion + dead zones + asset changes")
+
+    def _motion():
+        d, b = motion_series(d2, files)
+        return {"deltas": [float(x) for x in d], "baseline": [float(x) for x in b]}
+
+    ms = cached(work, "motion2", len(files), _motion)
+    deltas = np.array(ms["deltas"])
+    baseline = np.array(ms["baseline"])
+    times = np.arange(len(deltas)) / MOTION_SAMPLE_FPS
     dz = dead_zones(deltas, times)
+    changes, spans = asset_changes(baseline, sp["duration"])
+    log(f"      {len(changes)} asset changes ({ASSET_BASELINE_S}s baseline), "
+        f"longest hold {spans[0][2]:.1f}s" if spans else "      no asset changes")
 
     log("[3/7] content box")
-    box, cover = content_box(d2, files)
-    log(f"      box={box} cover={cover:.2f}"
-        + ("  (full-bleed layout)" if cover > 0.85 else "  (boxed layout)"))
+    box, cover, box_note = content_box(d2, files)
+    log(f"      typical layout: {box_note}")
 
-    log("[4/7] full-rate walk: cuts + content-box luminance")
-    cuts, lum = full_rate_walk(path, fps, box)
-    spans = shot_lengths(cuts, sp["duration"])
+    log("[4/7] full-rate walk: cuts + content-box luminance (box decided per frame)")
+    def _walk():
+        c, l, bx = full_rate_walk(path, fps)
+        return {"cuts": c, "lum": [list(r) for r in l], "boxed": bx}
+
+    walk = cached(work, "walk", int(round(sp["duration"] * fps)), _walk)
+    cuts = list(walk["cuts"])
+    lum = [tuple(r) for r in walk["lum"]]
+    boxed = int(walk["boxed"])
+    hard_spans = shot_lengths(cuts, sp["duration"])
+    log(f"      {boxed}/{len(lum)} frames measured inside a content box, "
+        f"{len(lum) - boxed} measured full-frame")
 
     log("[5/7] audio")
     au = audio_stats(path)
@@ -854,10 +1113,14 @@ def main():
     per_t = None
     if not args.no_ocr:
         log(f"[6/7] OCR, two passes per frame at {OCR_FPS} fps, {args.jobs} workers")
-        per_t = ocr_inventory(d2, files, work, args.jobs)
+        raw_ocr = cached(work, "ocr", len(files),
+                         lambda: ocr_inventory(d2, files, work, args.jobs))
+        per_t = ({float(k): v for k, v in raw_ocr.items()}
+                 if isinstance(raw_ocr, dict) else raw_ocr)
 
     sections, frames, persistent, per_sec_persistent = [], {}, set(), []
     events, missing, misspelled, used, taper = [], [], [], {}, None
+    all_persist = set()
     sec_source = "n/a"
     if per_t:
         frames, _assign, cid = per_frame_clusters(per_t)
@@ -868,9 +1131,12 @@ def main():
             sec_source = "auto (persistent title)" if sections else "auto (failed)"
         persistent, per_sec_persistent = persistent_sets(frames, sections)
         events = pop_events(per_t, cid, sections, persistent, per_sec_persistent)
+        all_persist = set(persistent)
+        for ps in per_sec_persistent:
+            all_persist |= ps
         if intended:
             missing, misspelled, used = match_pops(events, intended)
-        taper = pop_taper(events, sections)
+        taper = pop_taper(events, sections, all_persist)
 
     log("[7/7] tail + contact sheets")
     tail = tail_check(path, work, sp["duration"], fps)
@@ -881,13 +1147,27 @@ def main():
     dark = [r for r in lum if r[1] < DARK_MEAN]
     dark_flat = [r for r in dark if r[2] < DARK_P95_OK]
     worst_dz = max((z["dur"] for z in dz), default=0.0)
-    longest_shot = spans[0][2] if spans else sp["duration"]
+    # "One asset held" is only MEASURABLE from the sheet. Pixel-delta shot
+    # detection cannot resolve it on this house layout: a white canvas with a
+    # boxed image means most pixels are identical white across a genuine asset
+    # swap, so no threshold separates a cut from a Ken Burns drift. Measured on
+    # the reference cut, the most sensitive setting tried still reported a 24.5 s
+    # "hold" over a span that visibly contains several different assets. The
+    # sheet knows every shot's t0 and t1 exactly, so when there is one, use it,
+    # and when there is not, report the pixel estimate as INFO rather than
+    # failing a cut on a number that is known to be wrong.
+    if shots_in:
+        longest_shot = max((b - a) for a, b in shots_in)
+        shot_src, shot_verdict = "sheet", (
+            "PASS" if longest_shot <= SHOT_MAX_S else "FAIL")
+    else:
+        longest_shot = spans[0][2] if spans else sp["duration"]
+        shot_src, shot_verdict = "pixel estimate", "INFO"
     tail_black = [r for r in tail if r["mean"] < TAIL_BLACK_MEAN and r["std"] < TAIL_FLAT_STD]
     tail_white = [r for r in tail if r["mean"] > TAIL_WHITE_MEAN and r["std"] < TAIL_FLAT_STD]
     tail_flat = [r for r in tail if r["std"] < TAIL_FLAT_STD]
     av_delta = abs(ta["audio_len"] - sp["duration"])
-    pops_counted = [e for e in events
-                    if e["n"] >= POP_MIN_SAMPLES and wordlike(e["text_n"])]
+    pops_counted = [e for e in events if counts_as_pop(e, all_persist)]
 
     def PF(ok, warn=False):
         return "WARN" if warn else ("PASS" if ok else "FAIL")
@@ -905,8 +1185,12 @@ def main():
     R.append(("Longest dead zone", f"{worst_dz:.1f}s", f"<{DEADZONE_MIN_S:.0f}s",
               "PASS" if worst_dz < DEADZONE_MIN_S else
               "FAIL" if worst_dz > DEADZONE_BAD_S else "WARN"))
-    R.append(("One asset held (longest shot)", f"{longest_shot:.1f}s",
-              f"<={SHOT_MAX_S:.0f}s", "PASS" if longest_shot <= SHOT_MAX_S else "FAIL"))
+    R.append(("One asset held (longest shot)",
+              f"{longest_shot:.1f}s ({shot_src})",
+              f"<={SHOT_MAX_S:.0f}s" if shots_in else "needs --sheet shots",
+              shot_verdict))
+    R.append(("Asset changes / min", f"{60.0 * len(changes) / max(sp['duration'], 1):.1f}",
+              "-", "INFO"))
     R.append(("Integrated loudness", f"{au['lufs']:.2f} LUFS", f"{LUFS_LO} to {LUFS_HI}",
               PF(LUFS_LO <= au["lufs"] <= LUFS_HI)))
     R.append(("True peak", f"{au['tp']:.2f} dBTP", f"<{TRUE_PEAK_MAX}",
@@ -918,14 +1202,14 @@ def main():
               PF(au["max_volume"] is not None and au["max_volume"] < 0)))
     R.append(("Clipped samples (0 dBFS)", f"{au['clipped_samples']}", "0",
               PF(au["clipped_samples"] == 0)))
-    R.append(("Hard cuts detected", f"{len(cuts)}", "-", "INFO"))
+    R.append(("Hard cuts detected (for SFX sync)", f"{len(cuts)}", "-", "INFO"))
     R.append(("Audio transients", f"{len(onsets)}", "-", "INFO"))
     R.append((f"Cuts w/ transient <={SYNC_WINDOW_S}s",
               "n/a" if sync is None else f"{sync:.0f}%", f">={SYNC_TARGET_PCT:.0f}%",
               "INFO" if sync is None else PF(sync >= SYNC_TARGET_PCT)))
     R.append(("Content-box luminance (mean)",
               f"{np.mean([r[1] for r in lum]):.1f} (frame {np.mean([r[3] for r in lum]):.0f})",
-              "-", "INFO"))
+              f"{boxed}/{len(lum)} frames boxed", "INFO"))
     R.append((f"Dark frames (box mean<{DARK_MEAN})", f"{len(dark)} / {len(lum)}",
               "-", "INFO"))
     R.append(("...of those, flat (p95<%d)" % DARK_P95_OK, f"{len(dark_flat)}", "0",
@@ -992,7 +1276,7 @@ def main():
     if len(dz) > 20:
         print(f"  ... {len(dz) - 20} more")
 
-    print("\n--- LONGEST HOLDS (no hard cut) ---")
+    print(f"\n--- LONGEST HOLDS (no asset change, {ASSET_BASELINE_S}s baseline) ---")
     for a, b, d in spans[:8]:
         print(f"  {ts(a)}-{ts(b)}  {d:.1f}s" + ("   <-- over 8s" if d > SHOT_MAX_S else ""))
 
@@ -1069,12 +1353,16 @@ def main():
             "motion_min": float(deltas.min()) if deltas.size else None,
             "motion_max": float(deltas.max()) if deltas.size else None,
             "dead_zones": dz, "longest_shot": longest_shot,
+            "asset_changes": len(changes),
             "longest_holds": [{"t0": a, "t1": b, "dur": d} for a, b, d in spans[:20]],
+            "longest_gaps_between_hard_cuts":
+                [{"t0": a, "t1": b, "dur": d} for a, b, d in hard_spans[:5]],
             "audio": au, "audio_tail": ta, "sync_pct": sync,
             "cuts": len(cuts), "onsets": len(onsets),
             "cuts_without_transient": missed,
             "dark_frames": len(dark), "dark_flat_frames": len(dark_flat),
-            "content_box": box, "content_box_cover": cover,
+            "content_box_typical": box, "content_box_cover": cover,
+            "content_box_note": box_note, "frames_measured_boxed": boxed,
             "sections": sections, "section_source": sec_source,
             "pops_discovered": len(pops_counted),
             "pop_taper": taper,

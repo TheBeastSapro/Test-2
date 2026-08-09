@@ -462,3 +462,63 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Before comparing authored text with recognised text, enumerate the recogniser's output conventions (numerals, currency, dates, contractions, casing, punctuation attached to tokens) and write a single normalisation function that both sides import. Never let two comparison sites define their own. Treat the convention as part of the recogniser's interface and re-check it when the model version changes.
 
 **Principle:** A recogniser does not return the source, it returns its own rendering of the source. Any comparison against authored text must fold both sides onto one canonical form through one shared function, or the comparison is silently measuring the rendering rather than the content.
+
+### Observation 31: Porting a measurement tool must preserve the exact numeric path, not just the algorithm
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Porting a working image/audio measurement script into a new tool and comparing its output against the original's recorded benchmarks
+**Skill:** New skill candidate: measurement-tool-porting
+**Type:** open-source
+**Phase/Area:** Reproducing a reference implementation's numbers
+
+**Issue:** The reference implementation extracted sample frames to PNG and read them back with the library's grayscale-decode flag. The port streamed the same frames in-process and converted to grayscale with the library's colour-conversion call, which is the obvious equivalent. The pixel data was byte-identical, but the two grayscale paths use different luma coefficients (one uses the modern-primaries weights, the other the legacy ones), giving per-pixel differences up to 62 levels out of 255. Every downstream threshold count shifted, so the new tool's numbers could no longer be compared with the benchmarks the whole pass/fail table was calibrated on. A separate check of the frame-selection filter found a similar trap: the resampling filter's chosen frames were offset by one from naive every-Nth-frame indexing, which moved every reported timestamp.
+
+**Suggested improvement:** When porting a tool whose OUTPUT NUMBERS are compared against recorded historical values, treat the numeric path as part of the contract, not an implementation detail: same decode, same colour conversion, same sampling filter. Before optimising any of them, run both versions on the same input and assert the outputs match to within the tolerance the thresholds need. If an optimisation changes the numbers at all, either keep the slow path or re-derive the benchmarks, and say which.
+
+**Principle:** A measurement is defined by its whole pipeline, not by its formula. Two implementations that are mathematically 'the same' can disagree enough to invalidate every calibrated threshold, and the disagreement is silent.
+
+### Observation 32: Ask the tool what it did, do not infer it from the parameters you passed
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Building an audio master stage where one specific mode of a filter is the whole point of the design
+**Skill:** New skill candidate: measurement-tool-porting
+**Type:** open-source
+**Phase/Area:** Verifying that a requested processing mode was actually taken
+
+**Issue:** The design requires a normaliser to run in constant-gain mode, because the alternative mode rides the level over time and destroys the exact statistic the QC gate measures. The mode is requested with a flag plus five measured values. Supplying all six correctly is NOT sufficient: when the constant gain needed to hit the loudness target would push the peak past the peak target, the filter silently falls back to the other mode. No warning, no non-zero exit, and the output looks plausible because it lands on both targets. The only reliable signal was that the filter's own summary output names the mode it used, which meant running that one call at a higher log level purely so the summary could be read back and asserted on.
+
+**Suggested improvement:** For any processing step whose MODE (not just its parameters) is load-bearing, find the tool's own report of what it did and assert on it. Where no such report exists, assert on an invariant that only the intended mode can produce. Add a pre-flight prediction of the fallback condition so the failure is explained before it happens, with the fix named. Requesting a mode and getting a zero exit code is not evidence the mode was used.
+
+**Principle:** A silent fallback to a different algorithm is indistinguishable from success at the call site. Verification has to come from the tool's own account of its behaviour or from an invariant unique to the intended path, never from the arguments you supplied.
+
+### Observation 33: Count evidence in units of the underlying event, not units of the detector
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Building a text-detection pass that runs two different preprocessing passes over every sampled frame and merges the results
+**Skill:** New skill candidate: measurement-tool-porting
+**Type:** open-source
+**Phase/Area:** Thresholds over multi-detector evidence
+
+**Issue:** Real on-screen events persist across several samples; detector noise does not. So a 'seen on at least two samples' threshold was used to separate them. But two preprocessing passes run over the SAME sample, and the counter was incremented per detection rather than per distinct sample timestamp. Any artefact that both passes happened to read on one frame therefore scored two and cleared a threshold designed to require two frames. The persistence filter silently stopped filtering, and the noise it was meant to remove appeared in the results as real detections with a start time equal to their end time. The zero-width time span was the visible symptom of a counting bug.
+
+**Suggested improvement:** When a threshold means 'this persisted', count DISTINCT values of the dimension it persists along (timestamps, positions, sessions), by accumulating them into a set, never by incrementing a counter per detection. Add an assertion that any event claiming to persist actually spans a non-zero extent, since a zero-width span is the cheap tell that the count came from the wrong axis.
+
+**Principle:** Redundant detectors inflate any count that is not keyed on the thing being counted. A persistence threshold must be expressed as a set of distinct positions, not as a tally of observations.
+
+### Observation 34: A pattern-matching process killer will match the command that is running it
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Cleaning up a stuck long-running job from a shell command
+**Skill:** New skill candidate: shell-safety-notes
+**Type:** open-source
+**Phase/Area:** Terminating background processes by pattern
+
+**Issue:** A command-line process killer was invoked with a pattern to terminate a stuck job. The pattern also appeared, literally, in the text of the shell command issuing the kill, so the shell matched its own command line and killed itself. The compound command exited before its later parts ran, and, because the later parts included writing a script via a here-document, the next step failed with a confusing 'no such file' that pointed nowhere near the real cause. It cost two extra round trips to diagnose.
+
+**Suggested improvement:** When killing processes by pattern from a shell, never let the pattern appear verbatim in the same command line: anchor it to something specific to the target (a full path, an argument the target has and the shell does not), or resolve PIDs in one step and kill them in another. Also treat a self-kill as a likely explanation whenever a compound command's later steps silently do not run.
+
+**Principle:** Any tool that selects its targets by matching text will match the text that invoked it. Selection patterns need to exclude the selecting context explicitly, or the operation can consume its own caller.

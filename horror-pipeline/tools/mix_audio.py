@@ -325,7 +325,60 @@ def mux(video, mix, out, dur):
     return out
 
 
+def selftest():
+    """Assertions on the rules that have already cost a rejected cut."""
+    fails = []
+
+    def check(name, cond, detail=""):
+        print(f"  {'ok  ' if cond else 'FAIL'} {name}{'  ' + detail if detail else ''}")
+        if not cond:
+            fails.append(name)
+
+    clean = ("[0:a]adelay=0|0,aresample=48000,highpass=f=80,"
+             "acompressor=threshold=-12dB:ratio=1.6:attack=15:release=280[vo];"
+             "[vo1][bed][sfx]amix=inputs=3:normalize=0:duration=longest,"
+             "apad=whole_dur=45,atrim=0:45,aresample=48000[out]")
+    try:
+        check_no_limiter(clean)
+        check("no-limiter guard: the real chain is accepted", True)
+    except SystemExit:
+        check("no-limiter guard: the real chain is accepted", False)
+    for bad in ("[m]alimiter=limit=0.9[out]", "[m]compand=attacks=0[out]",
+                "[m]speechnorm=e=6[out]", "[m]asoftclip=type=tanh[out]"):
+        try:
+            check_no_limiter(bad)
+            check(f"no-limiter guard: refuses {bad.split('=')[0][3:]}", False)
+        except SystemExit:
+            check(f"no-limiter guard: refuses {bad.split('=')[0][3:]}", True)
+
+    # linear-mode prediction: crest above the budget means ffmpeg goes dynamic
+    hot = crest_headroom({"input_i": "-24.43", "input_tp": "-6.82"}, -15.0, -1.5)
+    check("linear check: 17.6 dB crest against a 13.5 dB budget is refused",
+          not hot["linear_possible"],
+          f"predicted TP {hot['predicted_tp']:+.2f} dBTP")
+    fine = crest_headroom({"input_i": "-18.94", "input_tp": "-7.52"}, -15.0, -1.5)
+    check("linear check: 11.4 dB crest fits the budget", fine["linear_possible"],
+          f"predicted TP {fine['predicted_tp']:+.2f} dBTP")
+
+    # all five measured values must be present AND finite
+    good = {"input_i": "-18.9", "input_tp": "-7.5", "input_lra": "5.5",
+            "input_thresh": "-29.2", "target_offset": "-0.26"}
+    check("measured values: a complete set is accepted", not measured_ok(good))
+    check("measured values: a missing one is caught",
+          measured_ok({k: v for k, v in good.items() if k != "measured_thresh"}
+                      | {"input_thresh": None}))
+    check("measured values: 'inf' is caught",
+          measured_ok(dict(good, input_tp="inf")))
+
+    print(f"\nselftest: {len(fails)} failure(s)" + (f" -> {fails}" if fails else ""))
+    return 1 if fails else 0
+
+
 def main():
+    if "--selftest" in sys.argv:
+        print("\n=== mix_audio.py selftest: the rules that have already cost a "
+              "rejected cut ===")
+        sys.exit(selftest())
     ap = argparse.ArgumentParser(description="Stage 5 audio mix (4 buses, no limiter)")
     ap.add_argument("--vo", required=True)
     ap.add_argument("--bed", required=True)
