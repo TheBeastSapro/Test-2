@@ -19,7 +19,7 @@ media bytes are blocked.
 | PO token generation (bgutil provider) | ✅ **Fixed this session** |
 | `n`-challenge JS solving (EJS) | ✅ **Fixed this session** |
 | Signed media URL retrieval | ✅ Works |
-| **Actual media byte download** | ❌ **HTTP 403, all paths** |
+| **Actual media byte download** | ❌ **HTTP 403, all 9 clients tested** |
 | Headless-browser cookie generation | ❌ Browser has no network egress |
 
 Two real bugs were found and fixed, which moved the failure from "cannot even
@@ -208,14 +208,24 @@ ERROR: unable to download video data: HTTP Error 403: Forbidden              <--
 | 2 | Same, script mode | Unavailable — plugin looks in `/root/bgutil-.../server`, wrong path. HTTP mode used instead. |
 | 3 | `pip install -U yt-dlp` | Already newest stable (`2026.07.04`). Nothing to gain. |
 | 4 | `yt-dlp[default]` / `yt-dlp-ejs` | Installed 0.8.0. Fixed n-challenge. Media still 403. |
-| 5 | Client `tv_simply` | Full pipeline succeeds → **403** on bytes. |
+| 5 | Client `tv_simply` | Full pipeline succeeds (PO token + JS challenge solved) → **403** on bytes. |
 | 6 | Client `android_vr` | Player JSON OK → **403** on bytes. |
 | 7 | Client `tv` | `ERROR: This video is DRM protected`. Not pursued — DRM circumvention is out of scope. |
 | 8 | Clients `web`, `web_safari` | `Sign in to confirm you're not a bot` at the player stage. |
-| 9 | `--force-ipv4` | No effect; the proxy, not yt-dlp, chooses the egress address. **403**. |
-| 10 | Direct `curl` of the signed URL | 302 → follow → **403**, 0 bytes. Confirms yt-dlp is not at fault. |
-| 11 | 10× retry on a 6-hour-valid URL | **403** on every attempt. Rotating-IP lottery is unwinnable. |
-| 12 | Headless Chromium cookie generation | **Browser has no egress at all** — `ERR_CONNECTION_RESET` on `example.com`, `google.com` and `youtube.com` alike. |
+| 9 | Client `web_embedded` | JS challenge solved → **403** on bytes. |
+| 10 | Client `android` | Most formats SABR-stripped; the one usable format → **403** on bytes. |
+| 11 | Client `ios` | GVS PO token not accepted for this client; **only image formats offered**, no media at all. |
+| 12 | `--force-ipv4` | No effect; the proxy, not yt-dlp, chooses the egress address. **403**. |
+| 13 | Direct `curl` of the signed URL | 302 → follow → **403**, 0 bytes. Confirms yt-dlp is not at fault. |
+| 14 | 10× retry on a 6-hour-valid URL | **403** on every attempt. Rotating-IP lottery is unwinnable. |
+| 15 | Headless Chromium cookie generation | **Browser has no egress at all** — `ERR_CONNECTION_RESET` on `example.com`, `google.com` and `youtube.com` alike. |
+
+Nine distinct player clients were tested. The two that get furthest —
+`tv_simply` and `web_embedded` — complete every stage of the pipeline
+including PO token acquisition and JS challenge solving, and still 403 on the
+first media byte. That pattern, combined with #13 (a raw `curl` of a valid
+signed URL failing identically with yt-dlp entirely out of the picture), is
+what rules out a client-selection or token fix.
 
 ### Note on the headless browser
 
