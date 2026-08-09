@@ -515,3 +515,48 @@ def get_pipeline(name: str, **options) -> PipelineSpec:
     if builder is None:
         raise KeyError(f"unknown pipeline '{name}'; have {sorted(PIPELINES)}")
     return builder(**options)
+
+
+# ------------------------------------------------------------------- stage names
+#
+# Every node in this file already carries a `title` written for a person — "Cast the
+# voice", "Write full script" — and until now only the run page used them. Analytics
+# listed its stages by `node_type`, so a page whose whole argument is that it prints
+# honest numbers labelled its rows `voice_casting`, `final_review` and `broll_plan`, and
+# said things like "Died at voice_casting ×1".
+#
+# Derived from the pipelines rather than written out again: a second table of stage
+# names is one that drifts the first time a node is renamed, and the page would then be
+# confidently wrong rather than ugly.
+
+_STAGE_TITLES: dict[str, str] | None = None
+
+
+def stage_titles() -> dict[str, str]:
+    """Every shipped node type mapped to the words its own pipeline gives it.
+
+    Built once. A type that appears in two pipelines under two titles keeps the first,
+    which is the long-form one — they agree today, and if they ever stop, the page
+    showing one of them is a smaller problem than the page showing a slug.
+    """
+    global _STAGE_TITLES
+    if _STAGE_TITLES is None:
+        found: dict[str, str] = {}
+        for builder in PIPELINES.values():
+            try:
+                spec = builder()
+            except Exception:                                      # pragma: no cover
+                # A builder that needs arguments is not a reason for a page to lose its
+                # labels; the types it would have contributed fall back to their slugs.
+                continue
+            for node in spec.nodes:
+                if node.type and node.title:
+                    found.setdefault(node.type, node.title)
+        _STAGE_TITLES = found
+    return _STAGE_TITLES
+
+
+def stage_title(node_type) -> str:
+    """One stage's name for a page, falling back to the slug opened out."""
+    slug = str(node_type or "").strip()
+    return stage_titles().get(slug) or slug.replace("_", " ")

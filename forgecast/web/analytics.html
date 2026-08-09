@@ -136,7 +136,7 @@
     <div class="bars">
       {% for row in credit_rows %}
         <div class="barrow">
-          <span class="lbl">{{ row.node_type }}</span>
+          <span class="lbl">{{ row.node_type|stage_title }}</span>
           <span class="track"><i style="width:{{ row.bar }}%"></i></span>
           <span class="amt"><em>{{ row.credits }}</em> · {{ row.share }}%</span>
         </div>
@@ -159,7 +159,7 @@
     <div class="bars">
       {% for row in gates %}
         <div class="barrow">
-          <span class="lbl">{{ row.node_type }}</span>
+          <span class="lbl">{{ row.node_type|stage_title }}</span>
           <span class="track">
             <i style="width:{{ row.approved_bar }}%"></i>
             <i class="sent" style="width:{{ row.revised_bar }}%"></i>
@@ -172,7 +172,7 @@
         {% if row.needs_work %}
           <div class="subnote">
             <span class="flag">needs work</span>
-            <b>{{ row.node_type }}</b> was sent back {{ row.revised }} of
+            <b>{{ row.node_type|stage_title }}</b> was sent back {{ row.revised }} of
             {{ row.total }} times. Fix the stage rather than the run.
           </div>
         {% elif not row.reliable %}
@@ -242,7 +242,7 @@
       {% if row.deaths %}
         <div class="died">
           Died at
-          {% for death in row.deaths %}<b>{{ death.node_type }}</b>&nbsp;×{{ death.count }}{{ ', ' if not loop.last }}{% endfor %}.
+          {% for death in row.deaths %}<b>{{ death.node_type|stage_title }}</b>&nbsp;×{{ death.count }}{{ ', ' if not loop.last }}{% endfor %}.
         </div>
       {% endif %}
 

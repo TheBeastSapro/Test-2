@@ -162,3 +162,57 @@ async def test_the_gates_are_read_in_one_query_not_one_per_run(
 
     source = inspect.getsource(Studio.status)
     assert "Node.run_id.in_(stalled)" in source
+
+
+# ------------------------------------------------------- the rest of the identifiers
+#
+# Same defect, two more places, both found by opening the page. The run header printed
+# `faceless_longform` in monospace beside a heading in plain English, and Analytics —
+# a page whose whole argument is that it prints honest numbers — labelled its stages
+# `voice_casting`, `final_review`, `broll_plan`, and said "Died at voice_casting ×1".
+
+
+def test_a_pipeline_is_named_the_way_the_rest_of_the_app_names_it():
+    """`PIPELINE_META` has carried a title for every shipped pipeline since it was
+    written, and the activity log two panels down was already using it."""
+    from forgecast.api.routes_web import pipeline_title
+
+    assert pipeline_title("faceless_longform") == "Faceless long-form video"
+    assert pipeline_title("something_nobody_shipped") == "something nobody shipped"
+
+
+def test_stage_names_come_from_the_pipelines_rather_than_a_second_table():
+    """A separate list of stage names drifts the first time a node is renamed, and the
+    page is then confidently wrong rather than merely ugly."""
+    from forgecast.graph.pipelines import get_pipeline, stage_title, stage_titles
+
+    assert stage_title("voice_casting") == "Cast the voice"
+    assert stage_title("broll_plan") == "Plan B-roll shots"
+    assert stage_title("never_shipped") == "never shipped"
+
+    # Every title here is one a pipeline actually gave that node, not a paraphrase.
+    spec = get_pipeline("faceless_longform")
+    for node in spec.nodes:
+        if node.type in stage_titles():
+            assert stage_titles()[node.type] in {
+                other.title for other in spec.nodes if other.type == node.type}
+
+
+def test_analytics_labels_its_stages_and_its_deaths_in_english(
+        client: TestClient, session: Session, user: User, channel: Channel):
+    """The page argues that it only prints numbers it can stand behind. Labelling the
+    rows with engine identifiers undercuts that in the first column."""
+    from forgecast.models import NodeStatus
+
+    run = Run(user_id=user.id, channel_id=channel.id, topic="T",
+              status=RunStatus.failed)
+    session.add(run)
+    session.flush()
+    session.add(Node(run_id=run.id, key="voice_casting", type="voice_casting",
+                     title="Cast the voice", status=NodeStatus.failed))
+    session.commit()
+
+    page = client.get("/analytics").text
+
+    assert "voice_casting" not in page
+    assert "Cast the voice" in page

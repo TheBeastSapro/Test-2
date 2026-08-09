@@ -22,7 +22,7 @@ from ..config import get_settings
 from ..db import get_session
 from ..graph import formats
 from ..graph.engine import create_run
-from ..graph.pipelines import PIPELINE_META
+from ..graph.pipelines import PIPELINE_META, stage_title
 from ..models import Channel, Node, Run, RunEvent, User
 from ..render.ffmpeg import ffmpeg_available
 from . import runner
@@ -152,6 +152,27 @@ TEMPLATES.env.filters["said"] = said
 # in JavaScript is how a page comes to render "waiting on you" and then replace it with
 # "awaiting_approval" a few seconds later.
 TEMPLATES.env.globals["STATUS_WORDS"] = STATUS_WORDS
+
+
+def pipeline_title(value) -> str:
+    """A pipeline's name in the words the rest of the app uses for it.
+
+    `PIPELINE_META` has carried a title for every shipped pipeline since it was written,
+    and the run header printed the slug — `faceless_longform`, underscore and all, in
+    monospace, beside a heading in plain English. The activity log two panels down on
+    the same page already says "Faceless long-form video".
+    """
+    slug = str(getattr(value, "value", value) or "")
+    for entry in PIPELINE_META:
+        if entry.get("name") == slug:
+            return str(entry.get("title") or slug)
+    return slug.replace("_", " ")
+
+
+TEMPLATES.env.filters["pipeline_title"] = pipeline_title
+# Stage names come from the pipeline definitions themselves — see `pipelines.stage_title`
+# for why they are derived rather than restated.
+TEMPLATES.env.filters["stage_title"] = stage_title
 
 COOKIE = "forgecast_session"
 

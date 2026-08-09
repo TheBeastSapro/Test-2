@@ -123,7 +123,7 @@
     <h1>{{ run.topic }}</h1>
     <div class="row muted t-md">
       <span class="mono">run {{ run.id }}</span>
-      <span>·</span><span class="mono">{{ run.pipeline }}</span>
+      <span>·</span><span>{{ run.pipeline|pipeline_title }}</span>
       <span>·</span>
       <span class="status {{ run.status.value }}" id="run-status">{{ run.status|said }}</span>
       <span>·</span>
