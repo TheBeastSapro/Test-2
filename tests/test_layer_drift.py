@@ -130,3 +130,109 @@ def test_two_shots_of_one_creature_do_not_start_the_same_move(assets, tmp_path):
                      width=480, height=270, fps=12, phase=1.7)
 
     assert one.read_bytes() != two.read_bytes()
+
+
+# ------------------------------------------------------------------------- the lean
+#
+# The drift moves the whole cut-out. This is the second half: the subject also leans,
+# pivoting on its feet, so the crown travels and the contact point does not.
+#
+# It is a sway, and the module says so. The reference's Amber moves an *arm*
+# independently of its torso, and nothing here knows where an arm is — that needs the
+# subject segmented into parts, which is a different piece of work and is still open.
+# What this does is shift the creature's weight, which is the thing a rigid translation
+# cannot do and the reason a composite otherwise reads as a sticker sliding.
+
+
+def _subject_columns(image, y0, y1):
+    """Mean x of the subject's pixels in a horizontal band, or None.
+
+    Found by channel dominance rather than by alpha: this reads the *rendered* frame,
+    which is opaque RGB, so the only thing separating subject from plate is that the
+    subject is red and the plate is grey.
+    """
+    pixels = image.load()
+    columns = [x for y in range(y0, y1) for x in range(image.width)
+               if pixels[x, y][0] > 120 and pixels[x, y][0] > pixels[x, y][1] + 60]
+    return sum(columns) / len(columns) if columns else None
+
+
+def _crown_and_feet(clip: Path, tmp_path: Path, frames_at: str) -> tuple[list, list]:
+    from forgecast.render.ffmpeg import run_ffmpeg
+
+    frames = tmp_path / f"{clip.stem}_frames"
+    frames.mkdir(exist_ok=True)
+    run_ffmpeg(["-i", str(clip), "-vf", frames_at, "-vsync", "0",
+                str(frames / "f%02d.png")], label="sample")
+
+    crowns, feet = [], []
+    for path in sorted(frames.glob("*.png")):
+        image = Image.open(path).convert("RGB")
+        rows = [y for y in range(image.height)
+                if _subject_columns(image, y, y + 1) is not None]
+        assert rows, "the subject was not visible in a sampled frame"
+        crowns.append(_subject_columns(image, rows[0], rows[0] + 12))
+        feet.append(_subject_columns(image, rows[-1] - 12, rows[-1]))
+    return crowns, feet
+
+
+@needs_ffmpeg
+def test_the_lean_pivots_on_the_feet_and_not_on_the_middle_of_the_picture(
+        assets, tmp_path, monkeypatch):
+    """`rotate` turns an image about its own centre. The correction that moves that
+    pivot down to the contact point is what makes the lean *exist*, not merely what
+    makes it correct — which is the opposite of what I assumed before measuring.
+
+    Turning about the centre swings the crown one way and the feet the other, by
+    similar small amounts, so the creature pivots around its own waist and almost
+    nothing reads. Measured on the fixture below: crown travel 3.09px against a 2.07px
+    floor, i.e. nothing. With the pivot moved to the feet the crown travels 8.22px and
+    the feet stay put, which is a creature shifting its weight.
+
+    The drift is zeroed here because it moves crown and feet together and would bury
+    the thing being measured. Its amplitude has a one-pixel floor, so "off" is a ~2px
+    band and that band is the baseline every figure below is read against.
+    """
+    from forgecast.render import layered
+
+    monkeypatch.setattr(layers, "DRIFT_X", 0.0)
+    monkeypatch.setattr(layers, "DRIFT_Y", 0.0)
+    subject_path, plate_path = assets
+    sample = r"select='eq(n\,0)+eq(n\,56)+eq(n\,112)+eq(n\,168)'"
+
+    def spread(values):
+        return max(values) - min(values)
+
+    leaning = layered.drift_clip(subject_path, plate_path, tmp_path / "lean.mp4",
+                                 seconds=9.0, width=960, height=540, fps=25, sway=True)
+    flat = layered.drift_clip(subject_path, plate_path, tmp_path / "flat.mp4",
+                              seconds=9.0, width=960, height=540, fps=25, sway=False)
+
+    lean_crown, lean_feet = _crown_and_feet(leaning, tmp_path, sample)
+    floor_crown, _floor_feet = _crown_and_feet(flat, tmp_path, sample)
+
+    # The crown moves, and by a lot more than the integer-rounding floor.
+    assert spread(lean_crown) > 2 * spread(floor_crown), (
+        f"crown travelled {spread(lean_crown):.2f}px against a floor of "
+        f"{spread(floor_crown):.2f}px")
+
+    # And it moves far more than the feet do. This is the assertion that fails if the
+    # pivot correction is dropped: without it the two are within a pixel of each other.
+    assert spread(lean_crown) > 2 * spread(lean_feet), (
+        f"crown {spread(lean_crown):.2f}px vs feet {spread(lean_feet):.2f}px — "
+        f"the pivot is in the middle of the picture, not on the ground")
+
+
+def test_the_contact_point_is_reported_relative_to_the_image_centre(assets, tmp_path):
+    """Because that is the point `rotate` turns about. Reported in the subject's own
+    coordinates, not the frame's — the rotation happens before the overlay."""
+    subject_path, plate_path = assets
+
+    made = layers.prepared(subject_path, plate_path, tmp_path / "p")
+
+    width, height = made["subject_size"]
+    dx, dy = made["contact"]
+    # The test subject is an ellipse centred horizontally with its base below middle.
+    assert abs(dx) < width * 0.05, "the contact point should sit near the centre line"
+    assert dy > 0, "the feet are below the image centre"
+    assert Image.open(made["subject"]).size == (width, height)

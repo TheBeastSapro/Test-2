@@ -215,6 +215,19 @@ DRIFT_Y = 0.006
 #: a drift that visibly reverses is a loop, and a loop is the thing that reads as cheap.
 DRIFT_PERIOD = 14.0
 
+#: How far the subject leans, in radians, pivoting on its feet. About half a degree at
+#: the default: on an 840px-tall creature that is roughly seven pixels of travel at the
+#: crown and none at the base, which reads as weight shifting rather than as a picture
+#: being rotated. Past about a degree the straight edges in an asset start to visibly
+#: tilt and the eye sees the transform instead of the creature.
+SWAY = 0.009
+
+#: A different period from the drift, and deliberately not a multiple of it. Matched,
+#: the lean and the travel peak together and the two read as one motion — which is the
+#: single move the drift already was. Offset, they beat slowly against each other and
+#: never repeat inside a shot.
+SWAY_PERIOD = 9.0
+
 
 def prepared(subject_path: Path | str, plate_path: Path | str, out_dir: Path | str, *,
              width: int = 1920, height: int = 1080,
@@ -265,4 +278,12 @@ def prepared(subject_path: Path | str, plate_path: Path | str, out_dir: Path | s
     subject.save(subject_file)
     return {"plate": str(plate_file), "subject": str(subject_file),
             "x": paste_x, "y": paste_y, "width": width, "height": height,
-            "subject_box": list(placed_box)}
+            "subject_box": list(placed_box),
+            # The subject file's own size, and where its feet sit inside it. A sway has
+            # to pivot on the contact point, and ffmpeg's `rotate` turns an image about
+            # its centre — so the caller needs the offset from that centre to the feet
+            # to cancel the swing out again. In the subject's coordinates, not the
+            # frame's, because that is the space the rotation happens in.
+            "subject_size": [subject.width, subject.height],
+            "contact": [(box[0] + box[2]) / 2 - subject.width / 2,
+                        box[3] - subject.height / 2]}
