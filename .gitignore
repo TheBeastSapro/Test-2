@@ -38,3 +38,6 @@ horror-pipeline/projects/*/audio/
 
 # ...but the approval record itself must always be committed.
 !horror-pipeline/projects/*/materials/*.json
+
+# competitor research: extracted frames and sprite tiles are a rebuildable cache
+horror-pipeline/research/*/frames/
