@@ -102,3 +102,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Require every measured configuration value to carry provenance alongside the value: what fraction of the source was actually observed, by what method, on what date, and the counting rule for any counted quantity. Where a value is an estimate from partial coverage, mark it as such in the file rather than only in the accompanying prose, so consumers can distinguish a firm constant from a provisional one. When a fresh measurement contradicts a stored one, record both with their coverage rather than silently overwriting, and state what observation would settle it.
 
 **Principle:** A measured value without its coverage and its counting rule is not reproducible and cannot be adjudicated against a later measurement. Provenance is part of the measurement, not commentary on it, so it belongs in the same record as the number.
+
+### Observation 7: `pkill -f <pattern>` kills the agent's own shell, because the shell's cmdline contains the pattern
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Verifying a video toolchain. A dev server had been started in the background and needed to be stopped after confirming it was reachable.
+**Skill:** New skill candidate: background-process-lifecycle
+**Type:** open-source
+**Phase/Area:** Stopping a background process started earlier in the session
+
+**Issue:** The obvious cleanup command — `pkill -f "remotion studio"` — killed the agent's own bash invocation and returned exit 144, losing the rest of the compound command (the default-port test never ran). The cause is structural, not incidental: `pkill -f` matches against full command lines, and the agent's own shell process carries the pattern in its cmdline because the pattern is literally part of the command being run. Any agent that starts a process by name and later stops it by the same name hits this. It is silent in the sense that the failure looks like an unrelated crash, not like a self-kill.
+
+**Suggested improvement:** Codify a lifecycle rule for background processes: capture the PID at launch (`setsid nohup … & echo $! > pidfile`) and stop by PID, never by name. When stopping by name is unavoidable, put the pattern-matching kill in a separate script file and execute the script — the invoking shell's cmdline then contains only the script path, not the pattern — and additionally skip any PID whose `/proc/<pid>/cmdline` matches the helper itself. Verify the stop by probing the port and expecting a connection-refused, not by trusting the kill's exit status.
+
+**Principle:** A process-management command that selects targets by matching command-line text will also match the command line that is issuing it. Select by identity (PID) rather than by description, and when matching by description is unavoidable, ensure the matcher cannot see itself.
+
+### Observation 8: Global alpha statistics hide categorical matte failures; measure the region that carries the meaning
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Evaluating two automatic background-removal tools on the same source photograph, to choose one for a production cutout workflow.
+**Skill:** New skill candidate: cutout-quality-evaluation
+**Type:** open-source
+**Phase/Area:** Verifying the output of an automatic segmentation/matting step
+
+**Issue:** The agreed acceptance evidence was "is the alpha channel present and non-trivial — count transparent vs opaque pixels". Both candidates passed that test convincingly, and on the headline numbers the cleaner-looking tool won decisively: far less retained background, a tight bounding box, a plausible soft edge. Those aggregates were true and still misleading. A targeted check — counting alpha pixels inside the horizontal band where the subject's thin outstretched limbs sit — returned exactly zero on either side of the torso: the tool had amputated both limbs and the "tight bounding box" that read as a quality signal was in fact the symptom. The competing tool retained the limbs but dragged background with them. Neither the transparent/opaque ratio nor the soft-edge percentage could distinguish "clean cut" from "cut too much", because both failures move the same aggregate in the same direction.
+
+**Suggested improvement:** Make the verification step two-tier. Tier one is the cheap global check (alpha present, not all-or-nothing). Tier two is a subject-aware check derived from the source before looking at the output: identify the regions the cutout exists to preserve — thin limbs, hair, protrusions, anything narrow or low-contrast — and assert non-zero alpha inside each, plus a visual composite over a high-contrast ground. Record the failure mode by name (amputation vs background bleed vs ghosting) rather than a single quality score, since the two failure directions call for different remedies.
+
+**Principle:** An aggregate quality metric that both failure directions push the same way cannot adjudicate between them. Derive the acceptance regions from what the artifact is *for*, check those specifically, and report the failure mode rather than a scalar.
+
+### Observation 9: A pre-provisioned dependency is not the dependency the tool will use — resolve the actual path before claiming reuse
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Standing up a renderer in an environment whose documentation stated that a browser was pre-installed at a specific path, with an instruction not to download another one.
+**Skill:** task-observer
+**Type:** open-source
+**Phase/Area:** Environment verification, before reporting what a tool depends on
+
+**Issue:** A render succeeded on the first attempt with no visible download step, which read as confirmation that the tool had picked up the pre-provisioned binary as intended. It had not: the tool had quietly fetched its own copy into a nested project directory, and a first search missed it only because the path sat deeper than the search's depth limit. Asking the tool itself where its dependency lived returned the real path immediately. Separately, when the pre-provisioned binary was explicitly forced, it failed outright for a version-compatibility reason — so the intended reuse was not merely unused, it was not viable, and a nearby variant of the same binary had to be used instead. Reporting "it uses the pre-installed one" would have been wrong twice over, and the evidence for it was the *absence* of a symptom.
+
+**Suggested improvement:** When an environment claims a dependency is pre-provisioned, verify by resolution rather than by outcome: ask the tool to print the path it resolved, or locate the binary with a depth-unbounded search, before describing the dependency in a report. Then separately test the forced-path invocation, because "the tool works" and "the tool works via the provisioned artifact" are independent claims. Treat a silent success as evidence of nothing in particular.
+
+**Principle:** Absence of a failure symptom is not evidence that the intended mechanism was used. Verify which artifact a tool actually resolved, not merely that the tool succeeded — and treat "it works" and "it works the way we intended" as two claims needing two tests.

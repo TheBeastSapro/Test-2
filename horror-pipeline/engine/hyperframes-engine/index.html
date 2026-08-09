@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <!-- GSAP vendored locally. Never fetch a render-time dependency over the
+         network: it makes the render non-deterministic and it is what made
+         the first check fail here with a navigation timeout. -->
+    <script src="public/js/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Anton"; src: url("public/fonts/anton-latin-400-normal.ttf") format("truetype"); font-display: block; }
+      @font-face { font-family: "ArchivoBlack"; src: url("public/fonts/archivo-black-latin-400-normal.ttf") format("truetype"); font-display: block; }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; }
+
+      /* House palette: white canvas, near-black ink, ONE red accent. Nothing else. */
+      body { background: #FFFFFF; }
+
+      /* Boxed + centred image, 1240x680 at centre (960,600). Never stretched. */
+      .box {
+        position: absolute; left: 340px; top: 260px;
+        width: 1240px; height: 680px;
+        border-radius: 20px; border: 6px solid #111111;
+        overflow: hidden; background: #0A0A0C;
+      }
+      /* The image is OVERSIZED inside the box so a transform-only Ken Burns
+         always has travel available and never reveals an edge. */
+      .kb { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+
+      /* Persistent creature name, top-centre, ALL CAPS. On every frame. */
+      .title {
+        position: absolute; left: 0; top: 56px; width: 1920px;
+        text-align: center; font-family: "Anton", sans-serif; font-size: 76px;
+        letter-spacing: 4px; color: #111111; text-transform: uppercase;
+      }
+      .rule { position: absolute; top: 152px; left: 860px; width: 200px; height: 7px; background: #D62020; }
+
+      /* Keyword pop. 1 to 4 words, never a sentence. */
+      .pop {
+        position: absolute; font-family: "ArchivoBlack", sans-serif;
+        font-size: 58px; letter-spacing: 1px; white-space: nowrap;
+        will-change: transform, opacity;
+      }
+      .pop-band { top: 968px; left: 0; width: 1920px; text-align: center; color: #111111; }
+      .pop-on {
+        top: 800px; left: 0; width: 1920px; text-align: center; color: #FFFFFF;
+        -webkit-text-stroke: 6px #111111; paint-order: stroke fill;
+      }
+      .accent { color: #D62020; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="6"
+         data-width="1920" data-height="1080" data-fps="30">
+
+      <!-- SHOT 1 — ASSET SLOT 01. Ken Burns IN: a threat approaching. -->
+      <div id="shot1" class="clip box" data-start="0" data-duration="3" data-track-index="1">
+        <img id="kb1" class="kb" src="public/Cartoon-cat.jpeg" width="1488" height="1984" />
+      </div>
+
+      <!-- SHOT 2 — ASSET SLOT 02. Ken Burns PAN: travelling along something. -->
+      <div id="shot2" class="clip box" data-start="3" data-duration="3" data-track-index="1">
+        <img id="kb2" class="kb" src="public/Heiscoming.jpg" width="1653" height="2204" />
+      </div>
+
+      <!-- Persistent text layer. Never absent. -->
+      <div id="title" class="clip title" data-start="0" data-duration="6" data-track-index="2">Cartoon Cat</div>
+      <div id="rule" class="clip rule" data-start="0" data-duration="6" data-track-index="4"></div>
+
+      <div id="pop1" class="clip pop pop-band" data-start="0.6" data-duration="2.0" data-track-index="3">
+        AUGUST <span class="accent">4, 2018</span>
+      </div>
+      <div id="pop2" class="clip pop pop-on" data-start="3.4" data-duration="2.2" data-track-index="3">
+        HE IS COMING
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // KEN BURNS. Transform only — never width/height/left/top, because Chrome
+      // snaps layout to whole device pixels and emits duplicate frames, which
+      // measures as zero motion. And LINEAR, never eased: easing stalls the
+      // shot at both ends and puts a dead window at the head and tail of
+      // every single shot.
+      gsap.set("#kb1", { scale: 1.06, x: -80, y: -150 });
+      tl.to("#kb1", { scale: 1.16, x: -170, y: -300, duration: 3, ease: "none" }, 0);
+
+      gsap.set("#kb2", { scale: 1.10, x: -40, y: -520 });
+      tl.to("#kb2", { scale: 1.10, x: -300, y: -180, duration: 3, ease: "none" }, 3);
+
+      // Title animates in. Nothing ever appears by cutting to it.
+      tl.from("#title", { y: -40, opacity: 0, duration: 0.45, ease: "power3.out" }, 0);
+      tl.from("#rule",  { scaleX: 0, opacity: 0, duration: 0.4, ease: "power3.out" }, 0.2);
+
+      // Keyword pops: slide + scale in, hold, out. 200ms in, per the measured profile.
+      [["#pop1", 0.6, 2.0], ["#pop2", 3.4, 2.2]].forEach(([sel, t0, dur]) => {
+        tl.fromTo(sel, { y: 26, scale: 0.94, opacity: 0 },
+                       { y: 0, scale: 1, opacity: 1, duration: 0.2, ease: "back.out(2)" }, t0);
+        tl.to(sel, { y: -14, opacity: 0, duration: 0.16, ease: "power2.in" }, t0 + dur - 0.16);
+      });
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
