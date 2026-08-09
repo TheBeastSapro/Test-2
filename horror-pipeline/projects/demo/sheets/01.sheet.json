@@ -1,0 +1,25 @@
+{
+  "section": 1,
+  "creature": "Cartoon Cat",
+  "title": "Cartoon Cat",
+  "t0": 0, "t1": 6,
+  "shots": [
+    {"slot": 1, "t0": 0, "t1": 3, "image": "Cartoon-cat.jpeg", "kb": "in",
+     "vo": "On August 4th 2018, a photograph appeared.",
+     "why": "the debut image the narration is describing"},
+    {"slot": 2, "t0": 3, "t1": 6, "image": "Heiscoming.jpg", "kb": "pan",
+     "vo": "It was standing at the end of the road.",
+     "why": "canon night sighting, creature at distance, matches 'end of the road'"}
+  ],
+  "pops": [
+    {"text": "AUGUST 4, 2018", "t0": 0.6, "t1": 2.6, "where": "band", "accent": true, "size": 58, "kind": "date"},
+    {"text": "HE IS COMING", "t0": 3.4, "t1": 5.6, "where": "on", "accent": false, "size": 58, "kind": "canon"}
+  ],
+  "icons": [], "gags": [],
+  "sfx": [
+    {"file": "sfx/whoosh_01.wav", "t0": 0.0, "gain": -6},
+    {"file": "sfx/impact_low.wav", "t0": 3.0, "gain": -4},
+    {"file": "sfx/tick.wav", "t0": 3.4, "gain": -10}
+  ],
+  "shakes": [], "glitches": []
+}
