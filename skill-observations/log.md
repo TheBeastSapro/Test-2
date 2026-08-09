@@ -312,3 +312,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Before running any loop-based experiment, write down explicitly what the success observation looks like and what the failure observation looks like, and confirm the measurement actually distinguishes them on a single trial run first. Then run the loop. Also budget requests against rate-limited endpoints: strip per-iteration diagnostics that don't change the conclusion.
 
 **Principle:** An experiment is only worth its request budget if its measurement can distinguish the outcomes it was designed to separate. Validate the measurement on one trial before spending the budget on many — especially against rate-limited resources, where a wasted run also degrades the conditions for the retry.
+
+### Observation 21: Check the pipeline stage's fixed internal resolution before optimising the stage in front of it
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Deciding whether to enlarge an image before or after running it through a model
+**Skill:** New skill candidate: matte-quality-evaluation
+**Type:** open-source
+**Phase/Area:** Ordering stages in a processing chain
+
+**Issue:** A plausible and expensive plan was to enlarge the input before the analysis stage, on the reasoning that more pixels would give the model more to work with. Reading the stage's source showed it resizes every input to a fixed square before inference, so the extra pixels were discarded and the enlargement could not possibly add information. The measurement then confirmed something stronger than "no benefit": doing it first made the result WORSE, because the enlarger denoises, and denoising removed the faint low-contrast signal the analysis stage had been relying on. Ordering the other way also allowed cropping to the region of interest first, which cut the enlarger's work by up to 23x. Twenty lines of reading the dependency's source settled a question that would otherwise have been argued from intuition.
+
+**Suggested improvement:** Before ordering or optimising stages in a processing chain, read each stage's source to find its fixed internal working resolution or other normalisation. Treat any stage that normalises its input as an information ceiling: no upstream stage can raise the information that reaches it, and upstream transforms can only remove signal. State the ceiling explicitly in the analysis, then measure to check for the second-order harm rather than assuming neutrality.
+
+**Principle:** A stage that normalises its input caps what every stage before it can contribute. Find that cap by reading the code, not by benchmarking around it, and remember that an upstream transform which cannot add information can still destroy some.
+
+### Observation 22: A metric that cannot go wrong is a baseline, not a winner
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Ranking image enlargement methods on a reconstruct-the-original fidelity test
+**Skill:** New skill candidate: matte-quality-evaluation
+**Type:** open-source
+**Phase/Area:** Interpreting a reconstruction or round-trip benchmark
+
+**Issue:** A round-trip test (degrade a known input, restore it, compare to the original) ranked the simplest non-generative method first on every fidelity metric. Reported as a ranking that would have been a false conclusion: the simple method wins that test by construction, because it cannot add anything and therefore cannot add anything wrong. It also fails the actual job, producing a visibly unusable result at the target size. The test's real value was a DIFFERENT number in the same run: a high-frequency energy ratio against the original, where above 1.0 means the method emitted more fine detail than the truth contains. That single ratio separated the faithful candidates from the one that was silently restyling the content, and it was confirmed by looking at the outputs, where the offending model had converted photographs into line art.
+
+**Suggested improvement:** When designing a reconstruction benchmark, identify up front which candidates win it trivially and label them as the floor rather than entering them in the ranking. Pair every similarity metric with an at-least-one excess metric that detects output the input did not contain, since similarity scores punish invention and conservatism identically. Always confirm the excess metric against the rendered output, because the mechanism of invention (added texture, restyling, sharpened edges) determines whether it matters.
+
+**Principle:** In a reconstruction benchmark, the method that cannot invent always scores best and is usually not the answer. Rank on what a candidate ADDS that the ground truth does not have, not only on how close it stays.
