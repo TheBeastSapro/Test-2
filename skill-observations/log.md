@@ -417,3 +417,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a rule to the alert-and-severity guidance: severity styling belongs to the state, never to the affordance that can produce the state. The control that sets a flag stays neutral until the flag is set; then the styling escalates on the whole containing element, and preferably adds a marker readable while scrolling past rather than only on close inspection. Add a review question for any severity work: if every item were in this state, would the styling still communicate anything? If not, the styling is on the wrong element. Pair it with a standing instruction to render and look at the result, because this class of error is invisible in source and obvious in a screenshot.
 
 **Principle:** Emphasis is relative. A treatment that appears on every item carries no information, so severity must attach to the exception rather than to the mechanism that creates it, and any design where the alarm state is also the resting state has inverted its own purpose.
+
+### Observation 28: A larger model under degraded input converts omission into fabrication
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Re-checking a suspect window of a machine transcript with a bigger model, as the spec instructed
+**Skill:** New skill candidate: machine-transcript-verification
+**Type:** open-source
+**Phase/Area:** Escalating to a larger model to verify a suspect result
+
+**Issue:** The written procedure said to re-run a suspect window through a larger model before believing the first result. On a deliberately degraded window where the truth was 54 items, the small model returned 8 and the large model returned 47. The large model looked like a recovery and was not: its output was fluent, well-formed and almost entirely invented. The only signal separating the two was the per-item confidence, which was 0.95 on clean input and 0.53 on the degraded window, with half the items below 0.5. Item count moved in the direction that looks like success while correctness moved the other way, so the obvious metric pointed exactly the wrong way.
+
+**Suggested improvement:** When a procedure says to escalate to a larger model to verify something, define in advance which number decides the comparison, and make it a confidence or agreement measure rather than a volume measure. Report mean confidence and the share of low-confidence items alongside any count. Frame the escalation as a second opinion to diff against the first, never as an upgrade that supersedes it, and treat a large jump in output volume from a degraded input as evidence of fabrication until the confidence says otherwise.
+
+**Principle:** Capacity does not become accuracy when the input is bad. A weak model drops what it cannot resolve, a strong one fills the hole with something plausible, so the more capable model can be the less trustworthy witness. Verify with confidence, not with volume.
+
+### Observation 29: Do not derive the location of missing data from the record that lost it
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Locating a genuinely missing stretch of source material by inspecting the derived record
+**Skill:** New skill candidate: machine-transcript-verification
+**Type:** open-source
+**Phase/Area:** Reporting where a detected gap actually is
+
+**Issue:** The natural implementation was to bracket a missing stretch by the surviving records either side of it and report that interval. It produced a zero-width interval: the recogniser does not emit position information for content it never perceived, so the surviving records on both sides were adjacent even though six seconds of source sat between them. The tool correctly detected that something was missing and then reported it at a single instant, which is useless to the person who has to go and re-make the missing part. The fix was to locate the gap in an independent measurement of the raw source rather than in the derived record, which returned the true interval.
+
+**Suggested improvement:** Whenever a tool reports a gap, separate the two questions: which content is missing (answered by the derived record) and where it is in the source (answered only by an independent measurement of the source). Never let the second question be answered by the artifact that lost the data. Add a test with a known removed span and assert that the reported interval matches the real one, since a detector can pass a presence test while failing a location test.
+
+**Principle:** A derived record cannot tell you where its own omissions are. Detection can come from the derivation; localisation has to come from the raw source.
+
+### Observation 30: Machine-read text has its own surface conventions, and both sides of a comparison must be folded onto them
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Matching an authored source document against a machine transcript of a reading of it
+**Skill:** New skill candidate: machine-transcript-verification
+**Type:** open-source
+**Phase/Area:** Normalising before comparing authored text with recognised text
+
+**Issue:** The authored document spelled numbers as words; the recogniser emitted digits. Every number therefore read as a mismatch, and the reference implementation's own worked example, which looked up a spelled-out number, could never succeed against a real transcript. The failure was silent in one direction (a slightly lower match rate that looks like normal noise) and loud in the other (a lookup that raises). Worse, the convention is a property of the model rather than of the content, so a lookup written against one model can break when the model is swapped, which defeated the entire purpose of writing lookups symbolically instead of hardcoding positions. One shared normalisation function, applied to both sides, fixed both symptoms and raised the match rate by more than a percentage point.
+
+**Suggested improvement:** Before comparing authored text with recognised text, enumerate the recogniser's output conventions (numerals, currency, dates, contractions, casing, punctuation attached to tokens) and write a single normalisation function that both sides import. Never let two comparison sites define their own. Treat the convention as part of the recogniser's interface and re-check it when the model version changes.
+
+**Principle:** A recogniser does not return the source, it returns its own rendering of the source. Any comparison against authored text must fold both sides onto one canonical form through one shared function, or the comparison is silently measuring the rendering rather than the content.
