@@ -1,0 +1,22 @@
+{
+  "source": "storyboard",
+  "video_id": "VZPZi8yb5mg",
+  "title": "Every Doctor Nowhere Monster Explained in 9 Minutes",
+  "duration_s": 591,
+  "frame_count": 117,
+  "interval_s": 5.0513,
+  "frame_w": 320,
+  "frame_h": 180,
+  "client": "mweb",
+  "coverage_pct": 100.0,
+  "blind_to": [
+    "shot pacing",
+    "ken burns amount",
+    "icon/caption animation timing",
+    "screen shake",
+    "glitch effects",
+    "cuts per minute",
+    "all audio"
+  ],
+  "_blind_note": "sampling interval is 5.05s; nothing faster than that is observable"
+}
