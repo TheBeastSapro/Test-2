@@ -246,10 +246,46 @@ class Studio:
                 select(Run).where(Run.user_id == user.id)
                 .order_by(Run.id.desc()).limit(200)).scalars().all()
             counts = formats.counts(list(channels), list(runs))
-            waiting = [
-                {"run": run.id, "topic": run.topic, "channel": run.channel.name}
-                for run in runs if run.status is RunStatus.awaiting_approval
-            ]
+            # Which decision each run is actually holding. Without it this panel is a
+            # list of runs on one channel about one topic, and five of them look
+            # identical — same title, same subtitle, five times — so the surface the
+            # whole gated design exists for tells you nothing except that something is
+            # waiting. The gate's title is the difference between a list you can act on
+            # and a list you have to click through.
+            #
+            # One query for every run's open gate rather than one per run: a busy
+            # account has this panel on every page load, and it is drawn from the same
+            # session as everything else here.
+            stalled = [run.id for run in runs
+                       if run.status is RunStatus.awaiting_approval]
+            gates: dict[int, Node] = {}
+            if stalled:
+                for node in session.execute(
+                    select(Node).where(
+                        Node.run_id.in_(stalled),
+                        Node.status == NodeStatus.awaiting_approval,
+                    ).order_by(Node.id)
+                ).scalars().all():
+                    # First open gate per run. A run can hold more than one — the
+                    # pipeline fans out — and the earliest is the one to answer.
+                    gates.setdefault(node.run_id, node)
+
+            waiting = []
+            for run in runs:
+                if run.status is not RunStatus.awaiting_approval:
+                    continue
+                gate = gates.get(run.id)
+                waiting.append({
+                    "run": run.id, "topic": run.topic, "channel": run.channel.name,
+                    # Empty when the run says it is waiting and no node does. That is a
+                    # real state — a run interrupted mid-transition — and naming a gate
+                    # it is not at would send somebody to the wrong screen.
+                    "gate": gate.title if gate else "",
+                    "gate_key": gate.key if gate else "",
+                    "waiting_since": (gate.finished_at or gate.started_at).isoformat()
+                    if gate is not None and (gate.finished_at or gate.started_at)
+                    else "",
+                })
             balance = credits.balance(session, user.id)
 
         return {

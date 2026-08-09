@@ -125,7 +125,7 @@
       <span class="mono">run {{ run.id }}</span>
       <span>·</span><span class="mono">{{ run.pipeline }}</span>
       <span>·</span>
-      <span class="status {{ run.status.value }}" id="run-status">{{ run.status.value }}</span>
+      <span class="status {{ run.status.value }}" id="run-status">{{ run.status|said }}</span>
       <span>·</span>
       <span><span id="spent">{{ run.credits_spent }}</span> credits spent
         (${{ '%.2f'|format(usd(run.credits_spent)) }}),
@@ -162,7 +162,7 @@
             <div class="k">{{ node.key }}</div>
             <div class="t">{{ node.title }}</div>
             <div class="s status {{ node.status.value }}"
-                 data-role="status">{{ node.status.value }}</div>
+                 data-role="status">{{ node.status|said }}</div>
             {% if node.requires_approval %}
               <div class="gatetag" style="margin-top:6px">◆ decision gate</div>
             {% endif %}
@@ -518,10 +518,16 @@
     log.scrollTop = log.scrollHeight;
   });
 
+  /* One vocabulary, rendered from the server's table. The status keeps its raw value
+     as a CSS class and as the data attribute this compares on — only the visible text
+     is translated, and only here. */
+  const STATUS_WORDS = {{ STATUS_WORDS|tojson }};
+  const said = (value) => STATUS_WORDS[value] || String(value || "").replace(/_/g, " ");
+
   stream.addEventListener("state", (message) => {
     const state = JSON.parse(message.data);
     const runStatus = document.getElementById("run-status");
-    runStatus.textContent = state.status;
+    runStatus.textContent = said(state.status);
     runStatus.className = "status " + state.status;
     document.getElementById("spent").textContent = state.credits_spent;
     let gateAppeared = false;
@@ -531,7 +537,7 @@
       if (!node || node.dataset.status === status) continue;
       node.dataset.status = status;
       const badge = node.querySelector('[data-role="status"]');
-      badge.textContent = status;
+      badge.textContent = said(status);
       badge.className = "s status " + status;
       if (status === "awaiting_approval") gateAppeared = true;
       moved = true;

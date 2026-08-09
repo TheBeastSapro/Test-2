@@ -114,8 +114,44 @@ def tail(value, keep: int = 44) -> str:
     return text if len(text) <= keep else "…" + text[-(keep - 1):]
 
 
+#: What each machine status is called on screen. The enum values are identifiers — they
+#: name a branch in the engine — and `awaiting_approval` printed into a table is an
+#: internal name leaking through the interface, underscore and all.
+#:
+#: Only the ones that read badly are renamed. "completed", "running" and "failed" are
+#: already the words a person would use, and a table where three statuses are plain
+#: English and three are re-worded reads as two vocabularies rather than one.
+STATUS_WORDS = {
+    "awaiting_approval": "waiting on you",
+    "queued": "queued",
+    "cancelled": "cancelled",
+    "pending": "not started",
+    "ready": "ready",
+    "skipped": "skipped",
+}
+
+
+def said(value) -> str:
+    """A run or node status in the words the interface uses.
+
+    Takes the enum or its value, because templates hold both. Anything unrecognised
+    comes back with its underscores opened out rather than being dropped: a status this
+    does not know is still a status, and printing nothing would be worse than printing
+    it plainly.
+    """
+    raw = getattr(value, "value", value)
+    text = str(raw or "").strip()
+    return STATUS_WORDS.get(text, text.replace("_", " "))
+
+
 TEMPLATES.env.filters["when"] = when
 TEMPLATES.env.filters["tail"] = tail
+TEMPLATES.env.filters["said"] = said
+# The same table, reachable from a template so the live-updating pages can use it too.
+# `run.html` repaints its status badges from a stream, and a second copy of these words
+# in JavaScript is how a page comes to render "waiting on you" and then replace it with
+# "awaiting_approval" a few seconds later.
+TEMPLATES.env.globals["STATUS_WORDS"] = STATUS_WORDS
 
 COOKIE = "forgecast_session"
 

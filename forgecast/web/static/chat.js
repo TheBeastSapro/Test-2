@@ -1041,10 +1041,15 @@ function paintStatus(s) {
 
   const waiting = s.runs_waiting_on_you || [];
   $('#pane-waiting').hidden = !waiting.length;
+  /* The gate leads, not the topic. One channel running five videos about one subject
+     produced five cards reading "Run N — Channel / same topic / open it", which is a
+     list you have to click through rather than one you can act on. What differs between
+     them is the decision each is holding, so that is the line in bold. */
   $('#waiting-body').innerHTML = waiting.map(w => `
     <div class="gatecard">
-      <b>Run ${w.run}</b> — ${esc(w.channel)}<br>
-      <span class="muted">${esc(w.topic)}</span><br>
+      <b>${esc(w.gate || 'waiting to continue')}</b>
+      <span class="muted">· run ${w.run}</span><br>
+      <span class="muted">${esc(w.channel)}${w.topic ? ' — ' + esc(w.topic) : ''}</span><br>
       <a href="/runs/${w.run}" style="font-size:12px">open it →</a>
     </div>`).join('');
 

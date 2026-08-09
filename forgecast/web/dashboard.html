@@ -156,7 +156,7 @@
       <tr>
         <td class="mono"><a href="/runs/{{ run.id }}">{{ run.id }}</a></td>
         <td><a href="/runs/{{ run.id }}">{{ run.topic }}</a></td>
-        <td><span class="status {{ run.status.value }}">{{ run.status.value }}</span></td>
+        <td><span class="status {{ run.status.value }}">{{ run.status|said }}</span></td>
         <td class="mono muted">{{ run.credits_spent }} / {{ run.credits_reserved }} held</td>
       </tr>
       {% endfor %}
