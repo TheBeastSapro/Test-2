@@ -1,55 +1,232 @@
 {
-  "_readme": "Measured style profiles. Every number came from watching a real video end to end on 2026-08-08. The renderer must read from here, never hardcode a look. Full evidence and timestamps are in docs/competitor-style-profiles.md.",
+  "_readme": "Measured style profiles. The renderer must read from here, never hardcode a look. Full evidence and timestamps are in docs/competitor-style-profiles.md and the per-channel teardowns in docs/teardown-*.md. Every measured value now carries provenance: _measuredOn, _coverage, and _method. A value with no provenance block predates the 2026-08-09 re-measurement and should be treated as unverified.",
+
+  "_provenance": {
+    "_note": "Read this before trusting any number. The 2026-08-08 pass was a single watch-through and several of its values did not survive re-measurement. The 2026-08-09 pass sampled storyboard sprite-sheet frames across the full runtime and measured them programmatically, so it is authoritative on anything proportional, structural or chromatic, and silent on anything faster than its sampling interval.",
+    "passes": {
+      "2026-08-08-watchthrough": { "method": "single watch-through of each reference", "coverage": "impressionistic", "reliability": "low for proportions and hex values, unknown for pacing" },
+      "2026-08-09-storyboard": { "method": "YouTube storyboard sprite-sheet track split into stills, measured with numpy/PIL (background sampling, bounding boxes, edge probes, palette extraction), frames read at 3-4x upscale", "coverage": "m-simplified 99.1% of 545s at 4.95s interval; ficknime 100% of 591s at 4.925s interval", "blindTo": "anything faster than the sampling interval: shot pacing, Ken Burns amount, icon and caption animation timing, screen shake, glitch effects, and all audio" }
+    },
+    "storyboardGotcha": "Storyboard resolution is client-dependent. player_client=mweb exposes 320x180 (storyboard3_L3); android_vr, tv_embedded and web_embedded top out at 160x90. Four times the pixel area, and the difference between reading on-screen labels and not. Always sweep clients before accepting a resolution ceiling."
+  },
 
   "_universal": {
-    "_note": "True in all three references. The validator enforces these regardless of active profile.",
+    "_note": "PREVIOUSLY described as 'true in all three references'. Re-measurement refuted several. Kept here as HOUSE VALIDATOR RULES, which is what they actually are. Where a reference violates one, that is recorded rather than silently relaxed: the house bar is deliberately stricter than the references in places, and that is the owner's call, not a measurement error.",
     "avgShotSec": 2.2,
     "maxHoldSec": 4.0,
+    "_maxHoldSec_note": "NOT universal. m-simplified holds a frozen 4.95s span at 6:41.3-6:46.3 (mean per-pixel deltaL 0.095). The house limit of 4.0s is stricter than the reference. Keep it.",
     "staticRuntimePct": 0.0,
+    "_staticRuntimePct_note": "NOT universal, contradicted by the same 4.95s frozen span.",
     "zoomPerShot": [1.05, 1.10],
     "iconPopMs": 200,
     "iconPopScale": [0.0, 1.10, 1.0],
     "captionMaxWords": 4,
+    "_captionMaxWords_note": "NOT universal. Measured caption cards run 6, 8 and 10 words on m-simplified and 5, 9 and 13 on ficknime. The 4-word house rule is stricter than both references. It is a deliberate house choice, not a measurement.",
     "captionSyncTo": "first-syllable",
     "titlePersistent": true,
     "titlePos": "top-center",
     "musicBed": "constant-low-freq-drone",
     "duckDb": -12,
     "rosterPunchInSec": 0.5,
-    "textOnScreenPct": 0.95
+    "textOnScreenPct": 0.95,
+    "_unverified": ["avgShotSec", "zoomPerShot", "iconPopMs", "iconPopScale", "captionSyncTo", "musicBed", "duckDb", "rosterPunchInSec"],
+    "_unverified_note": "All pacing, animation and audio values remain from the 2026-08-08 pass. The storyboard method cannot see them. They need either a full video download or targeted multimodal calls."
   },
 
   "profiles": {
     "m-simplified": {
-      "_source": "youtube lrY0ErBfytQ, 1.54M views, 9:05",
-      "layout": { "fullFramePct": 0.75, "whiteCanvasPct": 0.25, "whiteCanvasTrigger": ["number", "size-comparison", "spec"] },
-      "title": { "font": "bold-sans", "case": "title", "fill": "#000000", "stroke": "#FFFFFF", "strokeWidth": 6 },
-      "palette": { "bg": "#FFFFFF", "ink": "#000000", "accents": ["#00FF00", "#FFFF00"] },
-      "caption": { "pos": "bottom-center", "anim": "instant-pop", "animMs": 0 },
-      "roster": { "cells": 9, "grid": "3x3" },
-      "pacing": { "avgShotSec": 2.2, "maxHoldSec": 4.0 },
-      "audio": { "sfxPerMin": 20 },
-      "motion": { "shakeOnImpact": true, "shakeCount9min": 9 },
-      "signature": "creature layer rises from behind a background element; cutout tinted to match the sky",
-      "midCta": { "atSec": 201, "durSec": 9, "treatment": "stick figure on white canvas, LIKE / SUBSCRIBE / COMMENT" }
+      "_source": "youtube lrY0ErBfytQ, 1.54M views, 545s, 8 creatures",
+      "_measuredOn": "2026-08-09-storyboard",
+      "_coverage": "99.1% of runtime, 110 frames at 4.9545s interval, t=0 to 540.05s. Final 4.95s unsampled.",
+
+      "layout": {
+        "fullFramePct": 0.473,
+        "whiteCanvasPct": 0.418,
+        "blackCanvasPct": 0.082,
+        "anyCanvasPct": 0.527,
+        "boxedPct": 0.018,
+        "textOnlyCardPct": 0.064,
+        "_boxed_note": "Boxing is only 1.8% of runtime. The dominant unit is a BLED CUTOUT with no container. Do not model this channel as a boxed-image layout.",
+        "_textOnlyCard_note": "The reference uses text-only cards. House rule 10 bans them. Reference behaviour recorded, house rule stands.",
+        "_prev_2026_08_08": { "fullFramePct": 0.75, "whiteCanvasPct": 0.25, "note": "both refuted" }
+      },
+
+      "canvasTrigger": {
+        "rule": "subject-luminance",
+        "_rule_note": "THE IMPORTANT FINDING. Canvas colour is chosen MECHANICALLY to maximise contrast against the subject, not semantically by content type. Dark subjects go on white, bright subjects go on black.",
+        "darkSubjectLumaRange": [0, 84],
+        "darkSubjectCanvas": "#FFFFFF",
+        "brightSubjectLumaRange": [110, 159],
+        "brightSubjectCanvas": "#000000",
+        "thresholdLuma": 100,
+        "evidence": "Section 7 flips canvas five times mid-section, going white the instant the pale creature leaves frame.",
+        "_prev_2026_08_08": { "whiteCanvasTrigger": ["number", "size-comparison", "spec"], "note": "refuted. Only 'spec' partly holds: spec blocks are 62.8% canvas. Numbers and size comparisons land on white, black AND scene. An earlier 60s-window pass concluded 'numbers cut to a black void'; that was an artefact of a sample containing only a pale creature." }
+      },
+
+      "box": {
+        "_note": "Content images have NO container. Only ROSTER CELLS are boxed.",
+        "contentBorder": null,
+        "contentRadius": 0,
+        "contentShadow": null,
+        "_edgeProbe": "canvas -> exactly one antialias pixel -> image",
+        "rosterCellBorderPx1080": 7,
+        "rosterCellRadiusPx1080": 8,
+        "rosterCellShadow": null,
+        "_house_implication": "The house style applies a 6px border and 20px radius to CONTENT images. That matches this reference's ROSTER cells, not its content. Owner decision, flagged not changed."
+      },
+
+      "title": {
+        "font": "bold-rounded-oblique-comic",
+        "case": "title",
+        "fill": "#FFFFFF",
+        "stroke": "#000000",
+        "strokeWidthPx1080": [4, 8],
+        "posXPct": 50.0,
+        "_posXVariance": 0.0,
+        "persistentPct": 0.964,
+        "_persistent_note": "Absent only on the 4 mid-CTA frames.",
+        "_prev_2026_08_08": { "font": "bold-sans", "fill": "#000000", "stroke": "#FFFFFF", "note": "fill and stroke were INVERTED; face is comic, not sans" }
+      },
+
+      "palette": {
+        "bg": "#FFFFFF",
+        "bgAlt": "#000000",
+        "ink": "#000000",
+        "accents": ["#5AF050", "#DCE767", "#D5192A"],
+        "accentUse": "not-per-section",
+        "_prev_2026_08_08": { "accents": ["#00FF00", "#FFFF00"], "note": "approximate hexes were off and a third accent, red, was missing entirely" }
+      },
+
+      "chrome": {
+        "badge": null,
+        "watermark": null,
+        "cornerElement": null,
+        "_evidence": "corner-patch standard deviation 63-71 across 51 scene frames; nothing persistent in any corner",
+        "_house_implication": "Independently confirms the corner-mascot ban."
+      },
+
+      "caption": {
+        "pos": "beside-or-under-subject",
+        "_pos_note": "bottom-center was NOT observed once in 110 frames",
+        "maxWordsMeasured": 10,
+        "anim": null,
+        "animMs": null,
+        "_prev_2026_08_08": { "pos": "bottom-center", "anim": "instant-pop", "animMs": 0, "note": "position refuted; animation not testable by this method" }
+      },
+
+      "roster": { "cells": 8, "grid": "4x2", "_prev_2026_08_08": { "cells": 9, "grid": "3x3", "note": "refuted" } },
+
+      "structure": { "sections": 8, "runtimeSec": 545 },
+
+      "sourcing": {
+        "artworksPerCreature": 1,
+        "artworksPerCreatureRange": [1, 3],
+        "treatments": 10,
+        "backgroundHandling": "strip-and-own-the-plate",
+        "_note": "The source artwork's own background is REMOVED and the creature is composited into an editor-chosen stock or painted plate. The same cutout appears in 7 different plates across 55s. This is why cutout extraction quality is on the critical path for a house style that leans this way."
+      },
+
+      "pacing": { "maxHoldSecObserved": 4.95, "_unverified": ["avgShotSec"] },
+      "audio": { "_unverified": ["sfxPerMin"], "sfxPerMin": 20 },
+      "motion": { "_unverified": ["shakeOnImpact", "shakeCount9min"], "shakeOnImpact": true, "shakeCount9min": 9 },
+
+      "signature": "one plate held while the creature layer scales up and rises from behind a mid-ground occluder",
+      "_signature_note": "The rise is CONFIRMED and generalises. 'Cutout tinted to match the sky' is REFUTED: the same untinted cutout appears on 7 different plates.",
+
+      "midCta": { "atSec": 200.5, "durSec": 9.1, "treatment": "hand-drawn line figure, green ALL CAPS, persistent title suppressed" },
+
+      "_violatesHouseRules": [
+        { "rule": "10 no blank text-only cards", "observed": "6.4% of runtime is text-only cards" },
+        { "rule": "6 no real identifiable people", "observed": "a real identifiable person's photograph at 5:32.0" }
+      ]
     },
 
     "ficknime": {
-      "_source": "youtube VZPZi8yb5mg, 444K views, 9:51",
-      "layout": { "fullFramePct": 0.08, "whiteCanvasPct": 0.92, "whiteCanvasTrigger": ["default"] },
-      "title": { "font": "serif", "case": "title", "fill": "#000000", "stroke": null },
-      "palette": { "bg": "#FFFFFF", "ink": "#000000", "accents": ["#D4AF37", "#FF0000", "#800080", "#0000FF", "#008000"], "accentUse": "per-section-octagon" },
-      "caption": { "pos": "center-bottom-or-beside-icon", "anim": "scale-in", "animMs": 100 },
-      "roster": { "cells": 8, "grid": "octagons" },
-      "pacing": { "avgShotSec": 2.2, "maxHoldSec": 4.5, "scenesPerMin": 27 },
-      "audio": { "sfxPerMin": 22 },
-      "motion": { "iconSlidePx": 200, "iconSlideMs": 300, "shakeJitterPx": 5 },
-      "signature": "one PNG cutout reused across ~16 composited scenes; additive layering one element per second",
-      "humour": { "everySec": 90, "durSec": [1.0, 2.0], "treatment": "meme text overlay" }
+      "_source": "youtube VZPZi8yb5mg, 444K views, 591s, 12 creatures",
+      "_measuredOn": "2026-08-09-storyboard",
+      "_coverage": "100% of runtime, 120 frames at 4.925s interval",
+
+      "layout": {
+        "whiteCanvasPct": 0.867,
+        "greyCanvasPct": 0.033,
+        "anyCanvasPct": 0.908,
+        "fullBleedPct": 0.050,
+        "_prev_2026_08_08": { "fullFramePct": 0.08, "whiteCanvasPct": 0.92, "note": "close, but conflated three distinct canvas variants" }
+      },
+
+      "box": {
+        "shape": "hard-edged-rectangle",
+        "border": null,
+        "radius": 0,
+        "shadow": null,
+        "_edgeProbe": "canvas -> exactly one antialias pixel -> image, and that pixel tracks the image colour, so it is not a stroke",
+        "topPctH": [0.18, 0.22],
+        "heightPctH": [0.61, 0.78],
+        "widthFrom": "source-aspect",
+        "centreXPct": 50.0,
+        "_centreXVariance": 0.16
+      },
+
+      "layoutEngine": {
+        "dominantUnit": "horizontal-n-up-row",
+        "_note": "Not a hero image. The dominant unit is an N-up row.",
+        "twoUpXPct": [27, 75],
+        "threeUpXPct": [19, 50, 78]
+      },
+
+      "title": { "font": "serif", "case": "title", "fill": "#000000", "stroke": null, "posXPct": 50.0, "capHeightPctH": 0.067, "baselinePctH": 0.117 },
+
+      "titlePersistent": false,
+      "_titlePersistent_note": "Refuted. Title is absent on full-bleed frames.",
+
+      "badge": { "shape": "polygon-9-to-10-sided", "sizePx1080": [150, 150], "xMarginPct": 3.1, "yMarginPct": 1.7, "persistent": true, "perSection": true },
+
+      "palette": {
+        "bg": "#F8F8F8",
+        "bgGrey": ["#B8B8B8", "#D0D0D0"],
+        "ink": "#000000",
+        "accentCount": 12,
+        "accentUse": "one-per-section-in-badge-and-roster-cell-only",
+        "annotationColour": "#FF0000",
+        "_annotation_note": "Red is RESERVED for freehand annotation: circle, X, box. It is not one of the 12 section accents.",
+        "_prev_2026_08_08": { "bg": "#FFFFFF", "accents": ["#D4AF37", "#FF0000", "#800080", "#0000FF", "#008000"], "note": "bg refuted; none of the 5 stored hexes match, and there are 12 accents not 5" }
+      },
+
+      "roster": { "cells": 12, "grid": "5/4/3-centred-rows", "cellPx": 300, "pitchPx": 375, "labelPos": "below-cell-short-form", "_prev_2026_08_08": { "cells": 8, "grid": "octagons", "note": "refuted" } },
+
+      "structure": {
+        "sections": 12,
+        "avgSectionSec": 49.3,
+        "sectionRangeSec": [33, 65],
+        "coldOpenSec": 0,
+        "_coldOpen_note": "First word at t=0.08s over the roster.",
+        "sectionSeparator": "hard-cut-to-black",
+        "wordCount": 1881,
+        "wpm": 191,
+        "cta": null,
+        "_cta_note": "NO CTA ANYWHERE. Zero occurrences across 1,881 words and 120 frames. No outro. The house format runs two CTAs; this is a divergence the owner has already chosen.",
+        "outro": null
+      },
+
+      "sourcing": {
+        "artworksPerCreature": 1,
+        "treatments": 7,
+        "treatmentList": ["boxed", "cropped", "desaturated-as-backdrop", "silhouetted", "scaled-off-frame", "inside-device-screen", "badge"],
+        "backgroundHandling": "keep-source-background-and-box-it",
+        "_note": "The OPPOSITE of m-simplified. Ficknime keeps the source artwork's own background and boxes it; m-simplified strips it and owns the plate. In one section a single photo plus its own silhouette carries 9 of 10 sampled compositions.",
+        "_priorClaim": "An earlier analysis claimed 'one PNG cutout across ~16 composited scenes' and that 'the full standalone image barely exists'. Reuse is CONFIRMED and mechanised, but 'one PNG' is too strong for some sections (3-5 assets), '~16 scenes/60s' is unverifiable at this sampling rate (lower bound ~13/65s), and 'standalone images barely exist' is REFUTED as worded: standalone images are common, they are simply always BOXED rather than BLED. The distinction the renderer needs is boxed vs bled, not standalone vs composited."
+      },
+
+      "pacing": { "_unverified": ["avgShotSec", "maxHoldSec", "scenesPerMin"], "avgShotSec": 2.2, "maxHoldSec": 4.5, "scenesPerMin": 27 },
+      "audio": { "_unverified": ["sfxPerMin"], "sfxPerMin": 22 },
+      "motion": { "_unverified": ["iconSlidePx", "iconSlideMs", "shakeJitterPx"], "iconSlidePx": 200, "iconSlideMs": 300, "shakeJitterPx": 5 },
+      "humour": { "_unverified": true, "everySec": 90, "durSec": [1.0, 2.0], "treatment": "meme text overlay" }
     },
 
     "darkly": {
       "_source": "youtube G1u--bNXA8g, 2.73M views, 9:54. Niche leader.",
+      "_measuredOn": "2026-08-08-watchthrough",
+      "_coverage": "UNVERIFIED. Not re-measured on 2026-08-09. Every value below is from the single watch-through pass, which was materially wrong on the two profiles that were re-measured. Treat as a hypothesis, not data.",
       "layout": { "fullFramePct": 0.15, "whiteCanvasPct": 0.85, "whiteCanvasTrigger": ["default"], "fullFrameUse": ["found-footage", "atmosphere"] },
       "title": { "font": "marker-sans", "case": "title", "prefix": "The ", "fill": "#000000", "stroke": null },
       "palette": { "bg": "#FFFFFF", "ink": "#000000", "accents": ["#FF0000"], "accentUse": "blood-and-horror-only", "rosterCellBgs": ["#4B0082", "#00FF00", "#FFFF00"] },
@@ -63,12 +240,13 @@
         "firstFactAtSec": 1,
         "iconsPerConcept": [3, 5],
         "narrationWpm": [160, 180],
-        "_note": "Competitors run 10-15s intro hooks, 1 static image per concept, 120-140 wpm. This is the measured gap. Layout is not the lever."
+        "_note": "Competitors run 10-15s intro hooks, 1 static image per concept, 120-140 wpm. This is the measured gap. Layout is not the lever.",
+        "_wpm_caveat": "The 160-180 wpm differentiator does NOT hold. Re-measured: m-simplified runs 182.9 wpm and ficknime 191 wpm, both at or above Darkly's stated band. Narration rate is table stakes in this niche, not Darkly's edge."
       }
     },
 
     "house": {
-      "_note": "The active profile. Extends m-simplified per the owner's 23 Jul decision, with a deliberately divergent palette from thumbnail-spec.md.",
+      "_note": "The active profile and the OWNER'S, not a measurement. Nothing in this block was changed by the 2026-08-09 re-measurement. Where the house diverges from a reference, that is a decision, and the implications are listed under _openDecisions for the owner to settle.",
       "extends": "m-simplified",
       "layout": { "fullFramePct": 0.72, "whiteCanvasPct": 0.28, "whiteCanvasTrigger": ["number", "size-comparison", "icon-list"] },
       "title": { "font": "anton", "case": "upper", "fill": "#FFFFFF", "stroke": "#111111", "strokeWidth": 7, "onCanvasFill": "#111111", "onCanvasStroke": null, "underlineAccent": true },
@@ -81,7 +259,14 @@
       "delivery": { "width": 1920, "height": 1080, "fps": 30, "codec": "h264", "videoBitrate": "14M", "_note": "explicit ABR, never CRF alone" },
       "structure": { "sectionLenSec": [62, 74], "midCtaAfterCreature": 3, "midCtaDurSec": 11, "coldOpenFirstFactAtSec": 1 },
       "stagedReveal": { "wideSec": [2, 3], "revealMustBeVisible": true, "thenHardCutCloser": true, "thenBackWideWithShake": true },
-      "bans": ["corner-mascot", "blank-text-only-card", "full-sentence-subtitle", "licensed-character", "real-identifiable-person", "meme-photograph", "pre-assembled-icon-grid"]
+      "bans": ["corner-mascot", "blank-text-only-card", "full-sentence-subtitle", "licensed-character", "real-identifiable-person", "meme-photograph", "pre-assembled-icon-grid"],
+
+      "_openDecisions": [
+        { "id": "content-box-chrome", "question": "House applies a 6px border and 20px radius to CONTENT images. Neither reference does: m-simplified reserves border+radius for ROSTER CELLS only, ficknime uses a hard-edged rectangle with no border, radius or shadow. Keep the house chrome or drop it?", "affects": ["ffmpeg-engine/style.py BOX_BORDER, BOX_RADIUS", "hyperframes-engine .box"] },
+        { "id": "canvas-trigger", "question": "House currently triggers white canvas on content type (number, size-comparison, icon-list). m-simplified triggers canvas colour MECHANICALLY on subject luminance, to maximise contrast. Adopt the luminance rule, keep the content rule, or run both?", "affects": ["canvas selection in every renderer"] },
+        { "id": "background-handling", "question": "The 23 Jul decision was cinematic-integrated and M Simplified-leaning. M Simplified STRIPS the source background and owns the plate. That makes cutout extraction quality the critical path. Confirm this is the direction before the cutout work is treated as blocking.", "affects": ["asset pipeline", "cutout tooling"] },
+        { "id": "layout-default-conflict", "question": "Still unresolved from 23 Jul: editor-brief-2026-07.md tells every new editor 'white canvas throughout, images boxed', while the 23 Jul chat decision locked cinematic-integrated as the house style. The brief has never been updated. Which is the default?", "affects": ["editor-brief-2026-07.md", "layout.fullFramePct"] }
+      ]
     }
   }
 }
