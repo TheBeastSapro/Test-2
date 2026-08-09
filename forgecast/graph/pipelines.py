@@ -523,7 +523,7 @@ def get_pipeline(name: str, **options) -> PipelineSpec:
 # voice", "Write full script" — and until now only the run page used them. Analytics
 # listed its stages by `node_type`, so a page whose whole argument is that it prints
 # honest numbers labelled its rows `voice_casting`, `final_review` and `broll_plan`, and
-# said things like "Died at voice_casting ×1".
+# said things like "Died at voice_casting x1".
 #
 # Derived from the pipelines rather than written out again: a second table of stage
 # names is one that drifts the first time a node is renamed, and the page would then be

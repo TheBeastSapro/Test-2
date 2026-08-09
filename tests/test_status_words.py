@@ -169,7 +169,7 @@ async def test_the_gates_are_read_in_one_query_not_one_per_run(
 # Same defect, two more places, both found by opening the page. The run header printed
 # `faceless_longform` in monospace beside a heading in plain English, and Analytics —
 # a page whose whole argument is that it prints honest numbers — labelled its stages
-# `voice_casting`, `final_review`, `broll_plan`, and said "Died at voice_casting ×1".
+# `voice_casting`, `final_review`, `broll_plan`, and said "Died at voice_casting x1".
 
 
 def test_a_pipeline_is_named_the_way_the_rest_of_the_app_names_it():
