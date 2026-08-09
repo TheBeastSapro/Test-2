@@ -295,3 +295,35 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** After connecting two stages, do not stop at "the call happens". Run the pair on real input and count the artifacts each promised: N planned versus N produced, and compare the two numbers explicitly. Where one stage marks items for special handling and another consumes those marks, check that the selection criteria on both sides can actually overlap — write the intersection down as a sentence and see whether it is empty. And when a downstream stage silently degrades an item it cannot handle, that degradation should be counted and logged, not just performed; a stage that quietly returns the ordinary result for an unhandleable input is a stage that makes this class of defect invisible by design.
 
 **Principle:** Reachability is not effect. Two components can be connected, individually correct, individually tested, and jointly useless — when their selection criteria do not intersect. Only an end-to-end run that counts what came out against what was promised can tell the difference, so that count is the integration test, not the call.
+
+### Observation 19: Measure the effect without the correction, or you will credit the wrong part
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Adding a small geometric correction to a visual effect, and finding my model of which part did the work was exactly inverted.
+
+**Skill:** debugging-and-error-recovery
+**Type:** open-source
+**Phase/Area:** Attributing an effect to the component that causes it
+
+**Issue:** I built an effect in two parts: a primitive transform, and a correction that moved its pivot to the physically right place. My mental model was that the primitive produced the effect and the correction refined it — so I wrote it that way, documented it that way, and would have shipped it that way. Measuring the primitive *alone* showed it produced essentially nothing: the two ends of the object moved in opposite directions by similar small amounts and cancelled, landing within noise of the do-nothing baseline. The correction was not a refinement, it was the entire effect. The numbers were unambiguous once separated — barely above the floor without it, four times the floor with it — and completely invisible while both ran together, because the combined result looked right and "looks right" is exactly what stops the investigation. The same session had already produced a measurement I could not read at all because a second, larger motion was running at the same time and swamping it; I only got a usable number by turning that one off.
+
+**Suggested improvement:** When an effect is built from a primitive plus a correction, measure three configurations, not one: neither, primitive only, and both. The primitive-only run is the one that tells you where the effect actually comes from, and it is the one nobody runs because the finished version already looks correct. Where two effects are active at once, disable one before measuring the other — a small signal under a large one is not a weak measurement, it is no measurement. And when the ablation contradicts your description of the mechanism, rewrite the description: a comment that credits the wrong component is worse than no comment, because it tells the next person which part is safe to simplify away.
+
+**Principle:** "It looks right" attributes an outcome to whatever you believe caused it. Only removing a component tells you what it contributed, and the component you assumed was cosmetic is as likely to be load-bearing as the reverse.
+
+### Observation 20: A negative result is a deliverable, and belongs in the code
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Looking for a signal in source data that would let a feature choose automatically, and finding the data does not carry one.
+
+**Skill:** source-driven-development
+**Type:** open-source
+**Phase/Area:** Deciding whether a heuristic is supportable
+
+**Issue:** I wanted a feature to select its own behaviour from the source material rather than being told, which would have been the better product. Before building the selector I checked whether the signal was there: I sampled nine real documents across three sources and counted. Three contained any relevant term at all, and each contained it exactly once — one occurrence in thirteen thousand characters in the strongest case. That is a passing word, not a signal, and a selector built on it would have been the system inventing facts about somebody else's material while looking like inference. So I built the feature as an explicit choice instead, and wrote the counts and the sample size into the module's docstring. The temptation both ways was strong: to build the clever version because a threshold could be tuned until the sample "worked", and to drop the finding silently once I had decided against it. The second is the more expensive one — without the note, the next person has the same good idea, and there is nothing in the code to tell them it was checked and how.
+
+**Suggested improvement:** Before building a heuristic that infers behaviour from data, sample the real data and count — a dozen instances is usually enough to tell a signal from a coincidence. If the count does not support it, do not build it, and do not delete the measurement: write the numbers and the sample size into the module where the heuristic would have gone, with enough specificity that somebody could repeat it. Be suspicious of a threshold you had to tune to make a sample pass; that is the shape of fitting to noise. And treat "I checked and it is not there" as a result to record rather than a dead end to hide, because the alternative is the same investigation done again by someone with less context.
+
+**Principle:** Checking whether the data supports a heuristic is real work whether or not the answer is yes. A negative result left out of the code is an invitation to redo it — and a heuristic built on a signal that is not there is worse than the explicit choice it replaced, because it fails invisibly and looks like intelligence.
