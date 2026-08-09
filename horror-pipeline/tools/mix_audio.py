@@ -260,6 +260,62 @@ def master(raw, out, dur, I, TP, LRA):
     return m, ntype, ch
 
 
+def duck_check(vo, bed, sfx, dur, vo_offset, work, bed_gain, sfx_gain, duck_ratio):
+    """Measure how far the bed actually ducks under the voice.
+
+    'Over-limited to the point the bed never audibly ducked' was half of the LRA
+    1.9 rejection, and a swapped sidechaincompress argument order produces
+    exactly that with no error anywhere. So render the post-sidechain bed and the
+    VO separately and measure the bed's level when the VO is speaking against its
+    level when the VO is quiet. A correctly wired duck is several dB down under
+    speech; zero (or negative) means the key and the target are the wrong way
+    round."""
+    try:
+        import numpy as np
+    except ImportError:
+        return None
+    ms = int(round(vo_offset * 1000))
+    fc = [
+        f"[0:a]adelay={ms}|{ms},aresample=48000,highpass=f={VO_HIGHPASS},"
+        f"{VO_COMP},aformat=channel_layouts=stereo[vo]",
+        f"[1:a]aresample=48000,atrim=0:{dur},apad=whole_dur={dur},"
+        f"afade=t=in:st=0:d={BED_FADE_IN},"
+        f"afade=t=out:st={max(dur - BED_FADE_OUT, 0)}:d={BED_FADE_OUT},"
+        f"volume={bed_gain}dB,aformat=channel_layouts=stereo[bed0]",
+        "[vo]asplit=2[vo1][vokey]",
+        f"[bed0][vokey]sidechaincompress=threshold={DUCK_THRESHOLD}:"
+        f"ratio={duck_ratio}:attack={DUCK_ATTACK}:release={DUCK_RELEASE}:makeup=1[bed]",
+        f"[vo1]apad=whole_dur={dur},atrim=0:{dur}[voo]",
+        f"[bed]apad=whole_dur={dur},atrim=0:{dur}[bedo]",
+    ]
+    chain = ";".join(fc)
+    check_no_limiter(chain)
+    vop = os.path.join(work, "_duck_vo.raw")
+    bep = os.path.join(work, "_duck_bed.raw")
+    run(FF_QUIET + ["-y", "-i", vo, "-i", bed, "-filter_complex", chain,
+                    "-map", "[voo]", "-ac", "1", "-ar", "48000", "-f", "s16le", vop,
+                    "-map", "[bedo]", "-ac", "1", "-ar", "48000", "-f", "s16le", bep])
+    v = np.fromfile(vop, np.int16).astype(np.float32) / 32768.0
+    b = np.fromfile(bep, np.int16).astype(np.float32) / 32768.0
+    n = min(len(v), len(b)) // 4800          # 100 ms frames
+    if n < 10:
+        return None
+    v = np.sqrt(np.maximum((v[:n * 4800].reshape(n, 4800) ** 2).mean(1), 1e-12))
+    b = np.sqrt(np.maximum((b[:n * 4800].reshape(n, 4800) ** 2).mean(1), 1e-12))
+    vdb, bdb = 20 * np.log10(v), 20 * np.log10(b)
+    gate = vdb.max() - 25.0
+    speak, quiet = vdb > gate, vdb <= gate
+    for p in (vop, bep):
+        if os.path.exists(p):
+            os.remove(p)
+    if speak.sum() < 5 or quiet.sum() < 5:
+        return None
+    return {"bed_under_vo_db": float(bdb[speak].mean()),
+            "bed_in_gaps_db": float(bdb[quiet].mean()),
+            "duck_depth_db": float(bdb[quiet].mean() - bdb[speak].mean()),
+            "speaking_frames": int(speak.sum()), "quiet_frames": int(quiet.sum())}
+
+
 def mux(video, mix, out, dur):
     """-t <exact_duration>, NEVER -shortest. -shortest silently threw away the
     last 0.63 s of picture on a real cut and the A/V length check failed with
@@ -287,6 +343,8 @@ def main():
     ap.add_argument("--lufs", type=float, default=LUFS_TARGET)
     ap.add_argument("--tp", type=float, default=TRUE_PEAK)
     ap.add_argument("--lra", type=float, default=LRA_TARGET)
+    ap.add_argument("--no-duck-check", action="store_true",
+                    help="skip the measured bed-duck depth diagnostic")
     ap.add_argument("--mux", default=None, help="video to mux the mix onto")
     ap.add_argument("--mux-out", default=None)
     ap.add_argument("--report", default=None, help="write measurements as JSON")
@@ -307,6 +365,15 @@ def main():
     rp = probe_audio(raw)
     print(f"[audio] pre-master file {os.path.basename(raw)} "
           f"{rp['duration']:.3f}s {rp['sample_rate']} Hz {rp['channels']}ch")
+
+    duck = None
+    if not args.no_duck_check:
+        duck = duck_check(args.vo, args.bed, sfx, dur, args.vo_offset, work,
+                          args.bed_gain, args.sfx_gain, args.duck_ratio)
+        if duck:
+            print(f"[audio] duck         bed {duck['bed_under_vo_db']:.1f} dB under "
+                  f"speech vs {duck['bed_in_gaps_db']:.1f} dB in gaps  -> "
+                  f"{duck['duck_depth_db']:.1f} dB of duck")
 
     m, ntype, ch = master(raw, args.out, dur, args.lufs, args.tp, args.lra)
 
@@ -350,6 +417,11 @@ def main():
     if lra_in > 0 and abs(LRA - lra_in) > 1.0:
         problems.append(f"LRA moved {lra_in:.2f} -> {LRA:.2f} LU; a single constant "
                         "gain cannot do that, so linear=true was not applied")
+    if duck and duck["duck_depth_db"] < 1.0:
+        problems.append(f"the bed ducks only {duck['duck_depth_db']:.1f} dB under the "
+                        "voice. Check the sidechaincompress argument order: the FIRST "
+                        "input is compressed (the bed), the SECOND is the key (the VO "
+                        "via asplit). Backwards and the bed swamps the voice.")
 
     if args.mux:
         out_mp4 = args.mux_out or os.path.splitext(args.mux)[0] + "_muxed.mp4"
@@ -361,6 +433,7 @@ def main():
         with open(args.report, "w") as f:
             json.dump({"pre_master": m, "master": post, "specs": op,
                        "normalization_type": ntype, "linear_check": ch,
+                       "duck": duck,
                        "chain": chain, "sfx": sfx, "duration": dur,
                        "problems": problems}, f, indent=2)
         print(f"[audio] report -> {args.report}")
