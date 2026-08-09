@@ -483,6 +483,34 @@ def _slugify(text: str) -> str:
     return kept.strip("_")[:48] or "plate"
 
 
+def _add_atmosphere(ctx: NodeContext, shot: dict, slug: str, visual: Path,
+                    seconds: float, width: int, height: int) -> Path:
+    """Snow or fog over a finished shot, when the segment asked for one.
+
+    Last, so it falls on the composite rather than under it — weather between the camera
+    and everything else is the whole reason it reads as depth. A still becomes a clip
+    here, which the renderer already handles: `ffmpeg._is_video` decides by suffix and
+    the footage lane has produced clips beside stills since it was written.
+    """
+    wanted = str(shot.get("atmosphere") or "")
+    if not wanted:
+        return visual
+
+    from ..render import particles
+
+    try:
+        return particles.apply(
+            visual, ctx.path_for(f"{slug}_{wanted}.mp4"), wanted,
+            seconds=seconds, width=width, height=height,
+            seed=abs(hash(shot.get("asset") or slug)) % 9973)
+    except Exception as exc:
+        # The shot without weather is the shot. Losing it over an overlay would be
+        # spending the whole fetch-and-composite chain to gain nothing.
+        ctx.log(f"{slug}: {wanted} overlay failed ({exc}) — the shot ships without it",
+                level="warning")
+        return visual
+
+
 def _stand_subject(ctx: NodeContext, shot: dict, slug: str, subject: Path,
                    plate_path: Path | None, width: int, height: int) -> Path:
     """Put a cut-out onto a plate. Returns the composite, or the subject unchanged.
@@ -773,6 +801,40 @@ def _plate_prompt(entity: dict, scenes: list[dict]) -> str:
     return f"Background plate: {setting}. {PLATE_CONSTRAINT}"
 
 
+#: The atmospheres `render/particles` can draw. Named here as well so a typo is caught
+#: at planning time, where the operator is still looking, rather than silently producing
+#: a segment with no weather on it three stages later.
+ATMOSPHERES = ("snow", "fog")
+
+
+def _atmosphere_for(ctx, title: str) -> str:
+    """The weather asked for over one entity's segment, or "".
+
+    Takes either a plain string — the same atmosphere over every entity in the run — or
+    a mapping of entity name to atmosphere, which is the shape that matches how the
+    reference uses this: one creature in snow, one in fog, the rest in neither.
+
+    An unrecognised name is dropped with a warning rather than passed on. `particles`
+    would ignore it and ship the shot bare, which is right there and useless here: the
+    operator typed something and this is the last stage that can tell them it did
+    nothing.
+    """
+    asked = ctx.params.get("atmosphere") or (ctx.channel.style_profile or {}).get(
+        "atmosphere")
+    if isinstance(asked, dict):
+        wanted = str(asked.get(title) or "").strip().lower()
+    else:
+        wanted = str(asked or "").strip().lower()
+    if not wanted:
+        return ""
+    if wanted not in ATMOSPHERES:
+        ctx.log(f"{title}: {wanted!r} is not an atmosphere this can draw "
+                f"({', '.join(ATMOSPHERES)}) — the segment gets none",
+                level="warning")
+        return ""
+    return wanted
+
+
 def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
     """Written shot lists for every scene an entity covers.
 
@@ -840,6 +902,18 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
         fallback_plates = [asset for asset in entity.get("gallery") or []
                            if not asset.get("portrait")]
         plate_at = 0
+        # Weather over this creature's segment, if the operator asked for any. Named per
+        # entity because that is the granularity the reference uses it at — snow once
+        # and fog once in nine minutes, each over one segment — and a channel-wide
+        # setting would put weather on every shot, which reads as a filter rather than
+        # as a place.
+        #
+        # Never inferred. I looked for a signal in the source material and there is not
+        # one: across nine real creature pages on three wikis, only three contained any
+        # weather word at all and each appeared exactly once, one "fog" in the 13,471
+        # characters of Seek's page. A passing noun in a wall of prose is not a page
+        # saying its creature lives in the fog.
+        weather = _atmosphere_for(ctx, entity["title"])
         # One plate per entity, reused across its composites. The reference reuses both
         # halves — the same creature image across every shot of that creature, only
         # scale and position changing — so a plate per shot would be paying for variety
@@ -907,6 +981,7 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
                 "plate_prompt": plate_prompt if shot.composite else "",
                 "plate_asset": str(plate.get("name") or ""),
                 "plate_url": str(plate.get("url") or ""),
+                "atmosphere": weather,
                 "overlays": list(shot.overlays),
                 "animate": bool(shot.animate),
                 "tier": STANDARD_TIER,
@@ -1407,6 +1482,8 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
                                             width, height)
             asset_path = await asyncio.to_thread(
                 _stand_subject, ctx, shot, slug, asset_path, plate_path, width, height)
+            asset_path = await asyncio.to_thread(
+                _add_atmosphere, ctx, shot, slug, asset_path, seconds, width, height)
             # Whatever it actually came out as. A shot the planner marked for motion is
             # a clip, and labelling it an image would send `finalize` looking for the
             # attribution on the wrong kind — the credits file collects a sourced
@@ -1640,6 +1717,18 @@ async def shots_node(ctx: NodeContext) -> NodeResult:
         ctx.log(f"{moved}/{asked_to_move} shot(s) planned for motion actually moved",
                 planned_motion=asked_to_move, rendered_motion=moved,
                 level="info" if moved == asked_to_move else "warning")
+
+    # And the same for weather, which failed the same way the first time it ran: the
+    # overlay raised on three of eight shots because the wiki's own file is not the
+    # frame's size, and every one of them shipped bare with only a warning in the log.
+    asked_weather = sum(1 for shot in shots if shot.get("atmosphere"))
+    weathered = sum(1 for item in usable
+                    if any(str(item.get("path", "")).endswith(f"_{kind}.mp4")
+                           for kind in ATMOSPHERES))
+    if asked_weather:
+        ctx.log(f"{weathered}/{asked_weather} shot(s) planned for weather got it",
+                planned_weather=asked_weather, rendered_weather=weathered,
+                level="info" if weathered == asked_weather else "warning")
     if clips_by_model:
         ctx.log(
             "animated " + ", ".join(f"{count} on {name}"
