@@ -225,3 +225,44 @@ async def test_without_a_search_vendor_it_says_how_to_find_it_by_hand(
         channel.id, "doorsgame")
 
     assert "copy the part of the address before .fandom.com" in result["error"]
+
+
+# ------------------------------------------------- when a channel cannot be read here
+
+
+def test_a_channel_that_cannot_be_read_names_the_actual_cause(monkeypatch):
+    """The failure is almost never the operator's link.
+
+    Without a YouTube API key the read falls back to yt-dlp, and YouTube blocks that
+    from datacentre addresses outright — so the same link that works on a laptop fails
+    on every hosted install. A message saying only "I could not read that channel"
+    sends somebody to check the URL, which is the one thing that is fine.
+    """
+    from forgecast.agent import connectors, studio
+
+    monkeypatch.setattr(connectors.Store, "load",
+                        classmethod(lambda cls, path=None: connectors.Store(path=None)))
+    monkeypatch.setattr(connectors.Store, "listing",
+                        lambda self, **kw: [{"key": "nexlev", "connected": False}])
+
+    said = studio._other_way_to_read_a_channel()
+
+    assert "yt-dlp" in said and "datacentre" in said
+    assert "NexLev" in said
+
+
+def test_when_nexlev_is_already_connected_it_says_to_use_it(monkeypatch):
+    """Telling somebody to connect a thing they already connected is its own dead end —
+    and the agent holding those tools should reach for them rather than reporting a
+    failure it can route around."""
+    from forgecast.agent import connectors, studio
+
+    monkeypatch.setattr(connectors.Store, "load",
+                        classmethod(lambda cls, path=None: connectors.Store(path=None)))
+    monkeypatch.setattr(connectors.Store, "listing",
+                        lambda self, **kw: [{"key": "nexlev", "connected": True}])
+
+    said = studio._other_way_to_read_a_channel()
+
+    assert "is connected" in said
+    assert "Settings" not in said

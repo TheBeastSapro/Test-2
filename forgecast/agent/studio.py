@@ -171,6 +171,40 @@ def _as_list(value: Any) -> list[str]:
     return [item.strip() for item in parts if str(item).strip()]
 
 
+def _other_way_to_read_a_channel() -> str:
+    """What to do about a channel whose numbers could not be read, in one sentence.
+
+    The failure this answers is usually not the operator's link and not a bug here.
+    `sources.read_channel` falls back to yt-dlp when no YouTube API key is configured,
+    and YouTube blocks yt-dlp from datacentre addresses outright — "Sign in to confirm
+    you're not a bot" — so the same link that works on somebody's laptop fails on a
+    hosted install every time. A message that says only "I could not read that channel"
+    sends them to check the URL, which is the one thing that is fine.
+
+    NexLev reads the same numbers through an API and this app already ships it as a
+    connector, so the honest note depends on whether it is connected: if it is, the
+    agent has the tools and should use them rather than reporting a dead end; if it is
+    not, that is the fix worth naming. Read from the store rather than assumed, because
+    telling somebody to connect something they already connected is its own dead end.
+    """
+    from . import connectors
+
+    try:
+        rows = connectors.Store.load().listing()
+    except Exception:                                              # pragma: no cover
+        return ""
+    row = next((item for item in rows if item.get("key") == "nexlev"), None)
+    if row is None:
+        return ""
+    if row.get("connected"):
+        return ("NexLev is connected — read the channel with its tools instead of "
+                "reporting this as a dead end.")
+    return ("A hosted install usually cannot read YouTube directly: without a YouTube "
+            "API key this falls back to yt-dlp, and YouTube blocks that from "
+            "datacentre addresses. Connecting NexLev in Settings reads the same "
+            "numbers through an API, or set a YouTube API key.")
+
+
 class Studio:
     """Everything the app can do, bound to one account.
 
@@ -566,6 +600,7 @@ class Studio:
                 "note": "I could not read that channel's numbers. I can still create "
                         "the channel — tell me the niche and whether it is long-form "
                         "or Shorts.",
+                "instead": _other_way_to_read_a_channel(),
             }
         if not parsed.videos:
             return {"error": "That channel has no readable uploads.",
