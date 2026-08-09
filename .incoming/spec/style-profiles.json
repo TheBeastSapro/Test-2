@@ -1,0 +1,87 @@
+{
+  "_readme": "Measured style profiles. Every number came from watching a real video end to end on 2026-08-08. The renderer must read from here, never hardcode a look. Full evidence and timestamps are in docs/competitor-style-profiles.md.",
+
+  "_universal": {
+    "_note": "True in all three references. The validator enforces these regardless of active profile.",
+    "avgShotSec": 2.2,
+    "maxHoldSec": 4.0,
+    "staticRuntimePct": 0.0,
+    "zoomPerShot": [1.05, 1.10],
+    "iconPopMs": 200,
+    "iconPopScale": [0.0, 1.10, 1.0],
+    "captionMaxWords": 4,
+    "captionSyncTo": "first-syllable",
+    "titlePersistent": true,
+    "titlePos": "top-center",
+    "musicBed": "constant-low-freq-drone",
+    "duckDb": -12,
+    "rosterPunchInSec": 0.5,
+    "textOnScreenPct": 0.95
+  },
+
+  "profiles": {
+    "m-simplified": {
+      "_source": "youtube lrY0ErBfytQ, 1.54M views, 9:05",
+      "layout": { "fullFramePct": 0.75, "whiteCanvasPct": 0.25, "whiteCanvasTrigger": ["number", "size-comparison", "spec"] },
+      "title": { "font": "bold-sans", "case": "title", "fill": "#000000", "stroke": "#FFFFFF", "strokeWidth": 6 },
+      "palette": { "bg": "#FFFFFF", "ink": "#000000", "accents": ["#00FF00", "#FFFF00"] },
+      "caption": { "pos": "bottom-center", "anim": "instant-pop", "animMs": 0 },
+      "roster": { "cells": 9, "grid": "3x3" },
+      "pacing": { "avgShotSec": 2.2, "maxHoldSec": 4.0 },
+      "audio": { "sfxPerMin": 20 },
+      "motion": { "shakeOnImpact": true, "shakeCount9min": 9 },
+      "signature": "creature layer rises from behind a background element; cutout tinted to match the sky",
+      "midCta": { "atSec": 201, "durSec": 9, "treatment": "stick figure on white canvas, LIKE / SUBSCRIBE / COMMENT" }
+    },
+
+    "ficknime": {
+      "_source": "youtube VZPZi8yb5mg, 444K views, 9:51",
+      "layout": { "fullFramePct": 0.08, "whiteCanvasPct": 0.92, "whiteCanvasTrigger": ["default"] },
+      "title": { "font": "serif", "case": "title", "fill": "#000000", "stroke": null },
+      "palette": { "bg": "#FFFFFF", "ink": "#000000", "accents": ["#D4AF37", "#FF0000", "#800080", "#0000FF", "#008000"], "accentUse": "per-section-octagon" },
+      "caption": { "pos": "center-bottom-or-beside-icon", "anim": "scale-in", "animMs": 100 },
+      "roster": { "cells": 8, "grid": "octagons" },
+      "pacing": { "avgShotSec": 2.2, "maxHoldSec": 4.5, "scenesPerMin": 27 },
+      "audio": { "sfxPerMin": 22 },
+      "motion": { "iconSlidePx": 200, "iconSlideMs": 300, "shakeJitterPx": 5 },
+      "signature": "one PNG cutout reused across ~16 composited scenes; additive layering one element per second",
+      "humour": { "everySec": 90, "durSec": [1.0, 2.0], "treatment": "meme text overlay" }
+    },
+
+    "darkly": {
+      "_source": "youtube G1u--bNXA8g, 2.73M views, 9:54. Niche leader.",
+      "layout": { "fullFramePct": 0.15, "whiteCanvasPct": 0.85, "whiteCanvasTrigger": ["default"], "fullFrameUse": ["found-footage", "atmosphere"] },
+      "title": { "font": "marker-sans", "case": "title", "prefix": "The ", "fill": "#000000", "stroke": null },
+      "palette": { "bg": "#FFFFFF", "ink": "#000000", "accents": ["#FF0000"], "accentUse": "blood-and-horror-only", "rosterCellBgs": ["#4B0082", "#00FF00", "#FFFF00"] },
+      "caption": { "pos": "context", "fillOnCanvas": "#000000", "fillOnFullFrame": "#FFFFFF" },
+      "roster": { "cells": 8, "punchInSec": 0.5 },
+      "pacing": { "avgShotSec": 2.3, "maxHoldSec": 4.0, "cutsPerMin": 26, "layerEverySec": 1.75 },
+      "audio": { "sfxPerMin": 12 },
+      "motion": { "iconSlidePxPerSec": 500, "glitchMs": 200, "glitchType": "chromatic-aberration" },
+      "_whyItWins": {
+        "introSec": 0,
+        "firstFactAtSec": 1,
+        "iconsPerConcept": [3, 5],
+        "narrationWpm": [160, 180],
+        "_note": "Competitors run 10-15s intro hooks, 1 static image per concept, 120-140 wpm. This is the measured gap. Layout is not the lever."
+      }
+    },
+
+    "house": {
+      "_note": "The active profile. Extends m-simplified per the owner's 23 Jul decision, with a deliberately divergent palette from thumbnail-spec.md.",
+      "extends": "m-simplified",
+      "layout": { "fullFramePct": 0.72, "whiteCanvasPct": 0.28, "whiteCanvasTrigger": ["number", "size-comparison", "icon-list"] },
+      "title": { "font": "anton", "case": "upper", "fill": "#FFFFFF", "stroke": "#111111", "strokeWidth": 7, "onCanvasFill": "#111111", "onCanvasStroke": null, "underlineAccent": true },
+      "palette": { "bg": "#FFFFFF", "ink": "#111111", "accents": ["#D62020"], "_divergence": "None of the three references use black/white/red. This is a branding choice from thumbnail-spec.md, kept for recognisability. Worth A/B testing against a green/yellow variant." },
+      "caption": { "maxWords": 4, "pos": "frame-dead-space", "anim": "pop-slide", "animMs": 200 },
+      "pacing": { "avgShotSec": 2.2, "maxHoldSec": 4.0, "layerEverySec": 1.8, "popsPerSectionMin": 4, "popDensityMustHoldToFinalSection": true },
+      "roster": { "cells": 8, "grid": "4x2", "returnToGridBetweenSections": true },
+      "audio": { "duckDb": -12, "sfxPerMin": 18, "lufs": -15, "truePeakDb": -1.5, "lraMin": 3.0 },
+      "motion": { "zoomPerShot": [1.05, 1.10], "iconSlidePxPerSec": 500, "shakeOnImpact": true, "cutPunch": { "durSec": 0.30, "scaleBoost": 0.055 } },
+      "delivery": { "width": 1920, "height": 1080, "fps": 30, "codec": "h264", "videoBitrate": "14M", "_note": "explicit ABR, never CRF alone" },
+      "structure": { "sectionLenSec": [62, 74], "midCtaAfterCreature": 3, "midCtaDurSec": 11, "coldOpenFirstFactAtSec": 1 },
+      "stagedReveal": { "wideSec": [2, 3], "revealMustBeVisible": true, "thenHardCutCloser": true, "thenBackWideWithShake": true },
+      "bans": ["corner-mascot", "blank-text-only-card", "full-sentence-subtitle", "licensed-character", "real-identifiable-person", "meme-photograph", "pre-assembled-icon-grid"]
+    }
+  }
+}
