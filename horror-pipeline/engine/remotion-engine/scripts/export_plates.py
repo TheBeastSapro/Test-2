@@ -10,14 +10,18 @@ Plates are rendered at 2600x1600 (was 1700x1050): the rebuild hard-cuts to
 At the old size those crops went visibly soft.
 """
 import os, sys
-sys.path.insert(0, "/home/claude/hp/engine")
+
+# Resolve from this file, not from a machine-specific absolute path.
+# scripts/ -> remotion-engine/ -> engine/
+_ENGINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(_ENGINE, "ffmpeg-engine"))
 import numpy as np
 from PIL import Image
 import plates as P
 import cutouts as C
 import sheets.sewer_spider as M
 
-ROOT = "/home/claude/hp/remotion/public"
+ROOT = os.path.join(_ENGINE, "remotion-engine", "public")
 P.PW, P.PH = 2600, 1600          # module-level, read by make_plate()
 
 os.makedirs(f"{ROOT}/plates", exist_ok=True)

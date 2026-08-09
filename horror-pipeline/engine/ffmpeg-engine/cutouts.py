@@ -204,6 +204,9 @@ def export_all(outdir):
 
 if __name__ == "__main__":
     import sys
-    d = sys.argv[1] if len(sys.argv) > 1 else "/home/claude/hp/remotion/public/cutouts"
+    _default = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "remotion-engine", "public", "cutouts")
+    d = sys.argv[1] if len(sys.argv) > 1 else _default
     for slot, name, p, size in export_all(d):
         print(f"cut{slot:02d} {name:15s} {size}  {p}")

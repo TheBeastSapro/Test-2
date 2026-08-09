@@ -6,7 +6,8 @@ import fs from 'node:fs';
 
 const times = (process.argv[2] ?? '1.4,5,9,14.6,20,26.6,31.5,40,48.2,55,62')
   .split(',').map(Number);
-const outDir = process.argv[3] ?? '/home/claude/hp/remotion/out/stills';
+// Repo-relative default. The original absolute path only existed on one machine.
+const outDir = process.argv[3] ?? path.resolve(process.cwd(), 'out/stills');
 fs.mkdirSync(outDir, {recursive: true});
 
 const serveUrl = await bundle({entryPoint: path.resolve('src/index.ts')});

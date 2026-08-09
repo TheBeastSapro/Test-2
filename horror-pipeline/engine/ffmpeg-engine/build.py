@@ -5,8 +5,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import style as S
 from render import Renderer
 
-ROOT = "/home/claude/hp"
-A    = f"{ROOT}/assets"
+# Repo-relative, not machine-specific. HP_ROOT overrides if assets live elsewhere.
+ROOT = os.environ.get(
+    "HP_ROOT",
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+)
+A    = os.environ.get("HP_ASSETS", f"{ROOT}/assets")
 
 def build_sheet(mod):
     sheet = {"title": mod.TITLE, "duration": mod.DURATION,

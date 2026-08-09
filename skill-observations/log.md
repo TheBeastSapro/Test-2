@@ -147,3 +147,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When an environment claims a dependency is pre-provisioned, verify by resolution rather than by outcome: ask the tool to print the path it resolved, or locate the binary with a depth-unbounded search, before describing the dependency in a report. Then separately test the forced-path invocation, because "the tool works" and "the tool works via the provisioned artifact" are independent claims. Treat a silent success as evidence of nothing in particular.
 
 **Principle:** Absence of a failure symptom is not evidence that the intended mechanism was used. Verify which artifact a tool actually resolved, not merely that the tool succeeded — and treat "it works" and "it works the way we intended" as two claims needing two tests.
+
+### Observation 10: Metered/rate-limited tools need a budget check before the plan is built, not at first call
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Frame-level teardown of a competitor YouTube video. The task plan was built entirely around a metered multimodal tool with a documented "use 5-7 calls" budget.
+**Skill:** analyse
+**Type:** open-source
+**Phase/Area:** Tool selection / pre-flight
+
+**Issue:** The assigned plan allocated 5-7 calls to a metered tool. The very first call timed out server-side after 60s, and the second returned "RATE LIMIT EXCEEDED — 5/5 calls used in the last 24 hours": four calls had already been consumed by other sessions before this one started, and the timed-out call consumed the fifth while returning nothing. The budget was therefore zero before any work began, but this was only discoverable by spending the last unit of it. A parallel agent independently burned wall-clock rediscovering the same wall. Compounding it, the timeout appears related to prompt density — a very long multi-part prompt produced a generation that exceeded the transport's fixed 60s limit — so the "ask many questions per call to save budget" strategy actively increased the chance of losing a call to a timeout and getting nothing back.
+
+**Suggested improvement:** In any workflow built around a metered or rate-limited tool, add a pre-flight step: make one minimal, cheap probe call to establish remaining budget BEFORE committing to a call plan, and treat shared/pooled quota as the default assumption rather than assuming the session owns the full allowance. Pair this with a per-call size rule: when a tool has a fixed transport timeout, cap the output a single call is asked to produce, because a timed-out call typically still decrements quota while returning nothing. Where a workflow's value depends on a metered tool, name the fallback path in the workflow itself so it does not have to be invented under pressure.
+
+**Principle:** Budget is a precondition, not a runtime discovery. Verify remaining quota with a cheap probe before designing a plan around a metered tool, and size individual calls so a transport timeout cannot convert a spent unit into zero returned information.
+
+### Observation 11: When a primary capability is unavailable, look for a lower-fidelity source of the same underlying signal before downgrading the deliverable
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Visual teardown of a video after the multimodal video tool's quota was exhausted and the direct media download was blocked by the platform's bot detection.
+**Skill:** analyse
+**Type:** open-source
+**Phase/Area:** Evidence gathering / fallbacks
+
+**Issue:** With the multimodal tool exhausted, the instinct — and the explicit mid-task steering from the coordinator — was to fall back to text-only sources and label all visual questions as undetermined. That would have answered almost none of the actual question, which was entirely about visual grammar. A third path existed: the platform publishes a low-resolution storyboard track (a sprite sheet of periodic frames) as ordinary image assets on a different host, which was neither quota-metered nor blocked. Fetching it yielded 120 real frames spanning 100% of the runtime at fixed intervals, which could then be measured numerically — background colour sampling, layout classification, element bounding boxes, per-section palette extraction — and read directly. Coverage of the whole runtime at coarse time resolution turned out to be *better* for the questions asked (what percentage of runtime uses layout X, what is the per-section palette, what is the structural grammar) than a single high-resolution window would have been, even though it cannot answer fine-timing questions.
+
+**Suggested improvement:** In the evidence-gathering phase, before declaring a visual question unanswerable, enumerate the *adjacent artifacts* the platform exposes for the same media — periodic frame/storyboard tracks, poster and preview images, chapter thumbnails, generated previews. Record explicitly what each fallback can and cannot support: coarse-interval frames settle proportions, structure, palette and layout, but cannot settle sub-interval cut counts, animation direction and duration, or audio. Note also that low-fidelity frames become high-value evidence when measured programmatically rather than only eyeballed — exact colours, geometry and ratios survive downsampling even when text and fine detail do not.
+
+**Principle:** A blocked primary capability is not the same as a blocked signal. Enumerate lower-fidelity carriers of the same signal before downgrading the deliverable, and state precisely which sub-questions the substitute can and cannot answer instead of applying one confidence label to everything.
+
+### Observation 12: Stored "measured" values need provenance and a re-verification pass before being promoted to config
+
+**Status:** OPEN
+**Date:** 2026-08-09
+**Session context:** Re-deriving a competitor's visual style; the repo already held a profile whose header asserted every number came from watching the real video end to end.
+**Skill:** New skill candidate: measurement-provenance
+**Type:** open-source
+**Phase/Area:** Recording measured findings for downstream machine consumption
+
+**Issue:** A stored profile presented as fully measured contained several values that direct re-measurement contradicted: a background asserted as pure white measured as a near-white off-value on every sampled frame; a roster asserted as 8 cells is 12; an accent list of 5 colours is actually 12, one per section; a layout element described in a way that implied a plain shape is a distinctly different shape. Each individually is small; collectively they would have been wrong renderer config, and the file's own framing ("every number came from watching a real video") discouraged re-checking. The values that proved wrong share a signature: they are the ones a viewer would *estimate* from memory of watching (counts of things, "it looked white") rather than ones that force precision. The values that held up were the structural and behavioural ones.
+
+**Suggested improvement:** When recording measurements that will be consumed as configuration, tag each value with how it was obtained — sampled/computed, counted from a specific frame or timestamp, or estimated by eye — and carry that tag into the config file, not just the prose document. Flag eye-estimated counts and colours as provisional by default, since those are the classes that fail. Before any stored profile is used as authoritative config, run a cheap re-verification pass on exactly those provisional fields. A blanket assertion that a document is "measured" should be treated as a claim about the document's intent, not about any individual value in it.
+
+**Principle:** Provenance belongs on the value, not on the document. A file-level claim of "measured" cannot distinguish computed values from eye estimates, and it is the eye estimates — counts and colours — that quietly become wrong configuration.

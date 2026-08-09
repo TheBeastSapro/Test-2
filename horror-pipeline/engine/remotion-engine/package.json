@@ -6,7 +6,7 @@
     "studio": "remotion studio",
     "plates": "python3 scripts/export_plates.py",
     "render:video": "remotion render SewerSpider out/video.mp4 --muted --video-bitrate=14M",
-    "mux": "ffmpeg -nostdin -loglevel error -y -i out/video.mp4 -i public/audio/mix.wav -c:v copy -c:a aac -b:a 320k -t 62.6 -movflags +faststart /home/claude/hp/assets/out/sewer_spider_msimplified.mp4",
+    "mux": "ffmpeg -nostdin -loglevel error -y -i out/video.mp4 -i public/audio/mix.wav -c:v copy -c:a aac -b:a 320k -t 62.6 -movflags +faststart out/sewer_spider_msimplified.mp4",
     "render": "npm run render:video && npm run mux",
     "typecheck": "tsc --noEmit",
     "stills": "node scripts/stills.mjs"
