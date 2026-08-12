@@ -43,3 +43,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a rule to the context-engineering skill covering bulk installs of third-party agents/skills into a project: (a) write a lock file recording source repo, pinned commit, install path, and a per-file hash, and keep an idempotent re-install script alongside it so updates are a diff rather than a re-copy; (b) never overwrite or lock locally authored files that share the install directory — identify vendored files by their presence upstream, not by directory; (c) state the per-session context cost of the install to the user in concrete terms (how many entries load every session) and name the narrower alternative (install only the subsets they need) even when the user asked for everything.
 
 **Principle:** Vendoring third-party context into a project is a dependency decision, not a copy operation: it needs pinned provenance, a reproducible update path, a boundary that protects local files, and an explicit statement of the recurring cost it imposes on every future session.
+
+### Observation 3: A user's stated cause for a symptom is a hypothesis to test, not a diagnosis to confirm
+
+**Status:** OPEN
+**Date:** 2026-08-12
+**Session context:** Immediately after vendoring a large third-party asset collection into a project, the user asked whether that install was the reason their sessions were slow to start. Measurement showed the install cost ~9 ms of file reads and could not be the cause — the real cost was a pre-existing session-start hook doing multi-hundred-megabyte package installs and network probes on every session.
+**Skill:** debugging-and-error-recovery
+**Type:** open-source
+**Phase/Area:** Root-cause investigation — handling a user-supplied causal hypothesis
+
+**Issue:** When a user proposes a cause for a symptom, especially the change that just happened, the conversational pull is to confirm it — it is recent, salient, plausibly expensive-looking, and agreeing is the path of least friction. The skill's investigation guidance addresses finding a root cause from symptoms, but does not name the specific failure mode of *inheriting* a cause from the person asking. Two checks resolved it immediately here and neither was prompted by any step: a timeline check (the suspected change landed after the symptom was already being observed, so it cannot be the cause) and a direct measurement of the suspect against the alternatives (milliseconds versus tens of seconds). Without them the answer would have been a confident, wrong yes.
+
+**Suggested improvement:** Add a rule to the investigation phase for user-supplied hypotheses: treat the proposed cause as one candidate among several, never the default. Run two cheap checks before answering — (1) timeline: could the suspected change have been present when the symptom was first observed? (2) magnitude: measure the suspect and at least one alternative candidate in the same units, and compare. Report the measurements, not just the verdict, and say plainly when the user's hypothesis is wrong.
+
+**Principle:** The most recent change is the most suspected and the least likely to have been measured. A causal claim that arrives with the question deserves the same evidence bar as one you would have proposed yourself — confirm it with a timeline check and a measured comparison, or contradict it with them.
