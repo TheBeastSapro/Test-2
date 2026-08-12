@@ -10,16 +10,32 @@ mastered VO), do the whole job: analyze → fetch assets from Epidemic → mix �
 mastered file.** This is the layer that runs *after* `explaintory-vo-master` has produced a
 clean VO. The music and SFX sit under that VO; they never fight it.
 
-Deliver: `<Video Title> (mixed).mp3` (or `(final).mp4` if muxing) at **−21.5 LUFS**,
-plus the cue sheet. Report what was placed and the measured loudness.
+Deliver: `<Video Title> (mixed).mp3` (or `(final).mp4` if muxing) with the **VO at
+exactly the level it arrived**, plus the cue sheet. Report what was placed, the VO
+level, and the programme level.
 
-**CORRECTED on the warships job — deliver at StickTory's own loudness, not −14.**
-Two mixes of his measure −21.5 and −23.1 LUFS; the target is the louder of the pair
-so a delivery is never quieter than his back catalogue. −14 was chosen earlier for
-YouTube's normalisation target and the verdict on hearing it was *"the sfx and music
-is kinda loud... not like sticktory style"* followed by *"match the StickTory
-loudness"*. YouTube attenuates a hot upload anyway; it does not amplify a quiet one,
-so nothing is lost by matching the channel.
+**ANCHOR THE MASTER TO THE VOICE, NEVER TO A PROGRAMME TARGET.** The VO arrives
+already mastered by `explaintory-vo-master`. A programme-loudness target — any
+programme-loudness target — silently moves it, because the voice *is* most of the
+programme. Asked to "match the StickTory loudness" I mastered to −21.5 LUFS, which
+applied a flat −7.6 dB to everything and landed the delivered voice **7.6 dB below
+the file Sapro had sent me**. His note: *"you actually reduced the voice as well."*
+
+So: sum music + SFX + VO at unity, limit for safety, and ship. Do not normalise the
+sum. Programme loudness is then an *output*, not an input — it lands a fraction above
+the VO's own level (measured: VO −14.5 LUFS, programme −14.4) and that difference is
+exactly how much music and SFX are present. Report both numbers.
+
+If a specific programme loudness is ever genuinely wanted, it is a decision about the
+voice and has to be said that way — "master the voice to X" — because that is what it
+does. Matching a reference channel's *programme* number means matching how loud their
+narrator is, which is not usually what is being asked for.
+
+```
+ffmpeg -i music.wav -i sfx.wav -i vo.wav -filter_complex \
+  "[0][1][2]amix=inputs=3:normalize=0[x];[x]alimiter=limit=0.891:level=disabled[a]" \
+  -map "[a]" out.mp3          # the VO comes out exactly as it went in
+```
 
 ## The two halves
 

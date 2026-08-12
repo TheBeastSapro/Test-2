@@ -25,7 +25,8 @@ palette (309 wav) is derived from `job_ids.json`, so it is not carried here.
 
 | | this mix | StickTory refs |
 |---|---|---|
-| Programme | **-21.5 LUFS** · LRA 1.6 | -21.5 / -23.1 LUFS, LRA 2.3-2.6 |
+| Voice | **-14.5 LUFS** — exactly as supplied | anchor the master to this |
+| Programme | **-14.4 LUFS** · LRA 1.6 | an output, not a target |
 | Bed under the VO | **-20.0 dB** integrated · **-25.9 dB** under speech | -13.1 dB, but see below |
 | SFX bus vs the bed | **+3.5 dB** | SFX sit above the bed |
 | Cue changes | 17 -> one per **42.2 s** | one per 47-48 s |
@@ -120,9 +121,16 @@ the standing instruction to human sound designers before any of this was
 measured. Report both numbers on handover; only the second describes what is
 heard.
 
-Delivery is **-21.5 LUFS**, the louder of his two measured masters, rather than
-the -14 chosen earlier for YouTube's target. YouTube attenuates a hot upload and
-does not lift a quiet one, so matching the channel costs nothing.
+## Anchor the master to the voice
+
+Asked to match StickTory's programme loudness, mastering to -21.5 LUFS applied a
+flat -7.6 dB to everything and put the delivered voice **7.6 dB below the file
+that was supplied** — "you actually reduced the voice as well". The voice *is*
+most of the programme, so any programme target moves it.
+
+Sum music + SFX + VO at unity, limit, ship. Programme loudness becomes an output
+(-14.4 LUFS against a -14.5 LUFS VO), and the gap between the two is exactly how
+much music and SFX are present.
 
 ## A long tonal tail is a bed, not a hit
 

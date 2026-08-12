@@ -3,8 +3,8 @@
  "video": "video.mp4",
  "vo": "vo.mp3",
  "duration": 718.171,
- "loudness_target_lufs": -21.5,
- "true_peak_ceiling_dbtp": -2.0,
+ "loudness_target_lufs": null,
+ "true_peak_ceiling_dbtp": -1.0,
  "measured": {
   "scene_cuts": [
    1.8,

@@ -187,11 +187,11 @@ MUTES = [
 
 # ---------------------------------------------------------------- assemble
 cue = dict(AUTO)
-# StickTory ships at -21.5 / -23.1 LUFS; match the louder of the pair so a
-# delivery is never quieter than the back catalogue. YouTube attenuates a hot
-# upload but does not lift a quiet one, so nothing is lost by matching.
-cue["loudness_target_lufs"] = -21.5
-cue["true_peak_ceiling_dbtp"] = -2.0
+# No programme target. The VO arrives mastered and a programme target moves it:
+# aiming at -21.5 LUFS put the delivered voice 7.6 dB under the file supplied.
+# The mix is summed at unity and limited, so the voice comes out as it went in.
+cue["loudness_target_lufs"] = None
+cue["true_peak_ceiling_dbtp"] = -1.0
 ms = []
 for i, (mid, a, b, en, why, track) in enumerate(SECTIONS):
     ms.append({"id": mid, "role": "intro" if i == 0 else ("outro" if i == len(SECTIONS)-1 else "body"),
