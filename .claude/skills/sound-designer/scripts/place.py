@@ -265,11 +265,31 @@ def main():
                 if any(abs(c["t"] - b) <= CARD_SOLO for b in booms):
                     shushed.append(c)
                     continue
-            rivals = [k for k in kept if not (hero and k["tier"].startswith("hero"))]
-            if any(abs(c["t"] - k["t"]) < max(guard, TIERS[k["tier"]][1])
-                   for k in rivals):
-                lost += 1
-                continue
+            # A hand-timed beat is never dropped. Step 1 has said so in prose
+            # since this file was written and the guard has never honoured it,
+            # because the guard is sized to thin the GENERIC pool and was being
+            # applied to designed cues as well. On a real render that deleted
+            # 31 of 115 hand-timed beats, in three ways:
+            #   * all seven era-card whooshes, every time. A card whoosh sits
+            #     0.4 s ahead of a boom whose guard is 2.2 s, so it can never
+            #     survive. The hero exemption below was written for exactly
+            #     this case and does not reach it -- a whoosh is not a hero
+            #     tier -- so every card in two finished mixes got its boom with
+            #     no lead-in and nothing said so.
+            #   * designed beats eaten by other designed beats: the survivors
+            #     of K17 lost to the explosion directly above them, and three
+            #     of the four bursts in a burning column lost to the first.
+            #   * designed beats eaten by the generic pool on a higher-priority
+            #     tier -- the same "a nothing-cue deletes a named beat" failure
+            #     SKILL.md already describes, arriving from the other side.
+            # If it is in the sheet, it was meant; spacing designed beats is
+            # the sheet's job, and the log below flags any that crowd.
+            if not c.get("hand"):
+                rivals = [k for k in kept if not (hero and k["tier"].startswith("hero"))]
+                if any(abs(c["t"] - k["t"]) < max(guard, TIERS[k["tier"]][1])
+                       for k in rivals):
+                    lost += 1
+                    continue
             kept.append(c)
     # Name them. A bare count made a silenced *hand-cast* beat indistinguishable
     # from a silenced caption tick, so a designed moment could go missing and the
@@ -280,6 +300,18 @@ def main():
             flag = "  <-- HAND-TIMED, set solo_ok if intended" if c.get("hand") else ""
             print(f"          {c['t']:8.2f}s  {c['label']}{flag}")
     kept.sort(key=lambda c: c["t"])
+
+    # Hand beats are now unconditionally kept, so the sheet is what stops two
+    # of them landing on the same frame. Name the close pairs rather than
+    # letting a doubled hit be discovered by ear.
+    hands = [c for c in kept if c.get("hand")]
+    crowd = [(a, b) for a, b in zip(hands, hands[1:]) if b["t"] - a["t"] < 0.30]
+    if crowd:
+        print(f"[place] {len(crowd)} pair(s) of hand-timed beats inside 0.30s — "
+              f"check these are layers you meant, not duplicates")
+        for a, b in crowd:
+            print(f"          {a['t']:8.2f}s {a['label'][:38]!r}")
+            print(f"          {b['t']:8.2f}s {b['label'][:38]!r}  (+{(b['t']-a['t'])*1000:.0f} ms)")
 
     # 5. assign files
     sfx, counts = [], {}

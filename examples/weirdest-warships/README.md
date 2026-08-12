@@ -2,18 +2,21 @@
 
 The second full job, and the first on a subject the sword palette did not cover.
 Everything needed to reproduce it without re-deciding anything. The prepared
-palette (282 wav) is derived from `job_ids.json`, so it is not carried here.
+palette (309 wav) is derived from `job_ids.json`, so it is not carried here.
 
 | file | what it is |
 |---|---|
-| `cues.json` | the finished sheet — 315 events, 624 cues with layers, 24 beds |
-| `cues_beats.json` | the source sheet: 17 music sections + 83 hand-timed beats + 9 mute windows |
+| `cues.json` | the finished sheet — 336 events, 679 cues with layers, 24 beds |
+| `cues_beats.json` | the source sheet: 18 music sections + 106 hand-timed beats + 9 mute windows |
 | `build_cues.py` | writes `cues_beats.json`; every time in it was read off a contact sheet |
 | `redraw.json` | `visual_redraw.py` output — 88 cuts, 293 actions, 140 elements |
-| `palette_manifest.json` | 282 files across 58 categories, with per-file anchors |
-| `job_ids.json` | Epidemic ids: 169 naval SFX + 17 music tracks |
+| `palette_manifest.json` | 309 files across 62 categories, with per-file anchors |
+| `job_ids.json` | Epidemic ids: 196 naval SFX + 18 music tracks |
 | `cue_sheet.md` | the human-readable cue sheet handed to Sapro |
 | `cards.py` | finds the era title cards (white frame + red progress bar) |
+| `fire.py` | finds the frames where the animation draws a fireball |
+| `preview.html` | the cue sheet as a self-contained interactive timeline |
+| `mkdata.py` | cue sheet -> the timeline's inlined data |
 | `banner.py` | finds era-banner changes — kept as the thing that got it *wrong*, see below |
 | `sheet.py` | contact sheets at arbitrary times, timestamps burned in |
 | `report.py` | cue sheet -> markdown |
@@ -25,9 +28,9 @@ palette (282 wav) is derived from `job_ids.json`, so it is not carried here.
 | Programme | **-14.0 LUFS** · LRA 1.7 · TP -0.7 dBFS | -21.5 / -23.1 LUFS, LRA 2.3-2.6 |
 | Music bus under VO | **-13.0 dB** (calibrated) | -13.1 dB measured on their VO stem |
 | SFX bus vs music bus | **+1.3 dB** (mean -27.8 vs -29.1) | SFX sit above the bed |
-| Cue changes | 17 -> one per **42.2 s** | one per 47-48 s |
-| Density | 315 events -> one per **2.28 s** | ~2.2 s target |
-| Distinct files | 92, busiest ×9 | no file more than ~10× |
+| Cue changes | 18 -> one per **39.9 s** | one per 47-48 s |
+| Density | 336 events -> one per **2.14 s** | ~2.2 s target |
+| Distinct files | 121, busiest ×9 | no file more than ~10× |
 | Sync (30 fps) | median **-0.2 ms**, p90 154 ms, 70.9% inside a frame | sword final: -0.6 ms, 74.5 ms, 75.2% |
 
 ## Rebuilding
@@ -56,3 +59,24 @@ engine room does not belong under a Bronze Age deck.
   Three payoff beats were 1.1-7.1 s wrong when read at 6 s spacing.
 - A non-combat topic replaces `amb`, `impact` and `body` wholesale. Those three
   name objects; the rest of the palette names air and transients and carries.
+- **A hand-timed beat is never dropped.** `place.py` said so in prose and did
+  not do it: the guard that thins the generic pool was being applied to
+  designed cues too, and deleted **31 of 106** on this video — including all
+  seven era-card whooshes, on every render, silently. Fixed in the script; the
+  placer now also names any two hand beats inside 300 ms so a doubled hit is
+  caught by count rather than by ear.
+
+## Score the picture, not the brief
+
+The animator note for this video says of the K-class collision sequence: *"No
+explosions, no heroics."* That is an instruction to the animator about what to
+draw. The animator drew fourteen fireballs anyway, and the first mix followed
+the note instead of the frames — no explosion cues at all across 19.5 s of
+burning ships, the loudest moment in the video scored as its quietest, and the
+music deliberately held flat under it.
+
+An accuracy note constrains the drawing. What reaches the sound is whatever
+ended up on screen, so measure that: `fire.py` scores orange burst area per
+frame and its local maxima are where the explosions go. It also caught a plain
+error the eye had missed — Bushnell's mine detonates at 369.20 and the cue was
+sitting at 371.67, on the scene cut *after* it.

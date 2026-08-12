@@ -1,0 +1,747 @@
+<title>Weirdest Warships Cue Sheet</title>
+<style>
+:root{
+  --abyss:#E7EEF1; --deck:#FAFCFD; --deck2:#F1F6F8; --rule:#C0D2DA;
+  --ink:#0E2029; --ink2:#37525F; --mute:#6C8493;
+  --cyan:#0F6E7C; --brass:#8C6111; --chart:#AE372C; --kelp:#3F6B4E;
+  --grid:rgba(14,32,41,.07); --shadow:0 1px 2px rgba(14,32,41,.06),0 8px 24px rgba(14,32,41,.05);
+  --band:rgba(174,55,44,.055);
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --abyss:#08131C; --deck:#0F1E2A; --deck2:#132534; --rule:#1E3646;
+  --ink:#D7E5EC; --ink2:#9FB6C4; --mute:#6F8B9C;
+  --cyan:#4EBACA; --brass:#E3B457; --chart:#D2564A; --kelp:#6E9E7C;
+  --grid:rgba(215,229,236,.06); --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  --band:rgba(210,86,74,.07);
+}}
+:root[data-theme="dark"]{
+  --abyss:#08131C; --deck:#0F1E2A; --deck2:#132534; --rule:#1E3646;
+  --ink:#D7E5EC; --ink2:#9FB6C4; --mute:#6F8B9C;
+  --cyan:#4EBACA; --brass:#E3B457; --chart:#D2564A; --kelp:#6E9E7C;
+  --grid:rgba(215,229,236,.06); --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  --band:rgba(210,86,74,.07);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--abyss); color:var(--ink);
+  font:400 15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-feature-settings:"kern";
+}
+.wrap{max-width:1400px;margin:0 auto;padding:0 clamp(14px,3vw,32px) 72px}
+h1,h2,h3{margin:0;text-wrap:balance}
+.lbl{
+  font:600 11px/1 "Roboto Condensed","Arial Narrow","Liberation Sans Narrow",system-ui,sans-serif;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--mute);
+}
+.note{font:italic 400 15px/1.55 Georgia,"Iowan Old Style","Times New Roman",serif;color:var(--ink2)}
+.num{font:400 13px/1.4 ui-monospace,"SF Mono","Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+  font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+header{border-bottom:1px solid var(--rule);background:var(--deck);position:relative;overflow:hidden}
+header::after{content:"";position:absolute;inset:auto 0 0 0;height:3px;
+  background:linear-gradient(90deg,var(--chart) 0 14.3%,var(--rule) 14.3%)}
+.mast{max-width:1400px;margin:0 auto;padding:clamp(26px,5vw,46px) clamp(14px,3vw,32px) 26px;
+  display:grid;gap:22px}
+.eyebrow{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+h1{font:700 clamp(30px,5.2vw,52px)/1.02 "Roboto Condensed","Arial Narrow","Liberation Sans Narrow",system-ui,sans-serif;
+  letter-spacing:-.012em;text-transform:uppercase}
+h1 em{font-style:normal;color:var(--chart)}
+.sub{max-width:66ch}
+.meters{display:grid;grid-template-columns:repeat(6,1fr);
+  gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+@media (max-width:1040px){.meters{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:720px){.meters{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:460px){.meters{grid-template-columns:repeat(2,1fr)}}
+.meter{background:var(--deck);padding:11px 13px;display:grid;gap:5px}
+.meter .v{font:600 20px/1 ui-monospace,"SF Mono",Consolas,monospace;font-variant-numeric:tabular-nums;
+  color:var(--ink)}
+.meter .v small{font-size:11px;font-weight:400;color:var(--mute);letter-spacing:.04em}
+.meter .k{font:600 10px/1.3 "Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.ok{color:var(--kelp)}
+
+/* ---------- console ---------- */
+section{margin-top:clamp(30px,5vw,52px)}
+.shead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+h2{font:600 clamp(17px,2.4vw,22px)/1.2 "Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  letter-spacing:.03em;text-transform:uppercase}
+.console{background:var(--deck);border:1px solid var(--rule);border-radius:3px;box-shadow:var(--shadow)}
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;
+  border-bottom:1px solid var(--rule);background:var(--deck2)}
+button{font:600 11px/1 "Roboto Condensed","Arial Narrow",system-ui,sans-serif;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink2);background:var(--deck);border:1px solid var(--rule);
+  border-radius:2px;padding:7px 10px;cursor:pointer;transition:.13s}
+button:hover{color:var(--ink);border-color:var(--mute)}
+button[aria-pressed="true"]{background:var(--ink);color:var(--deck);border-color:var(--ink)}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--chart);outline-offset:2px}
+.spacer{flex:1 1 auto}
+.read{font:400 12px/1 ui-monospace,"SF Mono",Consolas,monospace;font-variant-numeric:tabular-nums;
+  color:var(--mute);white-space:nowrap}
+.read b{color:var(--ink);font-weight:600}
+#mini{display:block;width:100%;height:44px;cursor:crosshair;border-bottom:1px solid var(--rule)}
+#lanes{display:block;width:100%;cursor:crosshair;touch-action:pan-y}
+.canvwrap{position:relative}
+#tip{position:absolute;pointer-events:none;opacity:0;transition:opacity .1s;z-index:5;
+  background:var(--ink);color:var(--abyss);padding:8px 10px;border-radius:2px;max-width:290px;
+  box-shadow:0 6px 22px rgba(0,0,0,.3)}
+#tip .t{font:600 10px/1.3 "Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  letter-spacing:.13em;text-transform:uppercase;opacity:.62}
+#tip .m{font:500 13px/1.35 system-ui,sans-serif;margin:3px 0 4px}
+#tip .n{font:400 11px/1.3 ui-monospace,"SF Mono",Consolas,monospace;opacity:.7}
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:9px 12px;border-top:1px solid var(--rule);
+  background:var(--deck2)}
+.key{display:flex;align-items:center;gap:6px;font:500 11px/1 system-ui,sans-serif;color:var(--ink2)}
+.sw{width:10px;height:10px;border-radius:1px;flex:none}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:3px;background:var(--deck)}
+table{border-collapse:collapse;width:100%;min-width:600px}
+th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font:600 10px/1.3 "Roboto Condensed","Arial Narrow",system-ui,sans-serif;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--mute);background:var(--deck2);position:sticky;top:0;z-index:1}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--deck2)}
+td.t,td.g{font:400 12.5px/1.5 ui-monospace,"SF Mono",Consolas,monospace;font-variant-numeric:tabular-nums;
+  white-space:nowrap;color:var(--ink2)}
+td.g{text-align:right}
+td.w{font:italic 400 14px/1.5 Georgia,"Iowan Old Style",serif;color:var(--ink2)}
+tr.jump{cursor:pointer}
+tr.flash{animation:fl 1.1s ease-out}
+@keyframes fl{0%{background:var(--band)}100%{background:transparent}}
+.pill{display:inline-block;font:600 9.5px/1 "Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  letter-spacing:.11em;text-transform:uppercase;padding:4px 6px;border-radius:2px;white-space:nowrap}
+.two{display:grid;gap:clamp(20px,3vw,34px);grid-template-columns:repeat(auto-fit,minmax(330px,1fr));align-items:start}
+.cats{display:flex;flex-wrap:wrap;gap:5px}
+.cat{display:flex;align-items:baseline;gap:5px;border:1px solid var(--rule);border-radius:2px;
+  padding:4px 7px;background:var(--deck)}
+.cat b{font:600 11px/1 "Roboto Condensed","Arial Narrow",system-ui,sans-serif;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink2)}
+.cat span{font:400 11px/1 ui-monospace,Consolas,monospace;color:var(--mute)}
+.cat.new{border-color:var(--cyan)}
+.cat.new b{color:var(--cyan)}
+ul.plain{margin:0;padding:0;list-style:none;display:grid;gap:9px}
+ul.plain li{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:baseline}
+footer{margin-top:clamp(34px,5vw,58px);padding-top:16px;border-top:1px solid var(--rule);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+@media (max-width:640px){.bar{gap:6px}button{padding:6px 8px;font-size:10px}}
+</style>
+
+<header>
+  <div class="mast">
+    <div class="eyebrow">
+      <span class="lbl">Sound design · cue sheet</span>
+      <span class="lbl" style="color:var(--chart)">ExplainTory · 7 eras · 8 ships</span>
+    </div>
+    <h1>The Weirdest Warships<br>from Every Era <em>Explained</em></h1>
+    <p class="note sub">Every cue in the finished mix, plotted against the picture. Music sections,
+      ambience beds, and 336 sound events across six levels — the loudest at the top, the way
+      they sit in the mix.</p>
+    <div class="meters" id="meters"></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <div class="shead">
+    <h2>The timeline</h2>
+    <span class="read" id="read">— : — . — —</span>
+  </div>
+  <div class="console">
+    <canvas id="mini" aria-hidden="true"></canvas>
+    <div class="bar">
+      <span class="lbl" style="margin-right:2px">Jump</span>
+      <span id="eras"></span>
+      <span class="spacer"></span>
+      <button id="zin" title="Zoom in">Zoom +</button>
+      <button id="zout" title="Zoom out">Zoom −</button>
+      <button id="zall">Whole video</button>
+      <button id="hand" aria-pressed="false">Designed beats only</button>
+    </div>
+    <div class="canvwrap">
+      <canvas id="lanes" role="img"
+        aria-label="Timeline of the sound design: era bands, 18 music sections, 24 ambience beds, and 679 sound cues across six level tiers over 11 minutes 58 seconds. The tables below carry the same information as text."></canvas>
+      <div id="tip"></div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+</section>
+
+<section>
+  <div class="shead">
+    <h2>Music</h2>
+    <span class="lbl">18 sections · one change per 39.9 s</span>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:64px">In</th><th style="width:64px">Out</th><th style="width:56px">Length</th>
+      <th style="width:200px">Track</th><th>Under</th><th style="width:74px">Energy</th></tr></thead>
+    <tbody id="tmusic"></tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="shead">
+    <h2>Designed beats</h2>
+    <span class="lbl">106 hand-timed · every one read off a frame</span>
+  </div>
+  <div class="bar" style="border:1px solid var(--rule);border-bottom:0;border-radius:3px 3px 0 0">
+    <span class="lbl" style="margin-right:2px">Filter</span><span id="efilt"></span>
+  </div>
+  <div class="scroll" style="border-radius:0 0 3px 3px;max-height:520px;overflow-y:auto">
+    <table>
+      <thead><tr><th style="width:64px">At</th><th style="width:96px">Tier</th>
+        <th>Beat</th><th style="width:132px">Cast</th><th style="width:56px">Level</th></tr></thead>
+      <tbody id="tbeats"></tbody>
+    </table>
+  </div>
+</section>
+
+<div class="two" style="margin-top:clamp(30px,5vw,52px)">
+  <section style="margin-top:0">
+    <div class="shead"><h2>Ambience beds</h2><span class="lbl">24 · hand-assigned</span></div>
+    <p class="note" style="margin:0 0 12px">A bed never ducks, so a wrong one runs under the
+      narration for a minute at a time. These are placed by scene rather than rotated.</p>
+    <div class="scroll" style="max-height:430px;overflow-y:auto"><table style="min-width:440px">
+      <thead><tr><th style="width:60px">In</th><th>Room tone</th><th style="width:52px">Level</th></tr></thead>
+      <tbody id="tbeds"></tbody>
+    </table></div>
+  </section>
+
+  <section style="margin-top:0">
+    <div class="shead"><h2>Silences</h2><span class="lbl">9 mute windows</span></div>
+    <p class="note" style="margin:0 0 12px">A photograph is not an event. The detector cannot tell
+      a portrait sliding in from a hull being struck — both are large mid-band redraws — and there
+      is no quieter sound that would be right, so these spans get none.</p>
+    <ul class="plain" id="tmutes"></ul>
+  </section>
+</div>
+
+<section>
+  <div class="shead"><h2>The palette</h2><span class="lbl">309 files · 62 categories</span></div>
+  <p class="note" style="margin:0 0 14px;max-width:70ch">Marked categories were fetched for this
+    video. A naval subject does not reuse a sword palette: <em>impact</em>, <em>body</em> and
+    <em>ambience</em> all name objects, and those three are what the generic pool draws from.</p>
+  <div class="cats" id="tcats"></div>
+</section>
+
+<footer>
+  <span class="lbl">The Weirdest Warships from Every Era Explained · 11:58.17 · −14.0 LUFS</span>
+  <span class="lbl">Cue sheet generated from the finished mix</span>
+</footer>
+</div>
+
+<script id="D" type="application/json">{"duration":718.171,"tiers":["hero_boom","hero_hit","impact","whoosh","swish","pop"],"kinds":["era card whoosh (into the card) \u2014 THE ANCIENT WORLD","era card \u2014 THE ANCIENT WORLD","card clears to the garden on the deck","strike","small element","the catapult, loaded with an eighty-kilo stone","SYRACUSIA, 240 BC \u2014 the whole ship","shot change","a live fish out of the seawater tank","movement","oars in the water; the screw pump clears the bilge","renamed ALEXANDRIA and given away","she sails for Egypt, once","\"No wreck has ever been found\"","the one surviving description","Moschion writes it down","era card whoosh (into the card) \u2014 THE MIDDLE AGES","era card \u2014 THE MIDDLE AGES","PADDLE WHEEL WARSHIP \u2014 the wheel","men walking treadmills inside the hull","the wheel bites the water","twelve wheels on each side","imperial ships arrive under sail, into no wind","the paddle boat picks a direction and holds it","a paddle warship runs a sailing ship down","and opens her up","rotten logs go into the water upstream","and the cut weed after them","the weed fouls the wheel","the wheels jam: a wooden box full of exhausted men","a coal-fired Royal Navy squadron","era card whoosh (into the card) \u2014 THE EARLY MODERN AGE","era card \u2014 THE EARLY MODERN AGE","GEOBUKSEON \u2014 the roof, and the spikes","the turtle ship under oars","the dragon head vents smoke","guns firing through ports on every face","the Japanese try to board and find spikes","she comes about","ANGOLPO \u2014 fifty-nine ships","\"World's First Ironclad\" \u2014 the claim arrives","VASA \u2014 sixty-four guns on two decks","under full sail, leaving Stockholm","a gust catches her","she heels and the open lower gunports go under","gone, thirteen hundred metres from the quay","era card whoosh (into the card) \u2014 THE AGE OF SAIL","era card \u2014 THE AGE OF SAIL","gunpowder will detonate underwater","one propeller turned by hand","water into the ballast tank, to sink","the Turtle crossing the harbour","he starts drilling into the ship's bottom","it will not bite","an hour of his own exhaled air, in the dark","he releases the mine and pedals away","it goes off in open water and hurts nobody","the sloop carrying it goes down off Fort Lee","era card whoosh (into the card) \u2014 THE IRONCLAD AGE","era card \u2014 THE IRONCLAD AGE","NOVGOROD \u2014 a circle, a hundred and one feet across","Elder's paper: a wider hull, thicker armour","the navy approves the drawings, December 1869","two and a half thousand tons on almost no draught","two eleven-inch guns in an open barbette","Fred T. Jane writes the story down","Novgorod stands up the Dnieper","firing her guns spins the whole ship \u2014 the story","she turns for home","slow, wet and awkward to steer \u2014 the record","and they ordered a second one","era card whoosh (into the card) \u2014 WORLD WAR I","era card \u2014 WORLD WAR I","two steam funnels standing on a submarine's deck","diving: shut down, fold the funnels, clamp them","the K-boat holding station at twenty-four knots","thirty separate openings, closed by hand","the Grand Fleet sails from Rosyth into mist","two flotillas, running at speed","K14 puts her helm over","K22 hits her","the cruiser Inflexible then hits K22, and she burns","the flotilla ahead turns back to help","and runs head-on into the Twelfth","Fearless strikes K17 at near full speed, and cuts her open","K6 rams K4, and slices her nearly in half","fire takes hold along the column","another","and another","K17 goes up \u2014 the biggest burst in the video","survivors from K17 in the water, under it","K4 burning as she goes over","the cruiser alight","still burning at seventy-five minutes","and burning","a hundred and four men died","the transcripts go into a locked file for seventy years","era card whoosh (into the card) \u2014 WORLD WAR II","era card \u2014 WORLD WAR II","SURCOUF \u2014 heavy-cruiser calibre on a submarine","ten torpedo tubes, six hundred rounds below","the Besson floatplane, craned into the water","she surfaces and outguns the escort","and the convoy goes up","the escort with it","and the last of them","France fell in 1940","Thompson Lykes coming up in the dark","the freighter strikes something submerged","nobody has ever found her"],"files":["surge_05","boom_04","surge_06","gust_06","swish_01","impact_05","body_04","pop_03","swish_12","impact_06","body_05","swish_11","impact_07","body_03","swish_08","catapult_01","stone_01","boom_01","surge_03","whoosh_11","whoosh_05","whoosh_12","swish_05","impact_09","body_02","whoosh_03","swish_10","water_01","body_01","swish_03","swish_04","oar_01","water_02","passby_07","swish_07","impact_03","swish_09","impact_08","swish_06","pop_09","swish_02","impact_04","pop_05","whoosh_02","impact_12","impact_10","whoosh_06","shipbell_01","sail_03","surge_07","passby_02","boom_03","paper_02","impact_02","impact_11","quill_01","whoosh_09","surge_02","surge_08","impact_01","gears_06","creak_01","whoosh_07","footdeck_01","gears_02","gears_05","water_06","pop_02","gears_01","whoosh_04","whoosh_08","sail_02","passby_06","pop_06","wake_02","woodbreak_03","water_03","explo_08","woodbreak_04","water_05","water_04","creak_04","gears_03","pop_08","woodbreak_02","whoosh_01","whoosh_10","steam_04","horn_03","surge_09","surge_04","chain_03","passby_03","steam_05","pop_10","pop_04","pop_01","cannon_07","footdeck_03","wake_05","woodbreak_01","cannon_01","sail_05","passby_01","gust_04","sail_01","creak_03","surge_01","bubbles_06","uwexp_02","bubbles_01","pop_07","winch_02","bubbles_02","wake_04","winch_04","creak_02","breath_01","torpedo_01","bubbles_04","explo_06","paper_03","typewriter_02","cannon_03","quill_02","passby_04","cannon_02","wake_01","creak_06","passby_08","steam_01","horn_04","alarm_02","hatch_02","wake_03","hatch_03","chain_02","horn_01","passby_05","ramcrash_01","ramcrash_04","exdist_05","ramcrash_03","explo_03","ramcrash_02","exdist_06","explo_01","exdist_01","explo_04","ramcrash_05","bubbles_03","explo_02","exdist_03","exdist_02","explo_05","paper_04","lock_01","cannon_05","torpedo_03","plane_02","winch_05","cannon_06","explo_07","exdist_04","bubbles_05"],"sfx":[[0.0,3,-10.0,0,0,0,1],[0.4,0,-5.0,1,1,0,1],[0.435,4,-10.0,1,2,2,1],[1.8,3,-13.0,2,3,0,1],[3.537,4,-15.0,3,4,1,0],[3.667,2,-8.0,3,5,0,0],[3.702,4,-13.0,3,6,2,0],[5.267,5,-19.0,4,7,0,0],[6.37,4,-15.0,3,8,1,0],[6.5,2,-8.0,3,9,0,0],[6.535,4,-13.0,3,10,2,0],[7.837,4,-15.0,3,11,1,0],[7.967,2,-8.0,3,12,0,0],[8.002,4,-13.0,3,13,2,0],[9.137,4,-15.0,5,14,1,1],[9.267,1,-8.0,5,15,0,1],[9.302,4,-13.0,5,16,2,1],[13.133,0,-6.0,6,17,0,1],[13.168,4,-11.0,6,18,2,1],[18.467,3,-12.0,7,19,0,0],[20.633,3,-12.0,7,20,0,0],[25.933,3,-12.0,7,21,0,0],[26.937,4,-15.0,3,22,1,0],[27.067,2,-8.0,3,23,0,0],[27.102,4,-13.0,3,24,2,0],[28.833,3,-12.0,7,25,0,0],[31.77,4,-16.0,8,26,1,1],[31.9,1,-9.0,8,27,0,1],[31.935,4,-14.0,8,28,2,1],[33.567,4,-15.0,9,29,0,0],[35.27,4,-17.0,10,30,1,1],[35.4,2,-10.0,10,31,0,1],[35.435,4,-15.0,10,32,2,1],[35.485,4,-15.0,10,33,2,1],[37.103,4,-15.0,3,34,1,0],[37.233,2,-8.0,3,35,0,0],[37.268,4,-13.0,3,6,2,0],[39.003,4,-15.0,3,36,1,0],[39.133,2,-8.0,3,37,0,0],[39.168,4,-13.0,3,10,2,0],[40.333,4,-15.0,9,38,0,0],[41.233,5,-19.0,4,39,0,0],[42.27,4,-15.0,3,40,1,0],[42.4,2,-8.0,3,41,0,0],[42.435,4,-13.0,3,13,2,0],[44.233,4,-15.0,9,4,0,0],[45.233,5,-19.0,4,42,0,0],[47.967,3,-12.0,7,43,0,0],[49.27,4,-15.0,3,8,1,0],[49.4,2,-8.0,3,44,0,0],[49.435,4,-13.0,3,24,2,0],[50.437,4,-15.0,3,11,1,0],[50.567,2,-8.0,3,45,0,0],[50.602,4,-13.0,3,28,2,0],[52.567,3,-12.0,7,46,0,0],[58.337,4,-15.0,11,14,1,1],[58.467,1,-8.0,11,47,0,1],[58.502,4,-13.0,11,6,2,1],[62.003,4,-17.0,12,22,1,1],[62.133,1,-10.0,12,48,0,1],[62.168,4,-15.0,12,49,2,1],[62.218,4,-15.0,12,50,2,1],[66.733,0,-6.0,13,51,0,1],[69.47,4,-18.0,14,26,1,1],[69.6,2,-11.0,14,52,0,1],[69.635,4,-16.0,14,10,2,1],[70.97,4,-15.0,3,29,1,0],[71.1,2,-8.0,3,53,0,0],[71.135,4,-13.0,3,13,2,0],[72.537,4,-15.0,3,30,1,0],[72.667,2,-8.0,3,54,0,0],[72.667,4,-14.0,15,55,0,1],[72.702,4,-13.0,3,24,2,0],[75.3,3,-12.0,7,56,0,0],[80.767,3,-10.0,16,57,0,1],[81.167,0,-5.0,17,1,0,1],[81.202,4,-10.0,17,58,2,1],[84.537,4,-15.0,3,34,1,0],[84.667,2,-8.0,3,59,0,0],[84.702,4,-13.0,3,28,2,0],[86.3,4,-15.0,9,36,0,0],[87.233,4,-15.0,9,38,0,0],[88.437,4,-15.0,18,40,1,1],[88.567,1,-8.0,18,60,0,1],[88.602,4,-13.0,18,61,2,1],[90.6,3,-12.0,7,62,0,0],[92.337,4,-16.0,19,4,1,1],[92.467,2,-9.0,19,63,0,1],[92.502,4,-14.0,19,64,2,1],[93.87,4,-15.0,3,8,1,0],[94.0,2,-8.0,3,5,0,0],[94.035,4,-13.0,3,6,2,0],[96.67,4,-15.0,20,11,1,1],[96.8,1,-8.0,20,65,0,1],[96.835,4,-13.0,20,66,2,1],[98.267,4,-15.0,9,14,0,0],[99.77,4,-15.0,3,22,1,0],[99.9,2,-8.0,3,9,0,0],[99.935,4,-13.0,3,10,2,0],[101.1,4,-15.0,9,26,0,0],[102.167,5,-19.0,4,67,0,0],[103.3,4,-15.0,9,29,0,0],[104.67,4,-15.0,3,30,1,0],[104.8,2,-8.0,3,12,0,0],[104.835,4,-13.0,3,13,2,0],[105.933,4,-15.0,9,34,0,0],[107.003,4,-17.0,21,36,1,1],[107.133,2,-10.0,21,68,0,1],[107.168,4,-15.0,21,24,2,1],[109.4,3,-12.0,7,69,0,0],[110.87,4,-15.0,3,38,1,0],[111.0,2,-8.0,3,23,0,0],[111.035,4,-13.0,3,28,2,0],[112.8,3,-12.0,7,70,0,0],[114.003,4,-15.0,3,40,1,0],[114.133,2,-8.0,3,35,0,0],[114.168,4,-13.0,3,6,2,0],[115.37,4,-15.0,3,4,1,0],[115.5,2,-8.0,3,37,0,0],[115.535,4,-13.0,3,10,2,0],[116.67,4,-15.0,3,8,1,0],[116.8,2,-8.0,3,41,0,0],[116.835,4,-13.0,3,13,2,0],[117.87,4,-15.0,3,11,1,0],[118.0,2,-8.0,3,44,0,0],[118.035,4,-13.0,3,24,2,0],[118.337,4,-18.0,22,14,1,1],[118.467,2,-11.0,22,71,0,1],[118.502,4,-16.0,22,72,2,1],[120.133,5,-19.0,4,73,0,0],[121.433,4,-13.0,23,74,0,1],[122.837,4,-14.0,24,22,1,1],[122.967,1,-7.0,24,45,0,1],[123.002,4,-12.0,24,75,2,1],[123.052,4,-12.0,24,76,2,1],[123.733,0,-7.0,25,77,0,1],[123.768,4,-12.0,25,78,2,1],[127.567,4,-15.0,9,26,0,0],[130.103,4,-15.0,26,29,1,1],[130.233,1,-8.0,26,79,0,1],[130.268,4,-13.0,26,28,2,1],[132.337,4,-17.0,27,30,1,1],[132.467,2,-10.0,27,80,0,1],[132.502,4,-15.0,27,6,2,1],[134.503,4,-15.0,3,34,1,0],[134.633,2,-8.0,3,53,0,0],[134.668,4,-13.0,3,10,2,0],[137.803,4,-16.0,28,36,1,1],[137.933,1,-9.0,28,81,0,1],[137.968,4,-14.0,28,82,2,1],[139.3,4,-15.0,9,38,0,0],[140.433,4,-15.0,9,40,0,0],[141.467,4,-15.0,9,4,0,0],[142.467,5,-19.0,4,83,0,0],[145.567,0,-6.0,29,17,0,1],[145.602,4,-11.0,29,84,2,1],[148.337,4,-15.0,3,8,1,0],[148.467,2,-8.0,3,54,0,0],[148.502,4,-13.0,3,13,2,0],[151.733,3,-12.0,7,85,0,0],[153.267,3,-12.0,7,86,0,0],[154.503,4,-15.0,3,11,1,0],[154.633,2,-8.0,3,59,0,0],[154.668,4,-13.0,3,24,2,0],[156.703,4,-17.0,30,14,1,1],[156.833,1,-10.0,30,87,0,1],[156.868,4,-15.0,30,88,2,1],[158.233,4,-15.0,9,22,0,0],[160.067,3,-12.0,7,19,0,0],[167.267,3,-10.0,31,89,0,1],[167.667,0,-5.0,32,51,0,1],[167.702,4,-10.0,32,90,2,1],[170.333,4,-15.0,9,26,0,0],[171.47,4,-15.0,3,29,1,0],[171.6,2,-8.0,3,5,0,0],[171.635,4,-13.0,3,28,2,0],[173.137,4,-14.0,33,30,1,1],[173.267,1,-7.0,33,9,0,1],[173.302,4,-12.0,33,91,2,1],[176.103,4,-15.0,3,34,1,0],[176.233,2,-8.0,3,12,0,0],[176.268,4,-13.0,3,6,2,0],[177.303,4,-15.0,3,36,1,0],[177.433,2,-8.0,3,23,0,0],[177.468,4,-13.0,3,10,2,0],[178.837,4,-15.0,3,38,1,0],[178.967,2,-8.0,3,35,0,0],[179.002,4,-13.0,3,13,2,0],[182.77,4,-15.0,3,40,1,0],[182.9,2,-8.0,3,37,0,0],[182.935,4,-13.0,3,24,2,0],[184.5,3,-12.0,7,20,0,0],[184.5,4,-14.0,34,92,0,1],[186.5,4,-15.0,9,4,0,0],[188.27,4,-15.0,3,8,1,0],[188.4,2,-8.0,3,41,0,0],[188.435,4,-13.0,3,28,2,0],[191.303,4,-16.0,35,11,1,1],[191.433,1,-9.0,35,93,0,1],[191.468,4,-14.0,35,6,2,1],[193.003,4,-15.0,3,14,1,0],[193.133,2,-8.0,3,44,0,0],[193.168,4,-13.0,3,10,2,0],[195.537,4,-15.0,3,22,1,0],[195.667,2,-8.0,3,45,0,0],[195.702,4,-13.0,3,13,2,0],[197.3,5,-19.0,4,94,0,0],[198.833,5,-19.0,4,95,0,0],[200.167,5,-19.0,4,96,0,0],[202.633,0,-6.0,36,97,0,1],[202.668,4,-11.0,36,27,2,1],[205.837,4,-15.0,3,26,1,0],[205.967,2,-8.0,3,53,0,0],[206.002,4,-13.0,3,24,2,0],[208.037,4,-15.0,3,29,1,0],[208.167,2,-8.0,3,54,0,0],[208.202,4,-13.0,3,28,2,0],[208.703,4,-16.0,37,30,1,1],[208.833,2,-9.0,37,98,0,1],[208.868,4,-14.0,37,59,2,1],[211.0,3,-12.0,7,21,0,0],[213.77,4,-15.0,3,34,1,0],[213.9,2,-8.0,3,5,0,0],[213.935,4,-13.0,3,6,2,0],[214.667,4,-14.0,38,99,0,1],[215.603,4,-15.0,3,36,1,0],[215.733,2,-8.0,3,9,0,0],[215.768,4,-13.0,3,10,2,0],[218.137,4,-15.0,3,38,1,0],[218.267,2,-8.0,3,12,0,0],[218.302,4,-13.0,3,13,2,0],[220.667,0,-5.0,39,1,0,1],[220.702,4,-10.0,39,100,2,1],[226.703,4,-15.0,3,40,1,0],[226.833,2,-8.0,3,23,0,0],[226.868,4,-13.0,3,24,2,0],[228.97,4,-15.0,3,4,1,0],[229.1,2,-8.0,3,35,0,0],[229.135,4,-13.0,3,28,2,0],[231.437,4,-15.0,3,8,1,0],[231.567,2,-8.0,3,37,0,0],[231.602,4,-13.0,3,6,2,0],[232.6,3,-12.0,40,25,0,1],[235.1,3,-12.0,7,43,0,0],[236.4,4,-15.0,9,11,0,0],[238.1,4,-15.0,9,14,0,0],[241.267,4,-15.0,9,22,0,0],[243.837,4,-15.0,3,26,1,0],[243.967,2,-8.0,3,41,0,0],[244.002,4,-13.0,3,10,2,0],[246.0,3,-12.0,7,46,0,0],[248.87,4,-15.0,3,29,1,0],[249.0,2,-8.0,3,44,0,0],[249.035,4,-13.0,3,13,2,0],[251.967,0,-6.0,41,17,0,1],[252.002,4,-11.0,41,101,2,1],[254.303,4,-15.0,3,30,1,0],[254.433,2,-8.0,3,45,0,0],[254.468,4,-13.0,3,24,2,0],[256.97,4,-17.0,42,34,1,1],[257.1,2,-10.0,42,102,0,1],[257.135,4,-15.0,42,103,2,1],[259.8,3,-12.0,7,56,0,0],[263.167,3,-12.0,7,62,0,0],[265.203,4,-15.0,3,36,1,0],[265.333,2,-8.0,3,53,0,0],[265.368,4,-13.0,3,28,2,0],[267.8,4,-15.0,9,38,0,0],[269.27,4,-15.0,3,40,1,0],[269.4,2,-8.0,3,54,0,0],[269.435,4,-13.0,3,6,2,0],[271.8,4,-15.0,9,4,0,0],[272.9,4,-15.0,9,8,0,0],[275.55,4,-14.0,43,11,1,1],[275.68,1,-7.0,43,104,0,1],[275.715,4,-12.0,43,105,2,1],[276.19,0,-6.0,44,32,0,1],[276.225,4,-11.0,44,75,2,1],[276.275,4,-11.0,44,106,2,1],[277.08,4,-16.0,45,14,1,1],[277.21,1,-9.0,45,107,0,1],[277.245,4,-14.0,45,108,2,1],[280.137,4,-15.0,3,22,1,0],[280.267,2,-8.0,3,59,0,0],[280.302,4,-13.0,3,10,2,0],[283.267,3,-12.0,7,69,0,0],[290.233,3,-10.0,46,0,0,1],[290.633,0,-5.0,47,51,0,1],[290.668,4,-10.0,47,2,2,1],[292.933,4,-15.0,9,26,0,0],[294.467,4,-15.0,9,29,0,0],[295.8,4,-15.0,9,30,0,0],[297.6,3,-12.0,7,70,0,0],[305.0,0,-6.0,48,109,0,1],[305.035,4,-11.0,48,110,2,1],[310.97,4,-15.0,3,34,1,0],[311.1,2,-8.0,3,5,0,0],[311.135,4,-13.0,3,13,2,0],[312.87,4,-15.0,3,36,1,0],[313.0,2,-8.0,3,9,0,0],[313.035,4,-13.0,3,24,2,0],[314.267,5,-19.0,4,111,0,0],[315.433,4,-15.0,9,38,0,0],[316.87,4,-17.0,49,40,1,1],[317.0,2,-10.0,49,112,0,1],[317.035,4,-15.0,49,28,2,1],[318.967,5,-19.0,4,7,0,0],[320.267,5,-19.0,4,39,0,0],[322.003,4,-17.0,50,4,1,1],[322.133,2,-10.0,50,113,0,1],[322.168,4,-15.0,50,66,2,1],[324.537,4,-15.0,3,8,1,0],[324.667,2,-8.0,3,12,0,0],[324.702,4,-13.0,3,6,2,0],[326.27,4,-15.0,3,11,1,0],[326.4,2,-8.0,3,23,0,0],[326.435,4,-13.0,3,10,2,0],[327.537,4,-15.0,3,14,1,0],[327.667,2,-8.0,3,35,0,0],[327.702,4,-13.0,3,13,2,0],[328.9,3,-12.0,7,85,0,0],[330.6,3,-12.0,7,86,0,0],[332.1,5,-19.0,4,42,0,0],[333.67,4,-15.0,3,22,1,0],[333.8,2,-8.0,3,37,0,0],[333.835,4,-13.0,3,24,2,0],[335.5,3,-12.0,7,19,0,0],[339.037,4,-15.0,3,26,1,0],[339.167,2,-8.0,3,41,0,0],[339.202,4,-13.0,3,28,2,0],[340.667,4,-15.0,9,29,0,0],[345.167,4,-15.0,51,114,0,1],[346.937,4,-15.0,3,30,1,0],[347.067,2,-8.0,3,44,0,0],[347.102,4,-13.0,3,6,2,0],[348.34,4,-15.0,52,34,1,1],[348.47,1,-8.0,52,115,0,1],[348.505,4,-13.0,52,116,2,1],[351.9,0,-6.0,53,45,0,1],[355.537,4,-15.0,3,36,1,0],[355.667,2,-8.0,3,53,0,0],[355.702,4,-13.0,3,10,2,0],[357.67,4,-16.0,54,38,1,1],[357.8,2,-9.0,54,117,0,1],[357.835,4,-14.0,54,13,2,1],[360.833,4,-15.0,9,40,0,0],[362.77,4,-16.0,55,4,1,1],[362.9,2,-9.0,55,118,0,1],[362.935,4,-14.0,55,119,2,1],[364.9,4,-15.0,9,8,0,0],[366.333,4,-15.0,9,11,0,0],[369.2,0,-6.0,56,120,0,1],[369.235,4,-11.0,56,18,2,1],[369.285,4,-11.0,56,76,2,1],[371.667,3,-12.0,7,20,0,0],[372.967,5,-19.0,4,67,0,0],[374.337,4,-15.0,3,14,1,0],[374.467,2,-8.0,3,54,0,0],[374.502,4,-13.0,3,24,2,0],[375.637,4,-15.0,57,22,1,1],[375.767,1,-8.0,57,79,0,1],[375.802,4,-13.0,57,78,2,1],[385.733,3,-10.0,58,49,0,1],[386.133,0,-5.0,59,1,0,1],[386.168,4,-10.0,59,57,2,1],[389.27,4,-14.0,60,26,1,1],[389.4,1,-7.0,60,59,0,1],[389.435,4,-12.0,60,80,2,1],[390.733,5,-19.0,4,73,0,0],[391.803,4,-15.0,3,29,1,0],[391.933,2,-8.0,3,5,0,0],[391.968,4,-13.0,3,28,2,0],[398.0,4,-15.0,9,30,0,0],[400.337,4,-19.0,61,34,1,1],[400.467,2,-12.0,61,121,0,1],[400.502,4,-17.0,61,6,2,1],[401.933,4,-15.0,9,36,0,0],[405.27,4,-15.0,3,38,1,0],[405.4,2,-8.0,3,9,0,0],[405.435,4,-13.0,3,10,2,0],[406.77,4,-15.0,3,40,1,0],[406.9,2,-8.0,3,12,0,0],[406.935,4,-13.0,3,13,2,0],[408.567,3,-12.0,7,21,0,0],[412.17,4,-15.0,3,4,1,0],[412.3,2,-8.0,3,23,0,0],[412.335,4,-13.0,3,24,2,0],[415.1,5,-19.0,4,83,0,0],[416.6,5,-19.0,4,94,0,0],[417.6,5,-19.0,4,95,0,0],[419.603,4,-19.0,62,8,1,1],[419.733,2,-12.0,62,122,0,1],[419.768,4,-17.0,62,28,2,1],[422.337,4,-15.0,3,11,1,0],[422.467,2,-8.0,3,35,0,0],[422.502,4,-13.0,3,6,2,0],[424.97,4,-15.0,63,14,1,1],[425.1,1,-8.0,63,17,0,1],[425.135,4,-13.0,63,27,2,1],[426.703,4,-15.0,3,22,1,0],[426.833,2,-8.0,3,37,0,0],[426.868,4,-13.0,3,10,2,0],[428.133,5,-19.0,4,96,0,0],[431.067,0,-6.0,64,123,0,1],[436.17,4,-15.0,3,26,1,0],[436.3,2,-8.0,3,41,0,0],[436.335,4,-13.0,3,13,2,0],[438.133,4,-15.0,9,29,0,0],[441.37,4,-15.0,3,30,1,0],[441.5,2,-8.0,3,44,0,0],[441.535,4,-13.0,3,24,2,0],[442.6,4,-14.0,65,124,0,1],[444.6,3,-12.0,7,25,0,0],[445.833,4,-15.0,9,34,0,0],[447.233,4,-15.0,9,36,0,0],[448.5,4,-14.0,66,125,0,1],[449.537,4,-15.0,3,38,1,0],[449.667,2,-8.0,3,45,0,0],[449.702,4,-13.0,3,28,2,0],[451.937,4,-15.0,3,40,1,0],[452.067,2,-8.0,3,53,0,0],[452.102,4,-13.0,3,6,2,0],[454.87,4,-15.0,67,4,1,1],[455.0,1,-8.0,67,126,0,1],[455.035,4,-13.0,67,58,2,1],[457.1,3,-12.0,7,43,0,0],[459.003,4,-15.0,3,8,1,0],[459.133,2,-8.0,3,54,0,0],[459.168,4,-13.0,3,10,2,0],[460.703,4,-15.0,3,11,1,0],[460.833,4,-13.0,68,127,0,1],[460.833,2,-8.0,3,59,0,0],[460.868,4,-13.0,3,13,2,0],[462.47,4,-15.0,3,14,1,0],[462.6,2,-8.0,3,5,0,0],[462.635,4,-13.0,3,24,2,0],[464.333,4,-15.0,9,22,0,0],[466.233,4,-15.0,9,26,0,0],[468.4,4,-15.0,9,29,0,0],[469.3,5,-19.0,4,111,0,0],[470.4,5,-19.0,4,7,0,0],[472.1,5,-19.0,4,39,0,0],[473.437,4,-18.0,69,30,1,1],[473.567,2,-11.0,69,128,0,1],[473.602,4,-16.0,69,32,2,1],[473.652,4,-16.0,69,129,2,1],[475.303,4,-15.0,3,34,1,0],[475.433,2,-8.0,3,9,0,0],[475.468,4,-13.0,3,28,2,0],[477.233,5,-19.0,4,42,0,0],[478.167,5,-19.0,4,67,0,0],[479.67,4,-15.0,3,36,1,0],[479.8,2,-8.0,3,12,0,0],[479.835,4,-13.0,3,6,2,0],[481.267,5,-19.0,4,73,0,0],[482.937,4,-15.0,3,38,1,0],[483.067,2,-8.0,3,23,0,0],[483.102,4,-13.0,3,10,2,0],[484.337,4,-15.0,70,40,1,1],[484.467,1,-8.0,70,35,0,1],[484.502,4,-13.0,70,66,2,1],[485.9,4,-15.0,9,4,0,0],[487.003,4,-15.0,3,8,1,0],[487.133,2,-8.0,3,37,0,0],[487.168,4,-13.0,3,13,2,0],[488.567,3,-12.0,7,46,0,0],[494.267,3,-10.0,71,89,0,1],[494.667,0,-5.0,72,17,0,1],[494.702,4,-10.0,72,90,2,1],[497.537,4,-16.0,73,11,1,1],[497.667,1,-9.0,73,130,0,1],[497.702,4,-14.0,73,131,2,1],[499.467,5,-19.0,4,83,0,0],[500.537,4,-15.0,3,14,1,0],[500.667,2,-8.0,3,41,0,0],[500.702,4,-13.0,3,24,2,0],[503.203,4,-15.0,74,22,1,1],[503.333,1,-8.0,74,132,0,1],[503.368,4,-13.0,74,133,2,1],[505.537,4,-15.0,3,26,1,0],[505.667,2,-8.0,3,44,0,0],[505.702,4,-13.0,3,28,2,0],[506.8,4,-15.0,9,29,0,0],[507.8,4,-15.0,9,30,0,0],[509.337,4,-15.0,3,34,1,0],[509.467,2,-8.0,3,45,0,0],[509.502,4,-13.0,3,6,2,0],[510.67,4,-15.0,3,36,1,0],[510.8,2,-8.0,3,53,0,0],[510.835,4,-13.0,3,10,2,0],[513.27,4,-15.0,3,38,1,0],[513.4,2,-8.0,3,54,0,0],[513.4,4,-12.5,75,134,0,1],[513.435,4,-13.0,3,13,2,0],[516.1,3,-12.0,7,56,0,0],[518.17,4,-15.0,3,40,1,0],[518.3,2,-8.0,3,59,0,0],[518.335,4,-13.0,3,24,2,0],[520.837,4,-16.0,76,4,1,1],[520.967,2,-9.0,76,135,0,1],[521.002,4,-14.0,76,136,2,1],[524.633,3,-12.0,7,62,0,0],[527.133,3,-12.0,7,69,0,0],[530.233,3,-12.0,7,70,0,0],[531.67,4,-15.0,3,8,1,0],[531.8,2,-8.0,3,5,0,0],[531.835,4,-13.0,3,28,2,0],[533.37,4,-15.0,3,11,1,0],[533.5,2,-8.0,3,9,0,0],[533.535,4,-13.0,3,6,2,0],[535.837,4,-15.0,3,14,1,0],[535.967,2,-8.0,3,12,0,0],[536.002,4,-13.0,3,10,2,0],[538.337,4,-15.0,3,22,1,0],[538.467,2,-8.0,3,23,0,0],[538.502,4,-13.0,3,13,2,0],[539.567,4,-15.0,9,26,0,0],[540.6,3,-12.0,7,85,0,0],[543.703,4,-15.0,3,29,1,0],[543.833,2,-8.0,3,35,0,0],[543.868,4,-13.0,3,24,2,0],[545.103,4,-19.0,77,30,1,1],[545.233,2,-12.0,77,137,0,1],[545.268,4,-17.0,77,107,2,1],[546.967,4,-15.0,9,34,0,0],[548.603,4,-15.0,3,36,1,0],[548.733,2,-8.0,3,37,0,0],[548.768,4,-13.0,3,28,2,0],[549.933,4,-15.0,9,38,0,0],[551.133,4,-13.0,78,138,0,1],[552.267,4,-15.0,9,40,0,0],[553.937,4,-15.0,3,4,1,0],[554.067,2,-8.0,3,41,0,0],[554.102,4,-13.0,3,6,2,0],[555.833,3,-12.0,7,86,0,0],[557.767,3,-12.0,7,19,0,0],[559.07,4,-16.0,79,8,1,1],[559.2,1,-9.0,79,74,0,1],[559.235,4,-14.0,79,33,2,1],[560.87,4,-14.0,80,11,1,1],[561.0,1,-7.0,80,44,0,1],[561.035,4,-12.0,80,139,2,1],[561.085,4,-12.0,80,76,2,1],[563.54,4,-14.0,81,14,1,1],[563.67,1,-7.0,81,45,0,1],[563.705,4,-12.0,81,140,2,1],[563.755,4,-12.0,81,141,2,1],[566.0,4,-18.0,82,22,1,1],[566.13,2,-11.0,82,50,0,1],[566.165,4,-16.0,82,99,2,1],[568.267,5,-19.0,4,94,0,0],[571.3,4,-18.0,83,26,1,1],[571.43,2,-11.0,83,114,0,1],[571.465,4,-16.0,83,10,2,1],[573.9,0,-5.0,84,53,0,1],[573.935,4,-10.0,84,142,2,1],[573.985,4,-10.0,84,143,2,1],[574.035,4,-10.0,84,84,2,1],[578.94,4,-14.0,85,29,1,1],[579.07,1,-7.0,85,54,0,1],[579.105,4,-12.0,85,144,2,1],[579.155,4,-12.0,85,79,2,1],[579.303,4,-16.0,86,30,1,1],[579.433,2,-9.0,86,145,0,1],[579.468,4,-14.0,86,13,2,1],[581.103,4,-15.0,87,34,1,1],[581.233,2,-8.0,87,146,0,1],[581.268,4,-13.0,87,24,2,1],[582.503,4,-16.0,88,36,1,1],[582.633,2,-9.0,88,147,0,1],[582.668,4,-14.0,88,28,2,1],[584.07,0,-4.0,89,148,0,1],[584.105,4,-9.0,89,149,2,1],[584.155,4,-9.0,89,0,2,1],[584.87,4,-18.0,90,38,1,1],[585.0,2,-11.0,90,80,0,1],[585.035,4,-16.0,90,150,2,1],[585.903,4,-15.0,91,40,1,1],[586.033,2,-8.0,91,151,0,1],[586.068,4,-13.0,91,27,2,1],[587.67,4,-16.5,92,4,1,1],[587.8,2,-9.5,92,152,0,1],[587.835,4,-14.5,92,6,2,1],[589.237,4,-17.0,93,8,1,1],[589.367,2,-10.0,93,153,0,1],[589.402,4,-15.0,93,10,2,1],[590.703,4,-16.0,94,11,1,1],[590.833,2,-9.0,94,154,0,1],[590.868,4,-14.0,94,13,2,1],[593.4,4,-15.0,9,14,0,0],[594.667,5,-19.0,4,95,0,0],[596.233,5,-19.0,4,96,0,0],[598.467,0,-6.0,95,51,0,1],[603.6,3,-12.0,7,20,0,0],[604.803,4,-17.0,96,22,1,1],[604.933,1,-10.0,96,155,0,1],[604.968,4,-15.0,96,156,2,1],[606.233,3,-12.0,7,21,0,0],[607.333,4,-15.0,9,26,0,0],[609.1,3,-12.0,7,25,0,0],[615.2,3,-10.0,97,2,0,1],[615.6,0,-5.0,98,1,0,1],[615.635,4,-10.0,98,18,2,1],[618.637,4,-15.0,3,29,1,0],[618.767,2,-8.0,3,59,0,0],[618.802,4,-13.0,3,24,2,0],[620.567,3,-12.0,7,43,0,0],[623.267,0,-6.0,99,17,0,1],[623.302,4,-11.0,99,157,2,1],[625.6,5,-19.0,4,111,0,0],[631.367,4,-15.0,9,30,0,0],[633.47,4,-15.0,3,34,1,0],[633.6,2,-8.0,3,5,0,0],[633.635,4,-13.0,3,28,2,0],[637.203,4,-15.0,3,36,1,0],[637.333,2,-8.0,3,9,0,0],[637.368,4,-13.0,3,6,2,0],[639.433,5,-19.0,4,7,0,0],[640.87,4,-16.0,100,38,1,1],[641.0,2,-9.0,100,158,0,1],[641.035,4,-14.0,100,10,2,1],[642.4,5,-19.0,4,39,0,0],[644.067,3,-12.0,7,46,0,0],[646.067,3,-12.0,7,56,0,0],[647.137,4,-15.0,3,40,1,0],[647.137,4,-17.0,101,4,1,1],[647.267,2,-8.0,3,12,0,0],[647.267,2,-10.0,101,159,0,1],[647.302,4,-13.0,3,13,2,0],[647.302,4,-15.0,101,160,2,1],[649.1,3,-12.0,7,62,0,0],[652.733,0,-6.0,102,161,0,1],[652.768,4,-11.0,102,32,2,1],[653.15,0,-5.0,103,162,0,1],[653.62,4,-14.0,104,8,1,1],[653.75,2,-7.0,104,77,0,1],[653.785,4,-12.0,104,66,2,1],[653.903,4,-16.0,105,11,1,1],[654.033,2,-9.0,105,163,0,1],[654.068,4,-14.0,105,24,2,1],[659.0,0,-6.0,106,51,0,1],[661.737,4,-15.0,3,14,1,0],[661.867,2,-8.0,3,23,0,0],[661.902,4,-13.0,3,28,2,0],[665.637,4,-15.0,3,22,1,0],[665.767,2,-8.0,3,35,0,0],[665.802,4,-13.0,3,6,2,0],[668.1,4,-15.0,9,26,0,0],[670.1,3,-12.0,7,69,0,0],[677.067,3,-12.0,7,70,0,0],[678.203,4,-15.0,3,29,1,0],[678.333,2,-8.0,3,37,0,0],[678.368,4,-13.0,3,10,2,0],[681.333,5,-19.0,4,42,0,0],[682.2,4,-15.0,9,30,0,0],[684.27,4,-15.0,3,34,1,0],[684.4,2,-8.0,3,41,0,0],[684.435,4,-13.0,3,13,2,0],[685.7,3,-12.0,7,85,0,0],[686.933,4,-14.0,107,72,0,1],[690.067,0,-6.0,108,24,0,1],[690.102,4,-11.0,108,164,2,1],[690.152,4,-11.0,108,49,2,1],[693.1,5,-19.0,4,67,0,0],[695.1,3,-12.0,7,86,0,0],[700.033,3,-12.0,7,19,0,0],[702.637,4,-15.0,3,36,1,0],[702.767,2,-8.0,3,44,0,0],[702.802,4,-13.0,3,28,2,0],[704.603,4,-15.0,3,38,1,0],[704.733,2,-8.0,3,45,0,0],[704.768,4,-13.0,3,6,2,0],[706.067,5,-19.0,4,73,0,0],[707.403,4,-17.0,109,40,1,1],[707.533,1,-10.0,109,57,0,1],[707.568,4,-15.0,109,108,2,1],[707.618,4,-15.0,109,127,2,1],[709.567,4,-15.0,9,4,0,0],[711.233,3,-12.0,7,20,0,0]],"beds":[[0.0,34.6,"Ocean, Medium Waves, Wind",-7.0,"open sea under the Syracusia's deck"],[34.6,46.567,"Sea Water, Very Gentle Waves",-8.4,"gentle sea; she sails once and is gone"],[81.167,43.433,"Sailboat, Wood, Cabin, Sailing, Hull",-10.0,"river warship: hull and water on the boards"],[124.6,43.067,"Sea Water, Very Gentle Waves",-7.4,"the Dongting lakes, flat water"],[167.667,53.0,"Ocean, Medium Waves, Wind",-7.0,"the turtle ship at sea"],[220.667,31.3,"Sea, Light Wind, Waves Intensifies",-10.8,"Angolpo aftermath, wind coming up"],[251.967,27.033,"Harbor, Docks, Boats Lapping, Squeaky Ropes",-3.3,"Stockholm quay: docks, ropes, boats lapping"],[279.0,11.633,"Sea Water, Very Gentle Waves",-9.4,"flat water where she was"],[290.633,9.367,"Underwater, Deep 01",-13.1,"under HMS Eagle's bottom"],[300.0,35.5,"Sailboat, Creaks, Cabin Tone",-4.4,"Bushnell's workshop timbers"],[335.5,12.5,"Harbor, Marina Night",2.7,"New York Harbor, eleven at night"],[348.0,23.0,"Underwater, Deep 01",-12.1,"submerged, thirty minutes of air"],[371.0,15.133,"Harbor, Marina Night",1.7,"back on the surface, harbour at night"],[386.133,58.467,"Sea Water, Very Gentle Waves",-7.4,"the Black Sea shallows"],[444.6,50.067,"Sea, Light Wind, Waves Intensifies",-10.8,"the Dnieper estuary, wet in any real sea"],[494.667,25.333,"Ocean, Medium Waves, Wind",-6.0,"the Grand Fleet at twenty-one knots"],[520.0,20.6,"Rattling Submarine, Deep, Creaks",-22.2,"inside a K-boat, thirty openings"],[540.6,63.0,"Sea, Light Wind, Waves Intensifies",-8.8,"the Firth of Forth in mist, forty ships"],[603.6,12.0,"Underwater, Deep, Low",-20.9,"almost nothing; the file closes"],[615.6,42.667,"Ocean, Medium Waves, Wind",-7.0,"Surcouf on the surface"],[658.267,19.733,"Harbor, Docks, Boats Lapping, Squeaky Ropes",-4.3,"Plymouth"],[678.0,12.7,"Harbor, Marina Night",2.7,"north of Cristobal, in the dark"],[690.7,21.3,"Underwater, Deep, Low",-15.8,"under it"],[712.0,6.171,"Sea Water, Very Gentle Waves",-10.4,"empty water"]],"music":[["m1",0.0,34.6,"Those Who Wander","Syracusia: the garden, the town that floated",0.52],["m2",34.6,81.167,"Something Peculiar","she never fought, and then vanished",0.44],["m3",81.167,124.6,"Infernal Machine","the paddle wheel warship, men on treadmills",0.58],["m4",124.6,167.667,"Fool Me Twice","Yue Fei's weed and logs, then the Opium War",0.62],["m5",167.667,220.667,"At Enemy Lines","the turtle ship and its roof",0.6],["m6",220.667,251.967,"Make No Mistakes","Angolpo, and the ironclad claim",0.5],["m7",251.967,290.633,"The Last Disaster","Vasa: the maiden voyage",0.68],["m8",290.633,335.5,"Seekers and Finders","Bushnell builds the Turtle",0.54],["m9",335.5,386.133,"It's Not a Game","Ezra Lee under HMS Eagle",0.62],["m10",386.133,444.6,"The King of Thieves","Novgorod: a circle with guns on it",0.5],["m11",444.6,494.667,"Confidentiality","the spinning story against the service record",0.48],["m12",494.667,540.6,"Wiretapped","the K-boats, and five minutes to dive",0.55],["m13",540.6,557.833,"Estimations","forty ships in a darkened column, and no German near them",0.42],["m13b",557.833,603.6,"Exile","seventy-five minutes",0.72],["m14",603.6,615.6,"The Changeing","a hundred and four men, and a locked file",0.3],["m15",615.6,658.267,"Rise to Power","Surcouf: cruiser guns on a submarine",0.58],["m16",658.267,690.7,"Tragedy Unfolds","France falls; nobody has a job for her",0.52],["m17",690.7,718.171,"Alluvion","she was never found",0.36]],"eras":[["The Ancient World","Syracusia \u00b7 240 BC",0.4,81.167],["The Middle Ages","Song paddle-wheel warships \u00b7 1134",81.167,167.667],["The Early Modern Age","Geobukseon 1592 \u00b7 Vasa 1628",167.667,290.633],["The Age of Sail","Bushnell's Turtle \u00b7 1776",290.633,386.133],["The Ironclad Age","Novgorod \u00b7 1873",386.133,494.667],["World War I","K-class submarine \u00b7 1918",494.667,615.6],["World War II","Surcouf \u00b7 1929",615.6,718.171]],"mutes":[[15.9,17.6,"Hiero II \u2014 a painting, not something being hit"],[22.4,24.0,"the Iliad mosaic sliding onto the temple floor"],[53.2,56.2,"Hiero II again"],[299.8,301.6,"David Bushnell \u2014 an engraving"],[343.0,346.0,"Admiral Howe \u2014 a portrait"],[395.8,397.4,"the Novgorod historical plate"],[626.6,630.4,"the Napoleonic privateer \u2014 a painting"],[674.6,676.6,"Capt. Blaison \u2014 a photograph"],[679.6,681.2,"the Panama Canal \u2014 a photograph"]],"cats":[["swish",12],["whoosh",12],["amb",12],["impact",12],["pop",10],["stab",9],["surge",9],["woodbreakx",8],["explo",8],["passby",8],["cannon",7],["armor",6],["boom",6],["draw",6],["bubbles",6],["creak",6],["gears",6],["sail",6],["water",6],["gust",6],["exdist",6],["clatter",5],["forge",5],["march",5],["gun",5],["body",5],["hatch",5],["horn",5],["oar",5],["ramcrash",5],["steam",5],["winch",5],["wake",5],["fall",4],["breath",4],["paper",4],["rope",4],["sonar",4],["stone",4],["uwexp",4],["woodbreak",4],["shield",3],["vox_effort",3],["cut",3],["slash",3],["alarm",3],["chain",3],["footdeck",3],["torpedo",3],["typewriter",3],["lock",3],["plane",3],["falx",2],["chop",2],["crowd",2],["catapult",2],["cheer",2],["gull",2],["quill",2],["vox_cry",1],["vox_yell",1],["shipbell",1]],"top":[["body_04",24],["body_05",23],["body_03",23],["body_02",23],["body_01",23],["swish_01",18],["swish_12",17],["swish_11",17]],"fire":[123.733,368.467,563.667,573.9,579.433,581.233,582.633,584.167,586.033,587.8,589.367,590.833,652.8]}</script>
+<script>
+(function(){
+"use strict";
+var D = JSON.parse(document.getElementById("D").textContent);
+var DUR = D.duration, TIERS = D.tiers;
+var TIER_LABEL = {hero_boom:"Hero boom",hero_hit:"Hero hit",impact:"Impact",
+                  whoosh:"Whoosh",swish:"Swish",pop:"Pop"};
+
+/* ---------- theme tokens, re-read whenever the theme moves ---------- */
+var C = {};
+function tokens(){
+  var s = getComputedStyle(document.documentElement);
+  ["abyss","deck","deck2","rule","ink","ink2","mute","cyan","brass","chart","kelp","grid"]
+    .forEach(function(k){ C[k] = s.getPropertyValue("--"+k).trim(); });
+  C.tier = [C.chart, C.chart, C.brass, C.cyan, C.cyan, C.mute];
+  C.tierAlpha = [1, .92, .88, .6, .42, .5];
+}
+tokens();
+
+/* ---------- helpers ---------- */
+function ts(t){ var m = Math.floor(t/60), s = t - m*60;
+  return m + ":" + (s<10?"0":"") + s.toFixed(2); }
+function tsShort(t){ var m = Math.floor(t/60), s = Math.floor(t-m*60);
+  return m + ":" + (s<10?"0":"") + s; }
+function el(t, cls, txt){ var e = document.createElement(t);
+  if(cls) e.className = cls; if(txt != null) e.textContent = txt; return e; }
+
+/* ---------- lane geometry ---------- */
+var RULER = 22, ERAH = 26, MUSH = 34, BEDH = 20, TIERH = 24, PADT = 6;
+var Y = {};
+function geom(){
+  var y = PADT;
+  Y.ruler = y; y += RULER;
+  Y.era = y;   y += ERAH;
+  Y.mus = y;   y += MUSH;
+  Y.bed = y;   y += BEDH;
+  Y.tier = y;  y += TIERH * 6;
+  Y.total = y + 6;
+}
+geom();
+
+var GUT = 82;            /* reserved for lane names; cues never enter it */
+var view = {t0: 0, span: DUR};
+var handOnly = false;
+var lanes = document.getElementById("lanes"), mini = document.getElementById("mini");
+var lctx = lanes.getContext("2d"), mctx = mini.getContext("2d");
+var W = 0, PW = 0, MW = 0, MH = 44;
+
+function fit(cv, ctx, h){
+  var r = cv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.max(1, Math.round(r.width * dpr));
+  cv.height = Math.round(h * dpr);
+  cv.style.height = h + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return r.width;
+}
+function x(t){ return GUT + (t - view.t0) / view.span * PW; }
+function tAt(px){ return view.t0 + (px - GUT) / PW * view.span; }
+
+/* ---------- drawing ---------- */
+function roundRect(ctx, X, y, w, h, r){
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath(); ctx.moveTo(X+r, y);
+  ctx.arcTo(X+w, y, X+w, y+h, r); ctx.arcTo(X+w, y+h, X, y+h, r);
+  ctx.arcTo(X, y+h, X, y, r);     ctx.arcTo(X, y, X+w, y, r); ctx.closePath();
+}
+function clipText(ctx, s, X, y, max){
+  if(max < 16) return;
+  var t = s;
+  if(ctx.measureText(t).width > max){
+    while(t.length > 1 && ctx.measureText(t + "…").width > max) t = t.slice(0, -1);
+    t += "…";
+  }
+  ctx.fillText(t, X, y);
+}
+
+function drawLanes(){
+  W = fit(lanes, lctx, Y.total); PW = Math.max(1, W - GUT);
+  var g = lctx;
+  g.clearRect(0, 0, W, Y.total);
+  g.fillStyle = C.deck; g.fillRect(0, 0, W, Y.total);
+
+  /* era bands behind everything */
+  D.eras.forEach(function(e, i){
+    var a = Math.max(GUT, x(e[2])), b = Math.min(W, x(e[3]));
+    if(b <= a) return;
+    g.fillStyle = i % 2 ? "transparent" : C.grid;
+    if(i % 2 === 0) g.fillRect(a, Y.era, b - a, Y.total - Y.era - 4);
+  });
+
+  /* fireball guides — what the picture is doing, behind the cues */
+  g.strokeStyle = C.chart; g.globalAlpha = .17; g.lineWidth = 1;
+  D.fire.forEach(function(t){
+    var X = x(t); if(X < GUT || X > W + 2) return;
+    g.beginPath(); g.moveTo(X, Y.tier); g.lineTo(X, Y.tier + TIERH*6); g.stroke();
+  });
+  g.globalAlpha = 1;
+
+  /* ruler */
+  var step = view.span > 500 ? 60 : view.span > 240 ? 30 : view.span > 90 ? 10
+           : view.span > 30 ? 5 : view.span > 10 ? 2 : 1;
+  g.font = '400 10px ui-monospace,"SF Mono",Consolas,monospace';
+  g.textBaseline = "alphabetic";
+  for(var t = Math.ceil(view.t0/step)*step; t <= view.t0 + view.span; t += step){
+    var X = Math.round(x(t)) + .5; if(X < GUT - 1) continue;
+    g.strokeStyle = C.rule; g.globalAlpha = .8;
+    g.beginPath(); g.moveTo(X, RULER - 5); g.lineTo(X, Y.total - 4); g.globalAlpha = .18; g.stroke();
+    g.globalAlpha = .8; g.beginPath(); g.moveTo(X, RULER - 5); g.lineTo(X, RULER); g.stroke();
+    g.globalAlpha = 1; g.fillStyle = C.mute; g.textAlign = "left";
+    g.fillText(tsShort(t), X + 3, RULER - 8);
+  }
+
+  /* era lane */
+  g.textBaseline = "middle";
+  D.eras.forEach(function(e){
+    var a = x(e[2]), b = x(e[3]);
+    if(b < 0 || a > W) return;
+    var A = Math.max(GUT, a), B = Math.min(W, b);
+    if(B <= A) return;
+    g.fillStyle = C.deck2; g.fillRect(A, Y.era + 3, B - A - 1, ERAH - 7);
+    if(a >= GUT){ g.fillStyle = C.chart; g.fillRect(a, Y.era + 3, 2, ERAH - 7); }
+    g.fillStyle = C.ink2;
+    g.font = '600 10px "Roboto Condensed","Arial Narrow",system-ui,sans-serif';
+    g.textAlign = "left";
+    clipText(g, e[0].toUpperCase(), A + 8, Y.era + ERAH/2, B - A - 14);
+  });
+
+  /* music lane */
+  D.music.forEach(function(m){
+    var a = x(m[1]), b = x(m[2]);
+    if(b < 0 || a > W) return;
+    var A = Math.max(GUT, a), B = Math.min(W, b), h = MUSH - 8;
+    if(B <= A) return;
+    var lvl = .3 + m[5] * .62;
+    g.globalAlpha = lvl * .5; g.fillStyle = C.cyan;
+    roundRect(g, A, Y.mus + 4, Math.max(1, B - A - 1.5), h, 2); g.fill();
+    g.globalAlpha = 1; g.fillStyle = C.cyan;
+    if(a >= GUT) g.fillRect(a, Y.mus + 4, 2, h);
+    g.font = 'italic 400 11px Georgia,serif'; g.textAlign = "left";
+    g.fillStyle = C.ink;
+    clipText(g, m[3], A + 7, Y.mus + 4 + h/2, B - A - 12);
+  });
+
+  /* bed lane */
+  D.beds.forEach(function(b){
+    var a = x(b[0]), e = x(b[0] + b[1]);
+    if(e < 0 || a > W) return;
+    var A = Math.max(GUT, a), B = Math.min(W, e);
+    if(B <= A) return;
+    g.globalAlpha = .34; g.fillStyle = C.kelp;
+    g.fillRect(A, Y.bed + 3, Math.max(1, B - A - 1.5), BEDH - 7);
+    g.globalAlpha = 1; g.fillStyle = C.kelp;
+    if(a >= GUT) g.fillRect(a, Y.bed + 3, 1.5, BEDH - 7);
+    g.font = '600 9px "Roboto Condensed","Arial Narrow",system-ui,sans-serif';
+    g.textAlign = "left"; g.fillStyle = C.ink2;
+    clipText(g, b[2].split(",")[0].toUpperCase(), A + 6, Y.bed + BEDH/2, B - A - 10);
+  });
+
+  /* mute windows, hatched over the tier block */
+  D.mutes.forEach(function(m){
+    var a = x(m[0]), b = x(m[1]);
+    if(b < 0 || a > W) return;
+    var A = Math.max(GUT, a), B = Math.min(W, b);
+    if(B <= A) return;
+    g.save(); g.beginPath(); g.rect(A, Y.tier, B - A, TIERH*6); g.clip();
+    g.globalAlpha = .5; g.strokeStyle = C.mute; g.lineWidth = 1;
+    for(var k = A - TIERH*6; k < B + TIERH*6; k += 6){
+      g.beginPath(); g.moveTo(k, Y.tier + TIERH*6); g.lineTo(k + TIERH*6, Y.tier); g.stroke();
+    }
+    g.restore(); g.globalAlpha = 1;
+  });
+
+  /* tier lane rules (the names are painted into the gutter last) */
+  for(var i = 0; i < 6; i++){
+    var ly = Y.tier + i * TIERH;
+    g.strokeStyle = C.rule; g.globalAlpha = .45;
+    g.beginPath(); g.moveTo(GUT, ly + TIERH - .5); g.lineTo(W, ly + TIERH - .5); g.stroke();
+    g.globalAlpha = 1;
+  }
+
+  /* cues */
+  var minG = -20, maxG = -3;
+  D.sfx.forEach(function(s){
+    if(handOnly && !s[6]) return;
+    var X = x(s[0]); if(X < GUT || X > W + 3) return;
+    var i = s[1], ly = Y.tier + i * TIERH;
+    var lvl = Math.max(.22, Math.min(1, (s[2] - minG) / (maxG - minG)));
+    var h = 4 + lvl * (TIERH - 9);
+    var isLayer = s[5] > 0, isHand = s[6] === 1;
+    g.globalAlpha = isLayer ? .3 : C.tierAlpha[i];
+    g.fillStyle = C.tier[i];
+    var w = isHand && !isLayer ? 2.5 : 1.4;
+    g.fillRect(X - w/2, ly + TIERH - 3 - h, w, h);
+    if(isHand && !isLayer && i < 2){
+      g.globalAlpha = 1;
+      g.beginPath(); g.arc(X, ly + TIERH - 3 - h - 2.5, 2, 0, 6.284); g.fill();
+    }
+  });
+  g.globalAlpha = 1;
+
+  /* the gutter, painted over the plot so nothing can ever run under a name */
+  g.fillStyle = C.deck; g.fillRect(0, 0, GUT, Y.total);
+  g.strokeStyle = C.rule; g.globalAlpha = .55;
+  g.beginPath(); g.moveTo(GUT - .5, 0); g.lineTo(GUT - .5, Y.total); g.stroke();
+  g.globalAlpha = 1;
+  g.textAlign = "right"; g.textBaseline = "middle";
+  var names = [["Era", Y.era + ERAH/2], ["Music", Y.mus + MUSH/2], ["Room tone", Y.bed + BEDH/2]];
+  for(var n = 0; n < 6; n++) names.push([TIER_LABEL[TIERS[n]], Y.tier + n*TIERH + TIERH/2]);
+  names.forEach(function(nm, k){
+    g.font = '600 9px "Roboto Condensed","Arial Narrow",system-ui,sans-serif';
+    g.fillStyle = k < 3 ? C.ink2 : C.mute;
+    g.fillText(nm[0].toUpperCase(), GUT - 9, nm[1]);
+  });
+  g.textAlign = "left";
+}
+
+function drawMini(){
+  MW = fit(mini, mctx, MH);
+  var g = mctx;
+  g.clearRect(0, 0, MW, MH); g.fillStyle = C.deck2; g.fillRect(0, 0, MW, MH);
+  var mx = function(t){ return t / DUR * MW; };
+  D.eras.forEach(function(e, i){
+    if(i % 2 === 0){ g.fillStyle = C.grid; g.fillRect(mx(e[2]), 0, mx(e[3]) - mx(e[2]), MH); }
+    g.fillStyle = C.chart; g.globalAlpha = .55; g.fillRect(mx(e[2]), 0, 1, MH); g.globalAlpha = 1;
+  });
+  D.music.forEach(function(m){
+    g.globalAlpha = .3 + m[5] * .45; g.fillStyle = C.cyan;
+    g.fillRect(mx(m[1]), 3, Math.max(1, mx(m[2]) - mx(m[1]) - 1), 7);
+  });
+  g.globalAlpha = 1;
+  /* cue density */
+  var bins = new Array(MW | 0).fill(0);
+  D.sfx.forEach(function(s){
+    if(s[5] > 0) return;
+    var b = Math.min(bins.length - 1, Math.max(0, Math.round(mx(s[0]))));
+    bins[b] += Math.max(.3, (s[2] + 21) / 18);
+  });
+  var peak = Math.max.apply(null, bins) || 1;
+  g.fillStyle = C.ink2; g.globalAlpha = .55;
+  bins.forEach(function(v, i2){
+    if(!v) return; var h = 2 + v / peak * (MH - 17);
+    g.fillRect(i2, MH - 4 - h, 1, h);
+  });
+  g.globalAlpha = 1;
+  /* view window */
+  var a = mx(view.t0), b = mx(view.t0 + view.span);
+  g.fillStyle = C.abyss; g.globalAlpha = .55;
+  g.fillRect(0, 0, a, MH); g.fillRect(b, 0, MW - b, MH);
+  g.globalAlpha = 1; g.strokeStyle = C.chart; g.lineWidth = 1.5;
+  g.strokeRect(a + .75, .75, Math.max(2, b - a - 1.5), MH - 1.5);
+}
+
+function draw(){ drawLanes(); drawMini(); }
+
+/* ---------- interaction ---------- */
+function setView(t0, span){
+  view.span = Math.max(4, Math.min(DUR, span));
+  view.t0 = Math.max(0, Math.min(DUR - view.span, t0));
+  draw();
+}
+function centerOn(t, span){ setView(t - (span || view.span)/2, span || view.span); }
+
+document.getElementById("zin").onclick  = function(){ setView(view.t0 + view.span/4, view.span/2); };
+document.getElementById("zout").onclick = function(){ setView(view.t0 - view.span/2, view.span*2); };
+document.getElementById("zall").onclick = function(){ setView(0, DUR); };
+var hb = document.getElementById("hand");
+hb.onclick = function(){ handOnly = !handOnly; hb.setAttribute("aria-pressed", handOnly); draw(); };
+
+var read = document.getElementById("read"), tip = document.getElementById("tip");
+var wrap = lanes.parentNode;
+
+function nearest(t, laneIdx){
+  var tol = view.span / W * 7, best = null, bd = 1e9;
+  for(var i = 0; i < D.sfx.length; i++){
+    var s = D.sfx[i];
+    if(handOnly && !s[6]) continue;
+    if(laneIdx != null && s[1] !== laneIdx) continue;
+    var d = Math.abs(s[0] - t);
+    if(d < tol && d < bd){ bd = d; best = s; }
+  }
+  return best;
+}
+lanes.addEventListener("mousemove", function(ev){
+  var r = lanes.getBoundingClientRect();
+  var px = ev.clientX - r.left, py = ev.clientY - r.top, t = tAt(px);
+  read.innerHTML = "<b>" + ts(Math.max(0, Math.min(DUR, t))) + "</b>";
+  var hit = null, label = "", meta = "", kicker = "";
+  if(py >= Y.tier && py < Y.tier + TIERH*6){
+    var li = Math.floor((py - Y.tier) / TIERH);
+    hit = nearest(t, li);
+    if(hit){
+      kicker = TIER_LABEL[TIERS[hit[1]]] + (hit[6] ? " · designed" : " · from the picture")
+             + (hit[5] === 1 ? " · anticipation" : hit[5] === 2 ? " · weight" : "");
+      label = D.kinds[hit[3]];
+      meta = ts(hit[0]) + "   " + hit[2].toFixed(1) + " dB   " + D.files[hit[4]];
+    }
+  } else if(py >= Y.mus && py < Y.mus + MUSH){
+    for(var i = 0; i < D.music.length; i++){
+      var m = D.music[i];
+      if(t >= m[1] && t < m[2]){ kicker = "Music " + m[0]; label = m[3];
+        meta = ts(m[1]) + " – " + ts(m[2]) + "   " + (m[2]-m[1]).toFixed(1) + "s   energy " + m[5];
+        hit = m; break; }
+    }
+  } else if(py >= Y.bed && py < Y.bed + BEDH){
+    for(var j = 0; j < D.beds.length; j++){
+      var b = D.beds[j];
+      if(t >= b[0] && t < b[0] + b[1]){ kicker = "Ambience bed"; label = b[2];
+        meta = ts(b[0]) + "   " + b[1].toFixed(0) + "s   " + b[3].toFixed(1) + " dB   " + b[4];
+        hit = b; break; }
+    }
+  } else if(py >= Y.era && py < Y.era + ERAH){
+    for(var k = 0; k < D.eras.length; k++){
+      var e = D.eras[k];
+      if(t >= e[2] && t < e[3]){ kicker = "Era card at " + ts(e[2]); label = e[0];
+        meta = e[1]; hit = e; break; }
+    }
+  }
+  if(hit){
+    tip.innerHTML = "";
+    tip.appendChild(el("div", "t", kicker));
+    tip.appendChild(el("div", "m", label));
+    tip.appendChild(el("div", "n", meta));
+    tip.style.opacity = 1;
+    var tw = tip.offsetWidth, left = px + 14;
+    if(left + tw > r.width) left = px - tw - 14;
+    tip.style.left = Math.max(4, left) + "px";
+    tip.style.top = Math.min(Y.total - 60, py + 12) + "px";
+  } else tip.style.opacity = 0;
+});
+lanes.addEventListener("mouseleave", function(){ tip.style.opacity = 0; read.textContent = "— : — . — —"; });
+
+/* drag to pan */
+var drag = null;
+lanes.addEventListener("pointerdown", function(ev){
+  drag = {x: ev.clientX, t0: view.t0}; lanes.setPointerCapture(ev.pointerId);
+});
+lanes.addEventListener("pointermove", function(ev){
+  if(!drag) return;
+  setView(drag.t0 - (ev.clientX - drag.x) / W * view.span, view.span);
+});
+lanes.addEventListener("pointerup", function(){ drag = null; });
+lanes.addEventListener("wheel", function(ev){
+  if(!(ev.ctrlKey || ev.metaKey || ev.shiftKey)) return;
+  ev.preventDefault();
+  var r = lanes.getBoundingClientRect(), t = tAt(ev.clientX - r.left);
+  var f = ev.deltaY > 0 ? 1.25 : .8;
+  setView(t - (t - view.t0) * f, view.span * f);
+}, {passive: false});
+
+/* minimap scrub */
+function miniSeek(ev){
+  var r = mini.getBoundingClientRect();
+  centerOn((ev.clientX - r.left) / r.width * DUR);
+}
+var mdrag = false;
+mini.addEventListener("pointerdown", function(ev){
+  mdrag = true; mini.setPointerCapture(ev.pointerId);
+  if(view.span > DUR * .5) setView(0, 120);
+  miniSeek(ev);
+});
+mini.addEventListener("pointermove", function(ev){ if(mdrag) miniSeek(ev); });
+mini.addEventListener("pointerup", function(){ mdrag = false; });
+
+/* ---------- populate ---------- */
+var METERS = [
+  ["Runtime", "11:58", ".17"], ["Programme", "−14.0", " LUFS"], ["True peak", "−0.7", " dBFS"],
+  ["Loudness range", "1.7", " LU"], ["Bed under VO", "−13.0", " dB"], ["SFX vs bed", "+1.3", " dB"],
+  ["Music sections", "18", " · 39.9s"], ["Sound events", "336", " · 2.14s"],
+  ["Designed beats", "106", ""], ["Distinct files", "121", " · max ×9"],
+  ["Sync median", "−0.2", " ms"], ["Palette", "309", " files"]
+];
+var mm = document.getElementById("meters");
+METERS.forEach(function(m){
+  var d = el("div", "meter");
+  var v = el("div", "v"); v.textContent = m[1];
+  if(m[2]) v.appendChild(el("small", null, m[2]));
+  d.appendChild(v); d.appendChild(el("div", "k", m[0])); mm.appendChild(d);
+});
+
+var LEG = [["Era card & hero beat", "chart"], ["Music", "cyan"], ["Ambience bed", "kelp"],
+           ["Impact", "brass"], ["Air & captions", "mute"],
+           ["Fireball on screen", "chart"]];
+var lg = document.getElementById("legend");
+LEG.forEach(function(k, i){
+  var d = el("div", "key"), sw = el("span", "sw");
+  sw.style.background = "var(--" + k[1] + ")";
+  if(i === 5){ sw.style.background = "transparent";
+    sw.style.borderLeft = "2px solid var(--chart)"; sw.style.opacity = ".6"; }
+  d.appendChild(sw); d.appendChild(document.createTextNode(k[0])); lg.appendChild(d);
+});
+
+var eb = document.getElementById("eras");
+D.eras.forEach(function(e){
+  var b = el("button", null, e[0].replace(/^The /, ""));
+  b.onclick = function(){ setView(e[2] - 2, Math.min(DUR, e[3] - e[2] + 6)); };
+  eb.appendChild(b);
+});
+
+var tm = document.getElementById("tmusic");
+D.music.forEach(function(m){
+  var tr = el("tr", "jump");
+  tr.appendChild(el("td", "t", ts(m[1])));
+  tr.appendChild(el("td", "t", ts(m[2])));
+  tr.appendChild(el("td", "t", (m[2]-m[1]).toFixed(1) + "s"));
+  var tk = el("td"); tk.appendChild(el("em", null, m[3])); tr.appendChild(tk);
+  tr.appendChild(el("td", "w", m[4]));
+  var e = el("td", "g", m[5].toFixed(2)); tr.appendChild(e);
+  tr.onclick = function(){ setView(m[1] - 2, m[2] - m[1] + 6);
+    document.querySelector("#lanes").scrollIntoView({behavior:"smooth", block:"center"}); };
+  tm.appendChild(tr);
+});
+
+var TIER_COL = {hero_boom:"chart", hero_hit:"chart", impact:"brass",
+                whoosh:"cyan", swish:"cyan", pop:"mute"};
+var beats = D.sfx.filter(function(s){ return s[6] === 1 && s[5] === 0; })
+                 .sort(function(a,b){ return a[0]-b[0]; });
+var tb = document.getElementById("tbeats"), eraFilter = null;
+function eraOf(t){
+  for(var i = D.eras.length - 1; i >= 0; i--) if(t >= D.eras[i][2]) return i;
+  return 0;
+}
+function renderBeats(){
+  tb.innerHTML = "";
+  beats.forEach(function(s){
+    if(eraFilter != null && eraOf(s[0]) !== eraFilter) return;
+    var tr = el("tr", "jump");
+    tr.appendChild(el("td", "t", ts(s[0])));
+    var tc = el("td"), p = el("span", "pill", TIER_LABEL[TIERS[s[1]]]);
+    p.style.color = "var(--" + TIER_COL[TIERS[s[1]]] + ")";
+    p.style.background = "color-mix(in srgb, var(--" + TIER_COL[TIERS[s[1]]] + ") 13%, transparent)";
+    tc.appendChild(p); tr.appendChild(tc);
+    tr.appendChild(el("td", null, D.kinds[s[3]]));
+    tr.appendChild(el("td", "t", D.files[s[4]]));
+    tr.appendChild(el("td", "g", s[2].toFixed(0)));
+    tr.onclick = function(){
+      centerOn(s[0], Math.min(view.span, 20));
+      lanes.scrollIntoView({behavior:"smooth", block:"center"});
+      tr.classList.remove("flash"); void tr.offsetWidth; tr.classList.add("flash");
+    };
+    tb.appendChild(tr);
+  });
+}
+var ef = document.getElementById("efilt");
+var allBtn = el("button", null, "All");
+allBtn.setAttribute("aria-pressed", "true");
+function setFilter(idx, btn){
+  eraFilter = idx;
+  [].forEach.call(ef.querySelectorAll("button"), function(b){
+    b.setAttribute("aria-pressed", b === btn ? "true" : "false"); });
+  renderBeats();
+}
+allBtn.onclick = function(){ setFilter(null, allBtn); };
+ef.appendChild(allBtn);
+D.eras.forEach(function(e, i){
+  var b = el("button", null, e[0].replace(/^The /, ""));
+  b.setAttribute("aria-pressed", "false");
+  b.onclick = function(){ setFilter(i, b); };
+  ef.appendChild(b);
+});
+renderBeats();
+
+var td = document.getElementById("tbeds");
+D.beds.forEach(function(b){
+  var tr = el("tr", "jump");
+  tr.appendChild(el("td", "t", ts(b[0])));
+  var c = el("td");
+  c.appendChild(el("div", null, b[2]));
+  var w = el("div", "w"); w.textContent = b[4]; w.style.fontSize = "13px"; c.appendChild(w);
+  tr.appendChild(c);
+  tr.appendChild(el("td", "g", b[3].toFixed(1)));
+  tr.onclick = function(){ setView(b[0] - 2, b[1] + 6);
+    lanes.scrollIntoView({behavior:"smooth", block:"center"}); };
+  td.appendChild(tr);
+});
+
+var tmu = document.getElementById("tmutes");
+D.mutes.forEach(function(m){
+  var li = el("li");
+  var t = el("span", "num"); t.textContent = ts(m[0]);
+  t.style.color = "var(--mute)";
+  li.appendChild(t);
+  li.appendChild(el("span", null, m[2]));
+  tmu.appendChild(li);
+});
+
+var NEW = {explo:1, exdist:1, passby:1, wake:1, amb:1, impact:1, body:1, surge:1, water:1,
+  creak:1, rope:1, oar:1, sail:1, cannon:1, steam:1, gears:1, winch:1, sonar:1, horn:1,
+  alarm:1, torpedo:1, uwexp:1, chain:1, shipbell:1, bubbles:1, woodbreak:1, woodbreakx:1,
+  stone:1, catapult:1, cheer:1, gull:1, paper:1, quill:1, breath:1, hatch:1, ramcrash:1,
+  footdeck:1, typewriter:1, plane:1, lock:1, gust:1};
+var tc = document.getElementById("tcats");
+D.cats.forEach(function(c2){
+  var d = el("div", "cat" + (NEW[c2[0]] ? " new" : ""));
+  d.appendChild(el("b", null, c2[0]));
+  d.appendChild(el("span", null, c2[1]));
+  tc.appendChild(d);
+});
+
+/* ---------- boot ---------- */
+var ro = new ResizeObserver(function(){ draw(); });
+ro.observe(lanes.parentNode);
+window.addEventListener("resize", draw);
+if(window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)")
+  .addEventListener("change", function(){ tokens(); draw(); });
+new MutationObserver(function(){ tokens(); draw(); })
+  .observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
+draw();
+})();
+</script>

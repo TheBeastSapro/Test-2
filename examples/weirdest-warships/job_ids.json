@@ -245,6 +245,43 @@
    "0c8f7264-34b0-409f-af6f-5b67690114d5"
   ]
  },
+ "naval_fire_and_wake": {
+  "explo": [
+   "c1cfdd3e-a47e-4a62-a49b-7e7abcd27bf6",
+   "f313371f-064c-4c5b-8689-1843a5bf1649",
+   "1b216648-ab2e-4c96-81ea-7a18252126ba",
+   "986fa781-af19-4ae3-9c4c-35e640bf1604",
+   "c0ec4fde-6148-45b3-90a5-e415eadf94c2",
+   "ac224afd-cd67-470b-a586-422490b88fbd",
+   "cd9b11b3-d31e-4a4e-b008-01b473541e88",
+   "5f8c6711-d3fc-4c24-bf1c-6e37a6833440"
+  ],
+  "exdist": [
+   "898aba35-45ea-484d-8755-209a20f00a41",
+   "e979561f-6fec-4367-a287-69e2c84b18f4",
+   "cb0c98f0-2e23-4d91-b66e-4b6c6af6ae07",
+   "190e6abd-ef24-41c4-835b-2475bd623ace",
+   "9f87eac4-9041-4f28-997c-52b0cb875916",
+   "b461cf64-d750-41db-abf0-eaaa34ec9436"
+  ],
+  "passby": [
+   "f2105855-e2a7-40af-b51b-922fdbcd3b6d",
+   "c6b5f0ec-8512-4874-b862-8ecc90733ef8",
+   "f26c516a-ee31-4cb7-aecd-891ff2539879",
+   "3e9c5605-a656-44dc-a722-f35769f1fb9f",
+   "3cb2511a-2c6a-4ed3-9add-95eb3e1a6d8b",
+   "e6cb3880-8d88-4ebd-a19b-6a33215cea5f",
+   "31d8aa30-e9a6-4d2b-b806-e55378444998",
+   "8433d630-008b-4189-8782-a80f2ee0a9bf"
+  ],
+  "wake": [
+   "bf40f70b-fb7a-49e2-a209-6d248c0d4cbb",
+   "74ad6b55-c8c8-4fca-aed8-050456874f10",
+   "8df03c18-2893-49c1-8dbd-2eac380a80cb",
+   "fe86cb74-39b9-4fd3-a50a-a08d6f51145a",
+   "c6bfd842-215b-4988-bf72-dc49c8dbed90"
+  ]
+ },
  "music": {
   "m1": [
    "a70578a9-3f9a-4d96-8fd8-051b807abbea",
@@ -313,6 +350,10 @@
   "m17": [
    "18c07325-4e93-4e85-ace4-0555616489e4",
    "Alluvion"
+  ],
+  "m13b": [
+   "8e4e2fc8-122a-46d9-a5c0-e7d5c4ed9a9d",
+   "Exile"
   ]
  }
 }
