@@ -1,0 +1,1360 @@
+{
+  "version": 1,
+  "source": "msitarzewski/agency-agents",
+  "sourceType": "github",
+  "sourceRef": "ebe9c99acb5c96f9468de368d8bead775387d1a7",
+  "installPath": ".claude/agents",
+  "agentCount": 270,
+  "agents": {
+    "academic-anthropologist": {
+      "name": "Anthropologist",
+      "sourcePath": "academic/academic-anthropologist.md",
+      "computedHash": "2668602164abf574cb4e432a0cd40727a943de0b59864abb5b73956a0eb26146"
+    },
+    "academic-geographer": {
+      "name": "Geographer",
+      "sourcePath": "academic/academic-geographer.md",
+      "computedHash": "4acf4a6ee6ae96ce562323c8ce508db9f2eb0ece016fc754214be9587c071c0d"
+    },
+    "academic-historian": {
+      "name": "Historian",
+      "sourcePath": "academic/academic-historian.md",
+      "computedHash": "2c59c10dceec033d9e92990b6156553471b7b94dd8e0c64fe27148f612be8955"
+    },
+    "academic-narratologist": {
+      "name": "Narratologist",
+      "sourcePath": "academic/academic-narratologist.md",
+      "computedHash": "12d7a6fa6134c014e3734f8203f0b8634e627cffe5985fa1b69d25c4a69094b5"
+    },
+    "academic-psychologist": {
+      "name": "Psychologist",
+      "sourcePath": "academic/academic-psychologist.md",
+      "computedHash": "193b7dba6d04346d15ee21753fd1cdb69dc1a21a5ac30d5d62726654820a5633"
+    },
+    "academic-statistician": {
+      "name": "Statistician",
+      "sourcePath": "academic/academic-statistician.md",
+      "computedHash": "4b023595c59becec2026cab38807f835e48e280885f9cd381bab7845cbf4280c"
+    },
+    "accounts-payable-agent": {
+      "name": "Accounts Payable Agent",
+      "sourcePath": "specialized/accounts-payable-agent.md",
+      "computedHash": "3b943d48884c7ef13cdd6a354714be1a22bc2aae0b17ccbe6daffeb3744a90d2"
+    },
+    "agentic-identity-trust": {
+      "name": "Agentic Identity & Trust Architect",
+      "sourcePath": "specialized/agentic-identity-trust.md",
+      "computedHash": "55de131a5c790dfb84edd9855d8fd2911d4d676d07f7f6c8e90d36705e73427b"
+    },
+    "agents-orchestrator": {
+      "name": "Agents Orchestrator",
+      "sourcePath": "specialized/agents-orchestrator.md",
+      "computedHash": "3f900ee286eba5a809388ecc22ad860c4a3ef9ed7ff25488e80eac18f3a0f317"
+    },
+    "automation-governance-architect": {
+      "name": "Automation Governance Architect",
+      "sourcePath": "specialized/automation-governance-architect.md",
+      "computedHash": "8aab89104fec352f1f601ec5e6db11c9628d0b2072e6324484fd7e4c8462f55e"
+    },
+    "blender-addon-engineer": {
+      "name": "Blender Add-on Engineer",
+      "sourcePath": "game-development/blender/blender-addon-engineer.md",
+      "computedHash": "f6bf42625647999d9ebc606c6e7c9c57a8c9a6d20c65a9e96918dbfbb063dcd9"
+    },
+    "business-strategist": {
+      "name": "Business Strategist",
+      "sourcePath": "specialized/business-strategist.md",
+      "computedHash": "9314906805d8dee81c3e2d10cb93513a391731d9fceb2e4c936257005a144b92"
+    },
+    "change-management-consultant": {
+      "name": "Change Management Consultant",
+      "sourcePath": "specialized/change-management-consultant.md",
+      "computedHash": "1feb05dfd0bb4d0942a24a8abb409090ffbc252623e15daa09f5bc8c838b0e5a"
+    },
+    "chief-financial-officer": {
+      "name": "Chief Financial Officer",
+      "sourcePath": "specialized/chief-financial-officer.md",
+      "computedHash": "05efa4015fc7feac9bb41942fa6e9eb2b79e2219bf1280b290c754fd16e15a08"
+    },
+    "corporate-training-designer": {
+      "name": "Corporate Training Designer",
+      "sourcePath": "specialized/corporate-training-designer.md",
+      "computedHash": "e70733229e87dde01bd404f502d2f5b491821f681d7230b314b18d98111b898c"
+    },
+    "customer-service": {
+      "name": "Customer Service",
+      "sourcePath": "specialized/customer-service.md",
+      "computedHash": "71d5b8ccd6fb6c5861230169a708ec5d8c0af628de44fc293ae256181573424f"
+    },
+    "customer-success-manager": {
+      "name": "Customer Success Manager",
+      "sourcePath": "specialized/customer-success-manager.md",
+      "computedHash": "2fc5ebc10734a621d65d1bfe0a253158f0a7418ee39b7c93a18efe6b26661cfe"
+    },
+    "data-consolidation-agent": {
+      "name": "Data Consolidation Agent",
+      "sourcePath": "specialized/data-consolidation-agent.md",
+      "computedHash": "7e7de097ff27e3aa2732a9f1ab0bd7acaaef73dabf53fc7be6c90c8ab6afab11"
+    },
+    "data-privacy-officer": {
+      "name": "Data Privacy Officer",
+      "sourcePath": "specialized/data-privacy-officer.md",
+      "computedHash": "77e495853a6ef839c8a2f87dae1c8de7b41e11d5e187828fa42c1d9a1e1ae00f"
+    },
+    "design-brand-guardian": {
+      "name": "Brand Guardian",
+      "sourcePath": "design/design-brand-guardian.md",
+      "computedHash": "d1d5c78af85d4d35be94b93d5c011d17e3cf5dcb69b2037a3ebf3059803b893e"
+    },
+    "design-image-prompt-engineer": {
+      "name": "Image Prompt Engineer",
+      "sourcePath": "design/design-image-prompt-engineer.md",
+      "computedHash": "63a564d01dc5812c494cd8aa034ce1217031d8fe8b3eca1323316879769ff13f"
+    },
+    "design-inclusive-visuals-specialist": {
+      "name": "Inclusive Visuals Specialist",
+      "sourcePath": "design/design-inclusive-visuals-specialist.md",
+      "computedHash": "b1c535f1b18bc64865eee0b4a1b58d019e92762e5dd995e30417f63d86b95583"
+    },
+    "design-persona-walkthrough": {
+      "name": "Persona Walkthrough Specialist",
+      "sourcePath": "design/design-persona-walkthrough.md",
+      "computedHash": "8def8c73df7f79a61704e7353b85b915afa31c4a9fa1100fbb9220c50d6a1c55"
+    },
+    "design-ui-designer": {
+      "name": "UI Designer",
+      "sourcePath": "design/design-ui-designer.md",
+      "computedHash": "3130768958d3b3d38178aaec91cf789e01ecca4984c8674d4aaea446b6cba240"
+    },
+    "design-ui-finish-gate-reviewer": {
+      "name": "UI Finish-Gate Reviewer",
+      "sourcePath": "design/design-ui-finish-gate-reviewer.md",
+      "computedHash": "cc2cc803782a791797b63530bfd46ee676148f05bc1db7c614c8860f9798bc86"
+    },
+    "design-ux-architect": {
+      "name": "UX Architect",
+      "sourcePath": "design/design-ux-architect.md",
+      "computedHash": "151f7386682b77a6c1455374d427237a3d46eadfa1248964466b0412848f7117"
+    },
+    "design-ux-researcher": {
+      "name": "UX Researcher",
+      "sourcePath": "design/design-ux-researcher.md",
+      "computedHash": "25f59c4333df2d0f1170ff7a1b11ea8415fd3d0ef80c3e0985209aeb4018680f"
+    },
+    "design-visual-storyteller": {
+      "name": "Visual Storyteller",
+      "sourcePath": "design/design-visual-storyteller.md",
+      "computedHash": "f4950c9d65b5d105ec48ebce4b7621154e3bf89871dbbf07af245476930eb4dd"
+    },
+    "design-whimsy-injector": {
+      "name": "Whimsy Injector",
+      "sourcePath": "design/design-whimsy-injector.md",
+      "computedHash": "d517c959118a25ce8514c086603d5990f70a901832af8ac29fece80d9e445ff0"
+    },
+    "economy-designer": {
+      "name": "Economy Designer",
+      "sourcePath": "game-development/economy-designer.md",
+      "computedHash": "a6767b808ef0c155d85f5569e9e53285c97dce4c9df25aa24a09a65246967998"
+    },
+    "engineering-ai-data-remediation-engineer": {
+      "name": "AI Data Remediation Engineer",
+      "sourcePath": "engineering/engineering-ai-data-remediation-engineer.md",
+      "computedHash": "5aa193052f15283493eeb9749bc346d09c02407f26760fe0d08f8bd9242ede79"
+    },
+    "engineering-ai-engineer": {
+      "name": "AI Engineer",
+      "sourcePath": "engineering/engineering-ai-engineer.md",
+      "computedHash": "f25a69aad25acd35dd1d62e33d5a814f4a26b075d90f968b4d778452e53924d8"
+    },
+    "engineering-api-platform-engineer": {
+      "name": "API Platform Engineer",
+      "sourcePath": "engineering/engineering-api-platform-engineer.md",
+      "computedHash": "278798c42d7a7cf4f42d3973795765403105ce60d518d647abfdaa522d862d8e"
+    },
+    "engineering-autonomous-optimization-architect": {
+      "name": "Autonomous Optimization Architect",
+      "sourcePath": "engineering/engineering-autonomous-optimization-architect.md",
+      "computedHash": "6904f627eff4a2035ecc245b3ee65f326b484083a08c3e284ad4106bdc57d2d8"
+    },
+    "engineering-backend-architect": {
+      "name": "Backend Architect",
+      "sourcePath": "engineering/engineering-backend-architect.md",
+      "computedHash": "18f237d054fa91f72a5dcda46a52ddcf7354ea3a3e39e0247629f4ea0f446917"
+    },
+    "engineering-cms-developer": {
+      "name": "CMS Developer",
+      "sourcePath": "engineering/engineering-cms-developer.md",
+      "computedHash": "e072ac6e3d485483818880846b145c85b5224045a68c45dddc4e087940d57ba4"
+    },
+    "engineering-code-reviewer": {
+      "name": "Code Reviewer",
+      "sourcePath": "engineering/engineering-code-reviewer.md",
+      "computedHash": "7509fcc3ea1dda46511b2801996305bf3d4a125576f9655ff0b63df25602f446"
+    },
+    "engineering-codebase-onboarding-engineer": {
+      "name": "Codebase Onboarding Engineer",
+      "sourcePath": "engineering/engineering-codebase-onboarding-engineer.md",
+      "computedHash": "07aa548b45887c3ad768efad5fdbf6e57bea639df4f1b74c7e383142f454e2a1"
+    },
+    "engineering-data-engineer": {
+      "name": "Data Engineer",
+      "sourcePath": "engineering/engineering-data-engineer.md",
+      "computedHash": "d46e5ebdb81f5f3e7e0296fa8355583f13693e47cce0e1c8e834c6ff956e861a"
+    },
+    "engineering-data-visualization-engineer": {
+      "name": "Data Visualization Engineer",
+      "sourcePath": "engineering/engineering-data-visualization-engineer.md",
+      "computedHash": "0f5b5391f82aa98ca489768d31024f7a5f840a8ee5fe968fe1499ed538948ce5"
+    },
+    "engineering-database-optimizer": {
+      "name": "Database Optimizer",
+      "sourcePath": "engineering/engineering-database-optimizer.md",
+      "computedHash": "a58860b44590ed643ca02b6faf738b889c99bd889df78c695f519b5288ea018d"
+    },
+    "engineering-database-reliability-engineer": {
+      "name": "Database Reliability Engineer",
+      "sourcePath": "engineering/engineering-database-reliability-engineer.md",
+      "computedHash": "a25e100eb5ada1b26a9b01ce82822c967dfabc09772bd4e3803dfc0a4382a247"
+    },
+    "engineering-desktop-app-engineer": {
+      "name": "Desktop App Engineer",
+      "sourcePath": "engineering/engineering-desktop-app-engineer.md",
+      "computedHash": "01b103bae349f127726e2a37a06502aad9be64793e72331c5ff01db9b8fffd55"
+    },
+    "engineering-developer-tooling-engineer": {
+      "name": "Developer Tooling Engineer",
+      "sourcePath": "engineering/engineering-developer-tooling-engineer.md",
+      "computedHash": "da81449e9bbaf957df34a358fbac7cc8b539b52710022f2c201ddf8f66a03d9b"
+    },
+    "engineering-devops-automator": {
+      "name": "DevOps Automator",
+      "sourcePath": "engineering/engineering-devops-automator.md",
+      "computedHash": "5d3c3d12c605a8c07fadfd109697249f98bc8e3d1901247c390641ef9fb013e8"
+    },
+    "engineering-drupal-performance": {
+      "name": "Drupal Performance Engineer",
+      "sourcePath": "engineering/engineering-drupal-performance.md",
+      "computedHash": "544942f460b76e15c2cd6e9a820b4048e3344186db3a7123d99adfbdf6c41d09"
+    },
+    "engineering-drupal-shopping-cart": {
+      "name": "Drupal Shopping Cart Engineer",
+      "sourcePath": "engineering/engineering-drupal-shopping-cart.md",
+      "computedHash": "cbd06e6d27363029dbbc6638297d47608c78d3b93b3e4a6ff52d16757199ee50"
+    },
+    "engineering-email-intelligence-engineer": {
+      "name": "Email Intelligence Engineer",
+      "sourcePath": "engineering/engineering-email-intelligence-engineer.md",
+      "computedHash": "bef84b77b2ce3f2cbe29faa72ec0d58576bbcad390ee2c1bdcccaca38b4b125f"
+    },
+    "engineering-embedded-firmware-engineer": {
+      "name": "Embedded Firmware Engineer",
+      "sourcePath": "engineering/engineering-embedded-firmware-engineer.md",
+      "computedHash": "8453982bc1ae4b5c43244fd1b702279b5a7a00ecf6d471b9a75a7a01433e5327"
+    },
+    "engineering-feishu-integration-developer": {
+      "name": "Feishu Integration Developer",
+      "sourcePath": "engineering/engineering-feishu-integration-developer.md",
+      "computedHash": "836667ab301da70a2da5d6241c44f2134fe059f839b4efeac7f6ceece632b76a"
+    },
+    "engineering-filament-optimization-specialist": {
+      "name": "Filament Optimization Specialist",
+      "sourcePath": "engineering/engineering-filament-optimization-specialist.md",
+      "computedHash": "428f6a6be2318a123678b2838600e33c5e193afecbe8f828fa97c779eaf85fbf"
+    },
+    "engineering-finops-engineer": {
+      "name": "FinOps Engineer",
+      "sourcePath": "engineering/engineering-finops-engineer.md",
+      "computedHash": "54134b5d3e3bf59db0de7a42b1246ea3a6ad771133d946670f4211e424c33aba"
+    },
+    "engineering-frontend-developer": {
+      "name": "Frontend Developer",
+      "sourcePath": "engineering/engineering-frontend-developer.md",
+      "computedHash": "35961da50f408e00eb6189c87825ac5e62e6b1bf9de3dee198a95536c6d2619e"
+    },
+    "engineering-gaussdb-expert": {
+      "name": "GaussDB Expert Engineer",
+      "sourcePath": "engineering/engineering-gaussdb-expert.md",
+      "computedHash": "db3e2fbd178e4df20885c5d5f27b0a552061c7736374f9977807fc374ff99e07"
+    },
+    "engineering-git-workflow-master": {
+      "name": "Git Workflow Master",
+      "sourcePath": "engineering/engineering-git-workflow-master.md",
+      "computedHash": "b2ab151fa5dc31035ba5f40f9b104f61cc8ef45dab8a8249ad15675141550d77"
+    },
+    "engineering-i18n-engineer": {
+      "name": "Internationalization Engineer",
+      "sourcePath": "engineering/engineering-i18n-engineer.md",
+      "computedHash": "913c72b65eca4af13d2edadf4b53acff63df91715c7c446a63cea75a9a14f007"
+    },
+    "engineering-identity-access-engineer": {
+      "name": "Identity & Access Engineer",
+      "sourcePath": "engineering/engineering-identity-access-engineer.md",
+      "computedHash": "f37ea9df4e87d468fe2e34e29fc78fc508e717ae69d5bf4187a09375e842eedf"
+    },
+    "engineering-incident-response-commander": {
+      "name": "Incident Response Commander",
+      "sourcePath": "engineering/engineering-incident-response-commander.md",
+      "computedHash": "1df5c8f558f99a8d3e6455cf6a6badbd1e0c2b2cccb02682843ee7ca11a13929"
+    },
+    "engineering-iot-fleet-engineer": {
+      "name": "IoT Fleet Engineer",
+      "sourcePath": "engineering/engineering-iot-fleet-engineer.md",
+      "computedHash": "90cfb3b713d0cd11e9529f6158ed72ac99fe1d945a838d9d740009a51e9d3421"
+    },
+    "engineering-it-service-manager": {
+      "name": "IT Service Manager",
+      "sourcePath": "engineering/engineering-it-service-manager.md",
+      "computedHash": "26c23ef51726da346dcdf5b9eb004e7c03cfae4ad6a995ed46a26ec6cd5520e6"
+    },
+    "engineering-llm-post-training-engineer": {
+      "name": "LLM Post-Training Engineer",
+      "sourcePath": "engineering/engineering-llm-post-training-engineer.md",
+      "computedHash": "aa697dc1c0eb402551b9f6764a89938c8787c9628760b74065d3e383299a980a"
+    },
+    "engineering-minimal-change-engineer": {
+      "name": "Minimal Change Engineer",
+      "sourcePath": "engineering/engineering-minimal-change-engineer.md",
+      "computedHash": "9999cc74e7b3936af892ef2c2793d105bb92f6c47789aa23db6df92bf68b45e5"
+    },
+    "engineering-mobile-app-builder": {
+      "name": "Mobile App Builder",
+      "sourcePath": "engineering/engineering-mobile-app-builder.md",
+      "computedHash": "1a3e043f806b0b7c071d58b2ee3ab3c58c8342e2727c1ca9e6e5175f86986caf"
+    },
+    "engineering-mobile-release-engineer": {
+      "name": "Mobile Release Engineer",
+      "sourcePath": "engineering/engineering-mobile-release-engineer.md",
+      "computedHash": "9ec73eb4effdefa4858b444d29bbd66b57e717c1d4cab39f53adcb21c07ca9a4"
+    },
+    "engineering-multi-agent-systems-architect": {
+      "name": "Multi-Agent Systems Architect",
+      "sourcePath": "engineering/engineering-multi-agent-systems-architect.md",
+      "computedHash": "d93dd20fef67bf85a537ba0f869fad1a17d0e589f20899d1bbe1f095a7bcb91b"
+    },
+    "engineering-network-engineer": {
+      "name": "Network Engineer",
+      "sourcePath": "engineering/engineering-network-engineer.md",
+      "computedHash": "d4c65a148af24cec08e14ab2bee3a0a3699cc966c8d170eea196f00df3e87d98"
+    },
+    "engineering-orgscript-engineer": {
+      "name": "OrgScript Engineer",
+      "sourcePath": "engineering/engineering-orgscript-engineer.md",
+      "computedHash": "f8426369743ff0086e32cb9facfc3935488d99a1c2de92961917f9b27d401427"
+    },
+    "engineering-payments-billing-engineer": {
+      "name": "Payments & Billing Engineer",
+      "sourcePath": "engineering/engineering-payments-billing-engineer.md",
+      "computedHash": "b07c4e97ee1c23aec7fdacc79ffd39a0fcee73fef46700f82970be240dad9f5e"
+    },
+    "engineering-privacy-engineer": {
+      "name": "Privacy Engineer",
+      "sourcePath": "engineering/engineering-privacy-engineer.md",
+      "computedHash": "0d00d2f0d3008a55000eb01f13adac54f40daf471d240a7c073477efe92376a6"
+    },
+    "engineering-prompt-engineer": {
+      "name": "Prompt Engineer",
+      "sourcePath": "engineering/engineering-prompt-engineer.md",
+      "computedHash": "625b066e01fca23222b71331833f7851941a6ba800857481ead4ea2420d40081"
+    },
+    "engineering-rag-pipeline-engineer": {
+      "name": "RAG Pipeline Engineer",
+      "sourcePath": "engineering/engineering-rag-pipeline-engineer.md",
+      "computedHash": "a87135cd8a852aeec3da7edf00d2a019cbe30ee9cd9394ea00bd62a4668ca8c7"
+    },
+    "engineering-rapid-prototyper": {
+      "name": "Rapid Prototyper",
+      "sourcePath": "engineering/engineering-rapid-prototyper.md",
+      "computedHash": "327598e2cee41b78866720e20ee76d84e674b4a95ed92773b40c942153cba88a"
+    },
+    "engineering-realtime-collaboration-engineer": {
+      "name": "Realtime Collaboration Engineer",
+      "sourcePath": "engineering/engineering-realtime-collaboration-engineer.md",
+      "computedHash": "08ab1a6a421a435fd5fffa9f03720566bd95fcda17c06eeff6e056d482e96a2a"
+    },
+    "engineering-rust-refactoring-specialist": {
+      "name": "Rust Refactoring Specialist",
+      "sourcePath": "engineering/engineering-rust-refactoring-specialist.md",
+      "computedHash": "06ca53dbd12694560bf01feb94cbbd8c428e4abe6ac92c8a72eeb277ce179a78"
+    },
+    "engineering-search-relevance-engineer": {
+      "name": "Search Relevance Engineer",
+      "sourcePath": "engineering/engineering-search-relevance-engineer.md",
+      "computedHash": "5562f37cbb561dce6dac47b1dd4e75cb7bde6c0c48045198db346ba7d6d790af"
+    },
+    "engineering-section-508-specialist": {
+      "name": "Section 508 Accessibility Specialist",
+      "sourcePath": "engineering/engineering-section-508-specialist.md",
+      "computedHash": "d4fb7139c69e270fd626cfc1410b7412bd864d010903b459f9eb90c8359809f9"
+    },
+    "engineering-senior-developer": {
+      "name": "Senior Developer",
+      "sourcePath": "engineering/engineering-senior-developer.md",
+      "computedHash": "63b8da6c12b95f54bbdbcd0666abeb9519a98b35395233e1b1d8e5c102c82599"
+    },
+    "engineering-software-architect": {
+      "name": "Software Architect",
+      "sourcePath": "engineering/engineering-software-architect.md",
+      "computedHash": "b85121691776147bacde26673e68fbbacd6a7f0816d1ca8e203c264d25ce1d30"
+    },
+    "engineering-solidity-smart-contract-engineer": {
+      "name": "Solidity Smart Contract Engineer",
+      "sourcePath": "engineering/engineering-solidity-smart-contract-engineer.md",
+      "computedHash": "9e6f96fb29cc71faf2638bce3a5aa06ff15b4c674ca4ec039e5e4515a7844839"
+    },
+    "engineering-sre": {
+      "name": "SRE (Site Reliability Engineer)",
+      "sourcePath": "engineering/engineering-sre.md",
+      "computedHash": "85b305e495506913f50c7cb28de42444a85fbc4898cd3ad4e1dc9b358b4ab5e8"
+    },
+    "engineering-technical-writer": {
+      "name": "Technical Writer",
+      "sourcePath": "engineering/engineering-technical-writer.md",
+      "computedHash": "70c8a29cddf7de486b41185693b4961af3fcccbc632b8df13ec43572859edc43"
+    },
+    "engineering-uswds-developer": {
+      "name": "USWDS Developer",
+      "sourcePath": "engineering/engineering-uswds-developer.md",
+      "computedHash": "d3c46e2340d50a97cec536edd985abd2fe6b5f012c3c02e5e9187cd061b27ca7"
+    },
+    "engineering-video-streaming-engineer": {
+      "name": "Video Streaming Engineer",
+      "sourcePath": "engineering/engineering-video-streaming-engineer.md",
+      "computedHash": "a07dca52d7882ac55af9128fffd66c8a753d4c44170da19abffc51710dea9a11"
+    },
+    "engineering-voice-ai-integration-engineer": {
+      "name": "Voice AI Integration Engineer",
+      "sourcePath": "engineering/engineering-voice-ai-integration-engineer.md",
+      "computedHash": "de80469db772d96f3d6d55d3e040360e3a19b45197b2dbd446cb3fcd5a4645f6"
+    },
+    "engineering-webassembly-engineer": {
+      "name": "WebAssembly Engineer",
+      "sourcePath": "engineering/engineering-webassembly-engineer.md",
+      "computedHash": "013afbdab6688dfd278815e0ded8f2ce38580de2ee7e3b09d5974ca2f72c0b44"
+    },
+    "engineering-wechat-mini-program-developer": {
+      "name": "WeChat Mini Program Developer",
+      "sourcePath": "engineering/engineering-wechat-mini-program-developer.md",
+      "computedHash": "dcda22b2d93c1bbfb5d29a78bba031ad40552af54713d89c49ece2d70d08a02c"
+    },
+    "engineering-wordpress-performance": {
+      "name": "WordPress Performance Engineer",
+      "sourcePath": "engineering/engineering-wordpress-performance.md",
+      "computedHash": "58ed429ace903aac3a2c9e190ecae5b61966b7330e9e51ea66aa03eb4112854f"
+    },
+    "engineering-wordpress-shopping-cart": {
+      "name": "WordPress Shopping Cart Engineer",
+      "sourcePath": "engineering/engineering-wordpress-shopping-cart.md",
+      "computedHash": "a2ef45cebe1cf03175b16ef48a2a01acdd2b7e8eda289114f568ebe0f1ae4112"
+    },
+    "esg-sustainability-officer": {
+      "name": "ESG & Sustainability Officer",
+      "sourcePath": "specialized/esg-sustainability-officer.md",
+      "computedHash": "a8feee4c7b9687ee89ec5ea0879ff98b4cc4451431052369bf00f90d9382b7dd"
+    },
+    "finance-bookkeeper-controller": {
+      "name": "Bookkeeper & Controller",
+      "sourcePath": "finance/finance-bookkeeper-controller.md",
+      "computedHash": "5510a24274d8f7897ca3f4df2c3318262138a2c82827b37dd2489dcfca8de75a"
+    },
+    "finance-financial-analyst": {
+      "name": "Financial Analyst",
+      "sourcePath": "finance/finance-financial-analyst.md",
+      "computedHash": "3547907cd52e6108a4c666fd576d5e42715ac337586a3958a722deee4c1f77bb"
+    },
+    "finance-fpa-analyst": {
+      "name": "FP&A Analyst",
+      "sourcePath": "finance/finance-fpa-analyst.md",
+      "computedHash": "5fa9137c80e0b91fbe62815e7981d7b6a2ca5bafe43013c56d1b847a3c963141"
+    },
+    "finance-investment-researcher": {
+      "name": "Investment Researcher",
+      "sourcePath": "finance/finance-investment-researcher.md",
+      "computedHash": "4851318dcd82fdfd68403656450761b439a01c6071b8755e49dbd215149bc2c1"
+    },
+    "finance-tax-strategist": {
+      "name": "Tax Strategist",
+      "sourcePath": "finance/finance-tax-strategist.md",
+      "computedHash": "37ea1a246e1290f473ef59abe1bba9ecc4f346c9867522fefcc11d37cd0265ab"
+    },
+    "game-audio-engineer": {
+      "name": "Game Audio Engineer",
+      "sourcePath": "game-development/game-audio-engineer.md",
+      "computedHash": "d7a2eebd8c20021e543222bc962cb5a111924c5438e9f771a6db42d74cd19232"
+    },
+    "game-designer": {
+      "name": "Game Designer",
+      "sourcePath": "game-development/game-designer.md",
+      "computedHash": "203c4d7f0358a628ea21e3b9c16980f28003bd035b5cfd41a2daec04f6b84e5a"
+    },
+    "gis-3d-scene-developer": {
+      "name": "3D & Scene Developer",
+      "sourcePath": "gis/gis-3d-scene-developer.md",
+      "computedHash": "56f753732d35e54f0527a2cbdc60c73c9215463d4704cc66242e3bbaa1c744e7"
+    },
+    "gis-analyst": {
+      "name": "GIS Analyst",
+      "sourcePath": "gis/gis-analyst.md",
+      "computedHash": "db86d14315eb0ee9fc4cc4699c3844b40f2004a988370f32fe55dadfac2c40a7"
+    },
+    "gis-bim-specialist": {
+      "name": "BIM/GIS Specialist",
+      "sourcePath": "gis/gis-bim-specialist.md",
+      "computedHash": "724609ec55d1b83c88672ada351763ac6c219adca2d36faea0790bdda953e567"
+    },
+    "gis-cartography-designer": {
+      "name": "Cartography Designer",
+      "sourcePath": "gis/gis-cartography-designer.md",
+      "computedHash": "2223d403dfdd863d42c0aa29c912cba0c91ffdc9ad8192630f7b08e4b4c7e804"
+    },
+    "gis-drone-reality-mapping": {
+      "name": "Drone/Reality Mapping Specialist",
+      "sourcePath": "gis/gis-drone-reality-mapping.md",
+      "computedHash": "2e670d99f491e1b4b76d4a5a91e33eb7a5a9ddfd9e67dda1d3c24cd57faea1f2"
+    },
+    "gis-geoai-ml-engineer": {
+      "name": "GeoAI/ML Engineer",
+      "sourcePath": "gis/gis-geoai-ml-engineer.md",
+      "computedHash": "6323600aecb9a1867a90158b10fa066280d1ffc77411c2b453248d125a505448"
+    },
+    "gis-geoprocessing-specialist": {
+      "name": "Geoprocessing Specialist",
+      "sourcePath": "gis/gis-geoprocessing-specialist.md",
+      "computedHash": "28efb48c3c4312ac7a662c8f2da69cc013d74e5d59880a04a71a40783e0ba424"
+    },
+    "gis-qa-engineer": {
+      "name": "GIS QA Engineer",
+      "sourcePath": "gis/gis-qa-engineer.md",
+      "computedHash": "f7247c7df478d963db720562af361394454c20b6af3fc78a02791ec6624bfc38"
+    },
+    "gis-solution-engineer": {
+      "name": "Solution Engineer",
+      "sourcePath": "gis/gis-solution-engineer.md",
+      "computedHash": "a871691ed7e305047281238eb225f64df4b03274fe82278879788de3c839f054"
+    },
+    "gis-spatial-data-engineer": {
+      "name": "Spatial Data Engineer",
+      "sourcePath": "gis/gis-spatial-data-engineer.md",
+      "computedHash": "b8f0e43cee6538aa7880168335ceac8e1a4700965b49f3b6c227b0f13d399e5f"
+    },
+    "gis-spatial-data-scientist": {
+      "name": "Spatial Data Scientist",
+      "sourcePath": "gis/gis-spatial-data-scientist.md",
+      "computedHash": "03254a9fa2a9522800eddf743b8305bc2d4b2093e233e6c9b593da6f0746c657"
+    },
+    "gis-technical-consultant": {
+      "name": "Technical Consultant",
+      "sourcePath": "gis/gis-technical-consultant.md",
+      "computedHash": "f0228896fc57ea0b8fcf3c3fab188a6d4063ba6bf704aa93b0e46e27ba096736"
+    },
+    "gis-web-gis-developer": {
+      "name": "Web GIS Developer",
+      "sourcePath": "gis/gis-web-gis-developer.md",
+      "computedHash": "dbf3ceea4bb8fdc2f2fc61bf96806adeb89f725c8d67a01cd103d256e56909a7"
+    },
+    "godot-gameplay-scripter": {
+      "name": "Godot Gameplay Scripter",
+      "sourcePath": "game-development/godot/godot-gameplay-scripter.md",
+      "computedHash": "0cce0fc75b3a7eeec7221f4a6ac0ff7876fb2468cdb8fab5931951c26f18d539"
+    },
+    "godot-multiplayer-engineer": {
+      "name": "Godot Multiplayer Engineer",
+      "sourcePath": "game-development/godot/godot-multiplayer-engineer.md",
+      "computedHash": "d72e7798c03e6fa27b3b38147857c10c50a9b1b86ce4c3865f473ea5c860f137"
+    },
+    "godot-shader-developer": {
+      "name": "Godot Shader Developer",
+      "sourcePath": "game-development/godot/godot-shader-developer.md",
+      "computedHash": "1362da1ba227aea6dadf5373455bdbb989f10f172731b47243cedc52db406415"
+    },
+    "government-digital-presales-consultant": {
+      "name": "Government Digital Presales Consultant",
+      "sourcePath": "specialized/government-digital-presales-consultant.md",
+      "computedHash": "0676fd83a462828901c64df516034b0912468c85abb751d3e484038d3288b848"
+    },
+    "grant-writer": {
+      "name": "Grant Writer",
+      "sourcePath": "specialized/grant-writer.md",
+      "computedHash": "eb35ab7f6bc1c1401a04104b998224af60293e9669751662c6a4f20aabd59eec"
+    },
+    "healthcare-aging-parent-care-companion": {
+      "name": "Aging Parent Care Companion",
+      "sourcePath": "specialized/healthcare-aging-parent-care-companion.md",
+      "computedHash": "fca0725bc30a447d6666df5060333eac2a4f81083cc02670118045678c79a035"
+    },
+    "healthcare-clinical-evidence-agent": {
+      "name": "Clinical Evidence Agent",
+      "sourcePath": "healthcare/healthcare-clinical-evidence-agent.md",
+      "computedHash": "5fd6223b0fb17c7625b2ca8ba9f1f6fb649560c074a39b0d72e22e984487a688"
+    },
+    "healthcare-customer-service": {
+      "name": "Healthcare Customer Service",
+      "sourcePath": "specialized/healthcare-customer-service.md",
+      "computedHash": "b2e4117a8b449a94409235f74315b52909716985dd94b82b87413a54ca471d73"
+    },
+    "healthcare-innovation-strategist": {
+      "name": "Healthcare Innovation Strategist",
+      "sourcePath": "healthcare/healthcare-innovation-strategist.md",
+      "computedHash": "e1bd8f9f8c5ac7db333632d482e017c6086519eee310da6879db5c121129fbbd"
+    },
+    "healthcare-marketing-compliance": {
+      "name": "Healthcare Marketing Compliance Specialist",
+      "sourcePath": "specialized/healthcare-marketing-compliance.md",
+      "computedHash": "942cc3b43da5f0e6103b7e5087941df4247c602228b2c4b0c6487140e89b176e"
+    },
+    "healthcare-sovereign-health-systems-agent": {
+      "name": "Sovereign Health Systems Agent",
+      "sourcePath": "healthcare/healthcare-sovereign-health-systems-agent.md",
+      "computedHash": "8e846a8643def597e351719853da63b4b6d9f0bf41978ac25e896750427989fa"
+    },
+    "hospitality-guest-services": {
+      "name": "Hospitality Guest Services",
+      "sourcePath": "specialized/hospitality-guest-services.md",
+      "computedHash": "1c5819c560d3902eca44a4fb372bae9e882e5b9e8455e51aa3e8d9662a5d184a"
+    },
+    "hr-onboarding": {
+      "name": "HR Onboarding",
+      "sourcePath": "specialized/hr-onboarding.md",
+      "computedHash": "28a52c26f27ab24d7fe11f5e48cfe712f6d27da142ec97911683b4a3ad92332c"
+    },
+    "identity-graph-operator": {
+      "name": "Identity Graph Operator",
+      "sourcePath": "specialized/identity-graph-operator.md",
+      "computedHash": "f37b705283147e3b92b76d61a3a60bdfe67bad9d6e364d11565329b8a107b3b4"
+    },
+    "language-translator": {
+      "name": "Language Translator",
+      "sourcePath": "specialized/language-translator.md",
+      "computedHash": "afd1e4b5fb1bb8fa9b8b5770774e0d7b003722681f664147ce7b9dddbcd52a4c"
+    },
+    "legal-billing-time-tracking": {
+      "name": "Legal Billing & Time Tracking",
+      "sourcePath": "specialized/legal-billing-time-tracking.md",
+      "computedHash": "27f84055643150459f4de3102ba05c17696e5967a0efc64426fb600ab3c5d12c"
+    },
+    "legal-client-intake": {
+      "name": "Legal Client Intake",
+      "sourcePath": "specialized/legal-client-intake.md",
+      "computedHash": "b0b1cce8a30f08ada6d630b010b1af99f765f5eca667436af6592545667f4c79"
+    },
+    "legal-document-review": {
+      "name": "Legal Document Review",
+      "sourcePath": "specialized/legal-document-review.md",
+      "computedHash": "02bf51dbc9d8ffc93a8b053a09ec61ee2a3a9905e395fbd24389a532d20d1dba"
+    },
+    "level-designer": {
+      "name": "Level Designer",
+      "sourcePath": "game-development/level-designer.md",
+      "computedHash": "79c1d41b7dfc477f6f364ba8b6dec02dc0c081235fe8f8b61c8b062b5dc3b344"
+    },
+    "loan-officer-assistant": {
+      "name": "Loan Officer Assistant",
+      "sourcePath": "specialized/loan-officer-assistant.md",
+      "computedHash": "3d6bfdb598187fb19fba6ab4b50ff357870cda04ea846aa975649d04788df84b"
+    },
+    "lsp-index-engineer": {
+      "name": "LSP/Index Engineer",
+      "sourcePath": "specialized/lsp-index-engineer.md",
+      "computedHash": "3f720a81cdcdaa63136b6fd7817f198d95a517ca1dfcfaa9ec81a5469a1cff95"
+    },
+    "ma-integration-manager": {
+      "name": "M&A Integration Manager",
+      "sourcePath": "specialized/ma-integration-manager.md",
+      "computedHash": "007dcfaee61d45e852a95c37a4529b1d162a178551f1a7f963ee558f1ace6fb5"
+    },
+    "macos-spatial-metal-engineer": {
+      "name": "macOS Spatial/Metal Engineer",
+      "sourcePath": "spatial-computing/macos-spatial-metal-engineer.md",
+      "computedHash": "b0bdd78da0cdbd1ee0055401ddaba4d7cb750e3107d219b6f12794c1a023e69f"
+    },
+    "marketing-aeo-foundations": {
+      "name": "AEO Foundations Architect",
+      "sourcePath": "marketing/marketing-aeo-foundations.md",
+      "computedHash": "b7ef7e1188c924833974bab5cc57f166a7eb6b681d63ccd22eb05c91c25a3c8b"
+    },
+    "marketing-agentic-search-optimizer": {
+      "name": "Agentic Search Optimizer",
+      "sourcePath": "marketing/marketing-agentic-search-optimizer.md",
+      "computedHash": "9e9cbbc763b3ad82f664d80ff9b7965ffadb225998a708f386f47aff7bcee87d"
+    },
+    "marketing-ai-citation-strategist": {
+      "name": "AI Citation Strategist",
+      "sourcePath": "marketing/marketing-ai-citation-strategist.md",
+      "computedHash": "1d23c94aced61beb0e7a3151ad4c14ccb8205a95e48d4bc6c0fda6739c2e356d"
+    },
+    "marketing-app-store-optimizer": {
+      "name": "App Store Optimizer",
+      "sourcePath": "marketing/marketing-app-store-optimizer.md",
+      "computedHash": "1987be72f8fd43ca694f9145cb0dbe37eabc5b1f04439425d7b59185db9263c9"
+    },
+    "marketing-baidu-seo-specialist": {
+      "name": "Baidu SEO Specialist",
+      "sourcePath": "marketing/marketing-baidu-seo-specialist.md",
+      "computedHash": "895a5e8440066ad0b8fa6fe79a91c7750d246a233b01bf7932584b74e9c5becb"
+    },
+    "marketing-bilibili-content-strategist": {
+      "name": "Bilibili Content Strategist",
+      "sourcePath": "marketing/marketing-bilibili-content-strategist.md",
+      "computedHash": "4268a7b51025967fbb4a80c0aeb5e4a80abaad9344f5dec164a8d1fb6ea62d06"
+    },
+    "marketing-book-co-author": {
+      "name": "Book Co-Author",
+      "sourcePath": "marketing/marketing-book-co-author.md",
+      "computedHash": "09ea2fb4770180b072c92100be84b808367c40ef8a3f2119cfd059206aa4c717"
+    },
+    "marketing-carousel-growth-engine": {
+      "name": "Carousel Growth Engine",
+      "sourcePath": "marketing/marketing-carousel-growth-engine.md",
+      "computedHash": "04ef895d1d9f1dd539d7d03403616b892609a9fb8a844496b36bbecf7f3e57c7"
+    },
+    "marketing-china-ecommerce-operator": {
+      "name": "China E-Commerce Operator",
+      "sourcePath": "marketing/marketing-china-ecommerce-operator.md",
+      "computedHash": "aa6743c68cce9dd00fd31751e9e3c2bea3987857cad332c68c7f68e683e98ba7"
+    },
+    "marketing-china-market-localization-strategist": {
+      "name": "China Market Localization Strategist",
+      "sourcePath": "marketing/marketing-china-market-localization-strategist.md",
+      "computedHash": "7f6351003b0d6525c7f44870078252d4616287953e33dcace3c8b7da2e9e4325"
+    },
+    "marketing-content-creator": {
+      "name": "Content Creator",
+      "sourcePath": "marketing/marketing-content-creator.md",
+      "computedHash": "26ddce44f057068a3935c13d53becd3c57385fb47fcdcfdd891b80269070b3d5"
+    },
+    "marketing-cross-border-ecommerce": {
+      "name": "Cross-Border E-Commerce Specialist",
+      "sourcePath": "marketing/marketing-cross-border-ecommerce.md",
+      "computedHash": "073dba84e8159c763c073fcf16f14d57685611c50555a7cde346df85a25c6293"
+    },
+    "marketing-douyin-strategist": {
+      "name": "Douyin Strategist",
+      "sourcePath": "marketing/marketing-douyin-strategist.md",
+      "computedHash": "87e3b91287fc97ad0dedb2f407a49d551b52b8513c8c61d06c1a93d837a7ae46"
+    },
+    "marketing-email-strategist": {
+      "name": "Email Marketing Strategist",
+      "sourcePath": "marketing/marketing-email-strategist.md",
+      "computedHash": "605c98066a4a1b5538d76476a11316247316ecb8da88beda68a21f2c8918f19b"
+    },
+    "marketing-global-podcast-strategist": {
+      "name": "Global Podcast Strategist",
+      "sourcePath": "marketing/marketing-global-podcast-strategist.md",
+      "computedHash": "98416e338db666c5cc1d6bfd37c35daffa00532010623fdb4a92ed7dce76a7aa"
+    },
+    "marketing-growth-hacker": {
+      "name": "Growth Hacker",
+      "sourcePath": "marketing/marketing-growth-hacker.md",
+      "computedHash": "6938b4fccaf4447e8c4b8fd071ce383a484cd3fb72583d87ac9835fa9741a7c7"
+    },
+    "marketing-instagram-curator": {
+      "name": "Instagram Curator",
+      "sourcePath": "marketing/marketing-instagram-curator.md",
+      "computedHash": "bab95910975a95409eca10e28c44cf762cd46f9d8b7d551bcb347ef0f39e68fd"
+    },
+    "marketing-kuaishou-strategist": {
+      "name": "Kuaishou Strategist",
+      "sourcePath": "marketing/marketing-kuaishou-strategist.md",
+      "computedHash": "d28742e505fa7bf6b39a88ccb6c2052ee5b4f569d17cebb81401fa8810a5ad49"
+    },
+    "marketing-linkedin-content-creator": {
+      "name": "LinkedIn Content Creator",
+      "sourcePath": "marketing/marketing-linkedin-content-creator.md",
+      "computedHash": "344896bff33acf0b5107bbba3c84ee1fb310f3652b44c7e53553c934c735ed4f"
+    },
+    "marketing-livestream-commerce-coach": {
+      "name": "Livestream Commerce Coach",
+      "sourcePath": "marketing/marketing-livestream-commerce-coach.md",
+      "computedHash": "2d53e67cd70d825aeeddc9fd8b3b4a496887893b64df85c19903a2e7dbcb101f"
+    },
+    "marketing-multi-platform-publisher": {
+      "name": "Multi-Platform Publisher",
+      "sourcePath": "marketing/marketing-multi-platform-publisher.md",
+      "computedHash": "adfc6c481c0c1e1c03df21a17ccb5fb4d4c56a84193249abb27cb3d44e4f1f5e"
+    },
+    "marketing-podcast-strategist": {
+      "name": "Podcast Strategist",
+      "sourcePath": "marketing/marketing-podcast-strategist.md",
+      "computedHash": "37fb126529afb4aa6f4409ca02307330d26b01f695dfbaade017d569169d936b"
+    },
+    "marketing-pr-communications-manager": {
+      "name": "PR & Communications Manager",
+      "sourcePath": "marketing/marketing-pr-communications-manager.md",
+      "computedHash": "e255a9ebf00a0db0dc12e72fe2a647195ceacf3c0e63f38788e077966d69b800"
+    },
+    "marketing-private-domain-operator": {
+      "name": "Private Domain Operator",
+      "sourcePath": "marketing/marketing-private-domain-operator.md",
+      "computedHash": "7d8372b562324d4cca9765ee95dfc9e31b52287306e8a8e1dafdd1ded10744d4"
+    },
+    "marketing-reddit-community-builder": {
+      "name": "Reddit Community Builder",
+      "sourcePath": "marketing/marketing-reddit-community-builder.md",
+      "computedHash": "03bb723420800754bcbf23994cba707c45123f7eefe3e1964188cf92ecc2b7d7"
+    },
+    "marketing-seo-specialist": {
+      "name": "SEO Specialist",
+      "sourcePath": "marketing/marketing-seo-specialist.md",
+      "computedHash": "cfa35eb3626230e1bc96ab3d434b42005b092fd4de8f517efe4a4b3f8fca60d0"
+    },
+    "marketing-short-video-editing-coach": {
+      "name": "Short-Video Editing Coach",
+      "sourcePath": "marketing/marketing-short-video-editing-coach.md",
+      "computedHash": "4634520ab5e84b26bb6658f4f8c0f737ed7dd0b5c631b9211482a4cf4037ccbf"
+    },
+    "marketing-social-media-strategist": {
+      "name": "Social Media Strategist",
+      "sourcePath": "marketing/marketing-social-media-strategist.md",
+      "computedHash": "7c698a9280872666b2726b7ca305c6d4890fcb95a098c7c316beb9bf5fdb4274"
+    },
+    "marketing-tiktok-strategist": {
+      "name": "TikTok Strategist",
+      "sourcePath": "marketing/marketing-tiktok-strategist.md",
+      "computedHash": "980ca09138f63ec2d934e111af4fa59d76a483bb23220a5f862aa4e9f0c9124a"
+    },
+    "marketing-twitter-engager": {
+      "name": "Twitter Engager",
+      "sourcePath": "marketing/marketing-twitter-engager.md",
+      "computedHash": "df58c7df04fb808d282d7a551c84e039bebdf4a17318a09b84fa285a118f54ab"
+    },
+    "marketing-video-optimization-specialist": {
+      "name": "Video Optimization Specialist",
+      "sourcePath": "marketing/marketing-video-optimization-specialist.md",
+      "computedHash": "9cf82969be8898c96192617becf5e38e8de6b79650c362d840c53d2c10f2e8b9"
+    },
+    "marketing-wechat-official-account": {
+      "name": "WeChat Official Account Manager",
+      "sourcePath": "marketing/marketing-wechat-official-account.md",
+      "computedHash": "b74a42aff9b960cb2a221e362d2006865924ffece9e3514df81f1116322d2dce"
+    },
+    "marketing-weibo-strategist": {
+      "name": "Weibo Strategist",
+      "sourcePath": "marketing/marketing-weibo-strategist.md",
+      "computedHash": "7a79f1ec3894ab2e32cb0b0b729b77fda176defaffdb59f4feae29e56a767917"
+    },
+    "marketing-x-twitter-intelligence-analyst": {
+      "name": "X/Twitter Intelligence Analyst",
+      "sourcePath": "marketing/marketing-x-twitter-intelligence-analyst.md",
+      "computedHash": "e3dd504765e720f0dce0c5b68254ab65c440798edccfe6af6aafd0d3925d6dcb"
+    },
+    "marketing-xiaohongshu-specialist": {
+      "name": "Xiaohongshu Specialist",
+      "sourcePath": "marketing/marketing-xiaohongshu-specialist.md",
+      "computedHash": "c0afe07b77d7795ff6c5ea928360f0e545d51a6df231d42d6282168ace027154"
+    },
+    "marketing-zhihu-strategist": {
+      "name": "Zhihu Strategist",
+      "sourcePath": "marketing/marketing-zhihu-strategist.md",
+      "computedHash": "35f6fd759a67860f92d1ae5245bdf45f5eb524277453a28011899aeb450f5c4c"
+    },
+    "medical-billing-coding-specialist": {
+      "name": "Medical Billing & Coding Specialist",
+      "sourcePath": "specialized/medical-billing-coding-specialist.md",
+      "computedHash": "e9f597ef3a214d886a2b861347183c3674b6e24278c9308ed998a02972e7007c"
+    },
+    "narrative-designer": {
+      "name": "Narrative Designer",
+      "sourcePath": "game-development/narrative-designer.md",
+      "computedHash": "7a5489c7b0502aa167030018137e3f349d2c32505c0ad7b9ec1de066a9a93f0d"
+    },
+    "operations-manager": {
+      "name": "Operations Manager",
+      "sourcePath": "specialized/operations-manager.md",
+      "computedHash": "3c133a31ae1542922444d77d7c8f9964127704ba94638dde12e37a9ad0fd35bd"
+    },
+    "organizational-psychologist": {
+      "name": "Organizational Psychologist",
+      "sourcePath": "specialized/organizational-psychologist.md",
+      "computedHash": "b7e523e1557ef9e98d5a0b515809996c6bbc0de6a49b1dc355d803e3bae09be2"
+    },
+    "paid-media-auditor": {
+      "name": "Paid Media Auditor",
+      "sourcePath": "paid-media/paid-media-auditor.md",
+      "computedHash": "ce0346ba6a1b1652e350733cd3c124ab200e869c116fd85bcd0225d9764b0c56"
+    },
+    "paid-media-creative-strategist": {
+      "name": "Ad Creative Strategist",
+      "sourcePath": "paid-media/paid-media-creative-strategist.md",
+      "computedHash": "a24a303228178eb23d514fee63831cf7e1a3d7e5276c54ce5b58dce566700c41"
+    },
+    "paid-media-paid-social-strategist": {
+      "name": "Paid Social Strategist",
+      "sourcePath": "paid-media/paid-media-paid-social-strategist.md",
+      "computedHash": "c8004c7f640dfef9c7c698f69c4c3712d063df06c8d391c809df92ba420af3db"
+    },
+    "paid-media-ppc-strategist": {
+      "name": "PPC Campaign Strategist",
+      "sourcePath": "paid-media/paid-media-ppc-strategist.md",
+      "computedHash": "3e172aa58ad7f9ea3bad947def69dfe26d66134c0aa88dca60e5aea4b8e25f67"
+    },
+    "paid-media-programmatic-buyer": {
+      "name": "Programmatic & Display Buyer",
+      "sourcePath": "paid-media/paid-media-programmatic-buyer.md",
+      "computedHash": "c2a54b847823906485bed6e704fc7a013e3d9cf1340045354aae9a9e0c96e7e1"
+    },
+    "paid-media-search-query-analyst": {
+      "name": "Search Query Analyst",
+      "sourcePath": "paid-media/paid-media-search-query-analyst.md",
+      "computedHash": "bfd792539f93515118429f20c528fdaee320a172ca861fbc7ffb0209dffb723e"
+    },
+    "paid-media-tracking-specialist": {
+      "name": "Tracking & Measurement Specialist",
+      "sourcePath": "paid-media/paid-media-tracking-specialist.md",
+      "computedHash": "8caa9bbc8f5a8aaeb5ac156dbb27818f27e79512472053b824484496b0ca5b96"
+    },
+    "personal-growth-mentor": {
+      "name": "Personal Growth Mentor",
+      "sourcePath": "specialized/personal-growth-mentor.md",
+      "computedHash": "623c1ef061d98fedbb941245a39fa5b8c5236ef94194724bfe5c54b8050143d4"
+    },
+    "product-behavioral-nudge-engine": {
+      "name": "Behavioral Nudge Engine",
+      "sourcePath": "product/product-behavioral-nudge-engine.md",
+      "computedHash": "61f8a4a6a502ac0239c1a555d859051f0ecc83189f5f26048e2a448becf1c722"
+    },
+    "product-feedback-synthesizer": {
+      "name": "Feedback Synthesizer",
+      "sourcePath": "product/product-feedback-synthesizer.md",
+      "computedHash": "9f7bc1474bf8bf95c0573c20df5e3d8ae70c3b9659ec5ea7958cc4692b958270"
+    },
+    "product-manager": {
+      "name": "Product Manager",
+      "sourcePath": "product/product-manager.md",
+      "computedHash": "4a3fe4661e72e5173877bcba7c362392181774b20efc27ac1789171e98676c9d"
+    },
+    "product-sprint-prioritizer": {
+      "name": "Sprint Prioritizer",
+      "sourcePath": "product/product-sprint-prioritizer.md",
+      "computedHash": "da5233770ca85a3931b72d80b37dd09616a54fd24075c607667853acf65b000a"
+    },
+    "product-trend-researcher": {
+      "name": "Trend Researcher",
+      "sourcePath": "product/product-trend-researcher.md",
+      "computedHash": "69c8e54a9413ba411195e8d5274ee3cd88fa8cda18486db70c0f19ce374550a2"
+    },
+    "project-management-experiment-tracker": {
+      "name": "Experiment Tracker",
+      "sourcePath": "project-management/project-management-experiment-tracker.md",
+      "computedHash": "8f1410bfa054c8ac2eee3084b9bfdb3adb1e8a2f3e015c2876d0ecf07136c22f"
+    },
+    "project-management-jira-workflow-steward": {
+      "name": "Jira Workflow Steward",
+      "sourcePath": "project-management/project-management-jira-workflow-steward.md",
+      "computedHash": "e45c68423c1df0c20452916a5caafe7f41a97b56ca5af8872af966212ccbf389"
+    },
+    "project-management-meeting-notes-specialist": {
+      "name": "Meeting Notes Specialist",
+      "sourcePath": "project-management/project-management-meeting-notes-specialist.md",
+      "computedHash": "53a6efaa379b70cbc3276b44544ecf569789fffe892ba82eb68e8672407de91f"
+    },
+    "project-management-project-shepherd": {
+      "name": "Project Shepherd",
+      "sourcePath": "project-management/project-management-project-shepherd.md",
+      "computedHash": "0feb647366d78b61c1633b12e370ffb1dea52facb9d750ef6c952de1e996031c"
+    },
+    "project-management-studio-operations": {
+      "name": "Studio Operations",
+      "sourcePath": "project-management/project-management-studio-operations.md",
+      "computedHash": "8a2e5098d94688d191a128b6b2fdbbf3724bfcd2f4944766de6e25a0709f1517"
+    },
+    "project-management-studio-producer": {
+      "name": "Studio Producer",
+      "sourcePath": "project-management/project-management-studio-producer.md",
+      "computedHash": "d942feab0f50ea7b8e98cb73bdaf05226d2a6c53c6359c7380149f7545bb199d"
+    },
+    "project-manager-senior": {
+      "name": "Senior Project Manager",
+      "sourcePath": "project-management/project-manager-senior.md",
+      "computedHash": "70fb27cab174c97375293311211d5563c5ac257fba274450d1ca9c05b540ef2d"
+    },
+    "real-estate-buyer-seller": {
+      "name": "Real Estate Buyer & Seller",
+      "sourcePath": "specialized/real-estate-buyer-seller.md",
+      "computedHash": "00e2f54e76be38c85c4eb406135a0944a3f610d287e6747fbfac37a12c82920a"
+    },
+    "recruitment-specialist": {
+      "name": "Recruitment Specialist",
+      "sourcePath": "specialized/recruitment-specialist.md",
+      "computedHash": "fa1349988c278d0ecf652d7e286b3cac6acd388e10ba2e7d92c59d448303ccf8"
+    },
+    "report-distribution-agent": {
+      "name": "Report Distribution Agent",
+      "sourcePath": "specialized/report-distribution-agent.md",
+      "computedHash": "f5796b3cb693123e6c59f7058c100fe817b744f819d3e281442964714f72bac5"
+    },
+    "resume-tailor": {
+      "name": "Resume Tailor",
+      "sourcePath": "specialized/resume-tailor.md",
+      "computedHash": "be3d173ce4807d49671c7956f107029a4cb4061651882a0a3ea8c4f20738273f"
+    },
+    "retail-customer-returns": {
+      "name": "Retail Customer Returns",
+      "sourcePath": "specialized/retail-customer-returns.md",
+      "computedHash": "5cd60860a6ea57a95ec6d14246d6b0032e0e13ba0220ec4a79527fdc0ccd0f9c"
+    },
+    "roblox-avatar-creator": {
+      "name": "Roblox Avatar Creator",
+      "sourcePath": "game-development/roblox-studio/roblox-avatar-creator.md",
+      "computedHash": "6bdb5af6fe5c390da43f7bdcc4d73b6fbdef2a8b19bd6d30bf1fef6b4258f16a"
+    },
+    "roblox-experience-designer": {
+      "name": "Roblox Experience Designer",
+      "sourcePath": "game-development/roblox-studio/roblox-experience-designer.md",
+      "computedHash": "569f75a1b6448a30159d3ca7323eb590bc45e2355e3ee89a733d45a5d8986793"
+    },
+    "roblox-systems-scripter": {
+      "name": "Roblox Systems Scripter",
+      "sourcePath": "game-development/roblox-studio/roblox-systems-scripter.md",
+      "computedHash": "6d7e11b07aba99eecc45a8b031c5b8618f96f36699a5e1d3409d05323d7feab6"
+    },
+    "sales-account-strategist": {
+      "name": "Account Strategist",
+      "sourcePath": "sales/sales-account-strategist.md",
+      "computedHash": "dd9b2c37c41827286ef91d64057a5b0ff4795c2e57bd44695436feeb5a3f0423"
+    },
+    "sales-coach": {
+      "name": "Sales Coach",
+      "sourcePath": "sales/sales-coach.md",
+      "computedHash": "83f0be3daa7e78b24bfb41c7514d5f2936e9690c42ab7a0d8b5bc66a8b829f62"
+    },
+    "sales-data-extraction-agent": {
+      "name": "Sales Data Extraction Agent",
+      "sourcePath": "specialized/sales-data-extraction-agent.md",
+      "computedHash": "202a6f04df452385fd1185a6bb23a0c9a47e624088eac14179bed4975f0b268a"
+    },
+    "sales-deal-strategist": {
+      "name": "Deal Strategist",
+      "sourcePath": "sales/sales-deal-strategist.md",
+      "computedHash": "fdd92f2ced04ad842e25fd9ebcc341372ce2630d4ec152a29c53f7b8535b855e"
+    },
+    "sales-discovery-coach": {
+      "name": "Discovery Coach",
+      "sourcePath": "sales/sales-discovery-coach.md",
+      "computedHash": "8244a25e5b8785058b19ef92dca9e543a2c990e4dde1166d194f14514e3ae278"
+    },
+    "sales-engineer": {
+      "name": "Sales Engineer",
+      "sourcePath": "sales/sales-engineer.md",
+      "computedHash": "355014b3ecf52aaa1209a5d7b089e5e65c3aad7874eef513e60b6da79fec572e"
+    },
+    "sales-offer-lead-gen-strategist": {
+      "name": "Offer & Lead Gen Strategist",
+      "sourcePath": "sales/sales-offer-lead-gen-strategist.md",
+      "computedHash": "75a12987fb2a205ac029c2ebf43d1ae1a1502d1707ab4921923928489ff3778c"
+    },
+    "sales-outbound-strategist": {
+      "name": "Outbound Strategist",
+      "sourcePath": "sales/sales-outbound-strategist.md",
+      "computedHash": "4f6c8abf9c936fbe5f4b66fc8044096e3dd5199f8f8ae9d0309ad92bc0653174"
+    },
+    "sales-outreach": {
+      "name": "Sales Outreach",
+      "sourcePath": "specialized/sales-outreach.md",
+      "computedHash": "84d4ca90d4bed4649904c8f239f8e13f373274c8bceb6fd7eb2479e6f9e28c90"
+    },
+    "sales-pipeline-analyst": {
+      "name": "Pipeline Analyst",
+      "sourcePath": "sales/sales-pipeline-analyst.md",
+      "computedHash": "d105ed717423298d754e58300566003ef464d79268183a43b5853cf67d11f61c"
+    },
+    "sales-proposal-strategist": {
+      "name": "Proposal Strategist",
+      "sourcePath": "sales/sales-proposal-strategist.md",
+      "computedHash": "84c42e0ae7e11e6b239b7f921bdb0c33398102f94998c2eaa41114a3a46dc4c9"
+    },
+    "security-ai-generated-code-auditor": {
+      "name": "AI-Generated Code Security Auditor",
+      "sourcePath": "security/security-ai-generated-code-auditor.md",
+      "computedHash": "ac2196a914bfb00dddfef93edb9eef1860f924f9582d814cd303ab45e4fc71bc"
+    },
+    "security-appsec-engineer": {
+      "name": "Application Security Engineer",
+      "sourcePath": "security/security-appsec-engineer.md",
+      "computedHash": "f3ee22350c9e0e7289d2d4747e7c1a8fe196d70340feec7b176b13bacc3deb77"
+    },
+    "security-architect": {
+      "name": "Security Architect",
+      "sourcePath": "security/security-architect.md",
+      "computedHash": "b1a68e9614f7adb43938f5bd9964f6e41250febc9a57f691eefcbab58d5b1df1"
+    },
+    "security-blockchain-security-auditor": {
+      "name": "Blockchain Security Auditor",
+      "sourcePath": "security/security-blockchain-security-auditor.md",
+      "computedHash": "b35bcd083889ccea487535e30c66bde83f0d06527ae4dd12acec32b285c5ec66"
+    },
+    "security-cloud-security-architect": {
+      "name": "Cloud Security Architect",
+      "sourcePath": "security/security-cloud-security-architect.md",
+      "computedHash": "d541b4041d47c512ef5223985aba682249ce2416244e147959641fc6d193aa71"
+    },
+    "security-compliance-auditor": {
+      "name": "Compliance Auditor",
+      "sourcePath": "security/security-compliance-auditor.md",
+      "computedHash": "ebb550ceef8011be23fe5a6fab0a7b3f77c2433f4d6aa22617a7eb87db97274f"
+    },
+    "security-incident-responder": {
+      "name": "Incident Responder",
+      "sourcePath": "security/security-incident-responder.md",
+      "computedHash": "a648cf5a0b40d8726ccb61ea48f1dee2797691f1b52395c59af91c7a5f511278"
+    },
+    "security-penetration-tester": {
+      "name": "Penetration Tester",
+      "sourcePath": "security/security-penetration-tester.md",
+      "computedHash": "f52c2524309fb048250b412daa6a2ad0a906b5daff01f64f195052d024b9e1a0"
+    },
+    "security-secrets-credential-engineer": {
+      "name": "Secrets & Credential Hygiene Engineer",
+      "sourcePath": "security/security-secrets-credential-engineer.md",
+      "computedHash": "5a52e4c1045d8805c74414cfb334bb80da429fd191b987bdd8889ee60ca7561b"
+    },
+    "security-senior-secops": {
+      "name": "Senior SecOps Engineer",
+      "sourcePath": "security/security-senior-secops.md",
+      "computedHash": "90b535077cff7253bf18355ec99d5205dbe09c9f3e93f5b85222183460f2b879"
+    },
+    "security-threat-detection-engineer": {
+      "name": "Threat Detection Engineer",
+      "sourcePath": "security/security-threat-detection-engineer.md",
+      "computedHash": "83bfaabe485d51965ba6474de3eb6e00f67fd7f76e5b34ca1d3fb385a8fa3d97"
+    },
+    "security-threat-intelligence-analyst": {
+      "name": "Threat Intelligence Analyst",
+      "sourcePath": "security/security-threat-intelligence-analyst.md",
+      "computedHash": "777b26397ae7aeb246259736327f9f76e435eee378a1435bed9d18699ec8d666"
+    },
+    "specialized-chief-of-staff": {
+      "name": "Chief of Staff",
+      "sourcePath": "specialized/specialized-chief-of-staff.md",
+      "computedHash": "c0d053f19f32d369b6e9a4ded3a3b93efd792648b88b28f0ecd37a899b91b7b3"
+    },
+    "specialized-civil-engineer": {
+      "name": "Civil Engineer",
+      "sourcePath": "specialized/specialized-civil-engineer.md",
+      "computedHash": "37c9c37511345799235dcb41a4bd92c5577614c392b9a1fa3a1afee112e5de3b"
+    },
+    "specialized-codebase-archaeologist": {
+      "name": "Codebase Archaeologist",
+      "sourcePath": "specialized/specialized-codebase-archaeologist.md",
+      "computedHash": "c1b2c22711cb6e74dd834f831d6a8b3f10c93cd462722073b01acae9d0a40700"
+    },
+    "specialized-cultural-intelligence-strategist": {
+      "name": "Cultural Intelligence Strategist",
+      "sourcePath": "specialized/specialized-cultural-intelligence-strategist.md",
+      "computedHash": "91f1d2ef19bcf05f8d3b2758049d2dee909939a18ec2d086f192358179455abc"
+    },
+    "specialized-developer-advocate": {
+      "name": "Developer Advocate",
+      "sourcePath": "specialized/specialized-developer-advocate.md",
+      "computedHash": "92617477989c99f57cda5d6d91ac5fea3a56db422a3f3825c4a438ad244079d3"
+    },
+    "specialized-document-generator": {
+      "name": "Document Generator",
+      "sourcePath": "specialized/specialized-document-generator.md",
+      "computedHash": "cd2ca961e0f7baa18942aaaa315e333ea4315604bbb6a182d7daa31b76dfc3a3"
+    },
+    "specialized-fedramp-rmf-compliance": {
+      "name": "FedRAMP & RMF Compliance Engineer",
+      "sourcePath": "specialized/specialized-fedramp-rmf-compliance.md",
+      "computedHash": "3269ca423abba6405b074ddff80da26ff1d73ae01787cc34bc7a1d45732936b0"
+    },
+    "specialized-french-consulting-market": {
+      "name": "French Consulting Market Navigator",
+      "sourcePath": "specialized/specialized-french-consulting-market.md",
+      "computedHash": "68ebd164a0b3e0493d8deec43f4122e24b293c0a8f77786b2c3a4c8f3924c045"
+    },
+    "specialized-korean-business-navigator": {
+      "name": "Korean Business Navigator",
+      "sourcePath": "specialized/specialized-korean-business-navigator.md",
+      "computedHash": "71eb41ef3705fe155eee87d99e0ec7a52a237af442dd66e3421e225b76580f21"
+    },
+    "specialized-mcp-builder": {
+      "name": "MCP Builder",
+      "sourcePath": "specialized/specialized-mcp-builder.md",
+      "computedHash": "3880031674ae2458552ad3c4da99c122469e85351ed57969db7f6f767befd7cb"
+    },
+    "specialized-model-qa": {
+      "name": "Model QA Specialist",
+      "sourcePath": "specialized/specialized-model-qa.md",
+      "computedHash": "835a26b93003cfb8819201001dad37267971f5702320abcf1720f697e00cf4bd"
+    },
+    "specialized-pricing-analyst": {
+      "name": "Pricing Analyst",
+      "sourcePath": "specialized/specialized-pricing-analyst.md",
+      "computedHash": "fb8a63681615666bb2efe45b7fd2d9ad8a072ab9066efae6b61d454a58039f85"
+    },
+    "specialized-salesforce-architect": {
+      "name": "Salesforce Architect",
+      "sourcePath": "specialized/specialized-salesforce-architect.md",
+      "computedHash": "756fd2dc09f76422dfecb8104e2334f8876f8b95cb6734f8f044c36c641b22e1"
+    },
+    "specialized-strategy-duel-agent": {
+      "name": "Strategy Duel Agent",
+      "sourcePath": "specialized/specialized-strategy-duel-agent.md",
+      "computedHash": "3012369325bd06ec6e73f980d4e28947fe1f3dd0121e8ccd5ffb5834b50f3911"
+    },
+    "specialized-workflow-architect": {
+      "name": "Workflow Architect",
+      "sourcePath": "specialized/specialized-workflow-architect.md",
+      "computedHash": "74d46f03dcdd769163ce73ea8ac025bae48ae2356792a7aff3619c92f802a8ef"
+    },
+    "study-abroad-advisor": {
+      "name": "Study Abroad Advisor",
+      "sourcePath": "specialized/study-abroad-advisor.md",
+      "computedHash": "afd4b1033e76671b4d7a17a74329d7d81f491351004c77876a2615137140b84f"
+    },
+    "supply-chain-strategist": {
+      "name": "Supply Chain Strategist",
+      "sourcePath": "specialized/supply-chain-strategist.md",
+      "computedHash": "4e3c93bcfefd72b958432d8dbe562c6ca5add80d39a5eec061a83e9e0fe984c3"
+    },
+    "support-analytics-reporter": {
+      "name": "Analytics Reporter",
+      "sourcePath": "support/support-analytics-reporter.md",
+      "computedHash": "8d4a4d0835f9ecb577d81dacbafcb96841b9b0d1f2af1f9273359502a14fcb5c"
+    },
+    "support-executive-summary-generator": {
+      "name": "Executive Summary Generator",
+      "sourcePath": "support/support-executive-summary-generator.md",
+      "computedHash": "298891fcf297de5d9b343e9ab9b63864317de63256b15c0c72e6cec172f8f0ff"
+    },
+    "support-finance-tracker": {
+      "name": "Finance Tracker",
+      "sourcePath": "support/support-finance-tracker.md",
+      "computedHash": "73b83d0b0ec4ce53c0335f57473b0e1dcb3b46af22ecd58d9680465b9717b5d9"
+    },
+    "support-infrastructure-maintainer": {
+      "name": "Infrastructure Maintainer",
+      "sourcePath": "support/support-infrastructure-maintainer.md",
+      "computedHash": "64d705a9e58f73868136d781f83ceaf12dfc1721cdb5bfb31b2c03441d69bf5c"
+    },
+    "support-legal-compliance-checker": {
+      "name": "Legal Compliance Checker",
+      "sourcePath": "support/support-legal-compliance-checker.md",
+      "computedHash": "0544f2219d52742f9ba436c193b34eb48c47cee8fcba38aef2b478dcb5e19284"
+    },
+    "support-support-responder": {
+      "name": "Support Responder",
+      "sourcePath": "support/support-support-responder.md",
+      "computedHash": "4dcd962743e940d1cdd119dcc748d4a434b6b32775aa11ea68fbd2209ee0852c"
+    },
+    "technical-artist": {
+      "name": "Technical Artist",
+      "sourcePath": "game-development/technical-artist.md",
+      "computedHash": "8a669de1fa3455c456092feefbf945d3b0ae18072b873d002d190b16ed1f678d"
+    },
+    "terminal-integration-specialist": {
+      "name": "Terminal Integration Specialist",
+      "sourcePath": "spatial-computing/terminal-integration-specialist.md",
+      "computedHash": "3082737f766821cf1c5372b9067ff67c873916de8c30b173478fe8bbc9a10087"
+    },
+    "testing-accessibility-auditor": {
+      "name": "Accessibility Auditor",
+      "sourcePath": "testing/testing-accessibility-auditor.md",
+      "computedHash": "982a14c0d0a9b30834ecd6e04811e4f900baf7950e18c68cc97142354cc803e7"
+    },
+    "testing-api-tester": {
+      "name": "API Tester",
+      "sourcePath": "testing/testing-api-tester.md",
+      "computedHash": "c89d7ae592523f4799426a8b09700ec4b9d99bf2fcae2d1b0dd2900d5f770127"
+    },
+    "testing-evidence-collector": {
+      "name": "Evidence Collector",
+      "sourcePath": "testing/testing-evidence-collector.md",
+      "computedHash": "d7e95b64033230aa07c386546d24fca68e4f606c47be1a7698cafc09d4ef5b12"
+    },
+    "testing-performance-benchmarker": {
+      "name": "Performance Benchmarker",
+      "sourcePath": "testing/testing-performance-benchmarker.md",
+      "computedHash": "24dbd3a55cf6ca36c5f8af4081e87859914131199d87b6f90d129643fcfba43e"
+    },
+    "testing-reality-checker": {
+      "name": "Reality Checker",
+      "sourcePath": "testing/testing-reality-checker.md",
+      "computedHash": "6d32fcdb114233e13902ec6372d50293b120e85d490b5e81d372c29808f988a1"
+    },
+    "testing-test-automation-engineer": {
+      "name": "Test Automation Engineer",
+      "sourcePath": "testing/testing-test-automation-engineer.md",
+      "computedHash": "479ba12efa5c19e87b60e3b154170c124ac38c46b95c342f0e3b62537113c0a7"
+    },
+    "testing-test-results-analyzer": {
+      "name": "Test Results Analyzer",
+      "sourcePath": "testing/testing-test-results-analyzer.md",
+      "computedHash": "f080e1e8a5ddadc90dbcb845317afcf56e9889e0ed6568732605d37851cf21d8"
+    },
+    "testing-tool-evaluator": {
+      "name": "Tool Evaluator",
+      "sourcePath": "testing/testing-tool-evaluator.md",
+      "computedHash": "98e9a2b4491ffa1979d45ca5e1ddb9233fe35b98cc44c66c9d8a0b258ee9a2f4"
+    },
+    "testing-workflow-optimizer": {
+      "name": "Workflow Optimizer",
+      "sourcePath": "testing/testing-workflow-optimizer.md",
+      "computedHash": "021ba71e2455071983ce1a6044783bec224b025b864757ce76b2bd4d40c00211"
+    },
+    "unity-architect": {
+      "name": "Unity Architect",
+      "sourcePath": "game-development/unity/unity-architect.md",
+      "computedHash": "15502fbcd46fcd7559bcd85d15b512317ceed27ffb90fc54e79f3c32bf682c1a"
+    },
+    "unity-editor-tool-developer": {
+      "name": "Unity Editor Tool Developer",
+      "sourcePath": "game-development/unity/unity-editor-tool-developer.md",
+      "computedHash": "8b368fe6ee0a4c0c71d10324cd8de4378c7bdaae9bc871a5561199b4a802b5dc"
+    },
+    "unity-multiplayer-engineer": {
+      "name": "Unity Multiplayer Engineer",
+      "sourcePath": "game-development/unity/unity-multiplayer-engineer.md",
+      "computedHash": "61561d24650216ef1907979e1b25e2f77e33537ad2694e8264a1fcdeeeed3a89"
+    },
+    "unity-shader-graph-artist": {
+      "name": "Unity Shader Graph Artist",
+      "sourcePath": "game-development/unity/unity-shader-graph-artist.md",
+      "computedHash": "3e2033f179a95da207627d1d7521395d434ac76c30a3b20f08f90a05b7405c52"
+    },
+    "unreal-multiplayer-architect": {
+      "name": "Unreal Multiplayer Architect",
+      "sourcePath": "game-development/unreal-engine/unreal-multiplayer-architect.md",
+      "computedHash": "666a4d07a6cfaf9d7fb2278dd8eb9de832599d4bb6f65743f305eb6a6546c044"
+    },
+    "unreal-systems-engineer": {
+      "name": "Unreal Systems Engineer",
+      "sourcePath": "game-development/unreal-engine/unreal-systems-engineer.md",
+      "computedHash": "ca34c6be64ee4f60f926a823bee626ab92dced93042a730f99f6fe08c4b7636f"
+    },
+    "unreal-technical-artist": {
+      "name": "Unreal Technical Artist",
+      "sourcePath": "game-development/unreal-engine/unreal-technical-artist.md",
+      "computedHash": "54bdd46bc872ba21fbcf7e02492c9f5bef82a6d3a35ee3de757d3b678edd6b82"
+    },
+    "unreal-world-builder": {
+      "name": "Unreal World Builder",
+      "sourcePath": "game-development/unreal-engine/unreal-world-builder.md",
+      "computedHash": "7d2bf21ac77089b99f1fa36f6102fa938c9014c3107e9dcb9069b896e2b4001e"
+    },
+    "visionos-spatial-engineer": {
+      "name": "visionOS Spatial Engineer",
+      "sourcePath": "spatial-computing/visionos-spatial-engineer.md",
+      "computedHash": "8d154bb42d6952056b0eb3fd0d030e6e22a638f11c16c04b59326973ee08b20d"
+    },
+    "xr-cockpit-interaction-specialist": {
+      "name": "XR Cockpit Interaction Specialist",
+      "sourcePath": "spatial-computing/xr-cockpit-interaction-specialist.md",
+      "computedHash": "c8473bd555ad22da7d4978e94a3aec07ae9519b2080572b409639deb9a8e7110"
+    },
+    "xr-immersive-developer": {
+      "name": "XR Immersive Developer",
+      "sourcePath": "spatial-computing/xr-immersive-developer.md",
+      "computedHash": "a9aa13187bfb774f3eb734ae9869ef249ec3290674f0bb3c1368b69bfa25a2b0"
+    },
+    "xr-interface-architect": {
+      "name": "XR Interface Architect",
+      "sourcePath": "spatial-computing/xr-interface-architect.md",
+      "computedHash": "995b459992ab42162269a3bc607131371206742df9c55a4ef614e0171f34e92b"
+    },
+    "zk-steward": {
+      "name": "ZK Steward",
+      "sourcePath": "specialized/zk-steward.md",
+      "computedHash": "01fdb11cc8df0ada78aa31007c1565a3d118d64e9e97ff86b8dd838782a44082"
+    }
+  }
+}
