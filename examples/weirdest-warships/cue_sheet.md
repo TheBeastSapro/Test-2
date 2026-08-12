@@ -1,6 +1,6 @@
 # The Weirdest Warships from Every Era Explained — sound design cue sheet
 
-Runtime 11:58.17 · 17 music sections · 329 SFX events (661 cues with layers) · 24 ambience beds
+Runtime 11:58.17 · 17 music sections · 330 SFX events (662 cues with layers) · 24 ambience beds
 
 ## Music
 
@@ -68,7 +68,6 @@ Every one read off a contact sheet, then landed on the nearest picture change.
 | 0:13.133 | hero_boom | SYRACUSIA, 240 BC — the whole ship | `boom_01` @ -6 dB |
 | 0:31.900 | hero_hit | a live fish out of the seawater tank | `water_01` @ -9 dB |
 | 0:35.400 | impact | oars in the water; the screw pump clears the bilge | `oar_01` @ -10 dB |
-| 0:58.467 | hero_hit | renamed ALEXANDRIA and given away | `shipbell_01` @ -8 dB |
 | 1:02.133 | hero_hit | she sails for Egypt, once | `sail_03` @ -10 dB |
 | 1:06.733 | hero_boom | "No wreck has ever been found" | `boom_03` @ -6 dB |
 | 1:09.600 | impact | the one surviving description | `paper_02` @ -11 dB |
@@ -80,7 +79,7 @@ Every one read off a contact sheet, then landed on the nearest picture change.
 | 1:36.800 | hero_hit | the wheel bites the water | `gears_05` @ -8 dB |
 | 1:47.133 | impact | twelve wheels on each side | `gears_01` @ -10 dB |
 | 1:58.467 | impact | imperial ships arrive under sail, into no wind | `sail_02` @ -11 dB |
-| 2:02.967 | hero_hit | a paddle warship runs a sailing ship down | `impact_10` @ -7 dB |
+| 2:02.967 | hero_hit | a paddle warship runs a sailing ship down | `impact_02` @ -7 dB |
 | 2:03.733 | impact | and opens her up | `explo_08` @ -8 dB |
 | 2:10.233 | hero_hit | rotten logs go into the water upstream | `water_05` @ -8 dB |
 | 2:12.467 | impact | and the cut weed after them | `water_04` @ -10 dB |
@@ -89,12 +88,12 @@ Every one read off a contact sheet, then landed on the nearest picture change.
 | 2:36.833 | hero_hit | a coal-fired Royal Navy squadron | `steam_04` @ -10 dB |
 | 2:47.267 | whoosh | era card whoosh (into the card) — THE EARLY MODERN AGE | `surge_09` @ -10 dB |
 | 2:47.667 | hero_boom | era card — THE EARLY MODERN AGE | `boom_03` @ -5 dB |
-| 2:53.267 | hero_hit | GEOBUKSEON — the roof, and the spikes | `impact_06` @ -7 dB |
+| 2:53.267 | hero_hit | GEOBUKSEON — the roof, and the spikes | `impact_07` @ -7 dB |
 | 3:11.433 | hero_hit | the dragon head vents smoke | `steam_05` @ -9 dB |
 | 3:22.633 | hero_boom | guns firing through ports on every face | `cannon_07` @ -6 dB |
 | 3:28.833 | impact | the Japanese try to board and find spikes | `footdeck_03` @ -9 dB |
 | 3:40.667 | hero_boom | ANGOLPO — fifty-nine ships | `boom_04` @ -5 dB |
-| 3:52.600 | whoosh | "World's First Ironclad" — the claim arrives | `whoosh_03` @ -12 dB |
+| 3:52.600 | whoosh | "World's First Ironclad" — the claim arrives | `whoosh_02` @ -12 dB |
 | 4:11.967 | hero_boom | VASA — sixty-four guns on two decks | `boom_01` @ -6 dB |
 | 4:17.100 | impact | under full sail, leaving Stockholm | `sail_05` @ -10 dB |
 | 4:35.680 | hero_hit | a gust catches her | `gust_04` @ -7 dB |
@@ -106,14 +105,14 @@ Every one read off a contact sheet, then landed on the nearest picture change.
 | 5:17.000 | impact | one propeller turned by hand | `winch_02` @ -10 dB |
 | 5:22.133 | impact | water into the ballast tank, to sink | `bubbles_02` @ -10 dB |
 | 5:48.470 | hero_hit | he starts drilling into the ship's bottom | `winch_04` @ -8 dB |
-| 5:51.900 | hero_boom | it will not bite | `impact_10` @ -6 dB |
+| 5:51.900 | hero_boom | it will not bite | `impact_02` @ -6 dB |
 | 5:57.800 | impact | an hour of his own exhaled air, in the dark | `breath_01` @ -9 dB |
 | 6:02.900 | impact | he releases the mine and pedals away | `torpedo_01` @ -9 dB |
 | 6:09.200 | hero_boom | it goes off in open water and hurts nobody | `explo_06` @ -7 dB |
 | 6:15.767 | hero_hit | the sloop carrying it goes down off Fort Lee | `water_05` @ -8 dB |
 | 6:25.733 | whoosh | era card whoosh (into the card) — THE IRONCLAD AGE | `surge_07` @ -10 dB |
 | 6:26.133 | hero_boom | era card — THE IRONCLAD AGE | `boom_04` @ -5 dB |
-| 6:29.400 | hero_hit | NOVGOROD — a circle, a hundred and one feet across | `impact_01` @ -7 dB |
+| 6:29.400 | hero_hit | NOVGOROD — a circle, a hundred and one feet across | `impact_05` @ -7 dB |
 | 6:40.467 | impact | Elder's paper: a wider hull, thicker armour | `paper_03` @ -12 dB |
 | 6:59.733 | impact | the navy approves the drawings, December 1869 | `typewriter_02` @ -12 dB |
 | 7:05.100 | hero_hit | two and a half thousand tons on almost no draught | `boom_01` @ -8 dB |
@@ -122,7 +121,7 @@ Every one read off a contact sheet, then landed on the nearest picture change.
 | 7:35.000 | hero_hit | firing her guns spins the whole ship — the story | `cannon_02` @ -8 dB |
 | 7:40.833 | swish | Novgorod turns for home | `wake_02` @ -13 dB |
 | 7:53.567 | impact | slow, wet and awkward to steer — the record | `creak_06` @ -11 dB |
-| 8:04.467 | hero_hit | and they ordered a second one | `impact_03` @ -8 dB |
+| 8:04.467 | hero_hit | and they ordered a second one | `impact_08` @ -8 dB |
 | 8:14.267 | whoosh | era card whoosh (into the card) — WORLD WAR I | `surge_09` @ -10 dB |
 | 8:14.667 | hero_boom | era card — WORLD WAR I | `boom_01` @ -5 dB |
 | 8:17.667 | hero_hit | two steam funnels standing on a submarine's deck | `steam_01` @ -9 dB |
@@ -132,11 +131,11 @@ Every one read off a contact sheet, then landed on the nearest picture change.
 | 9:05.233 | impact | the Grand Fleet sails from Rosyth into mist | `horn_01` @ -12 dB |
 | 9:11.133 | swish | two flotillas, running at speed | `passby_07` @ -13 dB |
 | 9:19.200 | impact | K14 jams her helm and turns out of line | `winch_05` @ -10 dB |
-| 9:21.000 | hero_hit | K22 hits her | `impact_12` @ -7 dB |
-| 9:23.670 | hero_hit | the cruiser Inflexible then hits K22, and she burns | `impact_10` @ -7 dB |
+| 9:21.000 | hero_hit | K22 hits her | `impact_10` @ -7 dB |
+| 9:23.670 | hero_hit | the cruiser Inflexible then hits K22, and she burns | `impact_02` @ -7 dB |
 | 9:26.130 | impact | the flotilla ahead turns back to help | `wake_04` @ -11 dB |
-| 9:33.900 | hero_boom | Fearless strikes K17 at near full speed, and cuts her open | `impact_02` @ -5 dB |
-| 9:39.070 | hero_hit | K6 rams K4, and slices her nearly in half | `impact_11` @ -7 dB |
+| 9:33.900 | hero_boom | Fearless strikes K17 at near full speed, and cuts her open | `impact_11` @ -5 dB |
+| 9:39.070 | hero_hit | K6 rams K4, and slices her nearly in half | `impact_01` @ -7 dB |
 | 9:41.233 | impact | the column alight | `exdist_06` @ -9 dB |
 | 9:44.070 | hero_hit | K17 goes up, and the survivors are in the water under it | `explo_04` @ -8 dB |
 | 9:46.033 | impact | K4 burning as she goes over | `explo_02` @ -8 dB |
@@ -170,13 +169,13 @@ The redraw detector cannot tell a portrait sliding in from a hull being struck. 
 
 ## Density
 
-156 distinct files. Busiest: `body_04` ×23, `body_05` ×23, `body_03` ×23, `body_02` ×22, `body_01` ×22, `swish_01` ×18.
+155 distinct files. Busiest: `body_04` ×23, `body_05` ×23, `body_03` ×23, `body_02` ×22, `body_01` ×22, `swish_01` ×18.
 
 | tier | count |
 |---|---|
 | hero_boom | 24 |
-| hero_hit | 28 |
-| impact | 122 |
-| whoosh | 58 |
+| hero_hit | 27 |
+| impact | 123 |
+| whoosh | 59 |
 | swish | 392 |
 | pop | 37 |

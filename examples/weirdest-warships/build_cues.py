@@ -87,7 +87,6 @@ B += [
  ( 13.220, "SYRACUSIA, 240 BC — the whole ship",                 "boom",    "hero_boom",  -6.0, ["surge"], True),
  ( 32.110, "a live fish out of the seawater tank",               "water",   "hero_hit",   -9.0, None, True),
  ( 35.890, "oars in the water; the screw pump clears the bilge", "oar",     "impact",    -10.0, ["water"], True),
- ( 58.560, "renamed ALEXANDRIA and given away",                  "shipbell","hero_hit",   -8.0, None, True),
  ( 62.330, "she sails for Egypt, once",                          "sail",    "hero_hit",  -10.0, ["surge"], True),
  ( 66.110, "\"No wreck has ever been found\"",                   "boom",    "hero_boom",  -6.0, None, True),
  ( 69.890, "the one surviving description",                      "paper",   "impact",    -11.0, None, True),
@@ -188,6 +187,11 @@ MUTES = [
 
 # ---------------------------------------------------------------- assemble
 cue = dict(AUTO)
+# StickTory ships at -21.5 / -23.1 LUFS; match the louder of the pair so a
+# delivery is never quieter than the back catalogue. YouTube attenuates a hot
+# upload but does not lift a quiet one, so nothing is lost by matching.
+cue["loudness_target_lufs"] = -21.5
+cue["true_peak_ceiling_dbtp"] = -2.0
 ms = []
 for i, (mid, a, b, en, why, track) in enumerate(SECTIONS):
     ms.append({"id": mid, "role": "intro" if i == 0 else ("outro" if i == len(SECTIONS)-1 else "body"),

@@ -472,14 +472,17 @@ def main():
     # floor sits 8.2 and 12.6 dB under programme level. See SKILL.md.
     ap.add_argument("--music-db", type=float, default=0.0,
                     help="extra manual music trim on top of the calibration")
-    ap.add_argument("--bed-target-db", type=float, default=-13.0,
-                    help="put the bed this many dB under the VO, measured (default -13, "
-                         "the level measured on a StickTory mix against its own VO stem). "
+    ap.add_argument("--bed-target-db", type=float, default=-20.0,
+                    help="put the bed this many dB under the VO (default -20, chosen by ear). "
+                         "NOTE: this is an INTEGRATED ratio against a ducked bus, not the "
+                         "gap-measured -13.1 dB of a StickTory mix -- on a continuous VO the "
+                         "two differ by about 6 dB. See SKILL.md. "
                          "Pass 'none' via --no-bed-calibration to disable.")
     ap.add_argument("--no-bed-calibration", action="store_true",
                     help="skip the measured calibration and use --music-db verbatim")
-    ap.add_argument("--sfx-db", type=float, default=0.0,
-                    help="global sfx trim on top of each cue's own gain (-6..-9)")
+    ap.add_argument("--sfx-db", type=float, default=-6.0,
+                    help="global sfx trim on top of each cue's own gain. Default -6, "
+                         "which sits the SFX bus +3.5 dB above a -20 dB bed.")
     ap.add_argument("--no-sfx-polish", action="store_true",
                     help="skip the SFX bus EQ/room chain (see polish_sfx)")
     ap.add_argument("--no-duck", action="store_true")

@@ -10,8 +10,16 @@ mastered VO), do the whole job: analyze → fetch assets from Epidemic → mix �
 mastered file.** This is the layer that runs *after* `explaintory-vo-master` has produced a
 clean VO. The music and SFX sit under that VO; they never fight it.
 
-Deliver: `<Video Title> (mixed).mp3` (or `(final).mp4` if muxing) at **−14 LUFS / −1 dBTP**,
+Deliver: `<Video Title> (mixed).mp3` (or `(final).mp4` if muxing) at **−21.5 LUFS**,
 plus the cue sheet. Report what was placed and the measured loudness.
+
+**CORRECTED on the warships job — deliver at StickTory's own loudness, not −14.**
+Two mixes of his measure −21.5 and −23.1 LUFS; the target is the louder of the pair
+so a delivery is never quieter than his back catalogue. −14 was chosen earlier for
+YouTube's normalisation target and the verdict on hearing it was *"the sfx and music
+is kinda loud... not like sticktory style"* followed by *"match the StickTory
+loudness"*. YouTube attenuates a hot upload anyway; it does not amplify a quiet one,
+so nothing is lost by matching the channel.
 
 ## The two halves
 
@@ -601,6 +609,37 @@ bed can still call one where a crowd is actually on screen. And **check the titl
 file in the auto-assigned pool** — the internal names say `amb_06`, which tells you nothing;
 the Epidemic titles say "Voices, Yells", which tells you everything.
 
+**A long tonal tail is a bed, not a hit — treat it like one.** The Syracusia
+being renamed *Alexandria* got a ship's bell, hero tier, -8 dB. It was reported
+as "annoying", and the cue sheet says why twice over: the file is **7.00 s**
+long, and the thing it was placed on is an `element` of strength 0.011 — a
+caption tick, which the detector had classified correctly before a hand-written
+beat overrode it with a hero cue.
+
+Two rules fall out, and they are cheap to check before rendering:
+
+- **Check the length of anything tonal.** A bell, chime, gong or singing bowl
+  rings for seconds at a definite pitch, so under continuous narration it is a
+  second sustained voice in the same band — the same failure as a crowd
+  ambience, arriving as a "hit" instead of a bed. Non-tonal hits decay into
+  noise and get out of the way; tonal ones do not. Either cast something short
+  and struck, or accept it is a bed and level it like one (-32 dBFS or below).
+- **A caption is a caption even when the words are important.** "Renamed
+  ALEXANDRIA" is a story beat in the script and a small text element on screen.
+  The tier belongs to what is drawn, not to what the sentence means. When a
+  hand-written beat lands on an event the detector called an `element`, that is
+  a signal to check the casting, not to overrule it.
+
+`grep` the sheet for hand beats sitting on small elements before rendering:
+
+```python
+ev = {round(e["t"], 2): e for e in json.load(open("redraw.json"))["events"]}
+for s in cue["sfx_cues"]:
+    e = ev.get(round(s["at"], 2))
+    if e and e["kind"] == "element" and s["tier"].startswith("hero"):
+        print(f'{s["at"]:8.2f}  hero cue on a caption tick: {s["kind"]}')
+```
+
 **Levels for sustained beds, measured against the voice.** The VO sits near -18 dBFS rms
 and the music bed lands near -28. A featured texture like marching at -31 fights the
 narration and was reported as overlapping it; **-37 dBFS** sits under the music and reads
@@ -769,6 +808,42 @@ transients. Verify with `measure_ref.py` on the output, not by trusting the flag
 
 Ducking still applies on top: the bed is at 10% *and* ducks under the voice. Master is
 `loudnorm I=−14:TP=−1:LRA=11`.
+
+## The bed number was measuring the wrong thing — read this before setting a level
+
+The −13 dB bed target below is **correct for StickTory's mixes and wrong for ours**,
+and the reason is not taste. The two numbers are not the same quantity:
+
+- **Theirs** was measured *in the gaps between VO lines* — the bed alone, with the
+  duck released. That is the only way to get it from a published mix.
+- **Ours** was set as the *integrated LUFS of the ducked music bus against the
+  integrated LUFS of the VO* — an average that includes every ducked moment.
+
+Calibrating our average to their gap measurement is not like-for-like, and the error
+runs in the direction of "too loud". Worse, the gap method cannot be applied to our
+own mixes at all: measured on the warships VO at four different silence floors,
+**there are zero gaps of 0.6 s or more in 11:58**, and speech occupies 90–93% of the
+runtime. There is nothing to measure the bed alone in.
+
+On that mix the two figures differ by **5.9 dB**: the calibration was told −20 dB
+and what the bed actually does under speech is **−25.9 dB**. So a `--bed-target-db`
+value is roughly 6 dB hotter than what a viewer hears under the narration.
+
+**What to do:**
+- Treat `--bed-target-db` as an internal control, not as a StickTory comparison.
+  **−20 is the chosen value**, and it was arrived at by ear over three rounds:
+  −13 (their gap figure) was reported loud, and −20 is also exactly Sapro's original
+  standing instruction to human sound designers, which was 10%.
+- Report both numbers when handing over — the target you set *and* the measured
+  under-speech figure — because only the second one describes what is heard.
+- `--sfx-db -6` alongside it, which keeps hits **+3.5 dB above the bed**. Hits must
+  stay above the bed at any bed level; that part of the reference holds.
+
+```python
+# what the bed is really doing, on any mix, gaps or no gaps
+sp = vo_env_db > -45
+under_speech = np.median(music_env_db[sp]) - np.median(vo_env_db[sp])
+```
 
 ## Calibrating from Sticktory — measure, never listen
 

@@ -3,8 +3,8 @@
  "video": "video.mp4",
  "vo": "vo.mp3",
  "duration": 718.171,
- "loudness_target_lufs": -14.0,
- "true_peak_ceiling_dbtp": -1.0,
+ "loudness_target_lufs": -21.5,
+ "true_peak_ceiling_dbtp": -2.0,
  "measured": {
   "scene_cuts": [
    1.8,
@@ -454,17 +454,6 @@
   },
   {
    "id": "h8",
-   "at": 58.467,
-   "kind": "renamed ALEXANDRIA and given away",
-   "cat": "shipbell",
-   "tier": "hero_hit",
-   "gain_db": -8.0,
-   "stack": null,
-   "solo_ok": true,
-   "moved_ms": -93
-  },
-  {
-   "id": "h9",
    "at": 62.133,
    "kind": "she sails for Egypt, once",
    "cat": "sail",
@@ -477,7 +466,7 @@
    "moved_ms": -197
   },
   {
-   "id": "h10",
+   "id": "h9",
    "at": 66.733,
    "kind": "\"No wreck has ever been found\"",
    "cat": "boom",
@@ -488,7 +477,7 @@
    "moved_ms": 623
   },
   {
-   "id": "h11",
+   "id": "h10",
    "at": 69.6,
    "kind": "the one surviving description",
    "cat": "paper",
@@ -499,7 +488,7 @@
    "moved_ms": -290
   },
   {
-   "id": "h12",
+   "id": "h11",
    "at": 72.667,
    "kind": "Moschion writes it down",
    "cat": "quill",
@@ -510,7 +499,7 @@
    "moved_ms": -1003
   },
   {
-   "id": "h13",
+   "id": "h12",
    "at": 80.767,
    "kind": "era card whoosh (into the card) \u2014 THE MIDDLE AGES",
    "cat": "surge",
@@ -521,7 +510,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h14",
+   "id": "h13",
    "at": 81.167,
    "kind": "era card \u2014 THE MIDDLE AGES",
    "cat": "boom",
@@ -534,7 +523,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h15",
+   "id": "h14",
    "at": 88.567,
    "kind": "PADDLE WHEEL WARSHIP \u2014 the wheel",
    "cat": "gears",
@@ -547,7 +536,7 @@
    "moved_ms": -213
   },
   {
-   "id": "h16",
+   "id": "h15",
    "at": 92.467,
    "kind": "men walking treadmills inside the hull",
    "cat": "footdeck",
@@ -560,7 +549,7 @@
    "moved_ms": -93
   },
   {
-   "id": "h17",
+   "id": "h16",
    "at": 96.8,
    "kind": "the wheel bites the water",
    "cat": "gears",
@@ -573,7 +562,7 @@
    "moved_ms": 470
   },
   {
-   "id": "h18",
+   "id": "h17",
    "at": 107.133,
    "kind": "twelve wheels on each side",
    "cat": "gears",
@@ -584,7 +573,7 @@
    "moved_ms": -537
   },
   {
-   "id": "h19",
+   "id": "h18",
    "at": 118.467,
    "kind": "imperial ships arrive under sail, into no wind",
    "cat": "sail",
@@ -595,7 +584,7 @@
    "moved_ms": -533
   },
   {
-   "id": "h20",
+   "id": "h19",
    "at": 122.967,
    "kind": "a paddle warship runs a sailing ship down",
    "cat": "impact",
@@ -609,7 +598,7 @@
    "moved_ms": 187
   },
   {
-   "id": "h21",
+   "id": "h20",
    "at": 123.733,
    "kind": "and opens her up",
    "cat": "explo",
@@ -622,7 +611,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h22",
+   "id": "h21",
    "at": 130.233,
    "kind": "rotten logs go into the water upstream",
    "cat": "water",
@@ -633,7 +622,7 @@
    "moved_ms": -97
   },
   {
-   "id": "h23",
+   "id": "h22",
    "at": 132.467,
    "kind": "and the cut weed after them",
    "cat": "water",
@@ -644,7 +633,7 @@
    "moved_ms": 67
   },
   {
-   "id": "h24",
+   "id": "h23",
    "at": 137.933,
    "kind": "the weed fouls the wheel",
    "cat": "creak",
@@ -657,7 +646,7 @@
    "moved_ms": 43
   },
   {
-   "id": "h25",
+   "id": "h24",
    "at": 145.567,
    "kind": "the wheels jam: a wooden box full of exhausted men",
    "cat": "boom",
@@ -670,7 +659,7 @@
    "moved_ms": 127
   },
   {
-   "id": "h26",
+   "id": "h25",
    "at": 156.833,
    "kind": "a coal-fired Royal Navy squadron",
    "cat": "steam",
@@ -683,7 +672,7 @@
    "moved_ms": 53
   },
   {
-   "id": "h27",
+   "id": "h26",
    "at": 167.267,
    "kind": "era card whoosh (into the card) \u2014 THE EARLY MODERN AGE",
    "cat": "surge",
@@ -694,7 +683,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h28",
+   "id": "h27",
    "at": 167.667,
    "kind": "era card \u2014 THE EARLY MODERN AGE",
    "cat": "boom",
@@ -707,7 +696,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h29",
+   "id": "h28",
    "at": 173.267,
    "kind": "GEOBUKSEON \u2014 the roof, and the spikes",
    "cat": "impact",
@@ -720,7 +709,7 @@
    "moved_ms": 267
   },
   {
-   "id": "h30",
+   "id": "h29",
    "at": 191.433,
    "kind": "the dragon head vents smoke",
    "cat": "steam",
@@ -731,7 +720,7 @@
    "moved_ms": 433
   },
   {
-   "id": "h31",
+   "id": "h30",
    "at": 202.633,
    "kind": "guns firing through ports on every face",
    "cat": "cannon",
@@ -744,7 +733,7 @@
    "moved_ms": -367
   },
   {
-   "id": "h32",
+   "id": "h31",
    "at": 208.833,
    "kind": "the Japanese try to board and find spikes",
    "cat": "footdeck",
@@ -757,7 +746,7 @@
    "moved_ms": -167
   },
   {
-   "id": "h33",
+   "id": "h32",
    "at": 220.667,
    "kind": "ANGOLPO \u2014 fifty-nine ships",
    "cat": "boom",
@@ -770,7 +759,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h34",
+   "id": "h33",
    "at": 232.6,
    "kind": "\"World's First Ironclad\" \u2014 the claim arrives",
    "cat": "whoosh",
@@ -781,7 +770,7 @@
    "moved_ms": -400
   },
   {
-   "id": "h35",
+   "id": "h34",
    "at": 251.967,
    "kind": "VASA \u2014 sixty-four guns on two decks",
    "cat": "boom",
@@ -794,7 +783,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h36",
+   "id": "h35",
    "at": 257.1,
    "kind": "under full sail, leaving Stockholm",
    "cat": "sail",
@@ -805,7 +794,7 @@
    "moved_ms": 100
   },
   {
-   "id": "h37",
+   "id": "h36",
    "at": 275.68,
    "kind": "a gust catches her",
    "cat": "gust",
@@ -818,7 +807,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h38",
+   "id": "h37",
    "at": 276.19,
    "kind": "she heels and the open lower gunports go under",
    "cat": "water",
@@ -832,7 +821,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h39",
+   "id": "h38",
    "at": 277.21,
    "kind": "gone, thirteen hundred metres from the quay",
    "cat": "surge",
@@ -845,7 +834,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h40",
+   "id": "h39",
    "at": 290.233,
    "kind": "era card whoosh (into the card) \u2014 THE AGE OF SAIL",
    "cat": "surge",
@@ -856,7 +845,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h41",
+   "id": "h40",
    "at": 290.633,
    "kind": "era card \u2014 THE AGE OF SAIL",
    "cat": "boom",
@@ -869,7 +858,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h42",
+   "id": "h41",
    "at": 305.0,
    "kind": "gunpowder will detonate underwater",
    "cat": "uwexp",
@@ -882,7 +871,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h43",
+   "id": "h42",
    "at": 317.0,
    "kind": "one propeller turned by hand",
    "cat": "winch",
@@ -893,7 +882,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h44",
+   "id": "h43",
    "at": 322.133,
    "kind": "water into the ballast tank, to sink",
    "cat": "bubbles",
@@ -906,7 +895,7 @@
    "moved_ms": -867
   },
   {
-   "id": "h45",
+   "id": "h44",
    "at": 348.47,
    "kind": "he starts drilling into the ship's bottom",
    "cat": "winch",
@@ -919,7 +908,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h46",
+   "id": "h45",
    "at": 351.9,
    "kind": "it will not bite",
    "cat": "impact",
@@ -930,7 +919,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h47",
+   "id": "h46",
    "at": 357.8,
    "kind": "an hour of his own exhaled air, in the dark",
    "cat": "breath",
@@ -941,7 +930,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h48",
+   "id": "h47",
    "at": 362.9,
    "kind": "he releases the mine and pedals away",
    "cat": "torpedo",
@@ -954,7 +943,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h49",
+   "id": "h48",
    "at": 369.2,
    "kind": "it goes off in open water and hurts nobody",
    "cat": "explo",
@@ -968,7 +957,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h50",
+   "id": "h49",
    "at": 375.767,
    "kind": "the sloop carrying it goes down off Fort Lee",
    "cat": "water",
@@ -981,7 +970,7 @@
    "moved_ms": -33
   },
   {
-   "id": "h51",
+   "id": "h50",
    "at": 385.733,
    "kind": "era card whoosh (into the card) \u2014 THE IRONCLAD AGE",
    "cat": "surge",
@@ -992,7 +981,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h52",
+   "id": "h51",
    "at": 386.133,
    "kind": "era card \u2014 THE IRONCLAD AGE",
    "cat": "boom",
@@ -1005,7 +994,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h53",
+   "id": "h52",
    "at": 389.4,
    "kind": "NOVGOROD \u2014 a circle, a hundred and one feet across",
    "cat": "impact",
@@ -1018,7 +1007,7 @@
    "moved_ms": 400
   },
   {
-   "id": "h54",
+   "id": "h53",
    "at": 400.467,
    "kind": "Elder's paper: a wider hull, thicker armour",
    "cat": "paper",
@@ -1029,7 +1018,7 @@
    "moved_ms": -533
   },
   {
-   "id": "h55",
+   "id": "h54",
    "at": 419.733,
    "kind": "the navy approves the drawings, December 1869",
    "cat": "typewriter",
@@ -1040,7 +1029,7 @@
    "moved_ms": 33
   },
   {
-   "id": "h56",
+   "id": "h55",
    "at": 425.1,
    "kind": "two and a half thousand tons on almost no draught",
    "cat": "boom",
@@ -1053,7 +1042,7 @@
    "moved_ms": 100
   },
   {
-   "id": "h57",
+   "id": "h56",
    "at": 431.067,
    "kind": "two eleven-inch guns in an open barbette",
    "cat": "cannon",
@@ -1064,7 +1053,7 @@
    "moved_ms": 67
   },
   {
-   "id": "h58",
+   "id": "h57",
    "at": 442.6,
    "kind": "Fred T. Jane writes the story down",
    "cat": "quill",
@@ -1075,7 +1064,7 @@
    "moved_ms": -400
   },
   {
-   "id": "h59",
+   "id": "h58",
    "at": 455.0,
    "kind": "firing her guns spins the whole ship \u2014 the story",
    "cat": "cannon",
@@ -1088,7 +1077,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h60",
+   "id": "h59",
    "at": 460.833,
    "kind": "Novgorod turns for home",
    "cat": "wake",
@@ -1099,7 +1088,7 @@
    "moved_ms": -167
   },
   {
-   "id": "h61",
+   "id": "h60",
    "at": 473.567,
    "kind": "slow, wet and awkward to steer \u2014 the record",
    "cat": "creak",
@@ -1112,7 +1101,7 @@
    "moved_ms": 567
   },
   {
-   "id": "h62",
+   "id": "h61",
    "at": 484.467,
    "kind": "and they ordered a second one",
    "cat": "impact",
@@ -1125,7 +1114,7 @@
    "moved_ms": -533
   },
   {
-   "id": "h63",
+   "id": "h62",
    "at": 494.267,
    "kind": "era card whoosh (into the card) \u2014 WORLD WAR I",
    "cat": "surge",
@@ -1136,7 +1125,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h64",
+   "id": "h63",
    "at": 494.667,
    "kind": "era card \u2014 WORLD WAR I",
    "cat": "boom",
@@ -1149,7 +1138,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h65",
+   "id": "h64",
    "at": 497.667,
    "kind": "two steam funnels standing on a submarine's deck",
    "cat": "steam",
@@ -1162,7 +1151,7 @@
    "moved_ms": 667
   },
   {
-   "id": "h66",
+   "id": "h65",
    "at": 503.333,
    "kind": "diving: shut down, fold the funnels, clamp them",
    "cat": "alarm",
@@ -1175,7 +1164,7 @@
    "moved_ms": 333
   },
   {
-   "id": "h67",
+   "id": "h66",
    "at": 513.4,
    "kind": "the K-boat holding station at twenty-four knots",
    "cat": "wake",
@@ -1186,7 +1175,7 @@
    "moved_ms": 400
   },
   {
-   "id": "h68",
+   "id": "h67",
    "at": 520.967,
    "kind": "thirty separate openings, closed by hand",
    "cat": "hatch",
@@ -1199,7 +1188,7 @@
    "moved_ms": -33
   },
   {
-   "id": "h69",
+   "id": "h68",
    "at": 545.233,
    "kind": "the Grand Fleet sails from Rosyth into mist",
    "cat": "horn",
@@ -1212,7 +1201,7 @@
    "moved_ms": 233
   },
   {
-   "id": "h70",
+   "id": "h69",
    "at": 551.133,
    "kind": "two flotillas, running at speed",
    "cat": "passby",
@@ -1223,7 +1212,7 @@
    "moved_ms": 133
   },
   {
-   "id": "h71",
+   "id": "h70",
    "at": 559.2,
    "kind": "K14 jams her helm and turns out of line",
    "cat": "winch",
@@ -1237,7 +1226,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h72",
+   "id": "h71",
    "at": 561.0,
    "kind": "K22 hits her",
    "cat": "impact",
@@ -1251,7 +1240,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h73",
+   "id": "h72",
    "at": 563.67,
    "kind": "the cruiser Inflexible then hits K22, and she burns",
    "cat": "impact",
@@ -1265,7 +1254,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h74",
+   "id": "h73",
    "at": 566.13,
    "kind": "the flotilla ahead turns back to help",
    "cat": "wake",
@@ -1278,7 +1267,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h75",
+   "id": "h74",
    "at": 573.9,
    "kind": "Fearless strikes K17 at near full speed, and cuts her open",
    "cat": "impact",
@@ -1293,7 +1282,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h76",
+   "id": "h75",
    "at": 579.07,
    "kind": "K6 rams K4, and slices her nearly in half",
    "cat": "impact",
@@ -1308,7 +1297,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h77",
+   "id": "h76",
    "at": 581.233,
    "kind": "the column alight",
    "cat": "exdist",
@@ -1319,7 +1308,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h78",
+   "id": "h77",
    "at": 584.07,
    "kind": "K17 goes up, and the survivors are in the water under it",
    "cat": "explo",
@@ -1333,7 +1322,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h79",
+   "id": "h78",
    "at": 586.033,
    "kind": "K4 burning as she goes over",
    "cat": "explo",
@@ -1346,7 +1335,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h80",
+   "id": "h79",
    "at": 589.367,
    "kind": "still burning at seventy-five minutes",
    "cat": "exdist",
@@ -1357,7 +1346,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h81",
+   "id": "h80",
    "at": 598.467,
    "kind": "a hundred and four men died",
    "cat": "boom",
@@ -1368,7 +1357,7 @@
    "moved_ms": -533
   },
   {
-   "id": "h82",
+   "id": "h81",
    "at": 604.933,
    "kind": "the transcripts go into a locked file for seventy years",
    "cat": "paper",
@@ -1381,7 +1370,7 @@
    "moved_ms": -67
   },
   {
-   "id": "h83",
+   "id": "h82",
    "at": 615.2,
    "kind": "era card whoosh (into the card) \u2014 WORLD WAR II",
    "cat": "surge",
@@ -1392,7 +1381,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h84",
+   "id": "h83",
    "at": 615.6,
    "kind": "era card \u2014 WORLD WAR II",
    "cat": "boom",
@@ -1405,7 +1394,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h85",
+   "id": "h84",
    "at": 623.267,
    "kind": "SURCOUF \u2014 heavy-cruiser calibre on a submarine",
    "cat": "boom",
@@ -1418,7 +1407,7 @@
    "moved_ms": 267
   },
   {
-   "id": "h86",
+   "id": "h85",
    "at": 641.0,
    "kind": "ten torpedo tubes, six hundred rounds below",
    "cat": "torpedo",
@@ -1429,7 +1418,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h87",
+   "id": "h86",
    "at": 647.267,
    "kind": "the Besson floatplane, craned into the water",
    "cat": "plane",
@@ -1442,7 +1431,7 @@
    "moved_ms": 267
   },
   {
-   "id": "h88",
+   "id": "h87",
    "at": 652.8,
    "kind": "she surfaces and sets the convoy alight",
    "cat": "cannon",
@@ -1456,7 +1445,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h89",
+   "id": "h88",
    "at": 653.6,
    "kind": "the escort with it",
    "cat": "explo",
@@ -1469,7 +1458,7 @@
    "moved_ms": 0
   },
   {
-   "id": "h90",
+   "id": "h89",
    "at": 659.0,
    "kind": "France fell in 1940",
    "cat": "boom",
@@ -1480,7 +1469,7 @@
    "moved_ms": -440
   },
   {
-   "id": "h91",
+   "id": "h90",
    "at": 690.067,
    "kind": "the freighter strikes something submerged",
    "cat": "body",
@@ -1494,7 +1483,7 @@
    "moved_ms": -153
   },
   {
-   "id": "h92",
+   "id": "h91",
    "at": 707.533,
    "kind": "nobody has ever found her",
    "cat": "surge",
