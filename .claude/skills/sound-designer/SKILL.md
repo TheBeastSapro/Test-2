@@ -174,6 +174,28 @@ assets in, live playback with Web Audio ducking out, live bed/duck/SFX faders, a
 **Export cues.json** that carries the tuned values back to `assemble.py`. Point Sapro at it when
 he wants to *tune* rather than *check*. It reads files locally; nothing uploads.
 
+## A stem trim is not a bus trim — the room tone is inside the SFX stem
+
+Recombining `stems/` at different gains is the right way to A/B a level question
+in seconds instead of re-rendering for ten minutes. It has one trap, and it was
+walked into: `assemble.py` merges the ambience beds **into the SFX bus** after the
+polish stage, so the written `sfx.wav` stem contains hits *and* room tone. Trimming
+that stem cuts both.
+
+A real render does not do that. `--sfx-db` is added inside `render_sfx_short`, so it
+reaches the hits only; every bed keeps its own per-bed `gain_db`, solved from that
+file's measured rms. That distinction is the whole point of the bed system — a bed
+at -42 dBFS "is never consciously heard and its absence is" — and a stem trim
+quietly undoes it. Two rounds of level notes were answered with A/B renders that
+were also 6 dB down on the room tone, i.e. answering a "too loud" note by making
+the mix dry.
+
+**Use stem recombination to find the number, then re-render to ship it.** And when
+reporting, do not quote the SFX bus average as if it described the hits: with beds
+merged in, the average is dominated by continuous room tone, not by transients. On
+the warships mix, dropping every hit by 2.5 dB moved the bus average by **0.5 dB**.
+Quote the trim you applied to the hits, and the bed's level, separately.
+
 ## Previewing (how Sapro actually hears it)
 
 He is on a remote container — he cannot open files on this machine. **Send the rendered file
