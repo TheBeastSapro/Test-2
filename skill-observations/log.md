@@ -58,3 +58,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a rule to the investigation phase for user-supplied hypotheses: treat the proposed cause as one candidate among several, never the default. Run two cheap checks before answering — (1) timeline: could the suspected change have been present when the symptom was first observed? (2) magnitude: measure the suspect and at least one alternative candidate in the same units, and compare. Report the measurements, not just the verdict, and say plainly when the user's hypothesis is wrong.
 
 **Principle:** The most recent change is the most suspected and the least likely to have been measured. A causal claim that arrives with the question deserves the same evidence bar as one you would have proposed yourself — confirm it with a timeline check and a measured comparison, or contradict it with them.
+
+### Observation 4: Declared configuration is a request, not a result — verify the runtime state
+
+**Status:** OPEN
+**Date:** 2026-08-12
+**Session context:** A project settings file declared three plugin marketplaces and marked three plugins as enabled. The user believed they had been running for a long time. None were installed: that settings key is only honoured at user scope, and an entry at project scope is silently dropped — no error, no warning, and the file reads exactly like a working configuration.
+**Skill:** context-engineering
+**Type:** open-source
+**Phase/Area:** Project configuration — verifying that configuration took effect
+
+**Issue:** Configuring a project is treated as finished when the config file says the right thing. But config systems commonly have scope boundaries (user vs project vs local), and the near-universal failure behaviour at a boundary is to ignore the entry rather than reject it. The result is config that is indistinguishable from working config by reading alone, and can sit broken indefinitely — here it survived long enough that the user was surprised, and it also produced a false lead when diagnosing an unrelated performance problem, because the declared-but-absent components looked like plausible suspects. Nothing in the workflow required checking the runtime side: one command listing what was actually installed settled in seconds what reading the file could never have settled.
+
+**Suggested improvement:** Add a verification step to the context-engineering skill's project-configuration guidance: after writing or auditing any config that registers external components (plugins, extensions, marketplaces, MCP servers, hooks), query the runtime for what is actually loaded and diff it against what is declared. Prefer the tool's own list/status command over reading the file back. Note explicitly that scope-boundary rejections are usually silent, so "the file is correct" is not evidence the component is active — and that on ephemeral or per-session environments, a component installed at user scope must be reinstalled by a session-start step or it silently disappears again.
+
+**Principle:** Reading a config file tells you what was requested; only the runtime tells you what was granted. Any configuration whose effect crosses a scope, a process, or a machine boundary must be verified by observing the running system, because the common failure mode there is silence, not an error.

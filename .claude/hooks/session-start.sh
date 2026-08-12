@@ -64,6 +64,11 @@ if [ -f "$REPO_DIR/.claude/tools/tweet-read.py" ]; then
   ln -sf "$REPO_DIR/.claude/tools/tweet-read.py" "$BIN_DIR/tweet"
 fi
 
+# Claude Code plugins live in ~/.claude/plugins (user scope), which the
+# container throws away, so they get rebuilt here too. Done before the two slow
+# steps below so the plugin registry is populated as early as possible.
+bash "$REPO_DIR/.claude/scripts/install-plugins.sh" || true
+
 # Optional: set these as environment secrets on the Claude Code environment to
 # have Twitter and Reddit come up authenticated instead of needing a paste each
 # session. Unset means those channels stay in "needs login" state.
