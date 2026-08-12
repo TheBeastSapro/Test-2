@@ -8,6 +8,9 @@ stems/
 manifest.json
 cues.json
 cues.md
+
+# ...but a finished job's sheet is the record, like deadliest-sword's
+!examples/*/cues.json
 *.mp3
 *.mp4
 *.wav
