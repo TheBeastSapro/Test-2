@@ -1,0 +1,1689 @@
+{
+ "schema": "sound-designer/cue-sheet@1",
+ "video": "video.mp4",
+ "vo": "vo.mp3",
+ "duration": 718.171,
+ "loudness_target_lufs": -14.0,
+ "true_peak_ceiling_dbtp": -1.0,
+ "measured": {
+  "scene_cuts": [
+   1.8,
+   10.933,
+   14.6,
+   20.633,
+   25.933,
+   27.967,
+   31.167,
+   34.6,
+   35.4,
+   36.8,
+   38.4,
+   47.967,
+   54.767,
+   57.633,
+   62.133,
+   64.733,
+   68.433,
+   75.3,
+   82.5,
+   90.6,
+   92.8,
+   96.8,
+   109.4,
+   112.8,
+   124.6,
+   129.067,
+   134.133,
+   146.433,
+   147.9,
+   151.733,
+   153.267,
+   160.067,
+   184.5,
+   235.1,
+   246.0,
+   251.967,
+   257.1,
+   259.8,
+   263.167,
+   283.267,
+   292.133,
+   297.6,
+   335.5,
+   371.667,
+   375.767,
+   408.567,
+   451.5,
+   453.8,
+   496.1,
+   516.1,
+   524.633,
+   527.133,
+   530.233,
+   540.6,
+   555.833,
+   557.767,
+   603.6,
+   604.933,
+   606.233,
+   609.1,
+   617.1,
+   620.567,
+   644.067,
+   646.067,
+   658.267,
+   675.333,
+   677.067,
+   685.7,
+   690.7,
+   695.1,
+   700.033
+  ],
+  "voiced_regions": [
+   [
+    0.0,
+    717.549
+   ]
+  ],
+  "silence": [
+   [
+    717.549,
+    718.723
+   ]
+  ]
+ },
+ "music_sections": [
+  {
+   "id": "m1",
+   "role": "intro",
+   "start": 0.0,
+   "end": 34.6,
+   "dur": 34.6,
+   "energy": 0.52,
+   "energy_label": "Syracusia: the garden, the town that floated",
+   "track": "Those Who Wander",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 0.4,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m1.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m2",
+   "role": "body",
+   "start": 34.6,
+   "end": 81.167,
+   "dur": 46.567,
+   "energy": 0.44,
+   "energy_label": "she never fought, and then vanished",
+   "track": "Something Peculiar",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m2.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m3",
+   "role": "body",
+   "start": 81.167,
+   "end": 124.6,
+   "dur": 43.433,
+   "energy": 0.58,
+   "energy_label": "the paddle wheel warship, men on treadmills",
+   "track": "Infernal Machine",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m3.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m4",
+   "role": "body",
+   "start": 124.6,
+   "end": 167.667,
+   "dur": 43.067,
+   "energy": 0.62,
+   "energy_label": "Yue Fei's weed and logs, then the Opium War",
+   "track": "Fool Me Twice",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m4.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m5",
+   "role": "body",
+   "start": 167.667,
+   "end": 220.667,
+   "dur": 53.0,
+   "energy": 0.6,
+   "energy_label": "the turtle ship and its roof",
+   "track": "At Enemy Lines",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m5.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m6",
+   "role": "body",
+   "start": 220.667,
+   "end": 251.967,
+   "dur": 31.3,
+   "energy": 0.5,
+   "energy_label": "Angolpo, and the ironclad claim",
+   "track": "Make No Mistakes",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m6.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m7",
+   "role": "body",
+   "start": 251.967,
+   "end": 290.633,
+   "dur": 38.666,
+   "energy": 0.68,
+   "energy_label": "Vasa: the maiden voyage",
+   "track": "The Last Disaster",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m7.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m8",
+   "role": "body",
+   "start": 290.633,
+   "end": 335.5,
+   "dur": 44.867,
+   "energy": 0.54,
+   "energy_label": "Bushnell builds the Turtle",
+   "track": "Seekers and Finders",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m8.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m9",
+   "role": "body",
+   "start": 335.5,
+   "end": 386.133,
+   "dur": 50.633,
+   "energy": 0.62,
+   "energy_label": "Ezra Lee under HMS Eagle",
+   "track": "It's Not a Game",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m9.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m10",
+   "role": "body",
+   "start": 386.133,
+   "end": 444.6,
+   "dur": 58.467,
+   "energy": 0.5,
+   "energy_label": "Novgorod: a circle with guns on it",
+   "track": "The King of Thieves",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m10.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m11",
+   "role": "body",
+   "start": 444.6,
+   "end": 494.667,
+   "dur": 50.067,
+   "energy": 0.48,
+   "energy_label": "the spinning story against the service record",
+   "track": "Confidentiality",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m11.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m12",
+   "role": "body",
+   "start": 494.667,
+   "end": 540.6,
+   "dur": 45.933,
+   "energy": 0.55,
+   "energy_label": "the K-boats, and five minutes to dive",
+   "track": "Wiretapped",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m12.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m13",
+   "role": "body",
+   "start": 540.6,
+   "end": 603.6,
+   "dur": 63.0,
+   "energy": 0.54,
+   "energy_label": "the night of 31 January 1918",
+   "track": "Estimations",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m13.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m14",
+   "role": "body",
+   "start": 603.6,
+   "end": 615.6,
+   "dur": 12.0,
+   "energy": 0.3,
+   "energy_label": "a hundred and four men, and a locked file",
+   "track": "The Changeing",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m14.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m15",
+   "role": "body",
+   "start": 615.6,
+   "end": 658.267,
+   "dur": 42.667,
+   "energy": 0.58,
+   "energy_label": "Surcouf: cruiser guns on a submarine",
+   "track": "Rise to Power",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m15.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m16",
+   "role": "body",
+   "start": 658.267,
+   "end": 690.7,
+   "dur": 32.433,
+   "energy": 0.52,
+   "energy_label": "France falls; nobody has a job for her",
+   "track": "Tragedy Unfolds",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m16.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m17",
+   "role": "outro",
+   "start": 690.7,
+   "end": 718.171,
+   "dur": 27.471,
+   "energy": 0.36,
+   "energy_label": "she was never found",
+   "track": "Alluvion",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/work/warships/assets/m17.wav",
+   "gain_db": 0.0
+  }
+ ],
+ "sfx_cues": [
+  {
+   "id": "h1",
+   "at": 0.0,
+   "kind": "era card whoosh (into the card) \u2014 THE ANCIENT WORLD",
+   "cat": "surge",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h2",
+   "at": 0.4,
+   "kind": "era card \u2014 THE ANCIENT WORLD",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h3",
+   "at": 1.8,
+   "kind": "card clears to the garden on the deck",
+   "cat": "gust",
+   "tier": "whoosh",
+   "gain_db": -13.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h4",
+   "at": 9.267,
+   "kind": "the catapult, loaded with an eighty-kilo stone",
+   "cat": "catapult",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "stone"
+   ],
+   "solo_ok": true,
+   "moved_ms": -173
+  },
+  {
+   "id": "h5",
+   "at": 13.133,
+   "kind": "SYRACUSIA, 240 BC \u2014 the whole ship",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": -87
+  },
+  {
+   "id": "h6",
+   "at": 31.9,
+   "kind": "a live fish out of the seawater tank",
+   "cat": "water",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -210
+  },
+  {
+   "id": "h7",
+   "at": 35.4,
+   "kind": "oars in the water; the screw pump clears the bilge",
+   "cat": "oar",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": -490
+  },
+  {
+   "id": "h8",
+   "at": 58.467,
+   "kind": "renamed ALEXANDRIA and given away",
+   "cat": "shipbell",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -93
+  },
+  {
+   "id": "h9",
+   "at": 62.133,
+   "kind": "she sails for Egypt, once",
+   "cat": "sail",
+   "tier": "hero_hit",
+   "gain_db": -10.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": -197
+  },
+  {
+   "id": "h10",
+   "at": 66.733,
+   "kind": "\"No wreck has ever been found\"",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 623
+  },
+  {
+   "id": "h11",
+   "at": 69.6,
+   "kind": "the one surviving description",
+   "cat": "paper",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -290
+  },
+  {
+   "id": "h12",
+   "at": 72.667,
+   "kind": "Moschion writes it down",
+   "cat": "quill",
+   "tier": "swish",
+   "gain_db": -14.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -1003
+  },
+  {
+   "id": "h13",
+   "at": 80.767,
+   "kind": "era card whoosh (into the card) \u2014 THE MIDDLE AGES",
+   "cat": "surge",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h14",
+   "at": 81.167,
+   "kind": "era card \u2014 THE MIDDLE AGES",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h15",
+   "at": 88.567,
+   "kind": "PADDLE WHEEL WARSHIP \u2014 the wheel",
+   "cat": "gears",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "creak"
+   ],
+   "solo_ok": true,
+   "moved_ms": -213
+  },
+  {
+   "id": "h16",
+   "at": 92.467,
+   "kind": "men walking treadmills inside the hull",
+   "cat": "footdeck",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "gears"
+   ],
+   "solo_ok": true,
+   "moved_ms": -93
+  },
+  {
+   "id": "h17",
+   "at": 96.8,
+   "kind": "the wheel bites the water",
+   "cat": "gears",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": 470
+  },
+  {
+   "id": "h18",
+   "at": 107.133,
+   "kind": "twelve wheels on each side",
+   "cat": "gears",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -537
+  },
+  {
+   "id": "h19",
+   "at": 118.467,
+   "kind": "imperial ships arrive under sail, into no wind",
+   "cat": "sail",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -533
+  },
+  {
+   "id": "h20",
+   "at": 122.967,
+   "kind": "a paddle warship runs a sailing ship down",
+   "cat": "impact",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "woodbreak",
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": 187
+  },
+  {
+   "id": "h21",
+   "at": 130.233,
+   "kind": "rotten logs go into the water upstream",
+   "cat": "water",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -97
+  },
+  {
+   "id": "h22",
+   "at": 132.467,
+   "kind": "and the cut weed after them",
+   "cat": "water",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 67
+  },
+  {
+   "id": "h23",
+   "at": 137.933,
+   "kind": "the weed fouls the wheel",
+   "cat": "creak",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": [
+    "gears"
+   ],
+   "solo_ok": true,
+   "moved_ms": 43
+  },
+  {
+   "id": "h24",
+   "at": 145.567,
+   "kind": "the wheels jam: a wooden box full of exhausted men",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "woodbreak"
+   ],
+   "solo_ok": true,
+   "moved_ms": 127
+  },
+  {
+   "id": "h25",
+   "at": 156.833,
+   "kind": "a coal-fired Royal Navy squadron",
+   "cat": "steam",
+   "tier": "hero_hit",
+   "gain_db": -10.0,
+   "stack": [
+    "horn"
+   ],
+   "solo_ok": true,
+   "moved_ms": 53
+  },
+  {
+   "id": "h26",
+   "at": 167.267,
+   "kind": "era card whoosh (into the card) \u2014 THE EARLY MODERN AGE",
+   "cat": "surge",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h27",
+   "at": 167.667,
+   "kind": "era card \u2014 THE EARLY MODERN AGE",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h28",
+   "at": 173.267,
+   "kind": "GEOBUKSEON \u2014 the roof, and the spikes",
+   "cat": "impact",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "chain"
+   ],
+   "solo_ok": true,
+   "moved_ms": 267
+  },
+  {
+   "id": "h29",
+   "at": 191.433,
+   "kind": "the dragon head vents smoke",
+   "cat": "steam",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 433
+  },
+  {
+   "id": "h30",
+   "at": 202.633,
+   "kind": "guns firing through ports on every face",
+   "cat": "cannon",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": -367
+  },
+  {
+   "id": "h31",
+   "at": 208.833,
+   "kind": "the Japanese try to board and find spikes",
+   "cat": "footdeck",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "impact"
+   ],
+   "solo_ok": true,
+   "moved_ms": -167
+  },
+  {
+   "id": "h32",
+   "at": 220.667,
+   "kind": "ANGOLPO \u2014 fifty-nine ships",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "woodbreak"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h33",
+   "at": 232.6,
+   "kind": "\"World's First Ironclad\" \u2014 the claim arrives",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -400
+  },
+  {
+   "id": "h34",
+   "at": 251.967,
+   "kind": "VASA \u2014 sixty-four guns on two decks",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "cannon"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h35",
+   "at": 257.1,
+   "kind": "under full sail, leaving Stockholm",
+   "cat": "sail",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 100
+  },
+  {
+   "id": "h36",
+   "at": 275.68,
+   "kind": "a gust catches her",
+   "cat": "gust",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "sail"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h37",
+   "at": 276.19,
+   "kind": "she heels and the open lower gunports go under",
+   "cat": "water",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "woodbreak",
+    "creak"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h38",
+   "at": 277.21,
+   "kind": "gone, thirteen hundred metres from the quay",
+   "cat": "surge",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": [
+    "bubbles"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h39",
+   "at": 290.233,
+   "kind": "era card whoosh (into the card) \u2014 THE AGE OF SAIL",
+   "cat": "surge",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h40",
+   "at": 290.633,
+   "kind": "era card \u2014 THE AGE OF SAIL",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h41",
+   "at": 305.0,
+   "kind": "gunpowder will detonate underwater",
+   "cat": "uwexp",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "bubbles"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h42",
+   "at": 317.0,
+   "kind": "one propeller turned by hand",
+   "cat": "winch",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h43",
+   "at": 322.133,
+   "kind": "water into the ballast tank, to sink",
+   "cat": "bubbles",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": -867
+  },
+  {
+   "id": "h44",
+   "at": 348.47,
+   "kind": "he starts drilling into the ship's bottom",
+   "cat": "winch",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "creak"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h45",
+   "at": 351.9,
+   "kind": "it will not bite",
+   "cat": "impact",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h46",
+   "at": 357.8,
+   "kind": "an hour of his own exhaled air, in the dark",
+   "cat": "breath",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h47",
+   "at": 362.9,
+   "kind": "he releases the mine and pedals away",
+   "cat": "torpedo",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "bubbles"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h48",
+   "at": 371.667,
+   "kind": "it goes off in open water and hurts nobody",
+   "cat": "uwexp",
+   "tier": "hero_boom",
+   "gain_db": -7.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": -3
+  },
+  {
+   "id": "h49",
+   "at": 375.767,
+   "kind": "the sloop carrying it goes down off Fort Lee",
+   "cat": "water",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "woodbreak"
+   ],
+   "solo_ok": true,
+   "moved_ms": -33
+  },
+  {
+   "id": "h50",
+   "at": 385.733,
+   "kind": "era card whoosh (into the card) \u2014 THE IRONCLAD AGE",
+   "cat": "surge",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h51",
+   "at": 386.133,
+   "kind": "era card \u2014 THE IRONCLAD AGE",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h52",
+   "at": 389.4,
+   "kind": "NOVGOROD \u2014 a circle, a hundred and one feet across",
+   "cat": "impact",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": 400
+  },
+  {
+   "id": "h53",
+   "at": 400.467,
+   "kind": "Elder's paper: a wider hull, thicker armour",
+   "cat": "paper",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -533
+  },
+  {
+   "id": "h54",
+   "at": 419.733,
+   "kind": "the navy approves the drawings, December 1869",
+   "cat": "typewriter",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 33
+  },
+  {
+   "id": "h55",
+   "at": 425.1,
+   "kind": "two and a half thousand tons on almost no draught",
+   "cat": "boom",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": 100
+  },
+  {
+   "id": "h56",
+   "at": 431.067,
+   "kind": "two eleven-inch guns in an open barbette",
+   "cat": "cannon",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 67
+  },
+  {
+   "id": "h57",
+   "at": 442.6,
+   "kind": "Fred T. Jane writes the story down",
+   "cat": "quill",
+   "tier": "swish",
+   "gain_db": -14.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -400
+  },
+  {
+   "id": "h58",
+   "at": 455.0,
+   "kind": "firing her guns spins the whole ship \u2014 the story",
+   "cat": "cannon",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h59",
+   "at": 473.567,
+   "kind": "slow, wet and awkward to steer \u2014 the record",
+   "cat": "creak",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": [
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": 567
+  },
+  {
+   "id": "h60",
+   "at": 484.467,
+   "kind": "and they ordered a second one",
+   "cat": "impact",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": -533
+  },
+  {
+   "id": "h61",
+   "at": 494.267,
+   "kind": "era card whoosh (into the card) \u2014 WORLD WAR I",
+   "cat": "surge",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h62",
+   "at": 494.667,
+   "kind": "era card \u2014 WORLD WAR I",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h63",
+   "at": 497.667,
+   "kind": "two steam funnels standing on a submarine's deck",
+   "cat": "steam",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": [
+    "horn"
+   ],
+   "solo_ok": true,
+   "moved_ms": 667
+  },
+  {
+   "id": "h64",
+   "at": 503.333,
+   "kind": "diving: shut down, fold the funnels, clamp them",
+   "cat": "alarm",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "hatch"
+   ],
+   "solo_ok": true,
+   "moved_ms": 333
+  },
+  {
+   "id": "h65",
+   "at": 520.967,
+   "kind": "thirty separate openings, closed by hand",
+   "cat": "hatch",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "chain"
+   ],
+   "solo_ok": true,
+   "moved_ms": -33
+  },
+  {
+   "id": "h66",
+   "at": 545.233,
+   "kind": "the Grand Fleet sails from Rosyth into mist",
+   "cat": "horn",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": 233
+  },
+  {
+   "id": "h67",
+   "at": 559.2,
+   "kind": "K14 jams her helm and turns out of line",
+   "cat": "winch",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "creak"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h68",
+   "at": 561.0,
+   "kind": "K22 hits her",
+   "cat": "impact",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "ramcrash",
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h69",
+   "at": 563.67,
+   "kind": "the cruiser Inflexible then hits K22",
+   "cat": "impact",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "ramcrash"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h70",
+   "at": 573.9,
+   "kind": "Fearless strikes K17 at near full speed, and cuts her open",
+   "cat": "impact",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "ramcrash",
+    "woodbreak"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h71",
+   "at": 579.07,
+   "kind": "K6 rams K4, and slices her nearly in half",
+   "cat": "impact",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "ramcrash",
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h72",
+   "at": 584.07,
+   "kind": "survivors from K17 in the water",
+   "cat": "water",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": [
+    "bubbles"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h73",
+   "at": 598.467,
+   "kind": "a hundred and four men died",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -533
+  },
+  {
+   "id": "h74",
+   "at": 604.933,
+   "kind": "the transcripts go into a locked file for seventy years",
+   "cat": "paper",
+   "tier": "hero_hit",
+   "gain_db": -10.0,
+   "stack": [
+    "lock"
+   ],
+   "solo_ok": true,
+   "moved_ms": -67
+  },
+  {
+   "id": "h75",
+   "at": 615.2,
+   "kind": "era card whoosh (into the card) \u2014 WORLD WAR II",
+   "cat": "surge",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h76",
+   "at": 615.6,
+   "kind": "era card \u2014 WORLD WAR II",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h77",
+   "at": 623.267,
+   "kind": "SURCOUF \u2014 heavy-cruiser calibre on a submarine",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "cannon"
+   ],
+   "solo_ok": true,
+   "moved_ms": 267
+  },
+  {
+   "id": "h78",
+   "at": 641.0,
+   "kind": "ten torpedo tubes, six hundred rounds below",
+   "cat": "torpedo",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h79",
+   "at": 647.267,
+   "kind": "the Besson floatplane, craned into the water",
+   "cat": "plane",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "winch"
+   ],
+   "solo_ok": true,
+   "moved_ms": 267
+  },
+  {
+   "id": "h80",
+   "at": 652.733,
+   "kind": "she surfaces and outguns the escort",
+   "cat": "cannon",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "water"
+   ],
+   "solo_ok": true,
+   "moved_ms": -267
+  },
+  {
+   "id": "h81",
+   "at": 659.0,
+   "kind": "France fell in 1940",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -440
+  },
+  {
+   "id": "h82",
+   "at": 690.067,
+   "kind": "the freighter strikes something submerged",
+   "cat": "body",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "bubbles",
+    "surge"
+   ],
+   "solo_ok": true,
+   "moved_ms": -153
+  },
+  {
+   "id": "h83",
+   "at": 707.533,
+   "kind": "nobody has ever found her",
+   "cat": "surge",
+   "tier": "hero_hit",
+   "gain_db": -10.0,
+   "stack": [
+    "bubbles"
+   ],
+   "solo_ok": true,
+   "moved_ms": 33
+  }
+ ],
+ "notes": [
+  "Timing is measured; mood/bpm are seeds for Epidemic Soundmatch to refine.",
+  "Fill each cue's 'asset' with a local file (from the Epidemic MCP or a manual download), then run assemble.py."
+ ],
+ "amb_beds": [
+  {
+   "id": "b1",
+   "hand": true,
+   "at": 0.0,
+   "dur": 34.6,
+   "gain_db": -6.98,
+   "fade": 2.5,
+   "why": "open sea under the Syracusia's deck",
+   "asset": "/home/user/work/warships/pal/amb_02.wav"
+  },
+  {
+   "id": "b2",
+   "hand": true,
+   "at": 34.6,
+   "dur": 46.567,
+   "gain_db": -8.43,
+   "fade": 2.5,
+   "why": "gentle sea; she sails once and is gone",
+   "asset": "/home/user/work/warships/pal/amb_01.wav"
+  },
+  {
+   "id": "b3",
+   "hand": true,
+   "at": 81.167,
+   "dur": 43.433,
+   "gain_db": -10.03,
+   "fade": 2.5,
+   "why": "river warship: hull and water on the boards",
+   "asset": "/home/user/work/warships/pal/amb_12.wav"
+  },
+  {
+   "id": "b4",
+   "hand": true,
+   "at": 124.6,
+   "dur": 43.067,
+   "gain_db": -7.43,
+   "fade": 2.5,
+   "why": "the Dongting lakes, flat water",
+   "asset": "/home/user/work/warships/pal/amb_01.wav"
+  },
+  {
+   "id": "b5",
+   "hand": true,
+   "at": 167.667,
+   "dur": 53.0,
+   "gain_db": -6.98,
+   "fade": 2.5,
+   "why": "the turtle ship at sea",
+   "asset": "/home/user/work/warships/pal/amb_02.wav"
+  },
+  {
+   "id": "b6",
+   "hand": true,
+   "at": 220.667,
+   "dur": 31.3,
+   "gain_db": -10.81,
+   "fade": 2.5,
+   "why": "Angolpo aftermath, wind coming up",
+   "asset": "/home/user/work/warships/pal/amb_09.wav"
+  },
+  {
+   "id": "b7",
+   "hand": true,
+   "at": 251.967,
+   "dur": 27.033,
+   "gain_db": -3.28,
+   "fade": 2.5,
+   "why": "Stockholm quay: docks, ropes, boats lapping",
+   "asset": "/home/user/work/warships/pal/amb_04.wav"
+  },
+  {
+   "id": "b8",
+   "hand": true,
+   "at": 279.0,
+   "dur": 11.633,
+   "gain_db": -9.43,
+   "fade": 2.5,
+   "why": "flat water where she was",
+   "asset": "/home/user/work/warships/pal/amb_01.wav"
+  },
+  {
+   "id": "b9",
+   "hand": true,
+   "at": 290.633,
+   "dur": 9.367,
+   "gain_db": -13.05,
+   "fade": 2.5,
+   "why": "under HMS Eagle's bottom",
+   "asset": "/home/user/work/warships/pal/amb_05.wav"
+  },
+  {
+   "id": "b10",
+   "hand": true,
+   "at": 300.0,
+   "dur": 35.5,
+   "gain_db": -4.44,
+   "fade": 2.5,
+   "why": "Bushnell's workshop timbers",
+   "asset": "/home/user/work/warships/pal/amb_06.wav"
+  },
+  {
+   "id": "b11",
+   "hand": true,
+   "at": 335.5,
+   "dur": 12.5,
+   "gain_db": 2.67,
+   "fade": 2.5,
+   "why": "New York Harbor, eleven at night",
+   "asset": "/home/user/work/warships/pal/amb_10.wav"
+  },
+  {
+   "id": "b12",
+   "hand": true,
+   "at": 348.0,
+   "dur": 23.0,
+   "gain_db": -12.05,
+   "fade": 2.5,
+   "why": "submerged, thirty minutes of air",
+   "asset": "/home/user/work/warships/pal/amb_05.wav"
+  },
+  {
+   "id": "b13",
+   "hand": true,
+   "at": 371.0,
+   "dur": 15.133,
+   "gain_db": 1.67,
+   "fade": 2.5,
+   "why": "back on the surface, harbour at night",
+   "asset": "/home/user/work/warships/pal/amb_10.wav"
+  },
+  {
+   "id": "b14",
+   "hand": true,
+   "at": 386.133,
+   "dur": 58.467,
+   "gain_db": -7.43,
+   "fade": 2.5,
+   "why": "the Black Sea shallows",
+   "asset": "/home/user/work/warships/pal/amb_01.wav"
+  },
+  {
+   "id": "b15",
+   "hand": true,
+   "at": 444.6,
+   "dur": 50.067,
+   "gain_db": -10.81,
+   "fade": 2.5,
+   "why": "the Dnieper estuary, wet in any real sea",
+   "asset": "/home/user/work/warships/pal/amb_09.wav"
+  },
+  {
+   "id": "b16",
+   "hand": true,
+   "at": 494.667,
+   "dur": 25.333,
+   "gain_db": -5.98,
+   "fade": 2.5,
+   "why": "the Grand Fleet at twenty-one knots",
+   "asset": "/home/user/work/warships/pal/amb_02.wav"
+  },
+  {
+   "id": "b17",
+   "hand": true,
+   "at": 520.0,
+   "dur": 20.6,
+   "gain_db": -22.18,
+   "fade": 2.5,
+   "why": "inside a K-boat, thirty openings",
+   "asset": "/home/user/work/warships/pal/amb_07.wav"
+  },
+  {
+   "id": "b18",
+   "hand": true,
+   "at": 540.6,
+   "dur": 63.0,
+   "gain_db": -8.81,
+   "fade": 2.5,
+   "why": "the Firth of Forth in mist, forty ships",
+   "asset": "/home/user/work/warships/pal/amb_09.wav"
+  },
+  {
+   "id": "b19",
+   "hand": true,
+   "at": 603.6,
+   "dur": 12.0,
+   "gain_db": -20.85,
+   "fade": 2.5,
+   "why": "almost nothing; the file closes",
+   "asset": "/home/user/work/warships/pal/amb_11.wav"
+  },
+  {
+   "id": "b20",
+   "hand": true,
+   "at": 615.6,
+   "dur": 42.667,
+   "gain_db": -6.98,
+   "fade": 2.5,
+   "why": "Surcouf on the surface",
+   "asset": "/home/user/work/warships/pal/amb_02.wav"
+  },
+  {
+   "id": "b21",
+   "hand": true,
+   "at": 658.267,
+   "dur": 19.733,
+   "gain_db": -4.28,
+   "fade": 2.5,
+   "why": "Plymouth",
+   "asset": "/home/user/work/warships/pal/amb_04.wav"
+  },
+  {
+   "id": "b22",
+   "hand": true,
+   "at": 678.0,
+   "dur": 12.7,
+   "gain_db": 2.67,
+   "fade": 2.5,
+   "why": "north of Cristobal, in the dark",
+   "asset": "/home/user/work/warships/pal/amb_10.wav"
+  },
+  {
+   "id": "b23",
+   "hand": true,
+   "at": 690.7,
+   "dur": 21.3,
+   "gain_db": -15.85,
+   "fade": 2.5,
+   "why": "under it",
+   "asset": "/home/user/work/warships/pal/amb_11.wav"
+  },
+  {
+   "id": "b24",
+   "hand": true,
+   "at": 712.0,
+   "dur": 6.171,
+   "gain_db": -10.43,
+   "fade": 2.5,
+   "why": "empty water",
+   "asset": "/home/user/work/warships/pal/amb_01.wav"
+  }
+ ],
+ "mute_windows": [
+  [
+   15.9,
+   17.6,
+   "Hiero II \u2014 a painting, not something being hit"
+  ],
+  [
+   22.4,
+   24.0,
+   "the Iliad mosaic sliding onto the temple floor"
+  ],
+  [
+   53.2,
+   56.2,
+   "Hiero II again"
+  ],
+  [
+   299.8,
+   301.6,
+   "David Bushnell \u2014 an engraving"
+  ],
+  [
+   343.0,
+   346.0,
+   "Admiral Howe \u2014 a portrait"
+  ],
+  [
+   395.8,
+   397.4,
+   "the Novgorod historical plate"
+  ],
+  [
+   626.6,
+   630.4,
+   "the Napoleonic privateer \u2014 a painting"
+  ],
+  [
+   674.6,
+   676.6,
+   "Capt. Blaison \u2014 a photograph"
+  ],
+  [
+   679.6,
+   681.2,
+   "the Panama Canal \u2014 a photograph"
+  ]
+ ]
+}

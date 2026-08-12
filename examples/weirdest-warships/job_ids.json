@@ -1,0 +1,318 @@
+{
+ "base_sword_palette": "examples/deadliest-sword/ulids.txt (60 generic files carry over)",
+ "naval": {
+  "amb": [
+   "0cdb0323-0521-4b52-8662-4540f7a04eae",
+   "3d49f79f-73c8-4e2a-b59a-cfef1429d686",
+   "b3125d9c-4de2-4b12-b6a7-c3a0cdc1f92a",
+   "fe9ade64-ed5e-44c8-9d96-d328ccf0f569",
+   "127d88ce-948f-47cb-877f-98e9e25ca787",
+   "8b23b59b-c9c5-454b-8f5f-cd5348d88137",
+   "486c8bbb-fa05-4a79-9b3a-b980d9b04eba",
+   "e2c3d9f0-b7c8-460e-80ed-b12bb4589fb8",
+   "d3241c4f-aa78-4cb6-8ffc-7adcf433fc3d",
+   "e34d28c7-d7aa-4d8f-89d9-0d558aad1501",
+   "d89df9a9-dfe6-4e55-9bdd-b59f40992a69",
+   "651e60f8-8a0c-441c-ba98-4afb2ae54c45"
+  ],
+  "impact": [
+   "896e3aba-6078-4652-bf55-b212cb56a2ad",
+   "d029f286-347e-4137-9738-d22d9b3d1b9a",
+   "696706db-9a3a-4ce3-a2be-00dc887e9c4e",
+   "d403207d-56f0-4c4c-9e16-9ad4788e8b1c",
+   "3511fec0-8a80-4d52-ad62-bf34fa3de9b1",
+   "5c429136-0f04-40b3-855f-7c5251135a01",
+   "45fb42fa-1ca2-4840-b9f4-990b0b60e518",
+   "c73f9ef8-4617-4207-b6c8-4a2ddcb9f908",
+   "d3a4d8cc-6e1b-4a90-a893-db973f3992b4",
+   "f83b1993-4a22-4386-91cb-ae4a8d760c7c",
+   "8dd5e307-85c6-4b2f-a73a-be2e1eb46bea",
+   "7e4b43e5-cb06-454f-a4db-6d1e3b24f639"
+  ],
+  "body": [
+   "52a5b29a-9899-4d73-82aa-cf158a87fda0",
+   "9f8f4aea-e56c-47f9-9374-2644553b9e92",
+   "060ce227-47f7-4fa8-995d-f9ac256d3043",
+   "4e73ad73-c1b8-4b94-8d57-84b22d2b2908",
+   "d6582b8e-b5c7-49fb-8a85-0565e899f974"
+  ],
+  "water": [
+   "57b935c7-5a60-43cd-882e-b5afd4849f0d",
+   "d293a9fa-b16e-4094-a1f1-a3c2e45aaae2",
+   "7160a674-fb55-4158-94d7-b53d272a2c1f",
+   "170ac8d7-4bac-4684-a5f9-e5970c47f423",
+   "ffb7adca-c8b7-43e3-bd80-e3c87bc88433",
+   "bbfdf244-f321-4425-8eae-0696823e8f51"
+  ],
+  "surge": [
+   "fc66f0e8-f11c-41b4-8ec8-bc6b80a615ed",
+   "606f69bd-2a27-4523-a342-509fd3ae0002",
+   "22c1035d-3fd2-4bf5-925a-a746ec8a936c",
+   "f330e244-117c-4e8a-9719-899ae21ff784",
+   "46d114f9-735e-496c-bef2-29bc43baef9b",
+   "f73af852-7494-4458-954a-9a8cd75ea65a",
+   "52c5e3a1-9997-4d9d-bcad-931928972fd2",
+   "b7ff6604-4eaa-435d-b36b-acc3b12a2f90",
+   "06140339-67cd-49e3-a58f-4e84f31813a1"
+  ],
+  "creak": [
+   "b1beb0b8-6a54-4c43-b5b1-0b9b5600ece7",
+   "9ddb4ff7-97ce-4c19-9a38-530e9497bee1",
+   "4e6ad38d-49e6-4960-add1-41ce0ad9a649",
+   "129e85b9-8b38-4759-8f2d-535332552034",
+   "30bcf830-ea3a-4dae-9c67-f04c3cc98f23",
+   "f5d5fa0a-b238-4a46-9189-03238436b18f"
+  ],
+  "rope": [
+   "c2385bf2-9d6a-407a-8005-e9553c1621f1",
+   "58641b2c-b431-4c0a-a44f-33946302f2b9",
+   "4ea90ece-4fd4-42cc-8ee7-08d1a842b557",
+   "b1706324-4580-40ac-9316-42e6a88eb33a"
+  ],
+  "oar": [
+   "e27365a5-8421-460c-aeb0-a2d8bbc5e670",
+   "b6dd7c63-3058-47ed-b81f-4f815bde8817",
+   "f2bdd916-b971-45a3-9c8a-f41a1c2eba52",
+   "85f9bcba-181d-492f-827f-1ef3f67aea91",
+   "e218eccc-2369-494b-aee5-6c71ad0b3bfc"
+  ],
+  "sail": [
+   "0b5b79f6-0a1d-4ad2-bcd5-ad08607a82b2",
+   "6488d973-1382-4d06-85f7-2895d6188b71",
+   "24379804-d97a-43e9-b111-a76f1bb1448f",
+   "baad24a5-121e-4c06-9ebf-22b6ae8b40b6",
+   "fc7e657c-faef-40d7-8900-dbd3c6f86e17",
+   "38a49746-9e79-4c5f-a99b-844be21c5b6b"
+  ],
+  "cannon": [
+   "b829cce0-ee75-4e1c-a34e-826ea7f37650",
+   "eaac6ef7-8d7e-4a18-89c4-c5787ce779df",
+   "79b47d7e-99e0-4f85-b8a6-f62683d09e70",
+   "05c8cb60-56a5-4662-a06c-f0e25a513612",
+   "3d54fe18-44fa-460d-821d-4c2976052066",
+   "653aa152-ed3a-4f8b-a50e-15c03fbd74b5",
+   "2c39c262-3d92-4a13-b44f-42b4dc970de5"
+  ],
+  "steam": [
+   "63813ec7-17ef-4a86-9d53-cee4224d877f",
+   "50f78ccc-0a2a-4462-82f0-64b921bc77bd",
+   "c5827c5d-7cde-45e4-9414-8baefd2b9aeb",
+   "5a2f6017-8e50-4968-ac29-027fd69a5e84",
+   "9ef763ca-ea12-4ba7-af37-d7523bb8fdb6"
+  ],
+  "gears": [
+   "6ae60844-170b-4f54-ad9d-958c3ca8d3ac",
+   "fbefda9a-7eac-4312-bad6-e7ba31541d00",
+   "9e19c05a-fba4-4e22-8e63-9aa09dabca6a",
+   "b9cebed8-3d27-41e4-a908-e9e3b4260319",
+   "870ca63e-2dfd-4118-ac36-a2a6dc3b2617",
+   "8faad5a2-583c-4248-9275-44daa90dd28e"
+  ],
+  "winch": [
+   "ee526c68-325a-4796-ab54-834bf716ca7c",
+   "dad48fc5-6217-4854-94eb-94008fe23bd1",
+   "4660d6cf-8cc2-46f4-87a1-64b876bf36ec",
+   "1d5833ab-c41b-4a08-a683-f284b0136b9d",
+   "c6a124e2-08bc-4f25-a21b-d8abc89d1cdd"
+  ],
+  "sonar": [
+   "4aebfac7-a0fa-409d-8b97-d70c04f151f0",
+   "045d8fb3-cb9d-401d-8a68-b189381b5892",
+   "37e1a1e3-95ff-44cf-acaf-ee49e968b108",
+   "dc237079-f65a-48d4-aee7-1a1a4f2cc927"
+  ],
+  "horn": [
+   "d70c3990-a7d3-4e61-a69a-724c4f0056ce",
+   "1e271b65-04ef-40d9-8c65-24eab5c6ce6e",
+   "300a11cf-26ca-4b0a-8f99-7219c5afe1fc",
+   "a670dca0-14e3-4dbe-8059-39c800b0eb9d",
+   "f994bed4-6372-4736-aca5-7042779d133a"
+  ],
+  "alarm": [
+   "fa3d0389-e468-44e8-af60-4f327383b100",
+   "69eb16b8-39ff-4d01-b08e-b2713001ae92",
+   "6fa86a4e-eb50-4bb0-8374-3537316c83a1"
+  ],
+  "torpedo": [
+   "02488edb-599d-472b-b909-e2028f8cb84e",
+   "ad5ab17c-fde8-40eb-a1e3-d2deedcbce4e",
+   "b0539d04-7730-4586-a758-68f4b4789105"
+  ],
+  "uwexp": [
+   "c4980891-8e7f-463a-8cec-d12e6aab612c",
+   "fdf6df8e-100f-4167-88db-020481d4725f",
+   "726967d4-9715-40d5-93a1-6864893e2011",
+   "f25b1455-d329-4bc1-8f0a-d198ad2d4b18"
+  ],
+  "chain": [
+   "a34ceb26-9839-4e8b-b8ae-7275f5c50b1f",
+   "f99940f0-b745-402c-a850-1819628d6763",
+   "5ac37ea7-4fdb-47e6-a932-e0016f871773"
+  ],
+  "shipbell": [
+   "34c6ced1-71a8-4cbd-b5b5-67291ec5f543"
+  ],
+  "bubbles": [
+   "49689e13-183b-49e5-b1e4-127201ca4eff",
+   "7c1f5815-824b-44fb-b72b-bdaabcdbead4",
+   "04b6192b-3de2-41a3-aeea-3d3647ef0e79",
+   "b26a93ab-2707-4fb7-b232-ff110c3e90a2",
+   "ba19107c-9289-4be3-807c-9d8d54cc6a1c",
+   "63658327-4787-4323-b371-2daf76b8b2a2"
+  ],
+  "woodbreak": [
+   "c61a1fb6-0b33-4a0c-835c-9008a9e9dd7d",
+   "f31649b0-3adc-4069-9e9d-cc5efadf2686",
+   "4558e549-c2e1-4a5f-ae47-2f343d3c7178",
+   "ce19e9fb-a06b-45b5-99ca-81a4f7ef8d1c"
+  ],
+  "stone": [
+   "c611c7fa-2357-4bae-bc43-ec29999ce5f8",
+   "a4216a3c-ed43-4397-b5ac-33c2824b15dc",
+   "9ae7fbaa-6a27-4a60-876e-bb636c343397",
+   "7dae4804-a73a-4eef-8f97-66ad00c50e7d"
+  ],
+  "catapult": [
+   "580d065f-6759-4faa-aa9e-9d2b66cefc72",
+   "2fcfd1ab-bd44-48dd-a5c8-95476b68b125"
+  ],
+  "cheer": [
+   "bbfcd487-a1c4-45b8-b653-115f626aff03",
+   "08bc869d-edc8-4fc3-8345-6026e3176fbc"
+  ],
+  "gull": [
+   "68c3df2d-e40a-4982-8041-7263da51537e",
+   "95d8af7d-1e0a-43a0-b265-34624a6042b2"
+  ],
+  "paper": [
+   "1c3dfeb9-a943-4928-9518-7da923fb8f69",
+   "afb5c7a6-b65c-4da6-8a7a-9917337a4174",
+   "96c562d5-a77f-4882-bc60-6458da96d21a",
+   "336e466e-c4b2-492c-b77f-2b50776db71f"
+  ],
+  "quill": [
+   "943a0965-a8c7-40d2-af60-0d8ae8776bd5",
+   "b7d712a2-93cc-4d14-aa0c-03ba6ec0dbb2"
+  ],
+  "breath": [
+   "3dc4da05-4142-4fe4-b1f3-e7b715f83646",
+   "44e32f15-25d0-47d7-8619-06a6d17df231",
+   "aa062c70-65e2-4476-ae48-6497a2673c1f",
+   "31c80ca6-5a1f-467c-bcec-15f5c4500e29"
+  ],
+  "hatch": [
+   "09931921-93e5-4b28-ac81-562220be64ec",
+   "c3c7c1be-0944-46fe-8c9c-4a7c9d1dec5b",
+   "1098e5bc-5b96-4a76-8453-2e3b320e1712",
+   "1b6d739d-2a18-4e1b-8c2d-bf16d68a670b",
+   "c1df7921-62cd-47d3-bc6d-801ba182bba0"
+  ],
+  "ramcrash": [
+   "7f3a1134-0e7e-43a0-a49a-0555c366a000",
+   "35edf2a6-15c8-4eae-b309-b60f1965439a",
+   "86457616-9635-4b06-98f3-5e79428d6a16",
+   "15ef6b1e-bf9a-4e27-826e-6c30cb5ec319",
+   "5390d6cc-687f-4aa0-8e0d-eae095ac2d4b"
+  ],
+  "footdeck": [
+   "32402511-b896-458f-90d6-8b1234a2c851",
+   "036913c5-7a2f-4de4-9788-65e6570a63c5",
+   "6ff08216-76ba-4d42-a05c-09f69fe9a28c"
+  ],
+  "typewriter": [
+   "13c75c35-635a-4ecb-a0c7-aa74dce3b672",
+   "65ca3610-c9a3-4835-aece-559232d579e5",
+   "d5dd8799-3b88-4c7e-b4c9-f2414258984d"
+  ]
+ },
+ "naval_extra": {
+  "plane": [
+   "a2a70d6f-3d5d-4a7f-9a8f-f00f3f62a743",
+   "cd657b67-3706-45a9-ac00-4d197c853058",
+   "17b747bf-58c5-4052-a8dc-455e43c2de4a"
+  ],
+  "lock": [
+   "d4ef5e99-e7b6-48c7-8f14-85581ca87a2f",
+   "8ecb95bb-e366-4497-8a91-eabdb67abcda",
+   "116ee441-1115-4141-a87f-a3988e3b76eb"
+  ],
+  "gust": [
+   "93155709-52db-431b-b9a9-8d0841c13e45",
+   "25e63608-4273-4923-ac0e-285e911069b0",
+   "4c65d5cb-1d6a-4c1d-bf62-88d662887575",
+   "56933b85-7312-4171-8dbe-c06ac938f677",
+   "7e4201d0-2b7a-44c6-8d51-ccd9dba0a7f8",
+   "0c8f7264-34b0-409f-af6f-5b67690114d5"
+  ]
+ },
+ "music": {
+  "m1": [
+   "a70578a9-3f9a-4d96-8fd8-051b807abbea",
+   "Those Who Wander"
+  ],
+  "m2": [
+   "a6ffec1b-329a-3945-b8f9-da5372058e62",
+   "Something Peculiar"
+  ],
+  "m3": [
+   "d84ba55b-ba6d-3f16-915a-e60f4e620e2e",
+   "Infernal Machine"
+  ],
+  "m4": [
+   "c4dedd92-e5d5-3e2a-a7c3-1bb8f90433f7",
+   "Fool Me Twice"
+  ],
+  "m5": [
+   "72144dc7-ff05-321f-bd8a-40df60ae8823",
+   "At Enemy Lines"
+  ],
+  "m6": [
+   "6c92fb94-d380-38d2-a711-445d47c821db",
+   "Make No Mistakes"
+  ],
+  "m7": [
+   "a0ae6b40-b012-36f4-992a-dab874927ba4",
+   "The Last Disaster"
+  ],
+  "m8": [
+   "cc31edf0-290e-3049-8a33-dfa501eb8007",
+   "Seekers and Finders"
+  ],
+  "m9": [
+   "d49d144c-c27d-348c-a6b3-c7b76dd36eef",
+   "It's Not a Game"
+  ],
+  "m10": [
+   "bed5e82b-466d-45d4-b66f-617ce1845894",
+   "The King of Thieves"
+  ],
+  "m11": [
+   "551e9e35-c59b-3259-97e4-1bc98137d4d4",
+   "Confidentiality"
+  ],
+  "m12": [
+   "fe3a78f1-350a-3d41-b939-1bddb9608446",
+   "Wiretapped"
+  ],
+  "m13": [
+   "a720e76d-783d-4d9d-a858-b9ed527d3ad3",
+   "Estimations"
+  ],
+  "m14": [
+   "4a2ca6b9-42c7-4cc6-9b23-e6a3e39d55dd",
+   "The Changeing"
+  ],
+  "m15": [
+   "e5be821f-7072-457d-a800-761c0add1106",
+   "Rise to Power"
+  ],
+  "m16": [
+   "9084a422-ad35-359c-b56e-cafd825d9917",
+   "Tragedy Unfolds"
+  ],
+  "m17": [
+   "18c07325-4e93-4e85-ace4-0555616489e4",
+   "Alluvion"
+  ]
+ }
+}

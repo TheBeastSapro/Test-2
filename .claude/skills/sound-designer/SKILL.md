@@ -83,6 +83,41 @@ shield, armour, marching, forge, draws, falls, clatter) only apply to combat. Bu
 rather than discovering it mid-mix. `place.py`'s HERO_CAT maps script words to
 categories and its vocabulary is weapon-flavoured — extend it for the new subject.
 
+**CORRECTION from the warships job: three categories get REPLACED, not supplemented,
+and `impact` is one of them.** The list above says impact and ambience carry over.
+They do not, because they name *objects*. `impact` is eleven metal-on-metal blade
+clashes, `body` is four flesh punches, and `amb` is medieval battle and village tone —
+so on a naval video every generic strike is a sword hitting a ship and every scene sits
+in a field. Those three are what the generic pool draws from (`impact` for strikes,
+`body` as the default weight layer under them, `amb` for beds), so getting them wrong
+is not a detail at the edges; it is most of what the viewer hears. Delete them from
+`pal/` and rebuild them for the subject. What genuinely carries is the vocabulary of
+air and transients — pop, swish, whoosh, boom, clatter, fall — plus the vocals.
+
+For reference, the naval set that replaced them was 169 files across 33 categories
+(sea/harbour/underwater/engine-room beds, hull creak, oars, sail canvas, cannon, steam,
+gears, winch, sonar, ship horn, dive alarm, torpedo, underwater explosion, chain, ship
+bell, bubbles, wood break, ram crash, hatch, plane, and so on), fetched in about 25
+minutes with four batched `SearchSoundEffects` rounds read by title. That is the real
+budget for a new subject: closer to half an hour than twenty minutes, and worth saying
+so at the start.
+
+**Fresh containers are missing three Python packages** the scripts need, and the
+failure lands late: `rebuild_palette.py` downloads all 113 files and *then* dies with
+`ModuleNotFoundError: No module named 'soundfile'` at the oneshot step. Install first:
+
+```
+pip install opencv-python-headless numpy soundfile librosa
+```
+(`cv2` for `visual_redraw.py`, `soundfile` for `oneshot.py`/`palette.py`, `librosa` for
+`sync_check.py`.)
+
+**Downloading a Drive video works** — a 1 GB mp4 in about 40 seconds, no auth needed
+for a link-shared file:
+```
+curl -sL "https://drive.usercontent.google.com/download?id=<FILE_ID>&export=download&confirm=t" -o video.mp4
+```
+
 ## Runbook
 
 ```bash
@@ -638,6 +673,45 @@ then snap to the nearest scene cut within ~1.5 s so it lands on the picture chan
   "Sword -- Very Low". That gets the riser and the impact; nothing else in the video needs
   them more.
 
+**A coarse sheet finds the SCENE. Only a ~1 s sheet finds the FRAME.** Sampling at 6 s
+was enough to locate every one of the warships video's beats and wrong about *when*
+three of them happen, by 1.1 to 7.1 s:
+
+| beat | read at 6 s | actually | how far out |
+|---|---|---|---|
+| Bushnell's drill will not bite | 359.0 | **351.9** (the bit turns red, the pod rocks) | 7.1 s |
+| K22 hits K14 | 563.0 | **561.0** (first frame with an impact star) | 2.0 s |
+| Fearless cuts K17 open | 575.0 | **573.9** | 1.1 s |
+
+The drill one is the lesson: 357.8 is a *different* beat — the pilot's face goes red,
+which is the man failing, not the auger — so the 6 s sheet had merged two beats into
+one and named it after the wrong thing. Work in two passes: coarse to find the scene,
+then re-sample that scene at ~0.7-1.3 s and read which panel first shows the change.
+Snapping to a detected event does not rescue a time that is seconds out; it only
+polishes one that is already within a frame or two.
+
+**Detect the era CARD, not the banner.** This channel runs a persistent era name in a
+top banner *and* a full-screen title card at each change, and the two do not coincide.
+Diffing the banner strip finds a change but cannot say which one it found: it fires
+either when the old text leaves or when the new text arrives, and on the warships video
+those are as much as 1.8 s apart (the card was fully on screen at 167.7 while the banner
+did not swap until 169.5). Detect the card itself — on this channel a near-white frame
+carrying a red progress bar — and take the onset of the run:
+
+```python
+red   = ((r > 150) & (g < 110) & (b < 110)).mean()      # the progress bar
+white = ((r > 235) & (g > 235) & (b > 235)).mean()      # the card ground
+score = red * 100 if white > 0.55 else 0.0             # runs > 0.9, >= 0.4 s
+```
+`examples/weirdest-warships/cards.py` is that scan; `banner.py` beside it is the
+version that got it wrong, kept on purpose. Expect a couple of false positives on
+white-background shots that happen to contain red (a ship's red hull, a flag) —
+check them on a contact sheet rather than widening the threshold.
+
+**The white presenter shot is a free transition marker.** Every era card on this
+channel is preceded by a ~2 s shot of the narrator character on plain white. If the
+card scan misses one, the presenter shot is a second way in.
+
 ## SFX must follow the scene, not the cut
 
 Generic whooshes on scene cuts are the lazy version and it shows. StickTory syncs sound to
@@ -711,3 +785,30 @@ ffmpeg -i ref.wav -af "atrim=<gap>,volumedetect" -f null -        # bed alone
 This is the same discipline as the VO skill: the aligner and the meters are data, a listening
 model's description is not. Expect one round of ear-checking on bed level and duck depth —
 Sapro's ear catches what the meters call fine.
+
+**But `measure_ref.py`'s bed ratio does not work on our OWN mixes — only on a
+published reference with gaps.** It reads the p10 of the loudness envelope as
+"music alone", which is true of a mix that has silences between VO lines and false
+of ours: the ExplainTory VO is continuous, so p10 is just the quietest speech.
+On the warships mix it reported the bed **-2.7 dB under programme (73%)** for a
+music bus that `assemble.py` had measured and calibrated to exactly **-13.0 dB
+under the VO**. Reading the tool literally would say the mix is 10 dB too hot and
+send you to pull a correct bed down into inaudibility.
+
+Verify our own renders two other ways, both of which agree:
+- the calibration line `assemble.py` prints — `music -26.9 LUFS, vo -14.5 LUFS
+  (-12.4 dB) -> target -13 dB needs -0.6 dB` — this is the number that matters;
+- `volumedetect` on the stems: on the warships mix music mean **-29.1 dB**, VO mean
+  **-17.2 dB**, i.e. -11.9 dB, and SFX mean **-27.8 dB**, so the hits sit **1.3 dB
+  above the bed** as they should.
+
+Use `measure_ref.py` for what it was built for: measuring somebody else's finished
+video, where the gaps are real. Its programme LUFS, LRA and true-peak readings are
+fine on anything.
+
+**`sync_check.py` assumes 24 fps.** These videos are 30. Pass `--fps 30` or every
+"within one frame" figure is quoted against a frame 8.4 ms too long.
+
+**`oneshot.py` overwrites silently when `--name` repeats.** Splitting three different
+takes with the same prefix leaves only the last one's slices on disk, and nothing
+says so. Give each source its own name.
