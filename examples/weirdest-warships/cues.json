@@ -289,32 +289,16 @@
    "id": "m13",
    "role": "body",
    "start": 540.6,
-   "end": 557.833,
-   "dur": 17.233,
-   "energy": 0.42,
-   "energy_label": "forty ships in a darkened column, and no German near them",
+   "end": 603.6,
+   "dur": 63.0,
+   "energy": 0.54,
+   "energy_label": "the night of 31 January 1918",
    "track": "Estimations",
    "under_voiceover": true,
    "duck_db": -9,
    "fade_in": 1.2,
    "fade_out": 1.2,
    "asset": "/home/user/work/warships/assets/m13.wav",
-   "gain_db": 0.0
-  },
-  {
-   "id": "m13b",
-   "role": "body",
-   "start": 557.833,
-   "end": 603.6,
-   "dur": 45.767,
-   "energy": 0.72,
-   "energy_label": "seventy-five minutes",
-   "track": "Exile",
-   "under_voiceover": true,
-   "duck_db": -9,
-   "fade_in": 1.2,
-   "fade_out": 1.2,
-   "asset": "/home/user/work/warships/assets/m13b.wav",
    "gain_db": 0.0
   },
   {
@@ -796,19 +780,6 @@
    "asset": "/home/user/work/warships/pal/water_02.wav"
   },
   {
-   "id": "s17b1",
-   "at": 35.485,
-   "kind": "oars in the water; the screw pump clears the bilge (weight)",
-   "tier": "swish",
-   "cat": "passby",
-   "gain_db": -15.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.7333,
-   "asset": "/home/user/work/warships/pal/passby_07.wav"
-  },
-  {
    "id": "s18a",
    "at": 37.1033,
    "kind": "strike (anticipation)",
@@ -1145,19 +1116,6 @@
    "pre_trimmed": true,
    "anchor": 0.6943,
    "asset": "/home/user/work/warships/pal/surge_07.wav"
-  },
-  {
-   "id": "s30b1",
-   "at": 62.218,
-   "kind": "she sails for Egypt, once (weight)",
-   "tier": "swish",
-   "cat": "passby",
-   "gain_db": -15.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.5554,
-   "asset": "/home/user/work/warships/pal/passby_02.wav"
   },
   {
    "id": "s31",
@@ -1990,13 +1948,13 @@
    "at": 118.502,
    "kind": "imperial ships arrive under sail, into no wind (weight)",
    "tier": "swish",
-   "cat": "passby",
+   "cat": "body",
    "gain_db": -16.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.4979,
-   "asset": "/home/user/work/warships/pal/passby_06.wav"
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
    "id": "s63",
@@ -2012,15 +1970,15 @@
   },
   {
    "id": "s64",
-   "at": 121.433,
-   "kind": "the paddle boat picks a direction and holds it",
+   "at": 121.4333,
+   "kind": "movement",
    "tier": "swish",
-   "cat": "wake",
-   "gain_db": -13.0,
-   "vary": 0.0,
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.5248,
-   "asset": "/home/user/work/warships/pal/wake_02.wav"
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
   },
   {
    "id": "s65a",
@@ -2032,8 +1990,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
   },
   {
    "id": "s65",
@@ -2074,12 +2032,25 @@
    "asset": "/home/user/work/warships/pal/water_03.wav"
   },
   {
+   "id": "s66a",
+   "at": 123.603,
+   "kind": "and opens her up (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
+  },
+  {
    "id": "s66",
    "at": 123.733,
    "kind": "and opens her up",
-   "tier": "hero_boom",
+   "tier": "impact",
    "cat": "explo",
-   "gain_db": -7.0,
+   "gain_db": -8.0,
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.0,
@@ -2091,7 +2062,7 @@
    "kind": "and opens her up (weight)",
    "tier": "swish",
    "cat": "woodbreak",
-   "gain_db": -12.0,
+   "gain_db": -13.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
@@ -2107,8 +2078,8 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
    "id": "s68a",
@@ -2120,8 +2091,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
   },
   {
    "id": "s68",
@@ -2145,8 +2116,8 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
    "id": "s69a",
@@ -2158,8 +2129,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
   },
   {
    "id": "s69",
@@ -2183,8 +2154,8 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
   },
   {
    "id": "s70a",
@@ -2196,8 +2167,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
+   "anchor": 0.0341,
+   "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
    "id": "s70",
@@ -2221,8 +2192,8 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
    "id": "s71a",
@@ -2234,8 +2205,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
+   "anchor": 0.0591,
+   "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
    "id": "s71",
@@ -2271,8 +2242,8 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0341,
-   "asset": "/home/user/work/warships/pal/swish_06.wav"
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
   },
   {
    "id": "s73",
@@ -2283,8 +2254,8 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0591,
-   "asset": "/home/user/work/warships/pal/swish_02.wav"
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
   },
   {
    "id": "s74",
@@ -2295,8 +2266,8 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
   },
   {
    "id": "s75",
@@ -2345,8 +2316,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
   },
   {
    "id": "s77",
@@ -2370,8 +2341,8 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
    "id": "s78",
@@ -2407,8 +2378,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
   },
   {
    "id": "s80",
@@ -2432,8 +2403,8 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
    "id": "s81a",
@@ -2445,8 +2416,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
   },
   {
    "id": "s81",
@@ -2482,8 +2453,8 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
   },
   {
    "id": "s83",
@@ -2543,8 +2514,8 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
    "id": "s87a",
@@ -2556,8 +2527,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
   },
   {
    "id": "s87",
@@ -2581,8 +2552,8 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
    "id": "s88a",
@@ -2594,8 +2565,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
   },
   {
    "id": "s88",
@@ -2632,8 +2603,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
+   "anchor": 0.0341,
+   "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
    "id": "s89",
@@ -2657,8 +2628,8 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
   },
   {
    "id": "s90a",
@@ -2670,8 +2641,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
+   "anchor": 0.0591,
+   "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
    "id": "s90",
@@ -2695,8 +2666,8 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
    "id": "s91a",
@@ -2708,8 +2679,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0341,
-   "asset": "/home/user/work/warships/pal/swish_06.wav"
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
   },
   {
    "id": "s91",
@@ -2733,8 +2704,8 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
    "id": "s92a",
@@ -2746,8 +2717,8 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0591,
-   "asset": "/home/user/work/warships/pal/swish_02.wav"
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
   },
   {
    "id": "s92",
@@ -2771,8 +2742,8 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
    "id": "s93",
@@ -2788,18 +2759,6 @@
   },
   {
    "id": "s94",
-   "at": 184.5,
-   "kind": "the turtle ship under oars",
-   "tier": "swish",
-   "cat": "passby",
-   "gain_db": -14.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.6294,
-   "asset": "/home/user/work/warships/pal/passby_03.wav"
-  },
-  {
-   "id": "s95",
    "at": 186.5,
    "kind": "movement",
    "tier": "swish",
@@ -2807,88 +2766,12 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
-  },
-  {
-   "id": "s96a",
-   "at": 188.27,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
-  },
-  {
-   "id": "s96",
-   "at": 188.4,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0658,
-   "asset": "/home/user/work/warships/pal/impact_04.wav"
-  },
-  {
-   "id": "s96b0",
-   "at": 188.435,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
-  },
-  {
-   "id": "s97a",
-   "at": 191.303,
-   "kind": "the dragon head vents smoke (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -16.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
    "anchor": 0.4115,
    "asset": "/home/user/work/warships/pal/swish_11.wav"
   },
   {
-   "id": "s97",
-   "at": 191.433,
-   "kind": "the dragon head vents smoke",
-   "tier": "hero_hit",
-   "cat": "steam",
-   "gain_db": -9.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.1048,
-   "asset": "/home/user/work/warships/pal/steam_05.wav"
-  },
-  {
-   "id": "s97b0",
-   "at": 191.468,
-   "kind": "the dragon head vents smoke (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -14.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
-  },
-  {
-   "id": "s98a",
-   "at": 193.0033,
+   "id": "s95a",
+   "at": 188.27,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -2900,7 +2783,83 @@
    "asset": "/home/user/work/warships/pal/swish_08.wav"
   },
   {
-   "id": "s98",
+   "id": "s95",
+   "at": 188.4,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0658,
+   "asset": "/home/user/work/warships/pal/impact_04.wav"
+  },
+  {
+   "id": "s95b0",
+   "at": 188.435,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
+  },
+  {
+   "id": "s96a",
+   "at": 191.303,
+   "kind": "the dragon head vents smoke (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -16.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
+  },
+  {
+   "id": "s96",
+   "at": 191.433,
+   "kind": "the dragon head vents smoke",
+   "tier": "hero_hit",
+   "cat": "steam",
+   "gain_db": -9.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.1048,
+   "asset": "/home/user/work/warships/pal/steam_05.wav"
+  },
+  {
+   "id": "s96b0",
+   "at": 191.468,
+   "kind": "the dragon head vents smoke (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -14.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
+  },
+  {
+   "id": "s97a",
+   "at": 193.0033,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
+  },
+  {
+   "id": "s97",
    "at": 193.1333,
    "kind": "strike",
    "tier": "impact",
@@ -2912,46 +2871,8 @@
    "asset": "/home/user/work/warships/pal/impact_12.wav"
   },
   {
-   "id": "s98b0",
+   "id": "s97b0",
    "at": 193.1683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
-  },
-  {
-   "id": "s99a",
-   "at": 195.5367,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
-  },
-  {
-   "id": "s99",
-   "at": 195.6667,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_10.wav"
-  },
-  {
-   "id": "s99b0",
-   "at": 195.7017,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -2963,7 +2884,45 @@
    "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
-   "id": "s100",
+   "id": "s98a",
+   "at": 195.5367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
+  },
+  {
+   "id": "s98",
+   "at": 195.6667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_10.wav"
+  },
+  {
+   "id": "s98b0",
+   "at": 195.7017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
+  },
+  {
+   "id": "s99",
    "at": 197.3,
    "kind": "small element",
    "tier": "pop",
@@ -2975,7 +2934,7 @@
    "asset": "/home/user/work/warships/pal/pop_10.wav"
   },
   {
-   "id": "s101",
+   "id": "s100",
    "at": 198.8333,
    "kind": "small element",
    "tier": "pop",
@@ -2987,7 +2946,7 @@
    "asset": "/home/user/work/warships/pal/pop_04.wav"
   },
   {
-   "id": "s102",
+   "id": "s101",
    "at": 200.1667,
    "kind": "small element",
    "tier": "pop",
@@ -2999,7 +2958,7 @@
    "asset": "/home/user/work/warships/pal/pop_01.wav"
   },
   {
-   "id": "s103",
+   "id": "s102",
    "at": 202.633,
    "kind": "guns firing through ports on every face",
    "tier": "hero_boom",
@@ -3011,7 +2970,7 @@
    "asset": "/home/user/work/warships/pal/cannon_07.wav"
   },
   {
-   "id": "s103b0",
+   "id": "s102b0",
    "at": 202.668,
    "kind": "guns firing through ports on every face (weight)",
    "tier": "swish",
@@ -3024,7 +2983,7 @@
    "asset": "/home/user/work/warships/pal/water_01.wav"
   },
   {
-   "id": "s104a",
+   "id": "s103a",
    "at": 205.8367,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -3033,11 +2992,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
-   "id": "s104",
+   "id": "s103",
    "at": 205.9667,
    "kind": "strike",
    "tier": "impact",
@@ -3049,46 +3008,8 @@
    "asset": "/home/user/work/warships/pal/impact_02.wav"
   },
   {
-   "id": "s104b0",
+   "id": "s103b0",
    "at": 206.0017,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
-  },
-  {
-   "id": "s105a",
-   "at": 208.0367,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
-  },
-  {
-   "id": "s105",
-   "at": 208.1667,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_11.wav"
-  },
-  {
-   "id": "s105b0",
-   "at": 208.2017,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -3100,7 +3021,45 @@
    "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
-   "id": "s106a",
+   "id": "s104a",
+   "at": 208.0367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
+  },
+  {
+   "id": "s104",
+   "at": 208.1667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_11.wav"
+  },
+  {
+   "id": "s104b0",
+   "at": 208.2017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
+  },
+  {
+   "id": "s105a",
    "at": 208.703,
    "kind": "the Japanese try to board and find spikes (anticipation)",
    "tier": "swish",
@@ -3109,11 +3068,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
   },
   {
-   "id": "s106",
+   "id": "s105",
    "at": 208.833,
    "kind": "the Japanese try to board and find spikes",
    "tier": "impact",
@@ -3125,7 +3084,7 @@
    "asset": "/home/user/work/warships/pal/footdeck_03.wav"
   },
   {
-   "id": "s106b0",
+   "id": "s105b0",
    "at": 208.868,
    "kind": "the Japanese try to board and find spikes (weight)",
    "tier": "swish",
@@ -3138,7 +3097,7 @@
    "asset": "/home/user/work/warships/pal/impact_01.wav"
   },
   {
-   "id": "s107",
+   "id": "s106",
    "at": 211.0,
    "kind": "shot change",
    "tier": "whoosh",
@@ -3150,96 +3109,8 @@
    "asset": "/home/user/work/warships/pal/whoosh_12.wav"
   },
   {
-   "id": "s108a",
+   "id": "s107a",
    "at": 213.77,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
-  },
-  {
-   "id": "s108",
-   "at": 213.9,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0664,
-   "asset": "/home/user/work/warships/pal/impact_05.wav"
-  },
-  {
-   "id": "s108b0",
-   "at": 213.935,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
-  },
-  {
-   "id": "s109",
-   "at": 214.667,
-   "kind": "she comes about",
-   "tier": "swish",
-   "cat": "wake",
-   "gain_db": -14.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.6062,
-   "asset": "/home/user/work/warships/pal/wake_05.wav"
-  },
-  {
-   "id": "s110a",
-   "at": 215.6033,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
-  },
-  {
-   "id": "s110",
-   "at": 215.7333,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0752,
-   "asset": "/home/user/work/warships/pal/impact_06.wav"
-  },
-  {
-   "id": "s110b0",
-   "at": 215.7683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
-  },
-  {
-   "id": "s111a",
-   "at": 218.1367,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -3251,20 +3122,58 @@
    "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
-   "id": "s111",
-   "at": 218.2667,
+   "id": "s107",
+   "at": 213.9,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.186,
-   "asset": "/home/user/work/warships/pal/impact_07.wav"
+   "anchor": 0.0664,
+   "asset": "/home/user/work/warships/pal/impact_05.wav"
   },
   {
-   "id": "s111b0",
-   "at": 218.3017,
+   "id": "s107b0",
+   "at": 213.935,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
+  },
+  {
+   "id": "s108a",
+   "at": 215.6033,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0591,
+   "asset": "/home/user/work/warships/pal/swish_02.wav"
+  },
+  {
+   "id": "s108",
+   "at": 215.7333,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0752,
+   "asset": "/home/user/work/warships/pal/impact_06.wav"
+  },
+  {
+   "id": "s108b0",
+   "at": 215.7683,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -3276,7 +3185,45 @@
    "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
-   "id": "s112",
+   "id": "s109a",
+   "at": 218.1367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
+  },
+  {
+   "id": "s109",
+   "at": 218.2667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.186,
+   "asset": "/home/user/work/warships/pal/impact_07.wav"
+  },
+  {
+   "id": "s109b0",
+   "at": 218.3017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
+  },
+  {
+   "id": "s110",
    "at": 220.667,
    "kind": "ANGOLPO \u2014 fifty-nine ships",
    "tier": "hero_boom",
@@ -3288,7 +3235,7 @@
    "asset": "/home/user/work/warships/pal/boom_04.wav"
   },
   {
-   "id": "s112b0",
+   "id": "s110b0",
    "at": 220.702,
    "kind": "ANGOLPO \u2014 fifty-nine ships (weight)",
    "tier": "swish",
@@ -3301,84 +3248,8 @@
    "asset": "/home/user/work/warships/pal/woodbreak_01.wav"
   },
   {
-   "id": "s113a",
+   "id": "s111a",
    "at": 226.7033,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0591,
-   "asset": "/home/user/work/warships/pal/swish_02.wav"
-  },
-  {
-   "id": "s113",
-   "at": 226.8333,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.3484,
-   "asset": "/home/user/work/warships/pal/impact_09.wav"
-  },
-  {
-   "id": "s113b0",
-   "at": 226.8683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
-  },
-  {
-   "id": "s114a",
-   "at": 228.97,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
-  },
-  {
-   "id": "s114",
-   "at": 229.1,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_03.wav"
-  },
-  {
-   "id": "s114b0",
-   "at": 229.135,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
-  },
-  {
-   "id": "s115a",
-   "at": 231.4367,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -3390,20 +3261,58 @@
    "asset": "/home/user/work/warships/pal/swish_12.wav"
   },
   {
-   "id": "s115",
-   "at": 231.5667,
+   "id": "s111",
+   "at": 226.8333,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.4451,
-   "asset": "/home/user/work/warships/pal/impact_08.wav"
+   "anchor": 0.3484,
+   "asset": "/home/user/work/warships/pal/impact_09.wav"
   },
   {
-   "id": "s115b0",
-   "at": 231.6017,
+   "id": "s111b0",
+   "at": 226.8683,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
+  },
+  {
+   "id": "s112a",
+   "at": 228.97,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
+  },
+  {
+   "id": "s112",
+   "at": 229.1,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_03.wav"
+  },
+  {
+   "id": "s112b0",
+   "at": 229.135,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -3415,68 +3324,8 @@
    "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
-   "id": "s116",
-   "at": 232.6,
-   "kind": "\"World's First Ironclad\" \u2014 the claim arrives",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.6162,
-   "asset": "/home/user/work/warships/pal/whoosh_03.wav"
-  },
-  {
-   "id": "s117",
-   "at": 235.1,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.3659,
-   "asset": "/home/user/work/warships/pal/whoosh_02.wav"
-  },
-  {
-   "id": "s118",
-   "at": 236.4,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
-  },
-  {
-   "id": "s119",
-   "at": 238.1,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
-  },
-  {
-   "id": "s120",
-   "at": 241.2667,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
-  },
-  {
-   "id": "s121a",
-   "at": 243.8367,
+   "id": "s113a",
+   "at": 231.4367,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -3484,24 +3333,24 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
   },
   {
-   "id": "s121",
-   "at": 243.9667,
+   "id": "s113",
+   "at": 231.5667,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0658,
-   "asset": "/home/user/work/warships/pal/impact_04.wav"
+   "anchor": 0.4451,
+   "asset": "/home/user/work/warships/pal/impact_08.wav"
   },
   {
-   "id": "s121b0",
-   "at": 244.0017,
+   "id": "s113b0",
+   "at": 231.6017,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -3513,20 +3362,68 @@
    "asset": "/home/user/work/warships/pal/body_05.wav"
   },
   {
-   "id": "s122",
-   "at": 246.0,
+   "id": "s114",
+   "at": 232.6,
+   "kind": "\"World's First Ironclad\" \u2014 the claim arrives",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.6162,
+   "asset": "/home/user/work/warships/pal/whoosh_03.wav"
+  },
+  {
+   "id": "s115",
+   "at": 235.1,
    "kind": "shot change",
    "tier": "whoosh",
    "cat": "whoosh",
    "gain_db": -12.0,
    "vary": 0.2,
    "pre_trimmed": true,
-   "anchor": 0.2658,
-   "asset": "/home/user/work/warships/pal/whoosh_06.wav"
+   "anchor": 0.3659,
+   "asset": "/home/user/work/warships/pal/whoosh_02.wav"
   },
   {
-   "id": "s123a",
-   "at": 248.87,
+   "id": "s116",
+   "at": 236.4,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
+  },
+  {
+   "id": "s117",
+   "at": 238.1,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
+  },
+  {
+   "id": "s118",
+   "at": 241.2667,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
+  },
+  {
+   "id": "s119a",
+   "at": 243.8367,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -3534,24 +3431,24 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
-   "id": "s123",
-   "at": 249.0,
+   "id": "s119",
+   "at": 243.9667,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_12.wav"
+   "anchor": 0.0658,
+   "asset": "/home/user/work/warships/pal/impact_04.wav"
   },
   {
-   "id": "s123b0",
-   "at": 249.035,
+   "id": "s119b0",
+   "at": 244.0017,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -3563,7 +3460,57 @@
    "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
-   "id": "s124",
+   "id": "s120",
+   "at": 246.0,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.2658,
+   "asset": "/home/user/work/warships/pal/whoosh_06.wav"
+  },
+  {
+   "id": "s121a",
+   "at": 248.87,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
+  },
+  {
+   "id": "s121",
+   "at": 249.0,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_12.wav"
+  },
+  {
+   "id": "s121b0",
+   "at": 249.035,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
+  },
+  {
+   "id": "s122",
    "at": 251.967,
    "kind": "VASA \u2014 sixty-four guns on two decks",
    "tier": "hero_boom",
@@ -3575,7 +3522,7 @@
    "asset": "/home/user/work/warships/pal/boom_01.wav"
   },
   {
-   "id": "s124b0",
+   "id": "s122b0",
    "at": 252.002,
    "kind": "VASA \u2014 sixty-four guns on two decks (weight)",
    "tier": "swish",
@@ -3588,108 +3535,8 @@
    "asset": "/home/user/work/warships/pal/cannon_01.wav"
   },
   {
-   "id": "s125a",
+   "id": "s123a",
    "at": 254.3033,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
-  },
-  {
-   "id": "s125",
-   "at": 254.4333,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_10.wav"
-  },
-  {
-   "id": "s125b0",
-   "at": 254.4683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
-  },
-  {
-   "id": "s126a",
-   "at": 256.97,
-   "kind": "under full sail, leaving Stockholm (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -17.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
-  },
-  {
-   "id": "s126",
-   "at": 257.1,
-   "kind": "under full sail, leaving Stockholm",
-   "tier": "impact",
-   "cat": "sail",
-   "gain_db": -10.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.2722,
-   "asset": "/home/user/work/warships/pal/sail_05.wav"
-  },
-  {
-   "id": "s126b0",
-   "at": 257.135,
-   "kind": "under full sail, leaving Stockholm (weight)",
-   "tier": "swish",
-   "cat": "passby",
-   "gain_db": -15.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.5881,
-   "asset": "/home/user/work/warships/pal/passby_01.wav"
-  },
-  {
-   "id": "s127",
-   "at": 259.8,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.6801,
-   "asset": "/home/user/work/warships/pal/whoosh_09.wav"
-  },
-  {
-   "id": "s128",
-   "at": 263.1667,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.4038,
-   "asset": "/home/user/work/warships/pal/whoosh_07.wav"
-  },
-  {
-   "id": "s129a",
-   "at": 265.2033,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -3701,20 +3548,20 @@
    "asset": "/home/user/work/warships/pal/swish_09.wav"
   },
   {
-   "id": "s129",
-   "at": 265.3333,
+   "id": "s123",
+   "at": 254.4333,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.15,
-   "asset": "/home/user/work/warships/pal/impact_02.wav"
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_10.wav"
   },
   {
-   "id": "s129b0",
-   "at": 265.3683,
+   "id": "s123b0",
+   "at": 254.4683,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -3726,20 +3573,70 @@
    "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
-   "id": "s130",
-   "at": 267.8,
-   "kind": "movement",
+   "id": "s124a",
+   "at": 256.97,
+   "kind": "under full sail, leaving Stockholm (anticipation)",
    "tier": "swish",
    "cat": "swish",
-   "gain_db": -15.0,
+   "gain_db": -17.0,
    "vary": 0.3,
+   "layer": "anticipation",
    "pre_trimmed": true,
    "anchor": 0.0341,
    "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
-   "id": "s131a",
-   "at": 269.27,
+   "id": "s124",
+   "at": 257.1,
+   "kind": "under full sail, leaving Stockholm",
+   "tier": "impact",
+   "cat": "sail",
+   "gain_db": -10.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.2722,
+   "asset": "/home/user/work/warships/pal/sail_05.wav"
+  },
+  {
+   "id": "s124b0",
+   "at": 257.135,
+   "kind": "under full sail, leaving Stockholm (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -15.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
+  },
+  {
+   "id": "s125",
+   "at": 259.8,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.6801,
+   "asset": "/home/user/work/warships/pal/whoosh_09.wav"
+  },
+  {
+   "id": "s126",
+   "at": 263.1667,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.4038,
+   "asset": "/home/user/work/warships/pal/whoosh_07.wav"
+  },
+  {
+   "id": "s127a",
+   "at": 265.2033,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -3751,7 +3648,57 @@
    "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
-   "id": "s131",
+   "id": "s127",
+   "at": 265.3333,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.15,
+   "asset": "/home/user/work/warships/pal/impact_02.wav"
+  },
+  {
+   "id": "s127b0",
+   "at": 265.3683,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
+  },
+  {
+   "id": "s128",
+   "at": 267.8,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
+  },
+  {
+   "id": "s129a",
+   "at": 269.27,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
+  },
+  {
+   "id": "s129",
    "at": 269.4,
    "kind": "strike",
    "tier": "impact",
@@ -3763,7 +3710,7 @@
    "asset": "/home/user/work/warships/pal/impact_11.wav"
   },
   {
-   "id": "s131b0",
+   "id": "s129b0",
    "at": 269.435,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -3772,11 +3719,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
-   "id": "s132",
+   "id": "s130",
    "at": 271.8,
    "kind": "movement",
    "tier": "swish",
@@ -3784,11 +3731,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
   },
   {
-   "id": "s133",
+   "id": "s131",
    "at": 272.9,
    "kind": "movement",
    "tier": "swish",
@@ -3796,11 +3743,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
   },
   {
-   "id": "s134a",
+   "id": "s132a",
    "at": 275.55,
    "kind": "a gust catches her (anticipation)",
    "tier": "swish",
@@ -3809,11 +3756,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
   },
   {
-   "id": "s134",
+   "id": "s132",
    "at": 275.68,
    "kind": "a gust catches her",
    "tier": "hero_hit",
@@ -3825,7 +3772,7 @@
    "asset": "/home/user/work/warships/pal/gust_04.wav"
   },
   {
-   "id": "s134b0",
+   "id": "s132b0",
    "at": 275.715,
    "kind": "a gust catches her (weight)",
    "tier": "swish",
@@ -3838,7 +3785,7 @@
    "asset": "/home/user/work/warships/pal/sail_01.wav"
   },
   {
-   "id": "s135",
+   "id": "s133",
    "at": 276.19,
    "kind": "she heels and the open lower gunports go under",
    "tier": "hero_boom",
@@ -3850,7 +3797,7 @@
    "asset": "/home/user/work/warships/pal/water_02.wav"
   },
   {
-   "id": "s135b0",
+   "id": "s133b0",
    "at": 276.225,
    "kind": "she heels and the open lower gunports go under (weight)",
    "tier": "swish",
@@ -3863,7 +3810,7 @@
    "asset": "/home/user/work/warships/pal/woodbreak_03.wav"
   },
   {
-   "id": "s135b1",
+   "id": "s133b1",
    "at": 276.275,
    "kind": "she heels and the open lower gunports go under (weight)",
    "tier": "swish",
@@ -3876,7 +3823,7 @@
    "asset": "/home/user/work/warships/pal/creak_03.wav"
   },
   {
-   "id": "s136a",
+   "id": "s134a",
    "at": 277.08,
    "kind": "gone, thirteen hundred metres from the quay (anticipation)",
    "tier": "swish",
@@ -3885,11 +3832,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
   },
   {
-   "id": "s136",
+   "id": "s134",
    "at": 277.21,
    "kind": "gone, thirteen hundred metres from the quay",
    "tier": "hero_hit",
@@ -3901,7 +3848,7 @@
    "asset": "/home/user/work/warships/pal/surge_01.wav"
   },
   {
-   "id": "s136b0",
+   "id": "s134b0",
    "at": 277.245,
    "kind": "gone, thirteen hundred metres from the quay (weight)",
    "tier": "swish",
@@ -3914,7 +3861,7 @@
    "asset": "/home/user/work/warships/pal/bubbles_06.wav"
   },
   {
-   "id": "s137a",
+   "id": "s135a",
    "at": 280.1367,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -3923,11 +3870,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
   },
   {
-   "id": "s137",
+   "id": "s135",
    "at": 280.2667,
    "kind": "strike",
    "tier": "impact",
@@ -3939,7 +3886,7 @@
    "asset": "/home/user/work/warships/pal/impact_01.wav"
   },
   {
-   "id": "s137b0",
+   "id": "s135b0",
    "at": 280.3017,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -3948,11 +3895,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
-   "id": "s138",
+   "id": "s136",
    "at": 283.2667,
    "kind": "shot change",
    "tier": "whoosh",
@@ -3964,7 +3911,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_04.wav"
   },
   {
-   "id": "s139",
+   "id": "s137",
    "at": 290.233,
    "kind": "era card whoosh (into the card) \u2014 THE AGE OF SAIL",
    "tier": "whoosh",
@@ -3976,7 +3923,7 @@
    "asset": "/home/user/work/warships/pal/surge_05.wav"
   },
   {
-   "id": "s140",
+   "id": "s138",
    "at": 290.633,
    "kind": "era card \u2014 THE AGE OF SAIL",
    "tier": "hero_boom",
@@ -3988,7 +3935,7 @@
    "asset": "/home/user/work/warships/pal/boom_03.wav"
   },
   {
-   "id": "s140b0",
+   "id": "s138b0",
    "at": 290.668,
    "kind": "era card \u2014 THE AGE OF SAIL (weight)",
    "tier": "swish",
@@ -4001,32 +3948,8 @@
    "asset": "/home/user/work/warships/pal/surge_06.wav"
   },
   {
-   "id": "s141",
+   "id": "s139",
    "at": 292.9333,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
-  },
-  {
-   "id": "s142",
-   "at": 294.4667,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
-  },
-  {
-   "id": "s143",
-   "at": 295.8,
    "kind": "movement",
    "tier": "swish",
    "cat": "swish",
@@ -4037,7 +3960,31 @@
    "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
-   "id": "s144",
+   "id": "s140",
+   "at": 294.4667,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
+  },
+  {
+   "id": "s141",
+   "at": 295.8,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
+  },
+  {
+   "id": "s142",
    "at": 297.6,
    "kind": "shot change",
    "tier": "whoosh",
@@ -4049,7 +3996,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_08.wav"
   },
   {
-   "id": "s145",
+   "id": "s143",
    "at": 305.0,
    "kind": "gunpowder will detonate underwater",
    "tier": "hero_boom",
@@ -4061,7 +4008,7 @@
    "asset": "/home/user/work/warships/pal/uwexp_02.wav"
   },
   {
-   "id": "s145b0",
+   "id": "s143b0",
    "at": 305.035,
    "kind": "gunpowder will detonate underwater (weight)",
    "tier": "swish",
@@ -4074,7 +4021,7 @@
    "asset": "/home/user/work/warships/pal/bubbles_01.wav"
   },
   {
-   "id": "s146a",
+   "id": "s144a",
    "at": 310.97,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -4083,11 +4030,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
+   "anchor": 0.0341,
+   "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
-   "id": "s146",
+   "id": "s144",
    "at": 311.1,
    "kind": "strike",
    "tier": "impact",
@@ -4099,7 +4046,7 @@
    "asset": "/home/user/work/warships/pal/impact_05.wav"
   },
   {
-   "id": "s146b0",
+   "id": "s144b0",
    "at": 311.135,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -4108,11 +4055,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
-   "id": "s147a",
+   "id": "s145a",
    "at": 312.87,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -4121,11 +4068,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
+   "anchor": 0.0591,
+   "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
-   "id": "s147",
+   "id": "s145",
    "at": 313.0,
    "kind": "strike",
    "tier": "impact",
@@ -4137,7 +4084,7 @@
    "asset": "/home/user/work/warships/pal/impact_06.wav"
   },
   {
-   "id": "s147b0",
+   "id": "s145b0",
    "at": 313.035,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -4146,11 +4093,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
-   "id": "s148",
+   "id": "s146",
    "at": 314.2667,
    "kind": "small element",
    "tier": "pop",
@@ -4162,7 +4109,7 @@
    "asset": "/home/user/work/warships/pal/pop_07.wav"
   },
   {
-   "id": "s149",
+   "id": "s147",
    "at": 315.4333,
    "kind": "movement",
    "tier": "swish",
@@ -4170,11 +4117,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0341,
-   "asset": "/home/user/work/warships/pal/swish_06.wav"
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
   },
   {
-   "id": "s150a",
+   "id": "s148a",
    "at": 316.87,
    "kind": "one propeller turned by hand (anticipation)",
    "tier": "swish",
@@ -4183,11 +4130,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0591,
-   "asset": "/home/user/work/warships/pal/swish_02.wav"
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
   },
   {
-   "id": "s150",
+   "id": "s148",
    "at": 317.0,
    "kind": "one propeller turned by hand",
    "tier": "impact",
@@ -4199,7 +4146,7 @@
    "asset": "/home/user/work/warships/pal/winch_02.wav"
   },
   {
-   "id": "s150b0",
+   "id": "s148b0",
    "at": 317.035,
    "kind": "one propeller turned by hand (weight)",
    "tier": "swish",
@@ -4208,11 +4155,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
   },
   {
-   "id": "s151",
+   "id": "s149",
    "at": 318.9667,
    "kind": "small element",
    "tier": "pop",
@@ -4224,7 +4171,7 @@
    "asset": "/home/user/work/warships/pal/pop_03.wav"
   },
   {
-   "id": "s152",
+   "id": "s150",
    "at": 320.2667,
    "kind": "small element",
    "tier": "pop",
@@ -4236,7 +4183,7 @@
    "asset": "/home/user/work/warships/pal/pop_09.wav"
   },
   {
-   "id": "s153a",
+   "id": "s151a",
    "at": 322.003,
    "kind": "water into the ballast tank, to sink (anticipation)",
    "tier": "swish",
@@ -4245,11 +4192,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
   },
   {
-   "id": "s153",
+   "id": "s151",
    "at": 322.133,
    "kind": "water into the ballast tank, to sink",
    "tier": "impact",
@@ -4261,7 +4208,7 @@
    "asset": "/home/user/work/warships/pal/bubbles_02.wav"
   },
   {
-   "id": "s153b0",
+   "id": "s151b0",
    "at": 322.168,
    "kind": "water into the ballast tank, to sink (weight)",
    "tier": "swish",
@@ -4274,84 +4221,8 @@
    "asset": "/home/user/work/warships/pal/water_06.wav"
   },
   {
-   "id": "s154a",
+   "id": "s152a",
    "at": 324.5367,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
-  },
-  {
-   "id": "s154",
-   "at": 324.6667,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.186,
-   "asset": "/home/user/work/warships/pal/impact_07.wav"
-  },
-  {
-   "id": "s154b0",
-   "at": 324.7017,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
-  },
-  {
-   "id": "s155a",
-   "at": 326.27,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
-  },
-  {
-   "id": "s155",
-   "at": 326.4,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.3484,
-   "asset": "/home/user/work/warships/pal/impact_09.wav"
-  },
-  {
-   "id": "s155b0",
-   "at": 326.435,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
-  },
-  {
-   "id": "s156a",
-   "at": 327.5367,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -4363,20 +4234,20 @@
    "asset": "/home/user/work/warships/pal/swish_08.wav"
   },
   {
-   "id": "s156",
-   "at": 327.6667,
+   "id": "s152",
+   "at": 324.6667,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_03.wav"
+   "anchor": 0.186,
+   "asset": "/home/user/work/warships/pal/impact_07.wav"
   },
   {
-   "id": "s156b0",
-   "at": 327.7017,
+   "id": "s152b0",
+   "at": 324.7017,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -4388,44 +4259,8 @@
    "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
-   "id": "s157",
-   "at": 328.9,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.2155,
-   "asset": "/home/user/work/warships/pal/whoosh_01.wav"
-  },
-  {
-   "id": "s158",
-   "at": 330.6,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.6806,
-   "asset": "/home/user/work/warships/pal/whoosh_10.wav"
-  },
-  {
-   "id": "s159",
-   "at": 332.1,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_05.wav"
-  },
-  {
-   "id": "s160a",
-   "at": 333.67,
+   "id": "s153a",
+   "at": 326.27,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -4437,20 +4272,20 @@
    "asset": "/home/user/work/warships/pal/swish_05.wav"
   },
   {
-   "id": "s160",
-   "at": 333.8,
+   "id": "s153",
+   "at": 326.4,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.4451,
-   "asset": "/home/user/work/warships/pal/impact_08.wav"
+   "anchor": 0.3484,
+   "asset": "/home/user/work/warships/pal/impact_09.wav"
   },
   {
-   "id": "s160b0",
-   "at": 333.835,
+   "id": "s153b0",
+   "at": 326.435,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -4462,20 +4297,8 @@
    "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
-   "id": "s161",
-   "at": 335.5,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.0441,
-   "asset": "/home/user/work/warships/pal/whoosh_11.wav"
-  },
-  {
-   "id": "s162a",
-   "at": 339.0367,
+   "id": "s154a",
+   "at": 327.5367,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -4487,20 +4310,20 @@
    "asset": "/home/user/work/warships/pal/swish_10.wav"
   },
   {
-   "id": "s162",
-   "at": 339.1667,
+   "id": "s154",
+   "at": 327.6667,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0658,
-   "asset": "/home/user/work/warships/pal/impact_04.wav"
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_03.wav"
   },
   {
-   "id": "s162b0",
-   "at": 339.2017,
+   "id": "s154b0",
+   "at": 327.7017,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -4512,32 +4335,44 @@
    "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
-   "id": "s163",
-   "at": 340.6667,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
+   "id": "s155",
+   "at": 328.9,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
    "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
+   "anchor": 0.2155,
+   "asset": "/home/user/work/warships/pal/whoosh_01.wav"
   },
   {
-   "id": "s164",
-   "at": 345.167,
-   "kind": "the Turtle crossing the harbour",
-   "tier": "swish",
-   "cat": "wake",
-   "gain_db": -15.0,
-   "vary": 0.0,
+   "id": "s156",
+   "at": 330.6,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
    "pre_trimmed": true,
-   "anchor": 0.2571,
-   "asset": "/home/user/work/warships/pal/wake_04.wav"
+   "anchor": 0.6806,
+   "asset": "/home/user/work/warships/pal/whoosh_10.wav"
   },
   {
-   "id": "s165a",
-   "at": 346.9367,
+   "id": "s157",
+   "at": 332.1,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_05.wav"
+  },
+  {
+   "id": "s158a",
+   "at": 333.67,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -4545,24 +4380,24 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
   },
   {
-   "id": "s165",
-   "at": 347.0667,
+   "id": "s158",
+   "at": 333.8,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_12.wav"
+   "anchor": 0.4451,
+   "asset": "/home/user/work/warships/pal/impact_08.wav"
   },
   {
-   "id": "s165b0",
-   "at": 347.1017,
+   "id": "s158b0",
+   "at": 333.835,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -4574,7 +4409,107 @@
    "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
-   "id": "s166a",
+   "id": "s159",
+   "at": 335.5,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.0441,
+   "asset": "/home/user/work/warships/pal/whoosh_11.wav"
+  },
+  {
+   "id": "s160a",
+   "at": 339.0367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
+  },
+  {
+   "id": "s160",
+   "at": 339.1667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0658,
+   "asset": "/home/user/work/warships/pal/impact_04.wav"
+  },
+  {
+   "id": "s160b0",
+   "at": 339.2017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
+  },
+  {
+   "id": "s161",
+   "at": 340.6667,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
+  },
+  {
+   "id": "s162a",
+   "at": 346.9367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
+  },
+  {
+   "id": "s162",
+   "at": 347.0667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_12.wav"
+  },
+  {
+   "id": "s162b0",
+   "at": 347.1017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
+  },
+  {
+   "id": "s163a",
    "at": 348.34,
    "kind": "he starts drilling into the ship's bottom (anticipation)",
    "tier": "swish",
@@ -4583,11 +4518,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
+   "anchor": 0.0341,
+   "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
-   "id": "s166",
+   "id": "s163",
    "at": 348.47,
    "kind": "he starts drilling into the ship's bottom",
    "tier": "hero_hit",
@@ -4599,7 +4534,7 @@
    "asset": "/home/user/work/warships/pal/winch_04.wav"
   },
   {
-   "id": "s166b0",
+   "id": "s163b0",
    "at": 348.505,
    "kind": "he starts drilling into the ship's bottom (weight)",
    "tier": "swish",
@@ -4612,7 +4547,7 @@
    "asset": "/home/user/work/warships/pal/creak_02.wav"
   },
   {
-   "id": "s167",
+   "id": "s164",
    "at": 351.9,
    "kind": "it will not bite",
    "tier": "hero_boom",
@@ -4624,7 +4559,7 @@
    "asset": "/home/user/work/warships/pal/impact_10.wav"
   },
   {
-   "id": "s168a",
+   "id": "s165a",
    "at": 355.5367,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -4633,11 +4568,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
+   "anchor": 0.0591,
+   "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
-   "id": "s168",
+   "id": "s165",
    "at": 355.6667,
    "kind": "strike",
    "tier": "impact",
@@ -4649,7 +4584,7 @@
    "asset": "/home/user/work/warships/pal/impact_02.wav"
   },
   {
-   "id": "s168b0",
+   "id": "s165b0",
    "at": 355.7017,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -4658,11 +4593,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
-   "id": "s169a",
+   "id": "s166a",
    "at": 357.67,
    "kind": "an hour of his own exhaled air, in the dark (anticipation)",
    "tier": "swish",
@@ -4671,11 +4606,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0341,
-   "asset": "/home/user/work/warships/pal/swish_06.wav"
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
   },
   {
-   "id": "s169",
+   "id": "s166",
    "at": 357.8,
    "kind": "an hour of his own exhaled air, in the dark",
    "tier": "impact",
@@ -4687,7 +4622,7 @@
    "asset": "/home/user/work/warships/pal/breath_01.wav"
   },
   {
-   "id": "s169b0",
+   "id": "s166b0",
    "at": 357.835,
    "kind": "an hour of his own exhaled air, in the dark (weight)",
    "tier": "swish",
@@ -4696,11 +4631,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
-   "id": "s170",
+   "id": "s167",
    "at": 360.8333,
    "kind": "movement",
    "tier": "swish",
@@ -4708,11 +4643,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0591,
-   "asset": "/home/user/work/warships/pal/swish_02.wav"
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
   },
   {
-   "id": "s171a",
+   "id": "s168a",
    "at": 362.77,
    "kind": "he releases the mine and pedals away (anticipation)",
    "tier": "swish",
@@ -4721,11 +4656,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
   },
   {
-   "id": "s171",
+   "id": "s168",
    "at": 362.9,
    "kind": "he releases the mine and pedals away",
    "tier": "impact",
@@ -4737,7 +4672,7 @@
    "asset": "/home/user/work/warships/pal/torpedo_01.wav"
   },
   {
-   "id": "s171b0",
+   "id": "s168b0",
    "at": 362.935,
    "kind": "he releases the mine and pedals away (weight)",
    "tier": "swish",
@@ -4750,7 +4685,7 @@
    "asset": "/home/user/work/warships/pal/bubbles_04.wav"
   },
   {
-   "id": "s172",
+   "id": "s169",
    "at": 364.9,
    "kind": "movement",
    "tier": "swish",
@@ -4758,11 +4693,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
   },
   {
-   "id": "s173",
+   "id": "s170",
    "at": 366.3333,
    "kind": "movement",
    "tier": "swish",
@@ -4770,28 +4705,28 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
   },
   {
-   "id": "s174",
+   "id": "s171",
    "at": 369.2,
    "kind": "it goes off in open water and hurts nobody",
    "tier": "hero_boom",
    "cat": "explo",
-   "gain_db": -6.0,
+   "gain_db": -7.0,
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.0,
    "asset": "/home/user/work/warships/pal/explo_06.wav"
   },
   {
-   "id": "s174b0",
+   "id": "s171b0",
    "at": 369.235,
    "kind": "it goes off in open water and hurts nobody (weight)",
    "tier": "swish",
    "cat": "surge",
-   "gain_db": -11.0,
+   "gain_db": -12.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
@@ -4799,12 +4734,12 @@
    "asset": "/home/user/work/warships/pal/surge_03.wav"
   },
   {
-   "id": "s174b1",
+   "id": "s171b1",
    "at": 369.285,
    "kind": "it goes off in open water and hurts nobody (weight)",
    "tier": "swish",
    "cat": "water",
-   "gain_db": -11.0,
+   "gain_db": -12.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
@@ -4812,7 +4747,7 @@
    "asset": "/home/user/work/warships/pal/water_03.wav"
   },
   {
-   "id": "s175",
+   "id": "s172",
    "at": 371.6667,
    "kind": "shot change",
    "tier": "whoosh",
@@ -4824,7 +4759,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_05.wav"
   },
   {
-   "id": "s176",
+   "id": "s173",
    "at": 372.9667,
    "kind": "small element",
    "tier": "pop",
@@ -4836,7 +4771,7 @@
    "asset": "/home/user/work/warships/pal/pop_02.wav"
   },
   {
-   "id": "s177a",
+   "id": "s174a",
    "at": 374.3367,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -4845,11 +4780,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
   },
   {
-   "id": "s177",
+   "id": "s174",
    "at": 374.4667,
    "kind": "strike",
    "tier": "impact",
@@ -4861,7 +4796,7 @@
    "asset": "/home/user/work/warships/pal/impact_11.wav"
   },
   {
-   "id": "s177b0",
+   "id": "s174b0",
    "at": 374.5017,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -4870,11 +4805,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
-   "id": "s178a",
+   "id": "s175a",
    "at": 375.637,
    "kind": "the sloop carrying it goes down off Fort Lee (anticipation)",
    "tier": "swish",
@@ -4883,11 +4818,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
   },
   {
-   "id": "s178",
+   "id": "s175",
    "at": 375.767,
    "kind": "the sloop carrying it goes down off Fort Lee",
    "tier": "hero_hit",
@@ -4899,7 +4834,7 @@
    "asset": "/home/user/work/warships/pal/water_05.wav"
   },
   {
-   "id": "s178b0",
+   "id": "s175b0",
    "at": 375.802,
    "kind": "the sloop carrying it goes down off Fort Lee (weight)",
    "tier": "swish",
@@ -4912,7 +4847,7 @@
    "asset": "/home/user/work/warships/pal/woodbreak_04.wav"
   },
   {
-   "id": "s179",
+   "id": "s176",
    "at": 385.733,
    "kind": "era card whoosh (into the card) \u2014 THE IRONCLAD AGE",
    "tier": "whoosh",
@@ -4924,7 +4859,7 @@
    "asset": "/home/user/work/warships/pal/surge_07.wav"
   },
   {
-   "id": "s180",
+   "id": "s177",
    "at": 386.133,
    "kind": "era card \u2014 THE IRONCLAD AGE",
    "tier": "hero_boom",
@@ -4936,7 +4871,7 @@
    "asset": "/home/user/work/warships/pal/boom_04.wav"
   },
   {
-   "id": "s180b0",
+   "id": "s177b0",
    "at": 386.168,
    "kind": "era card \u2014 THE IRONCLAD AGE (weight)",
    "tier": "swish",
@@ -4949,7 +4884,7 @@
    "asset": "/home/user/work/warships/pal/surge_02.wav"
   },
   {
-   "id": "s181a",
+   "id": "s178a",
    "at": 389.27,
    "kind": "NOVGOROD \u2014 a circle, a hundred and one feet across (anticipation)",
    "tier": "swish",
@@ -4958,11 +4893,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
-   "id": "s181",
+   "id": "s178",
    "at": 389.4,
    "kind": "NOVGOROD \u2014 a circle, a hundred and one feet across",
    "tier": "hero_hit",
@@ -4974,7 +4909,7 @@
    "asset": "/home/user/work/warships/pal/impact_01.wav"
   },
   {
-   "id": "s181b0",
+   "id": "s178b0",
    "at": 389.435,
    "kind": "NOVGOROD \u2014 a circle, a hundred and one feet across (weight)",
    "tier": "swish",
@@ -4987,7 +4922,7 @@
    "asset": "/home/user/work/warships/pal/water_04.wav"
   },
   {
-   "id": "s182",
+   "id": "s179",
    "at": 390.7333,
    "kind": "small element",
    "tier": "pop",
@@ -4999,7 +4934,7 @@
    "asset": "/home/user/work/warships/pal/pop_06.wav"
   },
   {
-   "id": "s183a",
+   "id": "s180a",
    "at": 391.8033,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -5008,11 +4943,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
   },
   {
-   "id": "s183",
+   "id": "s180",
    "at": 391.9333,
    "kind": "strike",
    "tier": "impact",
@@ -5024,108 +4959,8 @@
    "asset": "/home/user/work/warships/pal/impact_05.wav"
   },
   {
-   "id": "s183b0",
+   "id": "s180b0",
    "at": 391.9683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
-  },
-  {
-   "id": "s184",
-   "at": 398.0,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
-  },
-  {
-   "id": "s185a",
-   "at": 400.337,
-   "kind": "Elder's paper: a wider hull, thicker armour (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -19.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
-  },
-  {
-   "id": "s185",
-   "at": 400.467,
-   "kind": "Elder's paper: a wider hull, thicker armour",
-   "tier": "impact",
-   "cat": "paper",
-   "gain_db": -12.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.1129,
-   "asset": "/home/user/work/warships/pal/paper_03.wav"
-  },
-  {
-   "id": "s185b0",
-   "at": 400.502,
-   "kind": "Elder's paper: a wider hull, thicker armour (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -17.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
-  },
-  {
-   "id": "s186",
-   "at": 401.9333,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
-  },
-  {
-   "id": "s187a",
-   "at": 405.27,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0341,
-   "asset": "/home/user/work/warships/pal/swish_06.wav"
-  },
-  {
-   "id": "s187",
-   "at": 405.4,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0752,
-   "asset": "/home/user/work/warships/pal/impact_06.wav"
-  },
-  {
-   "id": "s187b0",
-   "at": 405.435,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -5137,37 +4972,49 @@
    "asset": "/home/user/work/warships/pal/body_05.wav"
   },
   {
-   "id": "s188a",
-   "at": 406.77,
-   "kind": "strike (anticipation)",
+   "id": "s181",
+   "at": 398.0,
+   "kind": "movement",
    "tier": "swish",
    "cat": "swish",
    "gain_db": -15.0,
    "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
+  },
+  {
+   "id": "s182a",
+   "at": 400.337,
+   "kind": "Elder's paper: a wider hull, thicker armour (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -19.0,
+   "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0591,
-   "asset": "/home/user/work/warships/pal/swish_02.wav"
+   "anchor": 0.0341,
+   "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
-   "id": "s188",
-   "at": 406.9,
-   "kind": "strike",
+   "id": "s182",
+   "at": 400.467,
+   "kind": "Elder's paper: a wider hull, thicker armour",
    "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
+   "cat": "paper",
+   "gain_db": -12.0,
+   "vary": 0.0,
    "pre_trimmed": true,
-   "anchor": 0.186,
-   "asset": "/home/user/work/warships/pal/impact_07.wav"
+   "anchor": 0.1129,
+   "asset": "/home/user/work/warships/pal/paper_03.wav"
   },
   {
-   "id": "s188b0",
-   "at": 406.935,
-   "kind": "strike (weight)",
+   "id": "s182b0",
+   "at": 400.502,
+   "kind": "Elder's paper: a wider hull, thicker armour (weight)",
    "tier": "swish",
    "cat": "body",
-   "gain_db": -13.0,
+   "gain_db": -17.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
@@ -5175,20 +5022,20 @@
    "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
-   "id": "s189",
-   "at": 408.5667,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
+   "id": "s183",
+   "at": 401.9333,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0413,
-   "asset": "/home/user/work/warships/pal/whoosh_12.wav"
+   "anchor": 0.0591,
+   "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
-   "id": "s190a",
-   "at": 412.17,
+   "id": "s184a",
+   "at": 405.27,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -5200,20 +5047,20 @@
    "asset": "/home/user/work/warships/pal/swish_01.wav"
   },
   {
-   "id": "s190",
-   "at": 412.3,
+   "id": "s184",
+   "at": 405.4,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.3484,
-   "asset": "/home/user/work/warships/pal/impact_09.wav"
+   "anchor": 0.0752,
+   "asset": "/home/user/work/warships/pal/impact_06.wav"
   },
   {
-   "id": "s190b0",
-   "at": 412.335,
+   "id": "s184b0",
+   "at": 405.435,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -5225,48 +5072,12 @@
    "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
-   "id": "s191",
-   "at": 415.1,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.1999,
-   "asset": "/home/user/work/warships/pal/pop_08.wav"
-  },
-  {
-   "id": "s192",
-   "at": 416.6,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0312,
-   "asset": "/home/user/work/warships/pal/pop_10.wav"
-  },
-  {
-   "id": "s193",
-   "at": 417.6,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_04.wav"
-  },
-  {
-   "id": "s194a",
-   "at": 419.603,
-   "kind": "the navy approves the drawings, December 1869 (anticipation)",
+   "id": "s185a",
+   "at": 406.77,
+   "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
-   "gain_db": -19.0,
+   "gain_db": -15.0,
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
@@ -5274,24 +5085,24 @@
    "asset": "/home/user/work/warships/pal/swish_12.wav"
   },
   {
-   "id": "s194",
-   "at": 419.733,
-   "kind": "the navy approves the drawings, December 1869",
+   "id": "s185",
+   "at": 406.9,
+   "kind": "strike",
    "tier": "impact",
-   "cat": "typewriter",
-   "gain_db": -12.0,
-   "vary": 0.0,
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0545,
-   "asset": "/home/user/work/warships/pal/typewriter_02.wav"
+   "anchor": 0.186,
+   "asset": "/home/user/work/warships/pal/impact_07.wav"
   },
   {
-   "id": "s194b0",
-   "at": 419.768,
-   "kind": "the navy approves the drawings, December 1869 (weight)",
+   "id": "s185b0",
+   "at": 406.935,
+   "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
-   "gain_db": -17.0,
+   "gain_db": -13.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
@@ -5299,8 +5110,20 @@
    "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
-   "id": "s195a",
-   "at": 422.3367,
+   "id": "s186",
+   "at": 408.5667,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.0413,
+   "asset": "/home/user/work/warships/pal/whoosh_12.wav"
+  },
+  {
+   "id": "s187a",
+   "at": 412.17,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -5312,20 +5135,20 @@
    "asset": "/home/user/work/warships/pal/swish_11.wav"
   },
   {
-   "id": "s195",
-   "at": 422.4667,
+   "id": "s187",
+   "at": 412.3,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_03.wav"
+   "anchor": 0.3484,
+   "asset": "/home/user/work/warships/pal/impact_09.wav"
   },
   {
-   "id": "s195b0",
-   "at": 422.5017,
+   "id": "s187b0",
+   "at": 412.335,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -5337,7 +5160,119 @@
    "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
-   "id": "s196a",
+   "id": "s188",
+   "at": 415.1,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.1999,
+   "asset": "/home/user/work/warships/pal/pop_08.wav"
+  },
+  {
+   "id": "s189",
+   "at": 416.6,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0312,
+   "asset": "/home/user/work/warships/pal/pop_10.wav"
+  },
+  {
+   "id": "s190",
+   "at": 417.6,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_04.wav"
+  },
+  {
+   "id": "s191a",
+   "at": 419.603,
+   "kind": "the navy approves the drawings, December 1869 (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -19.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
+  },
+  {
+   "id": "s191",
+   "at": 419.733,
+   "kind": "the navy approves the drawings, December 1869",
+   "tier": "impact",
+   "cat": "typewriter",
+   "gain_db": -12.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.0545,
+   "asset": "/home/user/work/warships/pal/typewriter_02.wav"
+  },
+  {
+   "id": "s191b0",
+   "at": 419.768,
+   "kind": "the navy approves the drawings, December 1869 (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -17.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
+  },
+  {
+   "id": "s192a",
+   "at": 422.3367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
+  },
+  {
+   "id": "s192",
+   "at": 422.4667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_03.wav"
+  },
+  {
+   "id": "s192b0",
+   "at": 422.5017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
+  },
+  {
+   "id": "s193a",
    "at": 424.97,
    "kind": "two and a half thousand tons on almost no draught (anticipation)",
    "tier": "swish",
@@ -5346,11 +5281,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
   },
   {
-   "id": "s196",
+   "id": "s193",
    "at": 425.1,
    "kind": "two and a half thousand tons on almost no draught",
    "tier": "hero_hit",
@@ -5362,7 +5297,7 @@
    "asset": "/home/user/work/warships/pal/boom_01.wav"
   },
   {
-   "id": "s196b0",
+   "id": "s193b0",
    "at": 425.135,
    "kind": "two and a half thousand tons on almost no draught (weight)",
    "tier": "swish",
@@ -5375,7 +5310,7 @@
    "asset": "/home/user/work/warships/pal/water_01.wav"
   },
   {
-   "id": "s197a",
+   "id": "s194a",
    "at": 426.7033,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -5384,11 +5319,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
   },
   {
-   "id": "s197",
+   "id": "s194",
    "at": 426.8333,
    "kind": "strike",
    "tier": "impact",
@@ -5400,120 +5335,8 @@
    "asset": "/home/user/work/warships/pal/impact_08.wav"
   },
   {
-   "id": "s197b0",
+   "id": "s194b0",
    "at": 426.8683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
-  },
-  {
-   "id": "s198",
-   "at": 428.1333,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_01.wav"
-  },
-  {
-   "id": "s199",
-   "at": 431.067,
-   "kind": "two eleven-inch guns in an open barbette",
-   "tier": "hero_boom",
-   "cat": "cannon",
-   "gain_db": -6.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/cannon_03.wav"
-  },
-  {
-   "id": "s200a",
-   "at": 436.17,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
-  },
-  {
-   "id": "s200",
-   "at": 436.3,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0658,
-   "asset": "/home/user/work/warships/pal/impact_04.wav"
-  },
-  {
-   "id": "s200b0",
-   "at": 436.335,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
-  },
-  {
-   "id": "s201",
-   "at": 438.1333,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
-  },
-  {
-   "id": "s202a",
-   "at": 441.37,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
-  },
-  {
-   "id": "s202",
-   "at": 441.5,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_12.wav"
-  },
-  {
-   "id": "s202b0",
-   "at": 441.535,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -5525,68 +5348,32 @@
    "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
-   "id": "s203",
-   "at": 442.6,
-   "kind": "Fred T. Jane writes the story down",
-   "tier": "swish",
-   "cat": "quill",
-   "gain_db": -14.0,
+   "id": "s195",
+   "at": 428.1333,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_01.wav"
+  },
+  {
+   "id": "s196",
+   "at": 431.067,
+   "kind": "two eleven-inch guns in an open barbette",
+   "tier": "hero_boom",
+   "cat": "cannon",
+   "gain_db": -6.0,
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/quill_02.wav"
+   "asset": "/home/user/work/warships/pal/cannon_03.wav"
   },
   {
-   "id": "s204",
-   "at": 444.6,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.6162,
-   "asset": "/home/user/work/warships/pal/whoosh_03.wav"
-  },
-  {
-   "id": "s205",
-   "at": 445.8333,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
-  },
-  {
-   "id": "s206",
-   "at": 447.2333,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
-  },
-  {
-   "id": "s207",
-   "at": 448.5,
-   "kind": "Novgorod stands up the Dnieper",
-   "tier": "swish",
-   "cat": "passby",
-   "gain_db": -14.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.75,
-   "asset": "/home/user/work/warships/pal/passby_04.wav"
-  },
-  {
-   "id": "s208a",
-   "at": 449.5367,
+   "id": "s197a",
+   "at": 436.17,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -5594,24 +5381,24 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0341,
-   "asset": "/home/user/work/warships/pal/swish_06.wav"
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
-   "id": "s208",
-   "at": 449.6667,
+   "id": "s197",
+   "at": 436.3,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_10.wav"
+   "anchor": 0.0658,
+   "asset": "/home/user/work/warships/pal/impact_04.wav"
   },
   {
-   "id": "s208b0",
-   "at": 449.7017,
+   "id": "s197b0",
+   "at": 436.335,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -5623,8 +5410,20 @@
    "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
-   "id": "s209a",
-   "at": 451.9367,
+   "id": "s198",
+   "at": 438.1333,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
+  },
+  {
+   "id": "s199a",
+   "at": 441.37,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -5632,24 +5431,24 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0591,
-   "asset": "/home/user/work/warships/pal/swish_02.wav"
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
   },
   {
-   "id": "s209",
-   "at": 452.0667,
+   "id": "s199",
+   "at": 441.5,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.15,
-   "asset": "/home/user/work/warships/pal/impact_02.wav"
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_12.wav"
   },
   {
-   "id": "s209b0",
-   "at": 452.1017,
+   "id": "s199b0",
+   "at": 441.535,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -5661,7 +5460,143 @@
    "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
-   "id": "s210a",
+   "id": "s200",
+   "at": 442.6,
+   "kind": "Fred T. Jane writes the story down",
+   "tier": "swish",
+   "cat": "quill",
+   "gain_db": -14.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/quill_02.wav"
+  },
+  {
+   "id": "s201",
+   "at": 444.6,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.6162,
+   "asset": "/home/user/work/warships/pal/whoosh_03.wav"
+  },
+  {
+   "id": "s202",
+   "at": 445.8333,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0341,
+   "asset": "/home/user/work/warships/pal/swish_06.wav"
+  },
+  {
+   "id": "s203",
+   "at": 447.2333,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0591,
+   "asset": "/home/user/work/warships/pal/swish_02.wav"
+  },
+  {
+   "id": "s204",
+   "at": 448.5,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
+  },
+  {
+   "id": "s205a",
+   "at": 449.5367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
+  },
+  {
+   "id": "s205",
+   "at": 449.6667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_10.wav"
+  },
+  {
+   "id": "s205b0",
+   "at": 449.7017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
+  },
+  {
+   "id": "s206a",
+   "at": 451.9367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
+  },
+  {
+   "id": "s206",
+   "at": 452.0667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.15,
+   "asset": "/home/user/work/warships/pal/impact_02.wav"
+  },
+  {
+   "id": "s206b0",
+   "at": 452.1017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
+  },
+  {
+   "id": "s207a",
    "at": 454.87,
    "kind": "firing her guns spins the whole ship \u2014 the story (anticipation)",
    "tier": "swish",
@@ -5670,11 +5605,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
   },
   {
-   "id": "s210",
+   "id": "s207",
    "at": 455.0,
    "kind": "firing her guns spins the whole ship \u2014 the story",
    "tier": "hero_hit",
@@ -5686,7 +5621,7 @@
    "asset": "/home/user/work/warships/pal/cannon_02.wav"
   },
   {
-   "id": "s210b0",
+   "id": "s207b0",
    "at": 455.035,
    "kind": "firing her guns spins the whole ship \u2014 the story (weight)",
    "tier": "swish",
@@ -5699,7 +5634,7 @@
    "asset": "/home/user/work/warships/pal/surge_08.wav"
   },
   {
-   "id": "s211",
+   "id": "s208",
    "at": 457.1,
    "kind": "shot change",
    "tier": "whoosh",
@@ -5711,7 +5646,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_02.wav"
   },
   {
-   "id": "s212a",
+   "id": "s209a",
    "at": 459.0033,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -5720,11 +5655,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
   },
   {
-   "id": "s212",
+   "id": "s209",
    "at": 459.1333,
    "kind": "strike",
    "tier": "impact",
@@ -5736,96 +5671,8 @@
    "asset": "/home/user/work/warships/pal/impact_11.wav"
   },
   {
-   "id": "s212b0",
+   "id": "s209b0",
    "at": 459.1683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
-  },
-  {
-   "id": "s214a",
-   "at": 460.7033,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
-  },
-  {
-   "id": "s213",
-   "at": 460.833,
-   "kind": "she turns for home",
-   "tier": "swish",
-   "cat": "wake",
-   "gain_db": -13.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.6124,
-   "asset": "/home/user/work/warships/pal/wake_01.wav"
-  },
-  {
-   "id": "s214",
-   "at": 460.8333,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.2085,
-   "asset": "/home/user/work/warships/pal/impact_01.wav"
-  },
-  {
-   "id": "s214b0",
-   "at": 460.8683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
-  },
-  {
-   "id": "s215a",
-   "at": 462.47,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
-  },
-  {
-   "id": "s215",
-   "at": 462.6,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0664,
-   "asset": "/home/user/work/warships/pal/impact_05.wav"
-  },
-  {
-   "id": "s215b0",
-   "at": 462.635,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -5837,7 +5684,95 @@
    "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
-   "id": "s216",
+   "id": "s211a",
+   "at": 460.7033,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
+  },
+  {
+   "id": "s210",
+   "at": 460.833,
+   "kind": "Novgorod turns for home",
+   "tier": "swish",
+   "cat": "wake",
+   "gain_db": -13.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.5248,
+   "asset": "/home/user/work/warships/pal/wake_02.wav"
+  },
+  {
+   "id": "s211",
+   "at": 460.8333,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.2085,
+   "asset": "/home/user/work/warships/pal/impact_01.wav"
+  },
+  {
+   "id": "s211b0",
+   "at": 460.8683,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
+  },
+  {
+   "id": "s212a",
+   "at": 462.47,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
+  },
+  {
+   "id": "s212",
+   "at": 462.6,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0664,
+   "asset": "/home/user/work/warships/pal/impact_05.wav"
+  },
+  {
+   "id": "s212b0",
+   "at": 462.635,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
+  },
+  {
+   "id": "s213",
    "at": 464.3333,
    "kind": "movement",
    "tier": "swish",
@@ -5845,11 +5780,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
-   "id": "s217",
+   "id": "s214",
    "at": 466.2333,
    "kind": "movement",
    "tier": "swish",
@@ -5857,11 +5792,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
   },
   {
-   "id": "s218",
+   "id": "s215",
    "at": 468.4,
    "kind": "movement",
    "tier": "swish",
@@ -5869,11 +5804,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
   },
   {
-   "id": "s219",
+   "id": "s216",
    "at": 469.3,
    "kind": "small element",
    "tier": "pop",
@@ -5885,7 +5820,7 @@
    "asset": "/home/user/work/warships/pal/pop_07.wav"
   },
   {
-   "id": "s220",
+   "id": "s217",
    "at": 470.4,
    "kind": "small element",
    "tier": "pop",
@@ -5897,7 +5832,7 @@
    "asset": "/home/user/work/warships/pal/pop_03.wav"
   },
   {
-   "id": "s221",
+   "id": "s218",
    "at": 472.1,
    "kind": "small element",
    "tier": "pop",
@@ -5909,7 +5844,7 @@
    "asset": "/home/user/work/warships/pal/pop_09.wav"
   },
   {
-   "id": "s222a",
+   "id": "s219a",
    "at": 473.437,
    "kind": "slow, wet and awkward to steer \u2014 the record (anticipation)",
    "tier": "swish",
@@ -5918,11 +5853,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
+   "anchor": 0.0341,
+   "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
-   "id": "s222",
+   "id": "s219",
    "at": 473.567,
    "kind": "slow, wet and awkward to steer \u2014 the record",
    "tier": "impact",
@@ -5934,7 +5869,7 @@
    "asset": "/home/user/work/warships/pal/creak_06.wav"
   },
   {
-   "id": "s222b0",
+   "id": "s219b0",
    "at": 473.602,
    "kind": "slow, wet and awkward to steer \u2014 the record (weight)",
    "tier": "swish",
@@ -5947,20 +5882,7 @@
    "asset": "/home/user/work/warships/pal/water_02.wav"
   },
   {
-   "id": "s222b1",
-   "at": 473.652,
-   "kind": "slow, wet and awkward to steer \u2014 the record (weight)",
-   "tier": "swish",
-   "cat": "passby",
-   "gain_db": -16.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.7224,
-   "asset": "/home/user/work/warships/pal/passby_08.wav"
-  },
-  {
-   "id": "s223a",
+   "id": "s220a",
    "at": 475.3033,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -5969,11 +5891,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
+   "anchor": 0.0591,
+   "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
-   "id": "s223",
+   "id": "s220",
    "at": 475.4333,
    "kind": "strike",
    "tier": "impact",
@@ -5985,120 +5907,8 @@
    "asset": "/home/user/work/warships/pal/impact_06.wav"
   },
   {
-   "id": "s223b0",
+   "id": "s220b0",
    "at": 475.4683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
-  },
-  {
-   "id": "s224",
-   "at": 477.2333,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_05.wav"
-  },
-  {
-   "id": "s225",
-   "at": 478.1667,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_02.wav"
-  },
-  {
-   "id": "s226a",
-   "at": 479.67,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
-  },
-  {
-   "id": "s226",
-   "at": 479.8,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.186,
-   "asset": "/home/user/work/warships/pal/impact_07.wav"
-  },
-  {
-   "id": "s226b0",
-   "at": 479.835,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
-  },
-  {
-   "id": "s227",
-   "at": 481.2667,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_06.wav"
-  },
-  {
-   "id": "s228a",
-   "at": 482.9367,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0341,
-   "asset": "/home/user/work/warships/pal/swish_06.wav"
-  },
-  {
-   "id": "s228",
-   "at": 483.0667,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.3484,
-   "asset": "/home/user/work/warships/pal/impact_09.wav"
-  },
-  {
-   "id": "s228b0",
-   "at": 483.1017,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -6110,7 +5920,119 @@
    "asset": "/home/user/work/warships/pal/body_05.wav"
   },
   {
-   "id": "s229a",
+   "id": "s221",
+   "at": 477.2333,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_05.wav"
+  },
+  {
+   "id": "s222",
+   "at": 478.1667,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_02.wav"
+  },
+  {
+   "id": "s223a",
+   "at": 479.67,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
+  },
+  {
+   "id": "s223",
+   "at": 479.8,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.186,
+   "asset": "/home/user/work/warships/pal/impact_07.wav"
+  },
+  {
+   "id": "s223b0",
+   "at": 479.835,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
+  },
+  {
+   "id": "s224",
+   "at": 481.2667,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_06.wav"
+  },
+  {
+   "id": "s225a",
+   "at": 482.9367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
+  },
+  {
+   "id": "s225",
+   "at": 483.0667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.3484,
+   "asset": "/home/user/work/warships/pal/impact_09.wav"
+  },
+  {
+   "id": "s225b0",
+   "at": 483.1017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
+  },
+  {
+   "id": "s226a",
    "at": 484.337,
    "kind": "and they ordered a second one (anticipation)",
    "tier": "swish",
@@ -6119,11 +6041,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0591,
-   "asset": "/home/user/work/warships/pal/swish_02.wav"
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
   },
   {
-   "id": "s229",
+   "id": "s226",
    "at": 484.467,
    "kind": "and they ordered a second one",
    "tier": "hero_hit",
@@ -6135,7 +6057,7 @@
    "asset": "/home/user/work/warships/pal/impact_03.wav"
   },
   {
-   "id": "s229b0",
+   "id": "s226b0",
    "at": 484.502,
    "kind": "and they ordered a second one (weight)",
    "tier": "swish",
@@ -6148,7 +6070,7 @@
    "asset": "/home/user/work/warships/pal/water_06.wav"
   },
   {
-   "id": "s230",
+   "id": "s227",
    "at": 485.9,
    "kind": "movement",
    "tier": "swish",
@@ -6156,11 +6078,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
   },
   {
-   "id": "s231a",
+   "id": "s228a",
    "at": 487.0033,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -6169,11 +6091,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
   },
   {
-   "id": "s231",
+   "id": "s228",
    "at": 487.1333,
    "kind": "strike",
    "tier": "impact",
@@ -6185,7 +6107,7 @@
    "asset": "/home/user/work/warships/pal/impact_08.wav"
   },
   {
-   "id": "s231b0",
+   "id": "s228b0",
    "at": 487.1683,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -6194,11 +6116,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
   },
   {
-   "id": "s232",
+   "id": "s229",
    "at": 488.5667,
    "kind": "shot change",
    "tier": "whoosh",
@@ -6210,7 +6132,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_06.wav"
   },
   {
-   "id": "s233",
+   "id": "s230",
    "at": 494.267,
    "kind": "era card whoosh (into the card) \u2014 WORLD WAR I",
    "tier": "whoosh",
@@ -6222,7 +6144,7 @@
    "asset": "/home/user/work/warships/pal/surge_09.wav"
   },
   {
-   "id": "s234",
+   "id": "s231",
    "at": 494.667,
    "kind": "era card \u2014 WORLD WAR I",
    "tier": "hero_boom",
@@ -6234,7 +6156,7 @@
    "asset": "/home/user/work/warships/pal/boom_01.wav"
   },
   {
-   "id": "s234b0",
+   "id": "s231b0",
    "at": 494.702,
    "kind": "era card \u2014 WORLD WAR I (weight)",
    "tier": "swish",
@@ -6247,7 +6169,7 @@
    "asset": "/home/user/work/warships/pal/surge_04.wav"
   },
   {
-   "id": "s235a",
+   "id": "s232a",
    "at": 497.537,
    "kind": "two steam funnels standing on a submarine's deck (anticipation)",
    "tier": "swish",
@@ -6256,11 +6178,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
   },
   {
-   "id": "s235",
+   "id": "s232",
    "at": 497.667,
    "kind": "two steam funnels standing on a submarine's deck",
    "tier": "hero_hit",
@@ -6272,7 +6194,7 @@
    "asset": "/home/user/work/warships/pal/steam_01.wav"
   },
   {
-   "id": "s235b0",
+   "id": "s232b0",
    "at": 497.702,
    "kind": "two steam funnels standing on a submarine's deck (weight)",
    "tier": "swish",
@@ -6285,7 +6207,7 @@
    "asset": "/home/user/work/warships/pal/horn_04.wav"
   },
   {
-   "id": "s236",
+   "id": "s233",
    "at": 499.4667,
    "kind": "small element",
    "tier": "pop",
@@ -6297,7 +6219,7 @@
    "asset": "/home/user/work/warships/pal/pop_08.wav"
   },
   {
-   "id": "s237a",
+   "id": "s234a",
    "at": 500.5367,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -6306,11 +6228,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
   },
   {
-   "id": "s237",
+   "id": "s234",
    "at": 500.6667,
    "kind": "strike",
    "tier": "impact",
@@ -6322,7 +6244,7 @@
    "asset": "/home/user/work/warships/pal/impact_04.wav"
   },
   {
-   "id": "s237b0",
+   "id": "s234b0",
    "at": 500.7017,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -6331,11 +6253,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
-   "id": "s238a",
+   "id": "s235a",
    "at": 503.203,
    "kind": "diving: shut down, fold the funnels, clamp them (anticipation)",
    "tier": "swish",
@@ -6344,11 +6266,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
-   "id": "s238",
+   "id": "s235",
    "at": 503.333,
    "kind": "diving: shut down, fold the funnels, clamp them",
    "tier": "hero_hit",
@@ -6360,7 +6282,7 @@
    "asset": "/home/user/work/warships/pal/alarm_02.wav"
   },
   {
-   "id": "s238b0",
+   "id": "s235b0",
    "at": 503.368,
    "kind": "diving: shut down, fold the funnels, clamp them (weight)",
    "tier": "swish",
@@ -6373,70 +6295,8 @@
    "asset": "/home/user/work/warships/pal/hatch_02.wav"
   },
   {
-   "id": "s239a",
+   "id": "s236a",
    "at": 505.5367,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
-  },
-  {
-   "id": "s239",
-   "at": 505.6667,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_12.wav"
-  },
-  {
-   "id": "s239b0",
-   "at": 505.7017,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
-  },
-  {
-   "id": "s240",
-   "at": 506.8,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
-  },
-  {
-   "id": "s241",
-   "at": 507.8,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
-  },
-  {
-   "id": "s242a",
-   "at": 509.3367,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -6448,8 +6308,8 @@
    "asset": "/home/user/work/warships/pal/swish_07.wav"
   },
   {
-   "id": "s242",
-   "at": 509.4667,
+   "id": "s236",
+   "at": 505.6667,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
@@ -6457,49 +6317,11 @@
    "vary": 0.15,
    "pre_trimmed": true,
    "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_10.wav"
+   "asset": "/home/user/work/warships/pal/impact_12.wav"
   },
   {
-   "id": "s242b0",
-   "at": 509.5017,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
-  },
-  {
-   "id": "s243a",
-   "at": 510.67,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
-  },
-  {
-   "id": "s243",
-   "at": 510.8,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.15,
-   "asset": "/home/user/work/warships/pal/impact_02.wav"
-  },
-  {
-   "id": "s243b0",
-   "at": 510.835,
+   "id": "s236b0",
+   "at": 505.7017,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -6511,70 +6333,32 @@
    "asset": "/home/user/work/warships/pal/body_05.wav"
   },
   {
-   "id": "s244a",
-   "at": 513.27,
-   "kind": "strike (anticipation)",
+   "id": "s237",
+   "at": 506.8,
+   "kind": "movement",
    "tier": "swish",
    "cat": "swish",
    "gain_db": -15.0,
    "vary": 0.3,
-   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
+  },
+  {
+   "id": "s238",
+   "at": 507.8,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
    "pre_trimmed": true,
    "anchor": 0.0341,
    "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
-   "id": "s244",
-   "at": 513.4,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_11.wav"
-  },
-  {
-   "id": "s245",
-   "at": 513.4,
-   "kind": "the K-boat holding station at twenty-four knots",
-   "tier": "swish",
-   "cat": "wake",
-   "gain_db": -12.5,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.2301,
-   "asset": "/home/user/work/warships/pal/wake_03.wav"
-  },
-  {
-   "id": "s244b0",
-   "at": 513.435,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
-  },
-  {
-   "id": "s246",
-   "at": 516.1,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.6801,
-   "asset": "/home/user/work/warships/pal/whoosh_09.wav"
-  },
-  {
-   "id": "s247a",
-   "at": 518.17,
+   "id": "s239a",
+   "at": 509.3367,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -6586,20 +6370,58 @@
    "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
-   "id": "s247",
-   "at": 518.3,
+   "id": "s239",
+   "at": 509.4667,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.2085,
-   "asset": "/home/user/work/warships/pal/impact_01.wav"
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_10.wav"
   },
   {
-   "id": "s247b0",
-   "at": 518.335,
+   "id": "s239b0",
+   "at": 509.5017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
+  },
+  {
+   "id": "s240a",
+   "at": 510.67,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
+  },
+  {
+   "id": "s240",
+   "at": 510.8,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.15,
+   "asset": "/home/user/work/warships/pal/impact_02.wav"
+  },
+  {
+   "id": "s240b0",
+   "at": 510.835,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -6611,7 +6433,107 @@
    "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
-   "id": "s248a",
+   "id": "s241a",
+   "at": 513.27,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
+  },
+  {
+   "id": "s241",
+   "at": 513.4,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_11.wav"
+  },
+  {
+   "id": "s242",
+   "at": 513.4,
+   "kind": "the K-boat holding station at twenty-four knots",
+   "tier": "swish",
+   "cat": "wake",
+   "gain_db": -13.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.6062,
+   "asset": "/home/user/work/warships/pal/wake_05.wav"
+  },
+  {
+   "id": "s241b0",
+   "at": 513.435,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
+  },
+  {
+   "id": "s243",
+   "at": 516.1,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.6801,
+   "asset": "/home/user/work/warships/pal/whoosh_09.wav"
+  },
+  {
+   "id": "s244a",
+   "at": 518.17,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
+  },
+  {
+   "id": "s244",
+   "at": 518.3,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.2085,
+   "asset": "/home/user/work/warships/pal/impact_01.wav"
+  },
+  {
+   "id": "s244b0",
+   "at": 518.335,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
+  },
+  {
+   "id": "s245a",
    "at": 520.837,
    "kind": "thirty separate openings, closed by hand (anticipation)",
    "tier": "swish",
@@ -6620,11 +6542,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
   },
   {
-   "id": "s248",
+   "id": "s245",
    "at": 520.967,
    "kind": "thirty separate openings, closed by hand",
    "tier": "impact",
@@ -6636,7 +6558,7 @@
    "asset": "/home/user/work/warships/pal/hatch_03.wav"
   },
   {
-   "id": "s248b0",
+   "id": "s245b0",
    "at": 521.002,
    "kind": "thirty separate openings, closed by hand (weight)",
    "tier": "swish",
@@ -6649,7 +6571,7 @@
    "asset": "/home/user/work/warships/pal/chain_02.wav"
   },
   {
-   "id": "s249",
+   "id": "s246",
    "at": 524.6333,
    "kind": "shot change",
    "tier": "whoosh",
@@ -6661,7 +6583,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_07.wav"
   },
   {
-   "id": "s250",
+   "id": "s247",
    "at": 527.1333,
    "kind": "shot change",
    "tier": "whoosh",
@@ -6673,7 +6595,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_04.wav"
   },
   {
-   "id": "s251",
+   "id": "s248",
    "at": 530.2333,
    "kind": "shot change",
    "tier": "whoosh",
@@ -6685,122 +6607,8 @@
    "asset": "/home/user/work/warships/pal/whoosh_08.wav"
   },
   {
-   "id": "s252a",
+   "id": "s249a",
    "at": 531.67,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
-  },
-  {
-   "id": "s252",
-   "at": 531.8,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0664,
-   "asset": "/home/user/work/warships/pal/impact_05.wav"
-  },
-  {
-   "id": "s252b0",
-   "at": 531.835,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
-  },
-  {
-   "id": "s253a",
-   "at": 533.37,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
-  },
-  {
-   "id": "s253",
-   "at": 533.5,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0752,
-   "asset": "/home/user/work/warships/pal/impact_06.wav"
-  },
-  {
-   "id": "s253b0",
-   "at": 533.535,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
-  },
-  {
-   "id": "s254a",
-   "at": 535.8367,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
-  },
-  {
-   "id": "s254",
-   "at": 535.9667,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.186,
-   "asset": "/home/user/work/warships/pal/impact_07.wav"
-  },
-  {
-   "id": "s254b0",
-   "at": 536.0017,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
-  },
-  {
-   "id": "s255a",
-   "at": 538.3367,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -6812,20 +6620,58 @@
    "asset": "/home/user/work/warships/pal/swish_05.wav"
   },
   {
-   "id": "s255",
-   "at": 538.4667,
+   "id": "s249",
+   "at": 531.8,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.3484,
-   "asset": "/home/user/work/warships/pal/impact_09.wav"
+   "anchor": 0.0664,
+   "asset": "/home/user/work/warships/pal/impact_05.wav"
   },
   {
-   "id": "s255b0",
-   "at": 538.5017,
+   "id": "s249b0",
+   "at": 531.835,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
+  },
+  {
+   "id": "s250a",
+   "at": 533.37,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
+  },
+  {
+   "id": "s250",
+   "at": 533.5,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0752,
+   "asset": "/home/user/work/warships/pal/impact_06.wav"
+  },
+  {
+   "id": "s250b0",
+   "at": 533.535,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -6837,32 +6683,8 @@
    "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
-   "id": "s256",
-   "at": 539.5667,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
-  },
-  {
-   "id": "s257",
-   "at": 540.6,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.2155,
-   "asset": "/home/user/work/warships/pal/whoosh_01.wav"
-  },
-  {
-   "id": "s258a",
-   "at": 543.7033,
+   "id": "s251a",
+   "at": 535.8367,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -6874,20 +6696,20 @@
    "asset": "/home/user/work/warships/pal/swish_03.wav"
   },
   {
-   "id": "s258",
-   "at": 543.8333,
+   "id": "s251",
+   "at": 535.9667,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_03.wav"
+   "anchor": 0.186,
+   "asset": "/home/user/work/warships/pal/impact_07.wav"
   },
   {
-   "id": "s258b0",
-   "at": 543.8683,
+   "id": "s251b0",
+   "at": 536.0017,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -6899,7 +6721,107 @@
    "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
-   "id": "s259a",
+   "id": "s252a",
+   "at": 538.3367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
+  },
+  {
+   "id": "s252",
+   "at": 538.4667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.3484,
+   "asset": "/home/user/work/warships/pal/impact_09.wav"
+  },
+  {
+   "id": "s252b0",
+   "at": 538.5017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
+  },
+  {
+   "id": "s253",
+   "at": 539.5667,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
+  },
+  {
+   "id": "s254",
+   "at": 540.6,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.2155,
+   "asset": "/home/user/work/warships/pal/whoosh_01.wav"
+  },
+  {
+   "id": "s255a",
+   "at": 543.7033,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
+  },
+  {
+   "id": "s255",
+   "at": 543.8333,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_03.wav"
+  },
+  {
+   "id": "s255b0",
+   "at": 543.8683,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
+  },
+  {
+   "id": "s256a",
    "at": 545.103,
    "kind": "the Grand Fleet sails from Rosyth into mist (anticipation)",
    "tier": "swish",
@@ -6908,11 +6830,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
+   "anchor": 0.0341,
+   "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
-   "id": "s259",
+   "id": "s256",
    "at": 545.233,
    "kind": "the Grand Fleet sails from Rosyth into mist",
    "tier": "impact",
@@ -6924,7 +6846,7 @@
    "asset": "/home/user/work/warships/pal/horn_01.wav"
   },
   {
-   "id": "s259b0",
+   "id": "s256b0",
    "at": 545.268,
    "kind": "the Grand Fleet sails from Rosyth into mist (weight)",
    "tier": "swish",
@@ -6937,82 +6859,8 @@
    "asset": "/home/user/work/warships/pal/surge_01.wav"
   },
   {
-   "id": "s260",
+   "id": "s257",
    "at": 546.9667,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
-  },
-  {
-   "id": "s261a",
-   "at": 548.6033,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
-  },
-  {
-   "id": "s261",
-   "at": 548.7333,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.4451,
-   "asset": "/home/user/work/warships/pal/impact_08.wav"
-  },
-  {
-   "id": "s261b0",
-   "at": 548.7683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
-  },
-  {
-   "id": "s262",
-   "at": 549.9333,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0341,
-   "asset": "/home/user/work/warships/pal/swish_06.wav"
-  },
-  {
-   "id": "s263",
-   "at": 551.133,
-   "kind": "two flotillas, running at speed",
-   "tier": "swish",
-   "cat": "passby",
-   "gain_db": -13.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.7483,
-   "asset": "/home/user/work/warships/pal/passby_05.wav"
-  },
-  {
-   "id": "s264",
-   "at": 552.2667,
    "kind": "movement",
    "tier": "swish",
    "cat": "swish",
@@ -7023,8 +6871,8 @@
    "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
-   "id": "s265a",
-   "at": 553.9367,
+   "id": "s258a",
+   "at": 548.6033,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -7036,7 +6884,81 @@
    "asset": "/home/user/work/warships/pal/swish_01.wav"
   },
   {
-   "id": "s265",
+   "id": "s258",
+   "at": 548.7333,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.4451,
+   "asset": "/home/user/work/warships/pal/impact_08.wav"
+  },
+  {
+   "id": "s258b0",
+   "at": 548.7683,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
+  },
+  {
+   "id": "s259",
+   "at": 549.9333,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
+  },
+  {
+   "id": "s260",
+   "at": 551.133,
+   "kind": "two flotillas, running at speed",
+   "tier": "swish",
+   "cat": "passby",
+   "gain_db": -13.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.7333,
+   "asset": "/home/user/work/warships/pal/passby_07.wav"
+  },
+  {
+   "id": "s261",
+   "at": 552.2667,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
+  },
+  {
+   "id": "s262a",
+   "at": 553.9367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
+  },
+  {
+   "id": "s262",
    "at": 554.0667,
    "kind": "strike",
    "tier": "impact",
@@ -7048,7 +6970,7 @@
    "asset": "/home/user/work/warships/pal/impact_04.wav"
   },
   {
-   "id": "s265b0",
+   "id": "s262b0",
    "at": 554.1017,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -7057,11 +6979,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
-   "id": "s266",
+   "id": "s263",
    "at": 555.8333,
    "kind": "shot change",
    "tier": "whoosh",
@@ -7073,7 +6995,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_10.wav"
   },
   {
-   "id": "s267",
+   "id": "s264",
    "at": 557.7667,
    "kind": "shot change",
    "tier": "whoosh",
@@ -7085,45 +7007,58 @@
    "asset": "/home/user/work/warships/pal/whoosh_11.wav"
   },
   {
-   "id": "s268a",
+   "id": "s265a",
    "at": 559.07,
-   "kind": "K14 puts her helm over (anticipation)",
+   "kind": "K14 jams her helm and turns out of line (anticipation)",
    "tier": "swish",
    "cat": "swish",
-   "gain_db": -16.0,
+   "gain_db": -17.0,
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
   },
   {
-   "id": "s268",
+   "id": "s265",
    "at": 559.2,
-   "kind": "K14 puts her helm over",
-   "tier": "hero_hit",
-   "cat": "wake",
-   "gain_db": -9.0,
+   "kind": "K14 jams her helm and turns out of line",
+   "tier": "impact",
+   "cat": "winch",
+   "gain_db": -10.0,
    "vary": 0.0,
    "pre_trimmed": true,
-   "anchor": 0.5248,
-   "asset": "/home/user/work/warships/pal/wake_02.wav"
+   "anchor": 0.2791,
+   "asset": "/home/user/work/warships/pal/winch_05.wav"
   },
   {
-   "id": "s268b0",
+   "id": "s265b0",
    "at": 559.235,
-   "kind": "K14 puts her helm over (weight)",
+   "kind": "K14 jams her helm and turns out of line (weight)",
    "tier": "swish",
-   "cat": "passby",
-   "gain_db": -14.0,
+   "cat": "creak",
+   "gain_db": -15.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.7333,
-   "asset": "/home/user/work/warships/pal/passby_07.wav"
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/creak_05.wav"
   },
   {
-   "id": "s269a",
+   "id": "s265b1",
+   "at": 559.285,
+   "kind": "K14 jams her helm and turns out of line (weight)",
+   "tier": "swish",
+   "cat": "passby",
+   "gain_db": -15.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.5554,
+   "asset": "/home/user/work/warships/pal/passby_02.wav"
+  },
+  {
+   "id": "s266a",
    "at": 560.87,
    "kind": "K22 hits her (anticipation)",
    "tier": "swish",
@@ -7132,11 +7067,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
   },
   {
-   "id": "s269",
+   "id": "s266",
    "at": 561.0,
    "kind": "K22 hits her",
    "tier": "hero_hit",
@@ -7148,7 +7083,7 @@
    "asset": "/home/user/work/warships/pal/impact_12.wav"
   },
   {
-   "id": "s269b0",
+   "id": "s266b0",
    "at": 561.035,
    "kind": "K22 hits her (weight)",
    "tier": "swish",
@@ -7161,7 +7096,7 @@
    "asset": "/home/user/work/warships/pal/ramcrash_01.wav"
   },
   {
-   "id": "s269b1",
+   "id": "s266b1",
    "at": 561.085,
    "kind": "K22 hits her (weight)",
    "tier": "swish",
@@ -7174,7 +7109,7 @@
    "asset": "/home/user/work/warships/pal/water_03.wav"
   },
   {
-   "id": "s270a",
+   "id": "s267a",
    "at": 563.54,
    "kind": "the cruiser Inflexible then hits K22, and she burns (anticipation)",
    "tier": "swish",
@@ -7183,11 +7118,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
   },
   {
-   "id": "s270",
+   "id": "s267",
    "at": 563.67,
    "kind": "the cruiser Inflexible then hits K22, and she burns",
    "tier": "hero_hit",
@@ -7199,7 +7134,7 @@
    "asset": "/home/user/work/warships/pal/impact_10.wav"
   },
   {
-   "id": "s270b0",
+   "id": "s267b0",
    "at": 563.705,
    "kind": "the cruiser Inflexible then hits K22, and she burns (weight)",
    "tier": "swish",
@@ -7212,7 +7147,7 @@
    "asset": "/home/user/work/warships/pal/ramcrash_04.wav"
   },
   {
-   "id": "s270b1",
+   "id": "s267b1",
    "at": 563.755,
    "kind": "the cruiser Inflexible then hits K22, and she burns (weight)",
    "tier": "swish",
@@ -7225,7 +7160,7 @@
    "asset": "/home/user/work/warships/pal/exdist_05.wav"
   },
   {
-   "id": "s271a",
+   "id": "s268a",
    "at": 566.0,
    "kind": "the flotilla ahead turns back to help (anticipation)",
    "tier": "swish",
@@ -7234,36 +7169,36 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
-   "id": "s271",
+   "id": "s268",
    "at": 566.13,
    "kind": "the flotilla ahead turns back to help",
    "tier": "impact",
-   "cat": "passby",
+   "cat": "wake",
    "gain_db": -11.0,
    "vary": 0.0,
    "pre_trimmed": true,
-   "anchor": 0.5554,
-   "asset": "/home/user/work/warships/pal/passby_02.wav"
+   "anchor": 0.2571,
+   "asset": "/home/user/work/warships/pal/wake_04.wav"
   },
   {
-   "id": "s271b0",
+   "id": "s268b0",
    "at": 566.165,
    "kind": "the flotilla ahead turns back to help (weight)",
    "tier": "swish",
-   "cat": "wake",
+   "cat": "passby",
    "gain_db": -16.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.6062,
-   "asset": "/home/user/work/warships/pal/wake_05.wav"
+   "anchor": 0.4979,
+   "asset": "/home/user/work/warships/pal/passby_06.wav"
   },
   {
-   "id": "s272",
+   "id": "s269",
    "at": 568.2667,
    "kind": "small element",
    "tier": "pop",
@@ -7275,45 +7210,19 @@
    "asset": "/home/user/work/warships/pal/pop_10.wav"
   },
   {
-   "id": "s273a",
-   "at": 571.3,
-   "kind": "and runs head-on into the Twelfth (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -18.0,
-   "vary": 0.3,
-   "layer": "anticipation",
+   "id": "s270",
+   "at": 571.4333,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
    "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_04.wav"
   },
   {
-   "id": "s273",
-   "at": 571.43,
-   "kind": "and runs head-on into the Twelfth",
-   "tier": "impact",
-   "cat": "wake",
-   "gain_db": -11.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.2571,
-   "asset": "/home/user/work/warships/pal/wake_04.wav"
-  },
-  {
-   "id": "s273b0",
-   "at": 571.465,
-   "kind": "and runs head-on into the Twelfth (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -16.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
-  },
-  {
-   "id": "s274",
+   "id": "s271",
    "at": 573.9,
    "kind": "Fearless strikes K17 at near full speed, and cuts her open",
    "tier": "hero_boom",
@@ -7325,7 +7234,7 @@
    "asset": "/home/user/work/warships/pal/impact_02.wav"
   },
   {
-   "id": "s274b0",
+   "id": "s271b0",
    "at": 573.935,
    "kind": "Fearless strikes K17 at near full speed, and cuts her open (weight)",
    "tier": "swish",
@@ -7338,7 +7247,7 @@
    "asset": "/home/user/work/warships/pal/ramcrash_03.wav"
   },
   {
-   "id": "s274b1",
+   "id": "s271b1",
    "at": 573.985,
    "kind": "Fearless strikes K17 at near full speed, and cuts her open (weight)",
    "tier": "swish",
@@ -7351,7 +7260,7 @@
    "asset": "/home/user/work/warships/pal/explo_03.wav"
   },
   {
-   "id": "s274b2",
+   "id": "s271b2",
    "at": 574.035,
    "kind": "Fearless strikes K17 at near full speed, and cuts her open (weight)",
    "tier": "swish",
@@ -7364,7 +7273,7 @@
    "asset": "/home/user/work/warships/pal/woodbreak_02.wav"
   },
   {
-   "id": "s275a",
+   "id": "s272a",
    "at": 578.94,
    "kind": "K6 rams K4, and slices her nearly in half (anticipation)",
    "tier": "swish",
@@ -7373,11 +7282,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
   },
   {
-   "id": "s275",
+   "id": "s272",
    "at": 579.07,
    "kind": "K6 rams K4, and slices her nearly in half",
    "tier": "hero_hit",
@@ -7389,7 +7298,7 @@
    "asset": "/home/user/work/warships/pal/impact_11.wav"
   },
   {
-   "id": "s275b0",
+   "id": "s272b0",
    "at": 579.105,
    "kind": "K6 rams K4, and slices her nearly in half (weight)",
    "tier": "swish",
@@ -7402,8 +7311,21 @@
    "asset": "/home/user/work/warships/pal/ramcrash_02.wav"
   },
   {
-   "id": "s275b1",
+   "id": "s272b1",
    "at": 579.155,
+   "kind": "K6 rams K4, and slices her nearly in half (weight)",
+   "tier": "swish",
+   "cat": "explo",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1732,
+   "asset": "/home/user/work/warships/pal/explo_01.wav"
+  },
+  {
+   "id": "s272b2",
+   "at": 579.205,
    "kind": "K6 rams K4, and slices her nearly in half (weight)",
    "tier": "swish",
    "cat": "water",
@@ -7415,85 +7337,9 @@
    "asset": "/home/user/work/warships/pal/water_05.wav"
   },
   {
-   "id": "s276a",
-   "at": 579.303,
-   "kind": "fire takes hold along the column (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -16.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
-  },
-  {
-   "id": "s276",
-   "at": 579.433,
-   "kind": "fire takes hold along the column",
-   "tier": "impact",
-   "cat": "exdist",
-   "gain_db": -9.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.1189,
-   "asset": "/home/user/work/warships/pal/exdist_06.wav"
-  },
-  {
-   "id": "s276b0",
-   "at": 579.468,
-   "kind": "fire takes hold along the column (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -14.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
-  },
-  {
-   "id": "s277a",
+   "id": "s273a",
    "at": 581.103,
-   "kind": "another (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
-  },
-  {
-   "id": "s277",
-   "at": 581.233,
-   "kind": "another",
-   "tier": "impact",
-   "cat": "explo",
-   "gain_db": -8.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.1732,
-   "asset": "/home/user/work/warships/pal/explo_01.wav"
-  },
-  {
-   "id": "s277b0",
-   "at": 581.268,
-   "kind": "another (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
-  },
-  {
-   "id": "s278a",
-   "at": 582.503,
-   "kind": "and another (anticipation)",
+   "kind": "the column alight (anticipation)",
    "tier": "swish",
    "cat": "swish",
    "gain_db": -16.0,
@@ -7504,75 +7350,37 @@
    "asset": "/home/user/work/warships/pal/swish_09.wav"
   },
   {
-   "id": "s278",
-   "at": 582.633,
-   "kind": "and another",
+   "id": "s273",
+   "at": 581.233,
+   "kind": "the column alight",
    "tier": "impact",
    "cat": "exdist",
    "gain_db": -9.0,
    "vary": 0.0,
    "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/exdist_01.wav"
+   "anchor": 0.1189,
+   "asset": "/home/user/work/warships/pal/exdist_06.wav"
   },
   {
-   "id": "s278b0",
-   "at": 582.668,
-   "kind": "and another (weight)",
+   "id": "s273b0",
+   "at": 581.268,
+   "kind": "the column alight (weight)",
    "tier": "swish",
    "cat": "body",
    "gain_db": -14.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
   },
   {
-   "id": "s279",
-   "at": 584.07,
-   "kind": "K17 goes up \u2014 the biggest burst in the video",
-   "tier": "hero_boom",
-   "cat": "explo",
-   "gain_db": -4.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.0475,
-   "asset": "/home/user/work/warships/pal/explo_04.wav"
-  },
-  {
-   "id": "s279b0",
-   "at": 584.105,
-   "kind": "K17 goes up \u2014 the biggest burst in the video (weight)",
-   "tier": "swish",
-   "cat": "ramcrash",
-   "gain_db": -9.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.6532,
-   "asset": "/home/user/work/warships/pal/ramcrash_05.wav"
-  },
-  {
-   "id": "s279b1",
-   "at": 584.155,
-   "kind": "K17 goes up \u2014 the biggest burst in the video (weight)",
-   "tier": "swish",
-   "cat": "surge",
-   "gain_db": -9.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.4821,
-   "asset": "/home/user/work/warships/pal/surge_05.wav"
-  },
-  {
-   "id": "s280a",
-   "at": 584.87,
-   "kind": "survivors from K17 in the water, under it (anticipation)",
+   "id": "s274a",
+   "at": 583.94,
+   "kind": "K17 goes up, and the survivors are in the water under it (anticipation)",
    "tier": "swish",
    "cat": "swish",
-   "gain_db": -18.0,
+   "gain_db": -15.0,
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
@@ -7580,24 +7388,37 @@
    "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
-   "id": "s280",
-   "at": 585.0,
-   "kind": "survivors from K17 in the water, under it",
-   "tier": "impact",
-   "cat": "water",
-   "gain_db": -11.0,
+   "id": "s274",
+   "at": 584.07,
+   "kind": "K17 goes up, and the survivors are in the water under it",
+   "tier": "hero_hit",
+   "cat": "explo",
+   "gain_db": -8.0,
    "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.0475,
+   "asset": "/home/user/work/warships/pal/explo_04.wav"
+  },
+  {
+   "id": "s274b0",
+   "at": 584.105,
+   "kind": "K17 goes up, and the survivors are in the water under it (weight)",
+   "tier": "swish",
+   "cat": "water",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
    "pre_trimmed": true,
    "anchor": 0.3826,
    "asset": "/home/user/work/warships/pal/water_04.wav"
   },
   {
-   "id": "s280b0",
-   "at": 585.035,
-   "kind": "survivors from K17 in the water, under it (weight)",
+   "id": "s274b1",
+   "at": 584.155,
+   "kind": "K17 goes up, and the survivors are in the water under it (weight)",
    "tier": "swish",
    "cat": "bubbles",
-   "gain_db": -16.0,
+   "gain_db": -13.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
@@ -7605,12 +7426,12 @@
    "asset": "/home/user/work/warships/pal/bubbles_03.wav"
   },
   {
-   "id": "s281a",
+   "id": "s275a",
    "at": 585.903,
    "kind": "K4 burning as she goes over (anticipation)",
    "tier": "swish",
    "cat": "swish",
-   "gain_db": -15.0,
+   "gain_db": -15.5,
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
@@ -7618,24 +7439,24 @@
    "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
-   "id": "s281",
+   "id": "s275",
    "at": 586.033,
    "kind": "K4 burning as she goes over",
    "tier": "impact",
    "cat": "explo",
-   "gain_db": -8.0,
+   "gain_db": -8.5,
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.1751,
    "asset": "/home/user/work/warships/pal/explo_02.wav"
   },
   {
-   "id": "s281b0",
+   "id": "s275b0",
    "at": 586.068,
    "kind": "K4 burning as she goes over (weight)",
    "tier": "swish",
    "cat": "water",
-   "gain_db": -13.0,
+   "gain_db": -13.5,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
@@ -7643,146 +7464,8 @@
    "asset": "/home/user/work/warships/pal/water_01.wav"
   },
   {
-   "id": "s282a",
-   "at": 587.67,
-   "kind": "the cruiser alight (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -16.5,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
-  },
-  {
-   "id": "s282",
-   "at": 587.8,
-   "kind": "the cruiser alight",
-   "tier": "impact",
-   "cat": "exdist",
-   "gain_db": -9.5,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.077,
-   "asset": "/home/user/work/warships/pal/exdist_03.wav"
-  },
-  {
-   "id": "s282b0",
-   "at": 587.835,
-   "kind": "the cruiser alight (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -14.5,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
-  },
-  {
-   "id": "s283a",
-   "at": 589.237,
-   "kind": "still burning at seventy-five minutes (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -17.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
-  },
-  {
-   "id": "s283",
-   "at": 589.367,
-   "kind": "still burning at seventy-five minutes",
-   "tier": "impact",
-   "cat": "exdist",
-   "gain_db": -10.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.1467,
-   "asset": "/home/user/work/warships/pal/exdist_02.wav"
-  },
-  {
-   "id": "s283b0",
-   "at": 589.402,
-   "kind": "still burning at seventy-five minutes (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -15.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
-  },
-  {
-   "id": "s284a",
-   "at": 590.703,
-   "kind": "and burning (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -16.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
-  },
-  {
-   "id": "s284",
-   "at": 590.833,
-   "kind": "and burning",
-   "tier": "impact",
-   "cat": "explo",
-   "gain_db": -9.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.0748,
-   "asset": "/home/user/work/warships/pal/explo_05.wav"
-  },
-  {
-   "id": "s284b0",
-   "at": 590.868,
-   "kind": "and burning (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -14.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
-  },
-  {
-   "id": "s285",
-   "at": 593.4,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
-  },
-  {
-   "id": "s286",
-   "at": 594.6667,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_04.wav"
-  },
-  {
-   "id": "s287",
-   "at": 596.2333,
+   "id": "s276",
+   "at": 587.2333,
    "kind": "small element",
    "tier": "pop",
    "cat": "pop",
@@ -7793,7 +7476,93 @@
    "asset": "/home/user/work/warships/pal/pop_01.wav"
   },
   {
-   "id": "s288",
+   "id": "s277a",
+   "at": 589.237,
+   "kind": "still burning at seventy-five minutes (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -17.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
+  },
+  {
+   "id": "s277",
+   "at": 589.367,
+   "kind": "still burning at seventy-five minutes",
+   "tier": "impact",
+   "cat": "exdist",
+   "gain_db": -10.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/exdist_01.wav"
+  },
+  {
+   "id": "s277b0",
+   "at": 589.402,
+   "kind": "still burning at seventy-five minutes (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -15.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
+  },
+  {
+   "id": "s278",
+   "at": 591.0,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
+  },
+  {
+   "id": "s279",
+   "at": 593.4,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
+  },
+  {
+   "id": "s280",
+   "at": 594.6667,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.1175,
+   "asset": "/home/user/work/warships/pal/pop_07.wav"
+  },
+  {
+   "id": "s281",
+   "at": 596.2333,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_03.wav"
+  },
+  {
+   "id": "s282",
    "at": 598.467,
    "kind": "a hundred and four men died",
    "tier": "hero_boom",
@@ -7805,7 +7574,7 @@
    "asset": "/home/user/work/warships/pal/boom_03.wav"
   },
   {
-   "id": "s289",
+   "id": "s283",
    "at": 603.6,
    "kind": "shot change",
    "tier": "whoosh",
@@ -7817,7 +7586,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_05.wav"
   },
   {
-   "id": "s290a",
+   "id": "s284a",
    "at": 604.803,
    "kind": "the transcripts go into a locked file for seventy years (anticipation)",
    "tier": "swish",
@@ -7826,11 +7595,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
   },
   {
-   "id": "s290",
+   "id": "s284",
    "at": 604.933,
    "kind": "the transcripts go into a locked file for seventy years",
    "tier": "hero_hit",
@@ -7842,7 +7611,7 @@
    "asset": "/home/user/work/warships/pal/paper_04.wav"
   },
   {
-   "id": "s290b0",
+   "id": "s284b0",
    "at": 604.968,
    "kind": "the transcripts go into a locked file for seventy years (weight)",
    "tier": "swish",
@@ -7855,7 +7624,7 @@
    "asset": "/home/user/work/warships/pal/lock_01.wav"
   },
   {
-   "id": "s291",
+   "id": "s285",
    "at": 606.2333,
    "kind": "shot change",
    "tier": "whoosh",
@@ -7867,7 +7636,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_12.wav"
   },
   {
-   "id": "s292",
+   "id": "s286",
    "at": 607.3333,
    "kind": "movement",
    "tier": "swish",
@@ -7875,11 +7644,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
   },
   {
-   "id": "s293",
+   "id": "s287",
    "at": 609.1,
    "kind": "shot change",
    "tier": "whoosh",
@@ -7891,7 +7660,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_03.wav"
   },
   {
-   "id": "s294",
+   "id": "s288",
    "at": 615.2,
    "kind": "era card whoosh (into the card) \u2014 WORLD WAR II",
    "tier": "whoosh",
@@ -7899,11 +7668,11 @@
    "gain_db": -10.0,
    "vary": 0.0,
    "pre_trimmed": true,
-   "anchor": 0.7115,
-   "asset": "/home/user/work/warships/pal/surge_06.wav"
+   "anchor": 0.4821,
+   "asset": "/home/user/work/warships/pal/surge_05.wav"
   },
   {
-   "id": "s295",
+   "id": "s289",
    "at": 615.6,
    "kind": "era card \u2014 WORLD WAR II",
    "tier": "hero_boom",
@@ -7915,7 +7684,7 @@
    "asset": "/home/user/work/warships/pal/boom_04.wav"
   },
   {
-   "id": "s295b0",
+   "id": "s289b0",
    "at": 615.635,
    "kind": "era card \u2014 WORLD WAR II (weight)",
    "tier": "swish",
@@ -7924,11 +7693,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.3765,
-   "asset": "/home/user/work/warships/pal/surge_03.wav"
+   "anchor": 0.7115,
+   "asset": "/home/user/work/warships/pal/surge_06.wav"
   },
   {
-   "id": "s296a",
+   "id": "s290a",
    "at": 618.6367,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -7937,11 +7706,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
   },
   {
-   "id": "s296",
+   "id": "s290",
    "at": 618.7667,
    "kind": "strike",
    "tier": "impact",
@@ -7953,7 +7722,7 @@
    "asset": "/home/user/work/warships/pal/impact_01.wav"
   },
   {
-   "id": "s296b0",
+   "id": "s290b0",
    "at": 618.8017,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -7962,11 +7731,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
-   "id": "s297",
+   "id": "s291",
    "at": 620.5667,
    "kind": "shot change",
    "tier": "whoosh",
@@ -7978,7 +7747,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_02.wav"
   },
   {
-   "id": "s298",
+   "id": "s292",
    "at": 623.267,
    "kind": "SURCOUF \u2014 heavy-cruiser calibre on a submarine",
    "tier": "hero_boom",
@@ -7990,7 +7759,7 @@
    "asset": "/home/user/work/warships/pal/boom_01.wav"
   },
   {
-   "id": "s298b0",
+   "id": "s292b0",
    "at": 623.302,
    "kind": "SURCOUF \u2014 heavy-cruiser calibre on a submarine (weight)",
    "tier": "swish",
@@ -8003,7 +7772,7 @@
    "asset": "/home/user/work/warships/pal/cannon_05.wav"
   },
   {
-   "id": "s299",
+   "id": "s293",
    "at": 625.6,
    "kind": "small element",
    "tier": "pop",
@@ -8011,11 +7780,11 @@
    "gain_db": -19.0,
    "vary": 0.35,
    "pre_trimmed": true,
-   "anchor": 0.1175,
-   "asset": "/home/user/work/warships/pal/pop_07.wav"
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_09.wav"
   },
   {
-   "id": "s300",
+   "id": "s294",
    "at": 631.3667,
    "kind": "movement",
    "tier": "swish",
@@ -8023,11 +7792,11 @@
    "gain_db": -15.0,
    "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
   },
   {
-   "id": "s301a",
+   "id": "s295a",
    "at": 633.47,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -8036,11 +7805,11 @@
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
-   "anchor": 0.0973,
-   "asset": "/home/user/work/warships/pal/swish_07.wav"
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
   },
   {
-   "id": "s301",
+   "id": "s295",
    "at": 633.6,
    "kind": "strike",
    "tier": "impact",
@@ -8052,7 +7821,7 @@
    "asset": "/home/user/work/warships/pal/impact_05.wav"
   },
   {
-   "id": "s301b0",
+   "id": "s295b0",
    "at": 633.635,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -8061,523 +7830,12 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
   },
   {
-   "id": "s302a",
+   "id": "s296a",
    "at": 637.2033,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.3393,
-   "asset": "/home/user/work/warships/pal/swish_09.wav"
-  },
-  {
-   "id": "s302",
-   "at": 637.3333,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0752,
-   "asset": "/home/user/work/warships/pal/impact_06.wav"
-  },
-  {
-   "id": "s302b0",
-   "at": 637.3683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
-  },
-  {
-   "id": "s303",
-   "at": 639.4333,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_03.wav"
-  },
-  {
-   "id": "s304a",
-   "at": 640.87,
-   "kind": "ten torpedo tubes, six hundred rounds below (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -16.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0341,
-   "asset": "/home/user/work/warships/pal/swish_06.wav"
-  },
-  {
-   "id": "s304",
-   "at": 641.0,
-   "kind": "ten torpedo tubes, six hundred rounds below",
-   "tier": "impact",
-   "cat": "torpedo",
-   "gain_db": -9.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.2994,
-   "asset": "/home/user/work/warships/pal/torpedo_03.wav"
-  },
-  {
-   "id": "s304b0",
-   "at": 641.035,
-   "kind": "ten torpedo tubes, six hundred rounds below (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -14.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
-  },
-  {
-   "id": "s305",
-   "at": 642.4,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_09.wav"
-  },
-  {
-   "id": "s306",
-   "at": 644.0667,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.2658,
-   "asset": "/home/user/work/warships/pal/whoosh_06.wav"
-  },
-  {
-   "id": "s307",
-   "at": 646.0667,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.6801,
-   "asset": "/home/user/work/warships/pal/whoosh_09.wav"
-  },
-  {
-   "id": "s308a",
-   "at": 647.1367,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0591,
-   "asset": "/home/user/work/warships/pal/swish_02.wav"
-  },
-  {
-   "id": "s309a",
-   "at": 647.137,
-   "kind": "the Besson floatplane, craned into the water (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -17.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0542,
-   "asset": "/home/user/work/warships/pal/swish_01.wav"
-  },
-  {
-   "id": "s308",
-   "at": 647.2667,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.186,
-   "asset": "/home/user/work/warships/pal/impact_07.wav"
-  },
-  {
-   "id": "s309",
-   "at": 647.267,
-   "kind": "the Besson floatplane, craned into the water",
-   "tier": "impact",
-   "cat": "plane",
-   "gain_db": -10.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.4134,
-   "asset": "/home/user/work/warships/pal/plane_02.wav"
-  },
-  {
-   "id": "s308b0",
-   "at": 647.3017,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1402,
-   "asset": "/home/user/work/warships/pal/body_03.wav"
-  },
-  {
-   "id": "s309b0",
-   "at": 647.302,
-   "kind": "the Besson floatplane, craned into the water (weight)",
-   "tier": "swish",
-   "cat": "winch",
-   "gain_db": -15.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2791,
-   "asset": "/home/user/work/warships/pal/winch_05.wav"
-  },
-  {
-   "id": "s310",
-   "at": 649.1,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.4038,
-   "asset": "/home/user/work/warships/pal/whoosh_07.wav"
-  },
-  {
-   "id": "s311",
-   "at": 652.733,
-   "kind": "she surfaces and outguns the escort",
-   "tier": "hero_boom",
-   "cat": "cannon",
-   "gain_db": -6.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.107,
-   "asset": "/home/user/work/warships/pal/cannon_06.wav"
-  },
-  {
-   "id": "s311b0",
-   "at": 652.768,
-   "kind": "she surfaces and outguns the escort (weight)",
-   "tier": "swish",
-   "cat": "water",
-   "gain_db": -11.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2358,
-   "asset": "/home/user/work/warships/pal/water_02.wav"
-  },
-  {
-   "id": "s312",
-   "at": 653.15,
-   "kind": "and the convoy goes up",
-   "tier": "hero_boom",
-   "cat": "explo",
-   "gain_db": -5.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/explo_07.wav"
-  },
-  {
-   "id": "s313a",
-   "at": 653.62,
-   "kind": "the escort with it (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -14.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.4144,
-   "asset": "/home/user/work/warships/pal/swish_12.wav"
-  },
-  {
-   "id": "s313",
-   "at": 653.75,
-   "kind": "the escort with it",
-   "tier": "impact",
-   "cat": "explo",
-   "gain_db": -7.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/explo_08.wav"
-  },
-  {
-   "id": "s313b0",
-   "at": 653.785,
-   "kind": "the escort with it (weight)",
-   "tier": "swish",
-   "cat": "water",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0059,
-   "asset": "/home/user/work/warships/pal/water_06.wav"
-  },
-  {
-   "id": "s314a",
-   "at": 653.903,
-   "kind": "and the last of them (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -16.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.4115,
-   "asset": "/home/user/work/warships/pal/swish_11.wav"
-  },
-  {
-   "id": "s314",
-   "at": 654.033,
-   "kind": "and the last of them",
-   "tier": "impact",
-   "cat": "exdist",
-   "gain_db": -9.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.0964,
-   "asset": "/home/user/work/warships/pal/exdist_04.wav"
-  },
-  {
-   "id": "s314b0",
-   "at": 654.068,
-   "kind": "and the last of them (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -14.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
-  },
-  {
-   "id": "s315",
-   "at": 659.0,
-   "kind": "France fell in 1940",
-   "tier": "hero_boom",
-   "cat": "boom",
-   "gain_db": -6.0,
-   "vary": 0.0,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/boom_03.wav"
-  },
-  {
-   "id": "s316a",
-   "at": 661.7367,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.006,
-   "asset": "/home/user/work/warships/pal/swish_08.wav"
-  },
-  {
-   "id": "s316",
-   "at": 661.8667,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.3484,
-   "asset": "/home/user/work/warships/pal/impact_09.wav"
-  },
-  {
-   "id": "s316b0",
-   "at": 661.9017,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
-  },
-  {
-   "id": "s317a",
-   "at": 665.6367,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0132,
-   "asset": "/home/user/work/warships/pal/swish_05.wav"
-  },
-  {
-   "id": "s317",
-   "at": 665.7667,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_03.wav"
-  },
-  {
-   "id": "s317b0",
-   "at": 665.8017,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
-  },
-  {
-   "id": "s318",
-   "at": 668.1,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0974,
-   "asset": "/home/user/work/warships/pal/swish_10.wav"
-  },
-  {
-   "id": "s319",
-   "at": 670.1,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.4038,
-   "asset": "/home/user/work/warships/pal/whoosh_04.wav"
-  },
-  {
-   "id": "s320",
-   "at": 677.0667,
-   "kind": "shot change",
-   "tier": "whoosh",
-   "cat": "whoosh",
-   "gain_db": -12.0,
-   "vary": 0.2,
-   "pre_trimmed": true,
-   "anchor": 0.4008,
-   "asset": "/home/user/work/warships/pal/whoosh_08.wav"
-  },
-  {
-   "id": "s321a",
-   "at": 678.2033,
-   "kind": "strike (anticipation)",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "layer": "anticipation",
-   "pre_trimmed": true,
-   "anchor": 0.0474,
-   "asset": "/home/user/work/warships/pal/swish_03.wav"
-  },
-  {
-   "id": "s321",
-   "at": 678.3333,
-   "kind": "strike",
-   "tier": "impact",
-   "cat": "impact",
-   "gain_db": -8.0,
-   "vary": 0.15,
-   "pre_trimmed": true,
-   "anchor": 0.4451,
-   "asset": "/home/user/work/warships/pal/impact_08.wav"
-  },
-  {
-   "id": "s321b0",
-   "at": 678.3683,
-   "kind": "strike (weight)",
-   "tier": "swish",
-   "cat": "body",
-   "gain_db": -13.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.2416,
-   "asset": "/home/user/work/warships/pal/body_05.wav"
-  },
-  {
-   "id": "s322",
-   "at": 681.3333,
-   "kind": "small element",
-   "tier": "pop",
-   "cat": "pop",
-   "gain_db": -19.0,
-   "vary": 0.35,
-   "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_05.wav"
-  },
-  {
-   "id": "s323",
-   "at": 682.2,
-   "kind": "movement",
-   "tier": "swish",
-   "cat": "swish",
-   "gain_db": -15.0,
-   "vary": 0.3,
-   "pre_trimmed": true,
-   "anchor": 0.0299,
-   "asset": "/home/user/work/warships/pal/swish_04.wav"
-  },
-  {
-   "id": "s324a",
-   "at": 684.27,
    "kind": "strike (anticipation)",
    "tier": "swish",
    "cat": "swish",
@@ -8589,20 +7847,20 @@
    "asset": "/home/user/work/warships/pal/swish_07.wav"
   },
   {
-   "id": "s324",
-   "at": 684.4,
+   "id": "s296",
+   "at": 637.3333,
    "kind": "strike",
    "tier": "impact",
    "cat": "impact",
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0658,
-   "asset": "/home/user/work/warships/pal/impact_04.wav"
+   "anchor": 0.0752,
+   "asset": "/home/user/work/warships/pal/impact_06.wav"
   },
   {
-   "id": "s324b0",
-   "at": 684.435,
+   "id": "s296b0",
+   "at": 637.3683,
    "kind": "strike (weight)",
    "tier": "swish",
    "cat": "body",
@@ -8614,7 +7872,519 @@
    "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
-   "id": "s325",
+   "id": "s297",
+   "at": 639.4333,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_05.wav"
+  },
+  {
+   "id": "s298a",
+   "at": 640.87,
+   "kind": "ten torpedo tubes, six hundred rounds below (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -16.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.3393,
+   "asset": "/home/user/work/warships/pal/swish_09.wav"
+  },
+  {
+   "id": "s298",
+   "at": 641.0,
+   "kind": "ten torpedo tubes, six hundred rounds below",
+   "tier": "impact",
+   "cat": "torpedo",
+   "gain_db": -9.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.2994,
+   "asset": "/home/user/work/warships/pal/torpedo_03.wav"
+  },
+  {
+   "id": "s298b0",
+   "at": 641.035,
+   "kind": "ten torpedo tubes, six hundred rounds below (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -14.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
+  },
+  {
+   "id": "s299",
+   "at": 642.4,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_02.wav"
+  },
+  {
+   "id": "s300",
+   "at": 644.0667,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.2658,
+   "asset": "/home/user/work/warships/pal/whoosh_06.wav"
+  },
+  {
+   "id": "s301",
+   "at": 646.0667,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.6801,
+   "asset": "/home/user/work/warships/pal/whoosh_09.wav"
+  },
+  {
+   "id": "s302a",
+   "at": 647.1367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0341,
+   "asset": "/home/user/work/warships/pal/swish_06.wav"
+  },
+  {
+   "id": "s303a",
+   "at": 647.137,
+   "kind": "the Besson floatplane, craned into the water (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -17.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0591,
+   "asset": "/home/user/work/warships/pal/swish_02.wav"
+  },
+  {
+   "id": "s302",
+   "at": 647.2667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.186,
+   "asset": "/home/user/work/warships/pal/impact_07.wav"
+  },
+  {
+   "id": "s303",
+   "at": 647.267,
+   "kind": "the Besson floatplane, craned into the water",
+   "tier": "impact",
+   "cat": "plane",
+   "gain_db": -10.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.4134,
+   "asset": "/home/user/work/warships/pal/plane_02.wav"
+  },
+  {
+   "id": "s302b0",
+   "at": 647.3017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
+  },
+  {
+   "id": "s303b0",
+   "at": 647.302,
+   "kind": "the Besson floatplane, craned into the water (weight)",
+   "tier": "swish",
+   "cat": "winch",
+   "gain_db": -15.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1767,
+   "asset": "/home/user/work/warships/pal/winch_03.wav"
+  },
+  {
+   "id": "s304",
+   "at": 649.1,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.4038,
+   "asset": "/home/user/work/warships/pal/whoosh_07.wav"
+  },
+  {
+   "id": "s305",
+   "at": 652.8,
+   "kind": "she surfaces and sets the convoy alight",
+   "tier": "hero_boom",
+   "cat": "cannon",
+   "gain_db": -6.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.107,
+   "asset": "/home/user/work/warships/pal/cannon_06.wav"
+  },
+  {
+   "id": "s305b0",
+   "at": 652.835,
+   "kind": "she surfaces and sets the convoy alight (weight)",
+   "tier": "swish",
+   "cat": "explo",
+   "gain_db": -11.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.0748,
+   "asset": "/home/user/work/warships/pal/explo_05.wav"
+  },
+  {
+   "id": "s305b1",
+   "at": 652.885,
+   "kind": "she surfaces and sets the convoy alight (weight)",
+   "tier": "swish",
+   "cat": "water",
+   "gain_db": -11.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2358,
+   "asset": "/home/user/work/warships/pal/water_02.wav"
+  },
+  {
+   "id": "s306a",
+   "at": 653.47,
+   "kind": "the escort with it (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0542,
+   "asset": "/home/user/work/warships/pal/swish_01.wav"
+  },
+  {
+   "id": "s306",
+   "at": 653.6,
+   "kind": "the escort with it",
+   "tier": "impact",
+   "cat": "explo",
+   "gain_db": -8.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/explo_07.wav"
+  },
+  {
+   "id": "s306b0",
+   "at": 653.635,
+   "kind": "the escort with it (weight)",
+   "tier": "swish",
+   "cat": "water",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.0059,
+   "asset": "/home/user/work/warships/pal/water_06.wav"
+  },
+  {
+   "id": "s307a",
+   "at": 655.1367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.4144,
+   "asset": "/home/user/work/warships/pal/swish_12.wav"
+  },
+  {
+   "id": "s307",
+   "at": 655.2667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.3484,
+   "asset": "/home/user/work/warships/pal/impact_09.wav"
+  },
+  {
+   "id": "s307b0",
+   "at": 655.3017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
+  },
+  {
+   "id": "s308",
+   "at": 659.0,
+   "kind": "France fell in 1940",
+   "tier": "hero_boom",
+   "cat": "boom",
+   "gain_db": -6.0,
+   "vary": 0.0,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/boom_03.wav"
+  },
+  {
+   "id": "s309a",
+   "at": 661.7367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.4115,
+   "asset": "/home/user/work/warships/pal/swish_11.wav"
+  },
+  {
+   "id": "s309",
+   "at": 661.8667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_03.wav"
+  },
+  {
+   "id": "s309b0",
+   "at": 661.9017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
+  },
+  {
+   "id": "s310a",
+   "at": 665.6367,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.006,
+   "asset": "/home/user/work/warships/pal/swish_08.wav"
+  },
+  {
+   "id": "s310",
+   "at": 665.7667,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.4451,
+   "asset": "/home/user/work/warships/pal/impact_08.wav"
+  },
+  {
+   "id": "s310b0",
+   "at": 665.8017,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
+  },
+  {
+   "id": "s311",
+   "at": 668.1,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0132,
+   "asset": "/home/user/work/warships/pal/swish_05.wav"
+  },
+  {
+   "id": "s312",
+   "at": 670.1,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.4038,
+   "asset": "/home/user/work/warships/pal/whoosh_04.wav"
+  },
+  {
+   "id": "s313",
+   "at": 677.0667,
+   "kind": "shot change",
+   "tier": "whoosh",
+   "cat": "whoosh",
+   "gain_db": -12.0,
+   "vary": 0.2,
+   "pre_trimmed": true,
+   "anchor": 0.4008,
+   "asset": "/home/user/work/warships/pal/whoosh_08.wav"
+  },
+  {
+   "id": "s314a",
+   "at": 678.2033,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0974,
+   "asset": "/home/user/work/warships/pal/swish_10.wav"
+  },
+  {
+   "id": "s314",
+   "at": 678.3333,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0658,
+   "asset": "/home/user/work/warships/pal/impact_04.wav"
+  },
+  {
+   "id": "s314b0",
+   "at": 678.3683,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.2245,
+   "asset": "/home/user/work/warships/pal/body_02.wav"
+  },
+  {
+   "id": "s315",
+   "at": 681.3333,
+   "kind": "small element",
+   "tier": "pop",
+   "cat": "pop",
+   "gain_db": -19.0,
+   "vary": 0.35,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/pop_06.wav"
+  },
+  {
+   "id": "s316",
+   "at": 682.2,
+   "kind": "movement",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "pre_trimmed": true,
+   "anchor": 0.0474,
+   "asset": "/home/user/work/warships/pal/swish_03.wav"
+  },
+  {
+   "id": "s317a",
+   "at": 684.27,
+   "kind": "strike (anticipation)",
+   "tier": "swish",
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
+   "layer": "anticipation",
+   "pre_trimmed": true,
+   "anchor": 0.0299,
+   "asset": "/home/user/work/warships/pal/swish_04.wav"
+  },
+  {
+   "id": "s317",
+   "at": 684.4,
+   "kind": "strike",
+   "tier": "impact",
+   "cat": "impact",
+   "gain_db": -8.0,
+   "vary": 0.15,
+   "pre_trimmed": true,
+   "anchor": 0.0,
+   "asset": "/home/user/work/warships/pal/impact_12.wav"
+  },
+  {
+   "id": "s317b0",
+   "at": 684.435,
+   "kind": "strike (weight)",
+   "tier": "swish",
+   "cat": "body",
+   "gain_db": -13.0,
+   "vary": 0.2,
+   "layer": "weight",
+   "pre_trimmed": true,
+   "anchor": 0.1151,
+   "asset": "/home/user/work/warships/pal/body_01.wav"
+  },
+  {
+   "id": "s318",
    "at": 685.7,
    "kind": "shot change",
    "tier": "whoosh",
@@ -8626,19 +8396,19 @@
    "asset": "/home/user/work/warships/pal/whoosh_01.wav"
   },
   {
-   "id": "s326",
-   "at": 686.933,
-   "kind": "Thompson Lykes coming up in the dark",
+   "id": "s319",
+   "at": 686.9333,
+   "kind": "movement",
    "tier": "swish",
-   "cat": "passby",
-   "gain_db": -14.0,
-   "vary": 0.0,
+   "cat": "swish",
+   "gain_db": -15.0,
+   "vary": 0.3,
    "pre_trimmed": true,
-   "anchor": 0.4979,
-   "asset": "/home/user/work/warships/pal/passby_06.wav"
+   "anchor": 0.0973,
+   "asset": "/home/user/work/warships/pal/swish_07.wav"
   },
   {
-   "id": "s327",
+   "id": "s320",
    "at": 690.067,
    "kind": "the freighter strikes something submerged",
    "tier": "hero_boom",
@@ -8646,11 +8416,11 @@
    "gain_db": -6.0,
    "vary": 0.0,
    "pre_trimmed": true,
-   "anchor": 0.2245,
-   "asset": "/home/user/work/warships/pal/body_02.wav"
+   "anchor": 0.0471,
+   "asset": "/home/user/work/warships/pal/body_04.wav"
   },
   {
-   "id": "s327b0",
+   "id": "s320b0",
    "at": 690.102,
    "kind": "the freighter strikes something submerged (weight)",
    "tier": "swish",
@@ -8663,7 +8433,7 @@
    "asset": "/home/user/work/warships/pal/bubbles_05.wav"
   },
   {
-   "id": "s327b1",
+   "id": "s320b1",
    "at": 690.152,
    "kind": "the freighter strikes something submerged (weight)",
    "tier": "swish",
@@ -8672,11 +8442,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.6943,
-   "asset": "/home/user/work/warships/pal/surge_07.wav"
+   "anchor": 0.3765,
+   "asset": "/home/user/work/warships/pal/surge_03.wav"
   },
   {
-   "id": "s328",
+   "id": "s321",
    "at": 693.1,
    "kind": "small element",
    "tier": "pop",
@@ -8684,11 +8454,11 @@
    "gain_db": -19.0,
    "vary": 0.35,
    "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_02.wav"
+   "anchor": 0.1999,
+   "asset": "/home/user/work/warships/pal/pop_08.wav"
   },
   {
-   "id": "s329",
+   "id": "s322",
    "at": 695.1,
    "kind": "shot change",
    "tier": "whoosh",
@@ -8700,7 +8470,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_10.wav"
   },
   {
-   "id": "s330",
+   "id": "s323",
    "at": 700.0333,
    "kind": "shot change",
    "tier": "whoosh",
@@ -8712,7 +8482,7 @@
    "asset": "/home/user/work/warships/pal/whoosh_11.wav"
   },
   {
-   "id": "s331a",
+   "id": "s324a",
    "at": 702.6367,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -8725,7 +8495,7 @@
    "asset": "/home/user/work/warships/pal/swish_09.wav"
   },
   {
-   "id": "s331",
+   "id": "s324",
    "at": 702.7667,
    "kind": "strike",
    "tier": "impact",
@@ -8734,10 +8504,10 @@
    "vary": 0.15,
    "pre_trimmed": true,
    "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_12.wav"
+   "asset": "/home/user/work/warships/pal/impact_10.wav"
   },
   {
-   "id": "s331b0",
+   "id": "s324b0",
    "at": 702.8017,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -8746,11 +8516,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.1151,
-   "asset": "/home/user/work/warships/pal/body_01.wav"
+   "anchor": 0.2416,
+   "asset": "/home/user/work/warships/pal/body_05.wav"
   },
   {
-   "id": "s332a",
+   "id": "s325a",
    "at": 704.6033,
    "kind": "strike (anticipation)",
    "tier": "swish",
@@ -8763,7 +8533,7 @@
    "asset": "/home/user/work/warships/pal/swish_06.wav"
   },
   {
-   "id": "s332",
+   "id": "s325",
    "at": 704.7333,
    "kind": "strike",
    "tier": "impact",
@@ -8771,11 +8541,11 @@
    "gain_db": -8.0,
    "vary": 0.15,
    "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/impact_10.wav"
+   "anchor": 0.15,
+   "asset": "/home/user/work/warships/pal/impact_02.wav"
   },
   {
-   "id": "s332b0",
+   "id": "s325b0",
    "at": 704.7683,
    "kind": "strike (weight)",
    "tier": "swish",
@@ -8784,11 +8554,11 @@
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
-   "anchor": 0.0471,
-   "asset": "/home/user/work/warships/pal/body_04.wav"
+   "anchor": 0.1402,
+   "asset": "/home/user/work/warships/pal/body_03.wav"
   },
   {
-   "id": "s333",
+   "id": "s326",
    "at": 706.0667,
    "kind": "small element",
    "tier": "pop",
@@ -8796,11 +8566,11 @@
    "gain_db": -19.0,
    "vary": 0.35,
    "pre_trimmed": true,
-   "anchor": 0.0,
-   "asset": "/home/user/work/warships/pal/pop_06.wav"
+   "anchor": 0.0312,
+   "asset": "/home/user/work/warships/pal/pop_10.wav"
   },
   {
-   "id": "s334a",
+   "id": "s327a",
    "at": 707.403,
    "kind": "nobody has ever found her (anticipation)",
    "tier": "swish",
@@ -8813,7 +8583,7 @@
    "asset": "/home/user/work/warships/pal/swish_02.wav"
   },
   {
-   "id": "s334",
+   "id": "s327",
    "at": 707.533,
    "kind": "nobody has ever found her",
    "tier": "hero_hit",
@@ -8821,11 +8591,11 @@
    "gain_db": -10.0,
    "vary": 0.0,
    "pre_trimmed": true,
-   "anchor": 0.573,
-   "asset": "/home/user/work/warships/pal/surge_02.wav"
+   "anchor": 0.6943,
+   "asset": "/home/user/work/warships/pal/surge_07.wav"
   },
   {
-   "id": "s334b0",
+   "id": "s327b0",
    "at": 707.568,
    "kind": "nobody has ever found her (weight)",
    "tier": "swish",
@@ -8838,20 +8608,7 @@
    "asset": "/home/user/work/warships/pal/bubbles_06.wav"
   },
   {
-   "id": "s334b1",
-   "at": 707.618,
-   "kind": "nobody has ever found her (weight)",
-   "tier": "swish",
-   "cat": "wake",
-   "gain_db": -15.0,
-   "vary": 0.2,
-   "layer": "weight",
-   "pre_trimmed": true,
-   "anchor": 0.6124,
-   "asset": "/home/user/work/warships/pal/wake_01.wav"
-  },
-  {
-   "id": "s335",
+   "id": "s328",
    "at": 709.5667,
    "kind": "movement",
    "tier": "swish",
@@ -8863,7 +8620,7 @@
    "asset": "/home/user/work/warships/pal/swish_01.wav"
   },
   {
-   "id": "s336",
+   "id": "s329",
    "at": 711.2333,
    "kind": "shot change",
    "tier": "whoosh",
