@@ -56,3 +56,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When adding a metric or scoring gate, the first fixture must be an input the gate is supposed to REJECT, and the assertion is that it rejects it. Testing a scorer on good input only proves it produces a number, not that the number discriminates.
 
 **Principle:** A detector is only validated by input it must reject. Passing input proves the code runs; failing input proves the measurement means something.
+
+### Observation 4: Inventory the user's existing tooling before building a replacement for it
+
+**Status:** OPEN
+**Date:** 2026-08-13
+**Session context:** Asked to automate a scriptwriting workflow. Built a measurement gate, a channel profile and a calibration tool across two commits before the user supplied their project files, which contained a mature SOP, a channel skill, and a far better-calibrated lint tool covering most of the same ground.
+**Skill:** New skill candidate: workflow-automation-intake
+**Type:** open-source
+**Phase/Area:** discovery, before any building
+
+**Issue:** The user described a painful manual process and the natural response was to build the missing tool. They already had it. Worse than the wasted work, the invented version CONTRADICTED theirs in three places that would have caused real damage: a uniform per-section word budget where their documented system deliberately varies section length (their own rule: "never uniform"), a guessed 180 wpm where they had a measured 185, and a required hook/outro section where their format explicitly has neither. Shipping it would have produced a gate that fails their correct scripts. The user had twice offered the files before they were requested; the offer was acknowledged but building continued in parallel rather than pausing for it.
+
+**Suggested improvement:** When a user describes an established manual workflow, inventory what they already have BEFORE building — ask for their existing docs, tools and SOPs as the first action, not after a prototype exists. An established workflow that produces real output almost always has accumulated tooling, and any constant invented to fill a gap (rates, thresholds, target lengths) is likely already measured somewhere in their files. Treat every self-chosen constant as a question to ask rather than a default to ship. When a user offers project files, stop and take them; parallel building against assumptions produces work that must be discarded, and its contradictions are invisible until they fire on real input.
+
+**Principle:** A user with a working process has tooling, and invented constants will contradict their measured ones. Inventory before building — the cost is not the wasted work, it is that an invented default silently overrides a measured one and fails the user's correct work.
+
+### Observation 5: Test extraction tools against the user's own logged failures
+
+**Status:** OPEN
+**Date:** 2026-08-13
+**Session context:** Building a scanner to extract high-risk factual claims from a draft for verification. The user's SOP carried an appendix logging eight real errors that had reached video comments, each with its claim type.
+**Skill:** test-driven-development
+**Type:** open-source
+**Phase/Area:** choosing test fixtures for detection and extraction tools
+
+**Issue:** Building a fixture from those eight logged real-world failures caught three misses in the first implementation that invented test data would not have: a fabricated scene detail was excluded because a place name was treated as a sourcing anchor; a statistic written as "half the armies" was missed by a pattern expecting "half of"; and a percentage spelled out as "four percent" was missed by a digits-only pattern, which is the COMMON case in narration written to be read aloud. All three were exactly the shapes the scanner existed to find.
+
+**Suggested improvement:** When a user's documentation contains a log of past failures — a corrections log, an incident list, a bug postmortem table — build the first test fixture directly from it and require every logged instance to be caught. It is the highest-value fixture available: real, already classified by the user, and drawn from the exact distribution the tool will run against.
+
+**Principle:** A user's log of past failures is a ready-made regression suite. Where one exists, it outranks any fixture that could be invented, because every entry is a real instance of the thing being detected.

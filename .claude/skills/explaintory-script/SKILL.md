@@ -1,234 +1,272 @@
 ---
 name: explaintory-script
-description: Write a finished ExplainTory script from a title alone — research it with sources, confirm the angle and outline at ONE batched gate, then draft and converge on the exact word count before delivering. TRIGGER on "script", "write the script", "new script", "script this title", or any bare video title submitted for writing. Pure scriptwriting; it does not touch voiceover or sound design.
+description: Run the ExplainTory Scripting SOP end to end — title through Stage 0 gates, research the candidate pool, tier-budget the outline, draft, run the full audit battery and Stage 5A claim verification, and hand off a publishable script. TRIGGER on "script", "write the script", "new script", "script this title", or any video title submitted for writing. Pure scriptwriting; it does not touch voiceover or sound design.
 ---
 
 # ExplainTory Script
 
-**Sapro gives a title. This gives back a finished, measured script.** One
-confirmation in the middle, nothing else. Everything the old chat workflow asked
-him — length, tone, structure, audience, what to include — is already answered in
-`script_profile.json`, because those answers never changed between videos and
-asking again was the waste.
+**Sapro gives a title. This runs his SOP and gives back a publishable script.**
 
-Deliver two files:
+The process was already designed, refined through six versions, and is correct.
+It is not reinvented here. What was missing was a **conductor** — something that
+runs Stages 0 through 7 in order, in one session, loading the right document at
+the right stage and running the right tool, without Sapro having to remember
+which stage comes next or which check has been skipped.
 
-- `<Title>.txt` — the script, passing `measure.py`
-- `<Title> — research.md` — the sourced fact pack it was written from
+That conducting is where the hours went. Not the writing.
 
-Scope: writing only. Voiceover and sound design are separate skills and this one
-does not call them, import from them, or produce anything shaped for them.
+**The authority order.** `references/claude_explaintory-scripting-sop-v1_6.md` is
+the process. `references/claude_explaintory-channel-skill-v6_5.md` is the
+craft, and **it wins over any generic FacelessOS guidance**. The Subject-Type
+Law sits above everything. This file only sequences them. **When this file and a
+reference disagree, the reference wins** — and say so rather than following this
+one silently.
 
-## The one gate, and why it exists
+## Constants — never recompute these in your head
 
-The back-and-forth was never the problem. **The questions are a control Sapro
-installed on purpose so the script does not drift**, and removing them would
-trade hours of chat for a finished script that is quietly about the wrong thing.
-What cost the hours was spreading those questions across an afternoon, one round
-trip at a time.
-
-So the questions still get answered — all at once, up front, with the answers
-already filled in. He reads one block and says "go", or changes one line.
-
-**Everything before the gate is research. Everything after it is silent.** Do not
-come back with "should the tone be X" or "is 12 minutes right". If a question
-matters, it belongs in the gate block; if it does not fit there, the profile
-already answers it.
-
-## Pipeline
-
-| Stage | What happens | Asks anything? |
+| Parameter | Value | Source |
 |---|---|---|
-| research | build the sourced fact pack | no |
-| **spec gate** | angle + outline + budget, in one block | **yes, once** |
-| draft | write to the per-chapter budget | no |
-| converge | `measure.py` until it passes | no |
-| deliver | script + research file | no |
+| VO rate | **185 WPM** (2,291 words → 12:21) | channel skill v6.5 |
+| Kill-line | inside first **78 words** (0:25) | Fix 1 |
+| Listicle length | **1,600–2,000 words**, 8–12 entries | SOP appendix |
+| ENTIRE History | 3,300–4,000 words, era blocks | SOP appendix |
+| HEAVY / MEDIUM / LIGHT | 250–320 / 170–220 / 110–160 | SOP appendix |
+| Em dashes in body | **0** | overlay skill v1.1 |
+| Negate-contrast device | exactly **1** per script | Stage 5 item 4 |
+| Colons | ≤2–3 per script | Stage 5 item 1 |
+| Humor density | 1 dry line / 250–300 words | SOP Stage 4 |
+| Voice states | base · dry wit · **dramatic** | channel skill v6.5 |
 
-## 1. Research — before any angle is chosen
+SOP Stage 5B rule 4 is binding: *"Recompute in the shell, never in the head, and
+print the number."* Every runtime and every word sum in a report comes out of a
+tool below, never out of an estimate.
 
-Do the research first. An angle picked before the sources are open is a guess
-that the research then gets bent to support, and bending it is how a script ends
-up with a confident claim nobody can source.
+## The stages
 
-Rules, all from the profile's `research` block:
+### Stage 0 — Gates (before anything)
 
-- **Never cite a source you did not open.** Fetch it and read it.
-- Primary and contemporary sources outrank encyclopaedias, which outrank
-  listicles and content farms.
-- **Two independent sources for any number that reaches the hook.** The hook is
-  the most-repeated sentence in the video and the most likely to be screenshotted.
-- Record what could **not** be verified. That list is the only thing standing
-  between an unsourced claim and a script, because an unsourced claim that sounds
-  good will otherwise be written in by default.
-- Note the strongest counter-argument to the angle. If it holds, the angle
-  changes — and that decision is enormously cheaper here than in a draft.
+**Gate 0, Subject class, runs first and outranks every other gate.** OBJECT and
+SYSTEM are GO. **PEOPLE and EVENT are STOP** — 5-for-5 versus 0-for-3, and the
+worst object video beats the best people video by 19x.
 
-Write `<Title> — research.md` as you go: claim, source, link, and a confidence
-mark. It ships with the script. When a fact is questioned three months later,
-this file is the answer.
+**High AVD is not a green light.** Military Units holds the channel's best AVD
+at 41.9% and did 2,800 views. Never cite AVD as evidence a subject will convert;
+on this channel that inference is backwards.
 
-## 2. The spec gate — one block, then silence
+Watch the word, not the vibe: *"Every Failed Siege in History"* is an EVENT.
+*"Every Siege Engine Explained"* is an OBJECT.
 
-Show exactly this, filled in, and wait:
+Then gates 1–7 from the SOP: niche, search demand, sparse competition, format
+fit, vein check, flop-pattern, title stem. **Check the stem's current status in
+the Title Scan SOP before committing** — that list moves faster than the SOP
+file, and the SOP records a case where a stem was marked BURNED here and
+reversed there on the same day.
 
-```
-  "The Ship That Sank Twice"
+A failed gate is a **no-go reported with the gate that failed**, not a script
+written anyway with a caveat.
 
-  ANGLE     The Vasa did not sink from bad luck. Three people measured the
-            fault before launch and were overruled by a king who wanted a
-            second gun deck. It is a story about who is allowed to be right.
-            (rejected: "famous shipwrecks" — no through-line; "Swedish naval
-            history" — the title promises one ship)
+### Stage 0.5 — Pre-flight, the one batched gate
 
-  OUTLINE   1  The Order          250   the second gun deck arrives by letter
-            2  The Shipwright     250   Hybertsson dies mid-build
-            3  The Stability Test 250   thirty men, three passes, stopped
-            ...
-            8  The Salvage        248   1961, ninety-five percent intact
+Four questions, asked once, at title lock, before research. Never defaulted
+silently:
 
-  BUDGET    12:00 · 2160 words · hook 75 · outro 60 · 8 chapters
-  SOURCES   9 opened · 2 claims unverified (listed in the research file)
-  RISK      The "overruled by the king" line rests on one 1628 transcript.
+1. **Voice** — base, dry wit, or dramatic.
+2. **Era headers** — only if the title carries "From Every Era". Default is at
+   most two spoken; all-spoken costs ~2–3 AVD points and is Sapro's call.
+3. **Target word count / runtime.**
+4. **Write mode** — section-by-section with mini-audits, or full draft then one
+   battery. Section-by-section is the default for new formats, experiments, and
+   anything over ~1,800 words.
 
-  go?
-```
+Present all four together with recommended answers pre-filled so the reply can
+be "go".
 
-Four things and a question. **The rejected angles matter** — they are what
-proves the chosen one was chosen rather than stumbled into, and they are how he
-redirects in one word if the pick is wrong.
+**Then keep asking — but only about forks.** The SOP is explicit that pre-flight
+does not license silence afterwards. Roster swaps, entries to cut, closer choice,
+tone shifts get surfaced *when they become live*. Reversible craft calls (tier
+assignment, sentence choices) stay with the writer and are flagged, not asked.
 
-Then stop. A gate that is followed by more questions is not a gate.
+The distinction that matters: **batch the parameters, surface the forks.** The
+parameters were costing round trips for no reason. The forks are the control.
 
-## 3. Draft to the budget, chapter by chapter
+### Stage 1 — Research, no drafting
 
-`measure.py --plan --runtime 12 --chapters 8` gives the per-chapter word target.
-Write each chapter to its own number, not to a feeling about the whole.
+Pool **larger than the script needs**: 14–18 candidates for an 8–12 entry
+script, holding back 4–6 to seed a Pt 2.
 
-This is the difference that ends the loop. A script written as one 2,160-word
-blob and then trimmed loses whichever paragraphs are easiest to cut, which are
-rarely the weakest ones. A script written as eight 250-word chapters lands
-within a few percent on the first pass, and the convergence below is a trim
-rather than a rewrite.
+Per candidate, a mini fact-card: one date/year · one named individual · one hard
+number · outcome type · a real sourced quote if one exists. Rate on recognition,
+weirdness, explanatory richness, and visual potential for the animator.
 
-Writing rules live in the profile — `hook`, `rhythm`, `substance`, `voice`,
-`retention`. The ones that matter most in practice:
+**Sourcing standard, from Stage 5A — apply it here, not later.** Museum object
+records, peer-reviewed metallurgy, primary sources in translation and named
+scholars outrank encyclopedias, and all of them outrank vendor and replica pages.
+**Vendor pages are the single largest source of confident weapon misinformation
+on the web and they dominate page one for exactly the queries a script needs.** A
+claim appearing only on retailer sites is folklore until a real source is found.
 
-- **The hook opens on the strangest verifiable fact, stated flat.** No set-up, no
-  promise of what the video will cover. The banned-opener list in the profile is
-  enforced by the gate, so "Have you ever wondered" fails the build rather than
-  reaching him.
-- **Every chapter ends on something the next one answers.** A chapter that
-  summarises itself is where the viewer leaves.
-- **Specific beats summarised.** "Forty-one ships" over "a fleet". This is
-  measured as fact density and it is the gate that catches a script which passes
-  everything else and still says nothing.
-- **Vary sentence length on purpose.** A four-word sentence after a thirty-word
-  one is the whole rhythm of the read. Uniform length is measurable and it is the
-  signature of writing that sounds machine-made.
+Reject or flag single late sources (precedent: Cambyses' cat shields — one
+source, 688 years after the event, rejected).
 
-### The overlay is a collaborator, not an audience
+### Stage 2 — Entry confirmation (Sapro gate)
 
-The channel runs a dramatic overlay in the StickTory style and measures **50–55%
-average view duration** with it. That number is a constraint, not a target to
-beat: the current style is what produces it, so a generated script matches that
-style rather than improving on it with a structure nobody has tested.
+Deliver the rated pool with a recommended selection and order, and what is held
+for Pt 2. He confirms, swaps, or adjusts. **Preserve-verbatim lines are logged
+and carried exactly through every future version.** Drafting starts only after
+sign-off.
 
-Practically: **state the dramatic beat as a fact and let it land.** The overlay
-dramatises; the narration does not need to. Adjectives compete with the visual,
-facts feed it. Put reveals at chapter boundaries, where the overlay cuts.
-
-## 4. Converge — measure, never estimate
+### Stage 3 — Structure and outline (not prose)
 
 ```bash
-python3 scripts/measure.py "<Title>.txt" --runtime 12 --chapters 8
+python3 scripts/plan.py --entries 9 --words 1800
 ```
 
-**Do not hand over a script that has not passed this.** Exit code 0 or it is not
-finished.
+Prints the tier per entry, the word target, the seconds at 185 WPM, the summed
+total, and any shape problems. This exists because of a failure the SOP names:
+*"every entry-weight sum was wrong by 600 words, both stated with confidence."*
 
-The output is not a verdict, it is an edit list with targets and numbers:
+Ordering, Paint Explainer 5-position model: **Position 1** is the most visually
+shocking subject, not the most famous. **Rehook at 40–55%** — explicit open loop,
+most famous entry, or most ironic story. **Closer** is the most devastating or
+resonant, not the most famous. A chronological signal in the title wins.
 
-```
-  EDIT LIST:
-    - [length] cut 118 words
-    - [chapter_balance] chapter 4 'The Ledger': cut 118 words
-    - [banned_phrases] rewrite those lines: testament to, stark reminder
-```
+Then, by hand: the **outcome-type map** (force 1–2 pattern-breakers so not
+everything resolves as rise-and-fall failure) and the **duplication check** (no
+battle is the primary example twice; no entry re-describes another's mechanic).
 
-Execute it literally, re-run, repeat. It terminates because every instruction
-names a place and an amount. This is the entire reason the tool exists: a model
-cannot count its own words. It estimates them, confidently and wrongly, and
-"make it a bit longer" aimed at that estimate is what turned a script into an
-afternoon.
+A HEAVY that cannot fill its band with substance gets **demoted, not padded**.
 
-So: **never report a word count from reading the draft.** Read it out of
-`measure.py`. Never claim a script is "about the right length" — run the gate.
+### Stage 4 — Draft
 
-Warnings (`chapter_balance`, `sentence_rhythm`, `sentence_max`,
-`no_stage_directions`) do not block delivery, but say which ones are outstanding
-in the delivery message. Do not report a clean run when the run was not clean.
+Global: no extracted hook section, **no outro** — the final entry's last sentence
+ends the script. Headers written **without numbers from the start**. **Zero em
+dashes.** If over budget, cut whole **beats**, never shave sentences everywhere —
+shaving flattens the tier variation the system exists to create.
 
-## 5. The pronunciation guide
+Entry 1 carries the 0:30 metric: concrete sensory detail naming the subject in
+sentence 1 · counter-intuitive claim by sentence 2 · specific number by sentence
+4 · never open abstract.
 
-Every script ends with one, because the names in it are the ones a reader gets
-wrong:
+**Opener shape** — pick per subject, do not default:
+**Shape A, straight reveal** — name the subject and negate the assumption in one
+breath. Use when the subject is famous or the truth is the hook.
+**Shape B, misdirect-then-deflate** — lead with the vivid wrong impression, name
+it as the correction. Use for striking-but-misleading hardware. **Only legal when
+the deflation is genuinely surprising**; if impression and reality are equally
+dramatic, it is spec-first-with-no-frame wearing a costume — fall back to A.
 
-```
-Pronunciation
+Voice: serious-but-conversational, dry-restrained. Gary Provost rhythm — after
+2–3 long sentences, drop a short punch. Every humor line passes the
+tonal-restraint test: works read by a serious narrator with a slightly raised
+eyebrow, or cut. One comprehension analogy per unfamiliar entry, at
+introduction. 1–2 real sourced quotes max, never invented.
 
-Vasa — VAH-sah
-Hybertsson — HOO-bert-son
-Klas Fleming — KLAHS FLEM-ing
-```
+Transitions: **But/Therefore logic, never "and then"**, no announcement
+transitions. Each entry's first line resolves the previous open loop.
 
-The heading must literally contain the word *Pronunciation* — that is what the
-detector matches, and without it the section is not recognised as an appendix.
-Respellings only, never IPA. Every non-obvious proper noun in the script earns an
-entry; the gate reports the count but cannot know which names are hard, so add
-them as they are written rather than hunting at the end.
+Kickers land on roughly **two-thirds** of entries, not all — some end on a plain
+fact, a date, or a quote, and **one entry per script just stops.**
 
-## Calibration — make the profile his, not mine
-
-`script_profile.json` ships with some values measured and some marked
-`default_unverified` in its `_provenance` block. **Those are starting points, not
-facts about the channel.** Point the calibrator at real published scripts and it
-replaces them with measurements:
+### Stage 5 — The full audit battery
 
 ```bash
-python3 scripts/calibrate.py ~/scripts/ --write
+python3 scripts/lint-v3_1.py script.md --format listicle [--overlay] [--punchline WORD]
 ```
 
-It also settles a question that is otherwise pure speculation — which decisions
-actually change between videos:
+Covers items 1–4, 9, and the mechanical half of 8. **It cannot cover 5, 6, 7, or
+whether a fact is true. A clean run is the floor, not a pass.**
 
+Then, by hand and non-optional: **retention/cadence check** (rehook placement,
+tier alternation, shape matches the outline) · **Variety Rotation Log** output
+block · **formal Authenticity Audit** output block.
+
+On the deadzone scan: singles are REVIEW, **two or more consecutive is a hard
+fail.** The fix is always to write the visual INTO the sentence — a historian
+reading a service record becomes the ship anchored off a shoreline firing
+inland. Never hand the animator a cue sheet covering a passage that should not
+exist.
+
+```bash
+python3 scripts/plan.py --verify script.md      # measured tiers, adjacency, band
 ```
-  quantity                  median      min      max   verdict
-  runtime (min)               11.4     10.0     11.5   CONSTANT
-  chapters                     8.0      7.0      8.0   CONSTANT
-  hook words                    31       31       31   CONSTANT
 
-  ASK PER VIDEO: nothing — every measured quantity is stable
+### Stage 5A — High-risk claim verification
+
+```bash
+python3 scripts/claimscan.py script.md
 ```
 
-Anything it calls `VARIES` belongs in the spec gate. Anything `CONSTANT` gets
-locked and never asked again. A writer usually cannot say from memory whether
-their videos are all the same length; the files know.
+Emits the worksheet: every sentence making one of the seven high-risk claim
+types, grouped by entry, with the rule beside it and a blank for the source. It
+**verifies nothing** — it does the walking, so the hour goes into opening sources
+instead of hunting sentences.
 
-It deliberately does **not** touch taste — banned phrases, hook rules, voice.
-A corpus of good scripts cannot tell you what a bad one would have contained.
+Then three things it cannot do:
+
+- **The dossier re-read.** Re-read the research dossier's flagged risks against
+  the finished prose, line by line. In the first run the dossier had already
+  flagged all three errors correctly and the draft contradicted its own research
+  anyway, because compression happens between the dossier and the page.
+- **The cadence heuristic.** Verify hardest the sentences that sound best. Every
+  error in that run arrived as an improvement to rhythm. **Fluency is the tell,
+  not the defence.** The tool surfaces cadence candidates; the checking is yours.
+- **The comment-police pre-mortem.** One line per entry naming the correction a
+  knowledgeable viewer would most likely leave. Any entry that does not survive
+  its likely correction gets rewritten before presenting. **This list ships with
+  the audit summary** — Sapro decides what risk to carry; he cannot decide about
+  risk he was not shown.
+
+### Stage 5B — Reporting discipline
+
+Binding on what may be *said* about a script:
+
+1. **Name the checks that actually ran.** A clean lint run is reported as a clean
+   lint run, never as an accuracy pass.
+2. **"Lock-ready", "final" and "as swept as a draft gets" are prohibited before
+   Stage 5A has run.** If accuracy is unverified, it is a draft, whatever its
+   polish.
+3. **Report the exposure, not just the pass** — predicted corrections, plus every
+   claim resting on inference, tradition, or a single source.
+4. **Own arithmetic and constants.** Every number from a tool, at 185 WPM.
+5. **Surface drift unprompted.** If a later instruction superseded an earlier
+   rule, or a "locked" file was reopened, say so in the same message.
+
+### Stage 6 — Versioning
+
+Rewrites are **fresh from scratch**, never incremental trimming. **Never edit a
+version file in place** — every change is a new numbered file so any two versions
+diff. A script written under a superseded channel-skill version is **rewritten,
+not patched**: research and roster survive, prose does not.
+
+### Stage 7 — Handoff
+
+Strip working tags from the title · top note *"Read body paragraphs only;
+headings are labels"* · confirm headers carry no numbers · append the
+pronunciation guide for all Latin/Greek/foreign terms · sanity-check runtime as
+word count ÷ 185.
+
+## Known drift — flag, do not silently resolve
+
+The SOP is explicit that pointer drift between these files is normal and must be
+surfaced. Live at the time of vendoring:
+
+- **SOP v1.6 cites channel skill v6.4; the vendored file is v6.5.** v6.5 changed
+  one thing — three voice states, not two — so Stage 0.5 question 1 must offer
+  **dramatic** as well.
+- **SOP Gate 7 and Title Scan SOP §0.2 disagree** on the `From Every Era` stem.
+  The SOP says they must be edited in the same pass when reconciled.
+- **Sapro reports 50–55% AVD with the dramatic overlay.** The vendored channel
+  skill records 39–42% listicle and 28–30% era-block. That figure postdates
+  v6.5 and is not yet written into any reference file here. Treat 50–55% as the
+  live number and the reference tables as the older baseline — and **do not
+  restructure to chase it**; the current style is what earns it.
 
 ## Do not
 
-- **Do not ask a second question.** One gate. If something is genuinely
-  undecidable, put it in the gate block as a flagged risk line and proceed with
-  the stated assumption.
-- **Do not deliver an unmeasured script.** The gate is cheap; his time is not.
-- **Do not report length, density or chapter counts from reading.** Every number
-  in the delivery message comes out of `measure.py`.
-- **Do not write a fact the research file cannot support.** If it is too good to
-  cut, source it or mark it contested in the script itself.
-- **Do not restructure to beat 50–55% AVD.** That number is what the current
-  style already earns. Match it.
+- **Do not skip a stage because the script looks good.** The errors that reach
+  the comments are fluent, confident sentences that pass every grep.
+- **Do not report a runtime or a word sum computed in your head.**
+- **Do not call a clean lint an accuracy pass**, or use "final" before 5A.
+- **Do not write a subject that failed Gate 0** because the angle is interesting.
+- **Do not restructure to beat the measured AVD.** Match the style that earns it.
 - **Do not import from, or write for, the voiceover or sound-design tooling.**
-  This skill is scriptwriting only.
