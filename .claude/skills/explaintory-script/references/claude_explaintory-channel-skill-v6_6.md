@@ -29,9 +29,35 @@ This skill captures everything proven about how the ExplainTory channel performs
 > The correct use of the figure is as evidence the overlay's *technique* works on
 > its home channel.
 >
-> **Open measurement:** once a listicle scripted with the dramatic overlay has a
-> full retention curve, record its AVD here and the tables get a real
-> post-overlay row. Until then this stays a provenance note, not a target.
+> **Validation status: UNPROVEN ON THIS CHANNEL.** The overlay has been tested
+> in drafting and reads well, but **no video written with it has been
+> published**, so there is no ExplainTory retention curve for it at all. It is
+> an open experiment, not doctrine. Treat a dramatic-mode script as the
+> experiment's first data point and record its AVD when it lands.
+>
+> **THE PORT BOUNDARY — three rules that do NOT come across.** StickTory's
+> template is internally consistent; taking it wholesale would break rules this
+> channel holds for measured reasons. Checked mechanically by
+> `scripts/overlay.py --mode explaintory`:
+>
+> | Rule | StickTory | ExplainTory | Resolution |
+> |---|---|---|---|
+> | **2nd person** | the spine — "the reader IS the character," present tense | banned outright by the linter's `SECOND_PERSON_RE` | **not ported.** Third person stays. |
+> | **Hedging** | "no hedging, just assert it" | Stage 5A requires inference, tradition and contested causation be narrated as such | **not ported.** Attribution wins. |
+> | **"basically"** | signature tic, ~20x across its outliers, its most common filler | linter caps it at 3 | **cap wins.** |
+>
+> The hedging row is the dangerous one. Importing "just assert it" would
+> reintroduce precisely the class of error Stage 5A exists to catch — fluent,
+> confident, plausible sentences that are wrong — on a channel whose audience
+> timestamps them. **Never let the overlay's voice rules override Stage 5A.**
+>
+> **What DOES port,** and is measurable: the rhythm profile (avg ~8.5 words per
+> sentence, ~28% fragments, ~59% short, ~5% long, never three long in a row),
+> the humor levers with the reacting narrator as the biggest and most-missed
+> one, open loops closed in 15-60s with at most one long spine-loop, no
+> telegraphing the reversal, and the cold ending with no joke after the final
+> line. The dramatic engine — a want, a villain with a face, a Big Mistake
+> caused by your own trust — ports as craft and is judged, never counted.
 >
 > **v6.5 change (2026-08-09):** the overlay gained a second mode, so there are now **three voice states, not two** — base, dry wit, dramatic. v6.3's OVERLAY RECONCILIATION described only two, which is why a drafting session asks "base or dry wit?" and never offers the dramatic option. This version rewrites that subsection to name all three, points at the v1.1 overlay file by path, and grants the overlay one further carve-out (fact-floor enforcement scale) that v1.1 claims from its side. Marked **[v6.5]**. **Nothing else in this file is changed** — no doctrine, no Fix, no format rule, no threshold.
 >

@@ -193,6 +193,38 @@ exist.
 python3 scripts/plan.py --verify script.md      # measured tiers, adjacency, band
 ```
 
+**If the dramatic voice state was chosen**, also:
+
+```bash
+python3 scripts/overlay.py script.md --mode explaintory
+```
+
+Measures the StickTory rhythm profile (avg ~8.5 words/sentence, ~28% fragments,
+~59% short, ~5% long, never three long in a row), the humor levers, open-loop
+rotation, telegraphing, and the cold ending. **Nothing else in the battery
+measures any of it** — "was the overlay actually applied" was an eyeball
+judgement before this.
+
+It also enforces **the port boundary**. Three StickTory rules do not come
+across, and the tool checks all three:
+
+| Rule | StickTory | ExplainTory |
+|---|---|---|
+| 2nd person | the spine | **banned** — third person stays |
+| Hedging | "just assert it" | **Stage 5A wins** — attribution required |
+| "basically" | signature tic, ~20× | **capped at 3** by the linter |
+
+**The hedging row is the dangerous one.** Importing "never hedge, just assert
+it" would reintroduce exactly the class of error Stage 5A exists to catch, on a
+channel whose audience timestamps them. Never let the overlay's voice rules
+override Stage 5A.
+
+The humor figure is a **floor, not a score** — the template says so itself:
+*"keyword humor scorers are noisy and undercount novel phrasings — judge by
+reading ALOUD, not a number."* A draft can clear it and be flat. So can the
+dramatic engine: a want, a villain with a face, a Big Mistake caused by your
+own trust are judged, never counted, and they are what decide whether it works.
+
 ### Stage 5A — High-risk claim verification
 
 ```bash
@@ -278,8 +310,15 @@ Reading a retention number without checking what it describes is the same class
 of error v6.4 was written to fix. The figure's correct use is as evidence the
 overlay's *technique* works on its home channel.
 
-Once a listicle drafted with the dramatic overlay has a full retention curve,
-that number goes into the channel skill as a real post-overlay row.
+**The overlay is UNPROVEN here.** It has been tested in drafting and reads well,
+but **no video written with it has been published**, so there is no ExplainTory
+retention curve for it at all. It is an open experiment, not doctrine.
+
+That has one practical consequence worth stating at Stage 0.5: **the first
+dramatic-mode script is the experiment's first data point.** Say so when
+offering the voice states, and when it publishes, record its AVD in the channel
+skill as the first real post-overlay row. Until then, dramatic mode is a bet
+with good reasoning behind it — not the safe option, and not the proven one.
 
 ## Do not
 
