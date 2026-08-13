@@ -15,18 +15,19 @@ which stage comes next or which check has been skipped.
 
 That conducting is where the hours went. Not the writing.
 
-**The authority order.** `references/claude_explaintory-scripting-sop-v1_6.md` is
-the process. `references/claude_explaintory-channel-skill-v6_5.md` is the
+**The authority order.** `references/claude_explaintory-scripting-sop-v1_7.md` is
+the process. `references/claude_explaintory-channel-skill-v6_6.md` is the
 craft, and **it wins over any generic FacelessOS guidance**. The Subject-Type
-Law sits above everything. This file only sequences them. **When this file and a
-reference disagree, the reference wins** — and say so rather than following this
-one silently.
+Law sits above everything. Stage 0 gate 7 reads
+`references/claude_explaintory-title-scan-sop-v1_4.md`. This file only sequences
+them. **When this file and a reference disagree, the reference wins** — and say
+so rather than following this one silently.
 
 ## Constants — never recompute these in your head
 
 | Parameter | Value | Source |
 |---|---|---|
-| VO rate | **185 WPM** (2,291 words → 12:21) | channel skill v6.5 |
+| VO rate | **185 WPM** (2,291 words → 12:21) | channel skill v6.6 |
 | Kill-line | inside first **78 words** (0:25) | Fix 1 |
 | Listicle length | **1,600–2,000 words**, 8–12 entries | SOP appendix |
 | ENTIRE History | 3,300–4,000 words, era blocks | SOP appendix |
@@ -35,7 +36,7 @@ one silently.
 | Negate-contrast device | exactly **1** per script | Stage 5 item 4 |
 | Colons | ≤2–3 per script | Stage 5 item 1 |
 | Humor density | 1 dry line / 250–300 words | SOP Stage 4 |
-| Voice states | base · dry wit · **dramatic** | channel skill v6.5 |
+| Voice states | base · dry wit · **dramatic** (3, not 2) | channel skill v6.6 |
 
 SOP Stage 5B rule 4 is binding: *"Recompute in the shell, never in the head, and
 print the number."* Every runtime and every word sum in a report comes out of a
@@ -70,7 +71,9 @@ written anyway with a caveat.
 Four questions, asked once, at title lock, before research. Never defaulted
 silently:
 
-1. **Voice** — base, dry wit, or dramatic.
+1. **Voice** — **three states**: base · dry wit · dramatic. Dramatic is the
+   StickTory-derived mode of the overlay. Never present this as a two-way
+   choice; sessions defaulted past *dramatic* for exactly that reason.
 2. **Era headers** — only if the title carries "From Every Era". Default is at
    most two spoken; all-spoken costs ~2–3 AVD points and is Sapro's call.
 3. **Target word count / runtime.**
@@ -245,21 +248,38 @@ headings are labels"* · confirm headers carry no numbers · append the
 pronunciation guide for all Latin/Greek/foreign terms · sanity-check runtime as
 word count ÷ 185.
 
-## Known drift — flag, do not silently resolve
+## Drift found at vendoring — resolved 2026-08-13
 
-The SOP is explicit that pointer drift between these files is normal and must be
-surfaced. Live at the time of vendoring:
+All three are closed. Recorded here because Stage 5B rule 5 requires drift be
+surfaced, and because the resolutions are the reason these files carry new
+version numbers.
 
-- **SOP v1.6 cites channel skill v6.4; the vendored file is v6.5.** v6.5 changed
-  one thing — three voice states, not two — so Stage 0.5 question 1 must offer
-  **dramatic** as well.
-- **SOP Gate 7 and Title Scan SOP §0.2 disagree** on the `From Every Era` stem.
-  The SOP says they must be edited in the same pass when reconciled.
-- **Sapro reports 50–55% AVD with the dramatic overlay.** The vendored channel
-  skill records 39–42% listicle and 28–30% era-block. That figure postdates
-  v6.5 and is not yet written into any reference file here. Treat 50–55% as the
-  live number and the reference tables as the older baseline — and **do not
-  restructure to chase it**; the current style is what earns it.
+- **SOP cited channel skill v6.4; the file was v6.5.** → **SOP v1.7** aligns the
+  pointers, and fixes the consequence v6.5 named directly: Stage 0.5 question 1
+  offered two voice states when there are three, which is why sessions never
+  offered *dramatic*.
+- **SOP Gate 7 and Title Scan SOP §0.2 disagreed** on the `From Every Era` stem.
+  The 2026-08-06 weekly scan §8.1 had already reversed the burn — the two
+  corpses failed **G0 on subject class, not packaging** — and the 2026-08-13
+  scan shows the wrapper still climbing (Sword 116,416 at 9.4 days). → **Title
+  Scan SOP v1.4** carries the correction; SOP v1.7 discharges the note. Both
+  edited in the same pass, as v1.6 required.
+- **The 50–55% AVD figure had no owner recorded.** → **Channel skill v6.6.**
+
+### The AVD figure — whose number it is
+
+**50–55% AVD is StickTory's, not ExplainTory's.** The dramatic overlay is
+derived from StickTory and ports their approach in full **except the
+second-person POV**. ExplainTory's measured AVD is unchanged: **39–42% listicle,
+28–30% era-block**. ExplainTory's own post-overlay AVD is **not yet measured**.
+
+Do not cite 50–55% as a channel result, and do not restructure to chase it.
+Reading a retention number without checking what it describes is the same class
+of error v6.4 was written to fix. The figure's correct use is as evidence the
+overlay's *technique* works on its home channel.
+
+Once a listicle drafted with the dramatic overlay has a full retention curve,
+that number goes into the channel skill as a real post-overlay row.
 
 ## Do not
 

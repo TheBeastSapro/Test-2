@@ -7,6 +7,32 @@ description: Channel-specific script writing skill for ExplainTory — a weapons
 
 This skill captures everything proven about how the ExplainTory channel performs. It overrides generic FacelessOS defaults with channel-specific calibration based on real retention data.
 
+> **v6.6 change (2026-08-13):** records the dramatic overlay's provenance and
+> its retention figure's **owner**. Nothing else in this file is changed — no
+> doctrine, no Fix, no format rule, no threshold, no AVD table.
+>
+> The dramatic mode of the punchy-dark-wit overlay is derived from **StickTory**.
+> StickTory's videos run **50–55% AVD** (their "life of an executioner" opened at
+> 65% and decayed as it scaled — a normal distribution effect, not a script
+> fault). The overlay ports StickTory's approach **in full except the
+> second-person POV**, which ExplainTory does not adopt.
+>
+> **That 50–55% is StickTory's number, not ours.** ExplainTory's measured AVD
+> remains the tables below: **39–42% listicle, 28–30% era-block**. ExplainTory's
+> own post-overlay AVD is **not yet measured** — no video in the benchmark
+> predates the overlay's introduction with a clean comparison.
+>
+> This distinction is recorded explicitly because attributing a source channel's
+> retention to this one is the same class of error v6.4 was written to fix:
+> reading a retention number without checking what it actually describes. **Do
+> not cite 50–55% as an ExplainTory result, and do not restructure to chase it.**
+> The correct use of the figure is as evidence the overlay's *technique* works on
+> its home channel.
+>
+> **Open measurement:** once a listicle scripted with the dramatic overlay has a
+> full retention curve, record its AVD here and the tables get a real
+> post-overlay row. Until then this stays a provenance note, not a target.
+>
 > **v6.5 change (2026-08-09):** the overlay gained a second mode, so there are now **three voice states, not two** — base, dry wit, dramatic. v6.3's OVERLAY RECONCILIATION described only two, which is why a drafting session asks "base or dry wit?" and never offers the dramatic option. This version rewrites that subsection to name all three, points at the v1.1 overlay file by path, and grants the overlay one further carve-out (fact-floor enforcement scale) that v1.1 claims from its side. Marked **[v6.5]**. **Nothing else in this file is changed** — no doctrine, no Fix, no format rule, no threshold.
 >
 > **v6.4 change (the Subject-Type Law, 2026-08-05):** the v6.2 four-video benchmark was built entirely from `audienceWatchRatio` curves and **was never cross-checked against view counts**. When it was, AVD and views turned out to be *inversely ranked* across all four videos. The AVD tier table was therefore recommending, on retention grounds, the one subject class that has never converted on this channel. This version adds **THE SUBJECT-TYPE LAW** as doctrine principle #0 — it sits above every other rule in this file — and patches the three places where v6.3 implied that people-subjects are a normal choice. Marked **[v6.4]** at each location. Full derivation in `claude/explaintory-subject-type-law-v1.md`.
@@ -111,6 +137,10 @@ Measured 2026-07-27 from lifetime `audienceWatchRatio` curves. This table is the
 **[v6.4] A fourth reading, added:** these four videos are ranked in exactly reverse order by views. Retention work is worth doing — the 2026-08-05 analytics pull shows relative retention below the peer median for the entire runtime of the breakout, which is capping suggested placement — but retention is the *second* decision. Subject class is the first.
 
 ### AVD tiers, measured
+
+> **[v6.6] These are ExplainTory's own measured figures.** The dramatic
+> overlay's 50–55% belongs to StickTory and does not belong in this table. See
+> the v6.6 note at the top of this file.
 
 | Subject class | Measured AVD | Notes |
 |---|---|---|

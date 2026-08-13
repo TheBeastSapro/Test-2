@@ -1,14 +1,40 @@
-# ExplainTory Scripting SOP — v1.6
+# ExplainTory Scripting SOP — v1.7
 *Standard Operating Procedure for producing one publishable script, from title to VO handoff.*
-*Grounded in: explaintory-channel-skill **v6.4**, the Subject-Type Law v1, Title Scan SOP v1.3, FacelessOS master, retention-mechanics, variety-rotation, authenticity-audit, punchy-dark-wit-overlay v1.0. Confirmed against channel data through August 2026.*
+*Grounded in: explaintory-channel-skill **v6.6**, the Subject-Type Law v1, Title Scan SOP v1.4, FacelessOS master, retention-mechanics, variety-rotation, authenticity-audit, punchy-dark-wit-overlay v1.0. Confirmed against channel data through August 2026.*
 
+> **v1.7 change (2026-08-13):** pointer-alignment pass and one Stage 0.5
+> correction. **Stages 1 through 7 are byte-identical to v1.6** — no research,
+> outline, drafting, battery, 5A, 5B, versioning or handoff rule moved, and no
+> constant changed.
+>
+> (1) **Channel skill pointers updated v6.4 → v6.6.** v6.5 added a third voice
+> state; v6.6 records the dramatic overlay's provenance.
+>
+> (2) **Stage 0.5 question 1 offered two voice states and there are three.**
+> Channel skill v6.5 notes this exact failure — that a drafting session "asks
+> 'base or dry wit?' and never offers the dramatic option." This SOP was one of
+> the places causing it. Question 1 now names all three.
+>
+> (3) **Gate 7's standing reconciliation note is discharged.** Title Scan SOP
+> §0.2 listed the `From Every Era` wrapper as BURNED while this file's Gate 7
+> read it as a validated house engine. v1.6 required both be edited in the same
+> pass; Title Scan SOP **v1.4** now carries the correction and the note is
+> removed here.
+>
+> (4) **The overlay's AVD figure is recorded with its owner.** 50–55% AVD
+> belongs to **StickTory**, the channel the dramatic overlay is derived from —
+> it is **not** a measured ExplainTory result. ExplainTory's own post-overlay
+> AVD is unmeasured. Recorded in channel skill v6.6 and repeated here because
+> citing a source channel's retention as your own is the precise error the
+> Subject-Type Law and v6.4 exist to prevent.
+>
 > **v1.1 changes:** (1) VO rate corrected to the measured **185 WPM** everywhere — the 165–170 figure was a planning estimate and made every runtime ~10% long. (2) New **Stage 0.5 — Pre-flight**, four questions asked at title lock before research begins. (3) Superlative-verdict check added to the Stage 5 battery. (4) Versioning discipline tightened in Stage 6: never edit a version file in place.
 >
 > **v1.2 change:** **deadzone scan** added to the Stage 5 battery, after video QC found stretches where the animator had nothing to put on screen.
 >
 > **v1.6 change (2026-08-06):** two corrections to v1.5, both of them corrections to the writer rather than to the process.
 >
-> (1) **Gate 7 was rewritten on a stem status that had already been overturned.** v1.5 marked `The [Superlative] [X] From Every Era Explained` as BURNED, copied from Title Scan SOP v1.3 §0.2. The weekly scan of the *same date* (`claude/titlescan-weekly-2026-08-06.md` §8.1) re-ran G6 and reversed it: only two genuine third-party attempts exist, neither cleared 50K, and the wrapper carries four in-house instances at 513,087 · 145,008 · 135,779 · 32,119@57h. The two corpses (Battles 1,390; Military Units 3,094) failed **G0 on subject class**, not on packaging. Attributing their failure to the wrapper was the same error the Subject-Type Law exists to correct. Gate 7 now reads the stem as a validated house engine with a variant-occupancy check. **Title Scan SOP §0.2 still says BURNED and has not yet been reconciled — when it is, this gate and §0.2 must be edited in the same pass.**
+> (1) **Gate 7 was rewritten on a stem status that had already been overturned.** v1.5 marked `The [Superlative] [X] From Every Era Explained` as BURNED, copied from Title Scan SOP v1.3 §0.2. The weekly scan of the *same date* (`claude/titlescan-weekly-2026-08-06.md` §8.1) re-ran G6 and reversed it: only two genuine third-party attempts exist, neither cleared 50K, and the wrapper carries four in-house instances at 513,087 · 145,008 · 135,779 · 32,119@57h. The two corpses (Battles 1,390; Military Units 3,094) failed **G0 on subject class**, not on packaging. Attributing their failure to the wrapper was the same error the Subject-Type Law exists to correct. Gate 7 now reads the stem as a validated house engine with a variant-occupancy check. **[v1.7] Reconciled: Title Scan SOP v1.4 §0.2 now reads the wrapper as a validated house engine, with the variant-occupancy check as the live constraint.**
 >
 > (2) **The v1.5 changelog line below said "no scripting rule changed." That was inaccurate and has been corrected in place.** Stages 1–7 were byte-identical, but Stage 0 gained a rejection gate and had gate 7 rewritten, and Stage 0 is a scripting rule — it decides whether a topic gets written at all. Per Stage 5B rule 1, the description of the work has to match the work.
 >
@@ -62,8 +88,8 @@ If a proven skeleton just performed, the Pt 2 / sequel is the next obvious candi
 
 Four questions, asked once, as tappable options, the moment the title is locked. Never defaulted silently. These are the decisions that are cheap to answer now and expensive to reverse after a draft exists.
 
-1. **Voice** — base channel skill, or the punchy dark-wit overlay.
-2. **Era headers** — only if the title carries "From Every Era": all spoken, or at most two with the rest as on-screen cards. (Default per channel skill v6.4 Fix 2 is at most two; all-spoken costs ~2–3 AVD points and is the channel owner's call to make.)
+1. **Voice** — **three states, not two**: base channel skill · punchy dark-wit overlay (DRY WIT) · punchy dark-wit overlay (DRAMATIC). The dramatic mode is the StickTory-derived one. Never present this as a two-way choice; channel skill v6.5 records sessions defaulting past the dramatic option because the question only ever offered two. [v1.7]
+2. **Era headers** — only if the title carries "From Every Era": all spoken, or at most two with the rest as on-screen cards. (Default per channel skill v6.6 Fix 2 is at most two; all-spoken costs ~2–3 AVD points and is the channel owner's call to make.)
 3. **Target word count / runtime.**
 4. **Write mode** — section-by-section with mini-audits, or full draft then one battery.
 
@@ -173,7 +199,7 @@ Run all components. A "full battery" is not just the anti-slop grep.
 5. **Retention/cadence check:** rehook placement, tier alternation, entry-length shape matches the outline.
 6. **Variety Rotation Log:** required output block — confirms device rotation across entries.
 7. **Formal Authenticity Audit output block:** required — not optional.
-8. **Fact verification pass:** every entry has its date, named individual, and hard number; unverifiable claims softened or flagged. The *presence* of each is now a hard-fail check in `explaintory-lint-v3_1.py` (fact-density floor, per channel skill v6.4), which also warns on filler paragraphs. Whether each fact is CORRECT is still a human/Claude pass — the Bushnell dimension error in Warships v2.0 cleared every mechanical check.
+8. **Fact verification pass:** every entry has its date, named individual, and hard number; unverifiable claims softened or flagged. The *presence* of each is now a hard-fail check in `explaintory-lint-v3_1.py` (fact-density floor, per channel skill v6.6), which also warns on filler paragraphs. Whether each fact is CORRECT is still a human/Claude pass — the Bushnell dimension error in Warships v2.0 cleared every mechanical check.
 9. Word count verified against 1,600–2,000.
 
 Present the script only after all components pass, with the audit summary block attached.
@@ -276,7 +302,9 @@ The errors above were recoverable. Describing the work inaccurately to the chann
 | Battery tool | `explaintory-lint-v3_1.py` (v3.0 superseded) |
 | Pt 2 seed pool | hold back 4–6 entries |
 | High-risk claim types | 7 (Stage 5A) |
-| Channel skill version | **v6.4** (v6.3 superseded) |
+| Channel skill version | **v6.6** (v6.5 superseded) |
+| Voice states | base · dry wit · dramatic (3, not 2) |
+| Dramatic overlay source | StickTory — **their** 50–55% AVD, not ours |
 | Subject class | OBJECT or SYSTEM only (Gate 0) |
 
 ---
