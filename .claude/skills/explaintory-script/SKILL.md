@@ -15,8 +15,8 @@ which stage comes next or which check has been skipped.
 
 That conducting is where the hours went. Not the writing.
 
-**The authority order.** `references/claude_explaintory-scripting-sop-v1_7.md` is
-the process. `references/claude_explaintory-channel-skill-v6_6.md` is the
+**The authority order.** `references/claude_explaintory-scripting-sop-v1_8.md` is
+the process. `references/claude_explaintory-channel-skill-v6_7.md` is the
 craft, and **it wins over any generic FacelessOS guidance**. The Subject-Type
 Law sits above everything. Stage 0 gate 7 reads
 `references/claude_explaintory-title-scan-sop-v1_4.md`. This file only sequences
@@ -27,16 +27,17 @@ so rather than following this one silently.
 
 | Parameter | Value | Source |
 |---|---|---|
-| VO rate | **185 WPM** (2,291 words → 12:21) | channel skill v6.6 |
+| VO rate | **185 WPM** (2,291 words → 12:21) | channel skill v6.7 |
 | Kill-line | inside first **78 words** (0:25) | Fix 1 |
 | Listicle length | **1,600–2,000 words**, 8–12 entries | SOP appendix |
 | ENTIRE History | 3,300–4,000 words, era blocks | SOP appendix |
 | HEAVY / MEDIUM / LIGHT | 250–320 / 170–220 / 110–160 | SOP appendix |
+| **Person** | **THIRD. Never second, in any voice state** | channel skill v6.7 |
 | Em dashes in body | **0** | overlay skill v1.1 |
 | Negate-contrast device | exactly **1** per script | Stage 5 item 4 |
 | Colons | ≤2–3 per script | Stage 5 item 1 |
 | Humor density | 1 dry line / 250–300 words | SOP Stage 4 |
-| Voice states | base · dry wit · **dramatic** (3, not 2) | channel skill v6.6 |
+| Voice states | base · dry wit · **dramatic** (3, not 2) | channel skill v6.7 |
 
 SOP Stage 5B rule 4 is binding: *"Recompute in the shell, never in the head, and
 print the number."* Every runtime and every word sum in a report comes out of a
@@ -173,7 +174,7 @@ fact, a date, or a quote, and **one entry per script just stops.**
 ### Stage 5 — The full audit battery
 
 ```bash
-python3 scripts/lint-v3_1.py script.md --format listicle [--overlay] [--punchline WORD]
+python3 scripts/lint-v3_2.py script.md --format listicle [--overlay] [--punchline WORD]
 ```
 
 Covers items 1–4, 9, and the mechanical half of 8. **It cannot cover 5, 6, 7, or
@@ -350,6 +351,14 @@ with good reasoning behind it — not the safe option, and not the proven one.
 
 ## Do not
 
+- **Do not write ExplainTory in second person. Ever.** Not in base voice, not in
+  dry wit, not in dramatic. No "you", "your", "yourself" in the narration. This
+  is the one rule the StickTory port explicitly drops, and it is a **channel**
+  rule rather than an overlay rule — the linter used to enforce it only under
+  `--overlay`, which meant a base-voice script could address the viewer
+  throughout and still pass. **lint-v3_2.py** fails it unconditionally. If a
+  StickTory beat template reads naturally in "you", rewrite the beat in third
+  person rather than keeping the person.
 - **Do not skip a stage because the script looks good.** The errors that reach
   the comments are fluent, confident sentences that pass every grep.
 - **Do not report a runtime or a word sum computed in your head.**

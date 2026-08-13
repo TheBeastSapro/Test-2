@@ -1,7 +1,16 @@
 # ExplainTory Scripting SOP — v1.7
 *Standard Operating Procedure for producing one publishable script, from title to VO handoff.*
-*Grounded in: explaintory-channel-skill **v6.6**, the Subject-Type Law v1, Title Scan SOP v1.4, FacelessOS master, retention-mechanics, variety-rotation, authenticity-audit, punchy-dark-wit-overlay v1.0. Confirmed against channel data through August 2026.*
+*Grounded in: explaintory-channel-skill **v6.7**, the Subject-Type Law v1, Title Scan SOP v1.4, FacelessOS master, retention-mechanics, variety-rotation, authenticity-audit, punchy-dark-wit-overlay v1.0. Confirmed against channel data through August 2026.*
 
+> **v1.8 change (2026-08-13):** battery tool pointer moves to
+> **`explaintory-lint-v3_2.py`**, and the reason is a rule change rather than a
+> rename. v3.1 failed second person only under `--overlay`; a base-voice or
+> dry-wit script could address the viewer throughout and exit 0. v3.2 makes it
+> an unconditional hard fail, because the ban belongs to the channel and not to
+> the overlay. Channel skill **v6.7** records the doctrine. **Stages 1 through 7
+> are otherwise byte-identical to v1.7** and no other constant changed. v3.1 is
+> superseded and should not be run.
+>
 > **v1.7 change (2026-08-13):** pointer-alignment pass and one Stage 0.5
 > correction. **Stages 1 through 7 are byte-identical to v1.6** — no research,
 > outline, drafting, battery, 5A, 5B, versioning or handoff rule moved, and no
@@ -299,7 +308,8 @@ The errors above were recoverable. Describing the work inaccurately to the chann
 | Colons | ≤2–3 per script |
 | Negate-contrast device | exactly 1 |
 | Em dashes in body | 0 |
-| Battery tool | `explaintory-lint-v3_1.py` (v3.0 superseded) |
+| Battery tool | `explaintory-lint-v3_2.py` (v3.0, v3.1 superseded) |
+| Second person | **0 — every voice state**, hard fail |
 | Pt 2 seed pool | hold back 4–6 entries |
 | High-risk claim types | 7 (Stage 5A) |
 | Channel skill version | **v6.6** (v6.5 superseded) |

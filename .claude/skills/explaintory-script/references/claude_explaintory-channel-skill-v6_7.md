@@ -7,6 +7,21 @@ description: Channel-specific script writing skill for ExplainTory — a weapons
 
 This skill captures everything proven about how the ExplainTory channel performs. It overrides generic FacelessOS defaults with channel-specific calibration based on real retention data.
 
+> **v6.7 change (2026-08-13):** **second person is a CHANNEL rule, not an
+> overlay rule.** ExplainTory is third person in every voice state — base, dry
+> wit and dramatic alike. This was previously enforced only by the punchy
+> dark-wit overlay skill, and the linter inherited that scoping: without
+> `--overlay` a draft addressing the viewer as "you" throughout reported
+> `[REVIEW] second person` and exited 0. Verified on a test draft before the
+> change. Corrected in **explaintory-lint-v3_2.py**, where the check is now an
+> unconditional hard fail; `--overlay` still governs its other rules and no
+> longer has any bearing on this one.
+>
+> The StickTory port already excluded 2nd person (see the v6.6 port boundary
+> below). What was missing was that the exclusion applies with the overlay OFF
+> as well — the format is third-person because the channel is, not because the
+> overlay says so. Nothing else in this file is changed.
+>
 > **v6.6 change (2026-08-13):** records the dramatic overlay's provenance and
 > its retention figure's **owner**. Nothing else in this file is changed — no
 > doctrine, no Fix, no format rule, no threshold, no AVD table.

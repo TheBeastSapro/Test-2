@@ -86,3 +86,34 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When a user's documentation contains a log of past failures — a corrections log, an incident list, a bug postmortem table — build the first test fixture directly from it and require every logged instance to be caught. It is the highest-value fixture available: real, already classified by the user, and drawn from the exact distribution the tool will run against.
 
 **Principle:** A user's log of past failures is a ready-made regression suite. Where one exists, it outranks any fixture that could be invented, because every entry is a real instance of the thing being detected.
+
+### Observation 6: Verify an enforcement claim by running it, before reporting it as enforced
+
+**Status:** OPEN
+**Date:** 2026-08-13
+**Session context:** The user stated a hard rule twice ("ExplainTory is not 2nd person", then "Do not write explaintory in 2nd person"). Their existing linter contained a second-person check, and it had already been reported back to them as enforced.
+
+**Skill:** doubt-driven-development
+**Type:** open-source
+**Phase/Area:** verifying that a rule is actually enforced by the tooling that appears to enforce it
+
+**Issue:** The linter's second-person check was real but conditional: it produced a hard failure only when an optional `--overlay` flag was passed, and a warning otherwise. Reading the code showed a check existed; running it on a deliberately failing draft showed the rule did not hold in the default invocation, so a script could address the viewer throughout and exit 0. The claim "this is enforced" had already been made on the strength of having seen the check in the source. The gap was only found because the user repeated the rule, prompting an execution test rather than another read.
+
+**Suggested improvement:** When reporting that a rule is enforced, run the enforcing tool against an input that violates the rule and confirm the failure, using the exact invocation the workflow actually uses. Reading the check is not verification: checks are routinely conditional on flags, modes, config or environment, and the conditional path is invisible when scanning for the rule's presence. Where a rule is unconditional in policy, assert it is unconditional in code — grep the check for flag-dependence specifically.
+
+**Principle:** Presence of a check is not enforcement of a rule. Verify by executing the violating case through the real invocation path; a conditional guard looks identical to an unconditional one when you are only reading for whether the rule exists.
+
+### Observation 7: Composite scores must exclude the criteria that are pass/fail
+
+**Status:** OPEN
+**Date:** 2026-08-13
+**Session context:** Asked to add a numeric score to a quality-checking pipeline that already had hard gates and graduated profile metrics.
+**Skill:** New skill candidate: quality-gate-design
+**Type:** open-source
+**Phase/Area:** designing scoring and ranking for quality systems
+
+**Issue:** The natural implementation of "make it score" is one number over every measured dimension. That silently converts hard constraints into soft ones: a draft violating an absolute rule can still score highly because conforming dimensions outweigh it, and the headline number is what a reader acts on. A first pass at the comparison output showed the same failure in miniature — it ranked two candidates by score and printed "but blocking failures decide first" underneath, which is a verdict arguing with its own caveat while the headline wins.
+
+**Suggested improvement:** Split the output into blocking criteria and scored criteria, and never blend them. Score only quantities that are legitimately a matter of degree; list absolute constraints separately, unweighted and unaveraged, and tie the exit code to those rather than to the score. Where a verdict or ranking is printed, the verdict logic must itself implement the precedence rule, not state it in adjacent prose.
+
+**Principle:** Averaging a hard constraint into a score converts it into a soft one. Blocking and scored criteria must be reported separately, and any headline verdict must implement the precedence it claims — a caveat printed beneath a contradicting headline is not read.

@@ -54,7 +54,7 @@ sys.path.insert(0, HERE)
 import overlay as ov            # noqa: E402
 import plan as pl               # noqa: E402
 
-LINT = os.path.join(HERE, "lint-v3_1.py")
+LINT = os.path.join(HERE, "lint-v3_2.py")
 
 # Weights. Rhythm carries the most because it is the profile's densest signal
 # and the one a drafting pass most often drifts on; length and tier shape are

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ExplainTory Compliance Linter v3.1
+ExplainTory Compliance Linter v3.2
 Mechanical verification battery for scripts, per:
   - explaintory-channel-skill v6.3 (pattern thresholds, measured VO rate, fact-density floor)
   - explaintory-scripting-sop v1.2 (Stage 5 compliance battery)
@@ -12,6 +12,16 @@ Usage:
   python3 explaintory-lint-v3_1.py script.md [--format listicle|history|every-era]
                                              [--overlay] [--punchline WORD ...]
                                              [--no-deadzone] [--no-density]
+
+CHANGES FROM v3.1
+  FIX  second person is now an UNCONDITIONAL HARD FAIL, not a warning that
+       only becomes a failure under --overlay. ExplainTory is third person in
+       EVERY voice state; the ban is a channel rule, not an overlay rule, and
+       gating it on the flag meant a base or dry-wit script could address the
+       viewer as "you" throughout and still exit 0. Verified before the change:
+       the same draft reported [REVIEW] without --overlay and [FAIL] with it.
+       --overlay still exists and still governs its other rules; it no longer
+       has any bearing on this one.
 
 CHANGES FROM v3.0
   NEW  deadzone scan (SOP v1.2, Stage 5 item 3). Sentence-level. Flags any
@@ -356,7 +366,8 @@ def main():
     ap.add_argument("--format", choices=["listicle", "every-era", "history"],
                     default="listicle")
     ap.add_argument("--overlay", action="store_true",
-                    help="punchy dark-wit overlay active: second person becomes a hard fail")
+                    help="punchy dark-wit overlay active (second person is a hard "
+                         "fail regardless, as of v3.2)")
     ap.add_argument("--punchline", nargs="*", default=[],
                     help="punchline words to check for reuse (max 1 each)")
     ap.add_argument("--no-deadzone", action="store_true",
@@ -456,11 +467,11 @@ def main():
         for m in SECOND_PERSON_RE.finditer(t):
             sp_hits.append((i, m.group(0), t.strip()))
     for i, w, t in sp_hits:
-        msg = f'SECOND PERSON "{w}" (line {i}): {t[:85]!r}'
-        if args.overlay:
-            fails.append(msg + " — overlay bans viewer address")
-        else:
-            warns.append(msg + " — rephrase to third-person/observational")
+        # v3.2: unconditional. The ban belongs to the channel, not to the
+        # overlay -- gating it on --overlay let a base-voice script address the
+        # viewer throughout and still pass.
+        fails.append(f'SECOND PERSON "{w}" (line {i}): {t[:85]!r}'
+                     " — ExplainTory is never second person, in any voice state")
 
     # ================= NEW v3.1: DEADZONE SCAN =================
     dz_hits = []      # (lineno, type, cue, sentence, at_entry_end)
@@ -641,7 +652,7 @@ def main():
 
     print("\n--- v3 scans ---")
     print(f"  [{'OK ' if not sup_hits else 'REVIEW'}] superlative verdicts: {len(sup_hits)}")
-    sp_flag = "OK " if not sp_hits else ("FAIL" if args.overlay else "REVIEW")
+    sp_flag = "OK " if not sp_hits else "FAIL"   # v3.2: never REVIEW
     print(f"  [{sp_flag}] second person: {len(sp_hits)}")
 
     print("\n--- v3.1 scans ---")
