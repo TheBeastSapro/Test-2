@@ -225,6 +225,34 @@ reading ALOUD, not a number."* A draft can clear it and be flat. So can the
 dramatic engine: a want, a villain with a face, a Big Mistake caused by your
 own trust are judged, never counted, and they are what decide whether it works.
 
+### Scoring — for comparing drafts, never for clearing them
+
+```bash
+python3 scripts/score.py draft.md [--dramatic]
+python3 scripts/score.py --compare a.md b.md      # same title, two drafts
+```
+
+One number, 0–100, over the **continuous** profile metrics only: length, tier
+shape, rhythm, substance, deadzone burden, and humor in dramatic mode. Hard
+failures are listed separately as **BLOCKING** — never scored, never averaged,
+never weighted away. A draft can sit at 88/100 while addressing the viewer as
+"you", running two consecutive deadzones, and asserting an unsourced lineage.
+Each is a hard fail on its own and none of them averages out.
+
+**The score never decides whether a script may be presented.** The battery
+already decides that. Use the score for the two things it is actually good at:
+
+- **A/B on the same title** — two models, two passes, two writers. The
+  channel's own measured profile is the referee instead of taste.
+- **Drift over time** across scripts.
+
+In `--compare`, **blocking counts decide before score does.** A higher score
+with more blocking failures is the worse draft, and the verdict line says so.
+
+What the number cannot see: whether a fact is true, whether a joke is funny,
+whether the betrayal lands, whether the payoff breathes, whether the subject
+should have been written at all. A script can score 100 and fail Gate 0.
+
 ### Stage 5A — High-risk claim verification
 
 ```bash
