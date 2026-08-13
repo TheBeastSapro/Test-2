@@ -61,6 +61,35 @@
     ]
   },
 
+  "retention": {
+    "avd_baseline_pct": [50, 55],
+    "_note": [
+      "The channel measures 50-55% average view duration with a dramatic",
+      "overlay in the StickTory style. That number is the constraint, not a",
+      "target to beat: the current script style is what produces it, so a",
+      "generated script's job is to MATCH that style, never to improve on it",
+      "with a structure that has never been tested. Anything the calibration",
+      "measures off real scripts outranks anything written here."
+    ],
+    "rules": [
+      "Every chapter ends on an unresolved beat that the next one answers.",
+      "A chapter that ends by summarising itself is where the viewer leaves.",
+      "Open a loop in the hook that only the final chapter closes, and do not",
+      "answer it early to sound clever.",
+      "The overlay dramatises what the narration states plainly — so state the",
+      "dramatic beat as a fact and let it land, rather than narrating the",
+      "drama itself. Adjectives compete with the visual; facts feed it.",
+      "Reveals belong at chapter boundaries, where the overlay cuts."
+    ],
+    "_measurable": false,
+    "_why_not_measurable": [
+      "Open loops and reveal placement are judged at the spec gate and in",
+      "review, not scored. A regex proxy for 'ends on a cliff' would be",
+      "confidently wrong often enough to train the writer to ignore it, and a",
+      "gate that gets ignored is worse than no gate."
+    ]
+  },
+
   "outro": {
     "target_words": 60,
     "rules": [

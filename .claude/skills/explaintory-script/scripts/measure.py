@@ -25,16 +25,24 @@ reports "chapter 4 'The Ledger' is 118 words over; cut 118" -- an instruction
 executable in a single pass, which is why the loop terminates instead of
 oscillating.
 
-Length model, two constants, both calibratable from real scripts with
-calibrate.py:
+Length model. WORDS are the unit, and words per minute is the only constant
+that sets length:
 
-    words = minutes * 180     narration pace, words per minute
-    chars = seconds * 14      the same pace expressed in characters
+    words = minutes * wpm     wpm defaults to 180, calibratable
 
-They agree at 4.67 chars/word, which is the arithmetic check that they describe
-one voice reading one kind of prose. Runtime is estimated from BOTH and the
-wider of the two is reported, so a script never plans to 12 minutes and runs to
-13 because one measure flattered it.
+An earlier version carried a second constant, chars = seconds * 14, and took
+the slower of the two estimates on the theory that this was the conservative
+choice. It is not conservative, it is wrong. The two only agree at 4.67
+chars/word; real narration prose runs nearer 5.8 including spaces, so on a
+measured corpus the character estimate came out 33% longer than the word
+estimate and every script written against it would have been cut by a third
+to fit a runtime it was never going to have. That is the exact failure this
+tool exists to remove, reintroduced as a safety margin.
+
+So: words are the target, wpm converts to runtime, and the character count is
+reported as observation only. If real published runtimes ever become
+available, calibrate.py derives the true wpm from them and this stops being an
+assumption at all.
 """
 import argparse
 import json
@@ -325,9 +333,9 @@ def measure(raw, profile, expect_chapters, runtime_min):
 
     total_words, total_chars = wc(narration), len(narration)
     wpm = profile["length"].get("wpm", WPM)
-    # Two independent estimates; report the slower. One measure flattering the
-    # script is exactly how a 12-minute plan becomes a 13-minute read.
-    est_seconds = max(total_words / wpm * 60.0, total_chars / CHARS_PER_SEC)
+    # Words are the unit. See the module docstring on why the character
+    # estimate is not blended in here.
+    est_seconds = total_words / wpm * 60.0
     sents = sentences(narration)
     slens = [wc(s) for s in sents] or [0]
     g = []
