@@ -201,7 +201,7 @@ def analyse(body, beats, mode):
                            ("short_pct", short, "%"), ("long_pct", lng, "%")):
         lo, hi = RHYTHM[key]
         ok = lo <= val <= hi
-        c.append(Check(f"rhythm:{key}", ok, f"{val:.1f}{unit} (target {lo}-{hi})",
+        c.append(Check(f"rhythm:{key}", ok, f"{val:.2f}{unit} (target {lo}-{hi})",
                        fix=None if ok else RHYTHM_FIX[key][0 if val > hi else 1],
                        severity="warn" if key == "long_pct" else "fail"))
 

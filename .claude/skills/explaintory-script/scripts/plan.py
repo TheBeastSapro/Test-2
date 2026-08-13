@@ -263,10 +263,23 @@ def read_sections(path):
 
 
 def classify(words):
+    """
+    Tier for a measured section, or the reason it has none.
+
+    The bands do not touch -- there are gaps at 161-169 and 221-249 -- so a
+    section can be outside every band without being too big or too small. The
+    first version labelled everything that was not OVER-HEAVY as UNDER-LIGHT,
+    which reported a 164-word section as under the 110-word floor and sent the
+    writer to expand something that needed trimming by four words.
+    """
     for tier, (lo, hi) in TIERS.items():
         if lo <= words <= hi:
             return tier
-    return "OVER-HEAVY" if words > TIERS["HEAVY"][1] else "UNDER-LIGHT"
+    if words > TIERS["HEAVY"][1]:
+        return "OVER-HEAVY"
+    if words < TIERS["LIGHT"][0]:
+        return "UNDER-LIGHT"
+    return "BETWEEN"
 
 
 def main():
