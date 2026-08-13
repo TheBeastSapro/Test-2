@@ -51,6 +51,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import clarity as cl            # noqa: E402
 import overlay as ov            # noqa: E402
 import plan as pl               # noqa: E402
 
@@ -61,11 +62,13 @@ LINT = os.path.join(HERE, "lint-v3_2.py")
 # structural and near-binary in practice, so they carry less than their
 # importance suggests -- they are usually either right or obviously wrong.
 WEIGHTS = {
-    "length":     0.15,
-    "tier_shape": 0.15,
-    "rhythm":     0.30,
-    "substance":  0.20,
-    "deadzone":   0.10,
+    "length":     0.12,
+    "tier_shape": 0.12,
+    "rhythm":     0.22,
+    "substance":  0.16,
+    "deadzone":   0.08,
+    "clarity":    0.15,     # can a viewer follow it
+    "drawable":   0.15,     # can the animator draw it
     "humor":      0.10,     # dramatic mode only; redistributed when off
 }
 
@@ -117,6 +120,7 @@ def score_draft(path, fmt="listicle", mode="explaintory", dramatic=False):
     body, beats = ov.read_body(path)
     ov_res = ov.analyse(body, beats, mode)
     lint = run_lint(path, fmt, overlay_on=True)
+    lint_mod = cl.load_lint()
 
     sents = ov.sentences(body)
     slens = [len(ov.words(s)) for s in sents] or [0]
@@ -171,6 +175,19 @@ def score_draft(path, fmt="listicle", mode="explaintory", dramatic=False):
     dims["deadzone"] = max(0.0, 1.0 - per_k / 20.0)
     detail["deadzone"] = (f"{lint['deadzones']} ({per_k:.1f}/1k words), "
                           f"{lint['deadzone_runs']} consecutive runs")
+
+    # --- clarity and drawability ---
+    # Weighted alongside the rest rather than bolted on, because "a viewer can
+    # follow it" and "the animator can draw it" are the two things that decide
+    # whether the video works at all. A script can be accurate, on-profile and
+    # unwatchable.
+    g_clean, _, _, _ = cl.flesch(body, strip_names=True)
+    dims["clarity"] = cl.band_grade_conformance(g_clean)
+    detail["clarity"] = f"grade {g_clean:.1f} without names (target ≤{cl.GRADE_MAX:g})"
+
+    draw, _ = cl.drawability(body, lint_mod.CONCRETE_RE, lint_mod.UNIT_RE)
+    dims["drawable"] = min(1.0, draw / cl.DRAWABLE_MIN)
+    detail["drawable"] = f"{draw * 100:.0f}% of sentences name something physical"
 
     # --- humor, dramatic only ---
     if dramatic:

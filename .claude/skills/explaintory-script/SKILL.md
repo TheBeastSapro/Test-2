@@ -226,6 +226,36 @@ reading ALOUD, not a number."* A draft can clear it and be flat. So can the
 dramatic engine: a want, a villain with a face, a Big Mistake caused by your
 own trust are judged, never counted, and they are what decide whether it works.
 
+### Clarity — can a viewer follow it, can the animator draw it
+
+```bash
+python3 scripts/clarity.py script.md
+```
+
+The two things that decide whether the video works, and neither was measured
+before. They are one concern, not two: **a sentence that names a physical thing
+is easier to picture AND easier to follow.** Abstraction costs the viewer and
+the animator in the same move.
+
+- **Reading grade**, reported twice — with names and **without**. Steer by the
+  second. This channel's subjects carry long unavoidable proper nouns
+  (*Hybertsson*, *tamahagane*, *Schienenzeppelin*) that inflate every
+  syllable-based score without making the prose harder. A script can read grade
+  11 with names and grade 7 without, and grade 7 is the truth about the writing.
+  **Never cut real words to pay for a name you cannot cut.** Target ≤8.
+- **Hard-word rate** — non-name words at 3+ syllables, max 12%.
+- **Drawability per entry** — the share of sentences naming something physical,
+  using the linter's own concrete lexicon. The deadzone scan catches individual
+  dead sentences and hard-fails consecutive runs; this catches the entry that is
+  60% unanchored without ever producing two in a row.
+- **The hardest sentences, named** — ranked so only genuinely dense or sprawling
+  lines appear. A plain concrete sentence never shows up here however long it is.
+
+What it cannot see: **whether the explanation lands.** Simple words in short
+sentences can still describe a mechanism nobody follows. That is the SOP's
+comprehension analogy — one per unfamiliar entry, at introduction — and it is
+judged by ear, not counted.
+
 ### Scoring — for comparing drafts, never for clearing them
 
 ```bash
