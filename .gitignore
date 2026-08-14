@@ -15,7 +15,11 @@ cues.md
 # python bytecode from compileall
 **/__pycache__/
 
-# never commit a profile — it can carry an API key
+# never commit a profile — it can carry an API key.
+# The key-free calibration lives at voice-calibration.json, which IS committed,
+# because the container is not storage and the profile died with it every
+# session. Pass that file to --profile. This guard stays so a real studio
+# export dropped here can never be committed by accident.
 voiceover_profile.json
 **/voiceover_profile.json
 lexicon.json
