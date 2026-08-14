@@ -81,6 +81,28 @@ edits audio. Building it surfaced two traps, both documented in SKILL.md:
    been written down twice and broken anyway, so it is a gate now rather than
    a sentence.
 7. **Transcribe after every destructive edit** and confirm no words were lost.
+
+7b. **Never re-roll a whole section to fix one word.** 2026-08-14, his words:
+   "you should never re roll the entire section for one word fix... re roll only
+   sentence or few words to match it because you just need that word so why
+   wasting too many credits just for one word?"
+
+   He is right on the arithmetic and it was being ignored: fixing "Parliament"
+   by re-rolling section 19 costs 403 characters when the sentence it sits in is
+   about 90. Five sections were re-rolled this way in one session, 1,706
+   characters, most of it re-rendering audio that was already correct.
+
+   Send the smallest unit that carries the defect — usually the sentence — and
+   splice it in. Two things make that safe, and both are already proven here:
+   pass the surrounding script as `previous_text` / `next_text` so the model
+   matches the delivery rather than starting cold, and cut the splice at
+   silence on both sides. The Hashish repair did exactly this: a replacement
+   clip placed verbatim, no gain, no tempo, no EQ, because its level already sat
+   within 0.6 dB of its neighbours. Measure the level before and after and say
+   the number.
+
+   Re-roll the whole section ONLY when the defect is the section's delivery as
+   a whole, or when a splice cannot be cut at silence.
 8. **Ask before regenerating any lines** — meaning the PIPELINE must not
    re-render on its own. 2026-08-14: "you should ask me permission if you like
    to do regeneration some lines". The pre-generation approval does not cover

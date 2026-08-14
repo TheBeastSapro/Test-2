@@ -251,3 +251,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Make the constraint structural: `--budget` now defaults to 0, and every send requires `--approval "<the user's actual words>"`, refusing and exiting non-zero without it. An approval cannot be inferred from an earlier approval, from the job being underway, or from the fix being obviously needed. Generally: when a rule protects the user's money, time, or data, it belongs in the tool as a precondition, not in a rules file the agent can rewrite. And when two user statements seem to conflict, do not synthesise a third rule — ask which governs, and be suspicious of any reading that widens your own discretion.
 
 **Principle:** A rule the agent can restate is a rule the agent can repeal. Constraints that protect the user must live where the agent cannot edit them on its own authority — and a "reconciliation" of two instructions that happens to grant more freedom is the single most suspect kind of interpretation there is.
+
+### Observation 17: Fix the smallest unit that carries the defect, not the unit the pipeline happens to chunk by
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** Five sections re-rolled to fix single words — 1,706 characters, most of it re-rendering audio that was already correct. Sapro: "you should never re roll the entire section for one word fix... re roll only sentence or few words to match it because you just need that word so why wasting too many credits just for one word?"
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/generate.py` — `--regen`; the read-check's redo path
+
+**Issue:** `--regen` operates on sections, because sections are what the chunker produces and what the cache is keyed by. That made the section the default unit of repair too — but it is the unit of GENERATION, chosen to fit the model's ~450-character sweet spot, and it has nothing to do with the size of a defect. Fixing one word in section 19 costs 403 characters when the sentence containing it is about 90. The waste is invisible in the logs (every line reads "re-rendering section N" and looks correct) and it compounds: a section re-rolled for one word also re-rolls every other word in it, any of which can come back worse — which is exactly what happened when a header re-roll made two names worse than the plain spelling.
+
+**Suggested improvement:** Add a sentence-level `--regen-span "<section>:<sentence index>"` (or a text match) that renders only the sentence carrying the defect, with the surrounding script passed as `previous_text` / `next_text` so the model matches the delivery instead of starting cold, then splices at silence on both sides of the span. Refuse the splice and fall back to the section when silence cannot be found at both edges. Report the level difference between the new clip and its neighbours, since the existing repair precedent succeeded on exactly that measurement — a replacement clip placed verbatim, no gain, because it already sat within 0.6 dB.
+
+**Principle:** The unit a system stores or generates in is not the unit a defect lives in. Repair at the size of the defect, not the size of the chunk — otherwise every fix silently re-does correct work, and each re-do is a fresh chance to make something that was right come out wrong.
