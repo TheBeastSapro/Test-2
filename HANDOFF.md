@@ -66,6 +66,15 @@ edits audio. Building it surfaced two traps, both documented in SKILL.md:
    MASTERED file if mastering can affect the defect.
 6. **Tell him before spending >2000 characters.** Enforced in generate.py.
 7. **Transcribe after every destructive edit** and confirm no words were lost.
+8. **Ask before regenerating any lines.** 2026-08-14, his words: "you should
+   ask me permission if you like to do regeneration some lines". This is not
+   covered by the pre-generation approval — that gate is passed once, and the
+   read-check's redo loop then re-renders flagged sections on its own, up to
+   `--max-redos` (default 2). Run interactive jobs with `--max-redos 0`, bring
+   him the flagged sections with the ASR evidence, and let him decide.
+   Note while you are there: the redo is `gen_cmd + --regen`, and `gen_cmd`
+   still carries `--approve-spend`, so **every redo round gets a fresh
+   full-size budget**. The approved number bounds one call, not the run.
 
 ## Fixed in the pipeline (unchanged from the last handoff)
 

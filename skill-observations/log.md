@@ -101,3 +101,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Have `show_plan` print the full effective calibration — every value that will be sent to the API — and mark each one's provenance: `stability 0.48 (profile)` vs `similarity_boost 0.75 (default)`. Marking provenance is the load-bearing half: it turns "these are the numbers" into "these two numbers nobody chose", which is the thing a reader can actually audit. Same treatment for `collapseBreaks`, `chapterPause`, `chunkSize` and `readTitle`, which are also silently defaulted.
 
 **Principle:** A confirmation gate must display every value it is about to commit, not the interesting subset — and it must distinguish configured values from inherited defaults, because a default is a decision nobody made and is where the wrong value hides.
+
+### Observation 7: The redo stage re-renders unasked, and --approve-spend does not bound the run
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** Mid-run on a 12,926-character script. Sapro said "you should ask me permission if you like to do regeneration some lines", which the pipeline's default behaviour contradicts. The run had to be stopped between the generate and check stages to honour it.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/voiceover.py` — the read-check redo loop; `--approve-spend`
+
+**Issue:** Two problems that compound. First, the check stage re-renders every flagged section automatically, up to `--max-redos` (default 2), with no gate — the skill's own framing is that generation is "the one irreversible step" and that Sapro confirms before anything is spent, but that confirmation is collected once, before generation, and then treated as consent for every later render the pipeline decides to do. Second, the redo is built as `gen_cmd + ["--regen", ...]`, and `gen_cmd` still carries `--approve-spend 12926`. The ceiling is enforced per invocation of generate.py, so each redo round starts with a fresh full-size budget. A number presented at the gate as the run's cost is in fact the cost of one call, and the true worst case is that number times (1 + max_redos) — a fact visible nowhere in the plan output. Nothing here is hypothetical: the default configuration of the documented command does this.
+
+**Suggested improvement:** (1) Gate the redo — after the read-check, print the flagged sections with the ASR evidence and the character cost of re-rendering them, and require confirmation before the first redo round; `--max-redos 0` should be the documented default for an interactive run, with the auto-redo behaviour behind an explicit opt-in flag. (2) Make the ceiling run-wide: track characters spent across every generate.py invocation in the work dir and have each call debit the remaining budget rather than receive a fresh copy of it. (3) Have `--plan` state the worst-case total, not just the first-pass cost.
+
+**Principle:** Approval is granted for a quantity, not for a category. A budget handed to a step that can invoke itself again must be decremented across invocations, or the number shown at the gate is not a ceiling at all — and any step that spends the user's money again, after the gate, needs its own gate.
