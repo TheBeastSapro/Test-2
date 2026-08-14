@@ -19,6 +19,7 @@ encoded once.
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -284,12 +285,77 @@ def _decode(src, rate=SR, tempo=1.0):
     return data
 
 
-def _speech_wpm(path, text):
-    """Words per minute over the SPOKEN span only.
+def _syllables(text):
+    """Rough syllable count — vowel groups, with the usual silent-e correction.
 
-    A chapter announcement is 2-4 words wrapped in ~0.2 s of model silence at each
-    edge. Divide by the whole file and that padding dominates, so a short heading
-    would look slow no matter how it was read.
+    Approximate on any single word and accurate enough in aggregate, which is all
+    a rate needs.
+    """
+    n = 0
+    for tok in re.findall(r"[A-Za-z']+|\d+", text.lower()):
+        if tok.isdigit():
+            n += _digit_syllables(tok)
+            continue
+        if tok.upper() == tok.upper() and not re.search(r"[aeiouy]", tok):
+            n += sum(_LETTER_SYL.get(c, 1) for c in tok)   # 'M' in M16 -> 'em'
+            continue
+        groups = len(re.findall(r"[aeiouy]+", tok))
+        if tok.endswith("e") and not tok.endswith(("le", "ee", "ye")) and groups > 1:
+            groups -= 1                      # silent e: 'bombard' vs 'bombarde'
+        n += max(1, groups)
+    return n
+
+
+# Spoken length of a single letter, for initialisms: 'M16' is said "em sixteen",
+# three syllables, not the one a vowel-group count finds in "M".
+_LETTER_SYL = {"w": 3, "m": 1, "n": 1, "l": 1, "s": 1, "f": 1, "x": 2, "h": 2}
+
+_ONES = [0, 1, 1, 1, 1, 1, 1, 2, 1, 1]                      # zero..nine
+_TEENS = [1, 3, 1, 2, 2, 2, 2, 3, 2, 2]                     # ten..nineteen
+_TENS = [0, 0, 2, 2, 2, 2, 2, 3, 2, 2]                      # twenty..ninety
+
+
+def _digit_syllables(d):
+    """Syllables in a run of digits, said the way a narrator says it.
+
+    Numerals were being dropped from the count entirely, which is why "M16"
+    measured 1 syllable and "Mark 14 Torpedo" measured 4 instead of 6 — and a
+    heading whose length is under-counted looks slow, so the leveller stretched
+    it further. Four-digit runs are read year-style ("fourteen sixty") because
+    that is what these scripts contain.
+    """
+    n = int(d)
+    if len(d) == 4 and 1100 <= n <= 1999:
+        return _digit_syllables(d[:2]) + _digit_syllables(d[2:])
+    if n < 10:
+        return _ONES[n]
+    if n < 20:
+        return _TEENS[n - 10]
+    if n < 100:
+        return _TENS[n // 10] + (_ONES[n % 10] if n % 10 else 0)
+    if n < 1000:
+        return _ONES[n // 100] + 2 + (_digit_syllables(str(n % 100)) if n % 100 else 0)
+    return sum(_ONES[int(c)] for c in d)     # long runs get read digit by digit
+
+
+def _speech_rate(path, text):
+    """Syllables per second over the SPOKEN span only, plus that span.
+
+    Two corrections, and the second one was a real defect in a delivered file.
+
+    Edges: a chapter announcement is 1-4 words wrapped in ~0.2 s of model silence
+    at each end. Divide by the whole file and that padding dominates, so a short
+    heading looks slow however it was read.
+
+    Units: this used to be WORDS per minute, which is not comparable across
+    headings of different lengths — a word is not a fixed amount of speech. In one
+    delivered master "Chauchat" (1 word) measured 66 wpm and "James the Second's
+    Bombard" (4 words) measured 129, against a median of 99 set by the 2-word
+    headings. Nothing was wrong with either read: the long heading was slowed 15%
+    and the short one sped up 18% to correct an artifact of counting words. Sapro
+    heard the result as "this header is quite slow, especially Bombard".
+    Syllables per second is length-independent, so headings of different word
+    counts can actually be compared.
     """
     import readcheck as rc
     m = rc.measure(path)
@@ -299,7 +365,7 @@ def _speech_wpm(path, text):
     lead = next((e for s, e in m["silences"] if s <= 0.05), 0.0)
     tail = next((dur - s for s, e in m["silences"] if e >= dur - 0.05), 0.0)
     speech = max(0.2, dur - lead - tail)
-    return len(text.split()) / (speech / 60), speech
+    return _syllables(text) / speech, speech
 
 
 def level_headings(parts_dir, sections, tol=0.12, floor=0.85, ceil=1.18):
@@ -323,35 +389,36 @@ def level_headings(parts_dir, sections, tol=0.12, floor=0.85, ceil=1.18):
 
     rates = {}
     for s in heads:
-        wpm, _ = _speech_wpm(os.path.join(parts_dir, f"sec_{s['index']:03d}.mp3"),
-                             s["send_text"])
-        if wpm > 0:
-            rates[s["index"]] = wpm
+        rate, _ = _speech_rate(os.path.join(parts_dir, f"sec_{s['index']:03d}.mp3"),
+                               s["send_text"])
+        if rate > 0:
+            rates[s["index"]] = rate
 
     factors = {}
-    for idx, wpm in rates.items():
+    for idx, rate in rates.items():
         others = sorted(v for k, v in rates.items() if k != idx)
         if len(others) < 2:
             continue
         mid = len(others) // 2
         target = others[mid] if len(others) % 2 else (others[mid - 1] + others[mid]) / 2
-        if not target or abs(wpm - target) / target <= tol:
+        if not target or abs(rate - target) / target <= tol:
             continue
-        want = target / wpm                       # >1 speeds up, <1 slows down
+        want = target / rate                      # >1 speeds up, <1 slows down
         f = max(floor, min(ceil, want))
         if abs(f - 1.0) <= 1e-3:
             continue
         factors[idx] = f
-        note = f"  heading {idx+1}: {wpm:.0f} wpm vs {target:.0f} median — retiming x{f:.3f}"
+        note = (f"  heading {idx+1}: {rate:.2f} syl/s vs {target:.2f} median"
+                f" — retiming x{f:.3f}")
         # Only warn when the clamp actually leaves the heading short of the target.
-        # Rounding both sides to whole wpm printed "lands near 85 wpm, not 85" —
+        # Rounding both sides to 2 dp printed "lands near 4.20, not 4.20" —
         # a warning about a miss of less than one word per minute, which reads as a
         # problem and is not one.
-        landed = wpm * f
+        landed = rate * f
         if abs(want - f) > 1e-3 and abs(landed - target) >= 1.0:
             # past ~15% the stretch itself becomes audible, so the correction stops
             # short rather than trading one artefact for another. Say so.
-            note += (f" (clamped from x{want:.3f}; lands near {landed:.0f} wpm, "
+            note += (f" (clamped from x{want:.3f}; lands near {landed:.2f} syl/s, "
                      f"not {target:.0f} — listen)")
         log(note)
     return factors
