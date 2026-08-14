@@ -16,7 +16,7 @@
     "voice": "dUHbvtIZto0ZEBkhYiyk",
     "model": "eleven_multilingual_v2",
     "stability": 0.48,
-    "similarity_boost": 0.75,
+    "similarity_boost": 0.80,
     "style": 0.05,
     "speed": 1.07,
     "collapseBreaks": false,

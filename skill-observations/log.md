@@ -86,3 +86,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a pre-flight pass over the narration text that cross-references the extracted pronunciation guide against the script BEFORE generation: every guide entry whose headword does not appear verbatim in the narration is either an export artifact, a spelling drift, or a stale guide entry, and all three are worth one line in `--plan`. Include a specific rule for orphaned decimal points (`\w\.\s+\d{2,3}\b`).
 
 **Principle:** When a document ships its own answer key, check the source against it before spending anything — an artifact that leaves the text well-formed is invisible to every downstream check, because every downstream check is comparing against the same corrupted source.
+
+### Observation 6: The spend gate prints four of the five voice settings, and the omitted one defaulted wrong
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** Same session as Observation 2. The calibration was rebuilt from SKILL.md, `--plan` was shown to Sapro for approval, and he immediately replied "you missed similarity 80%". `similarity_boost` had silently fallen back to the code default of 0.75.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/voiceover.py` — `show_plan`; `scripts/generate.py` — `load_profile`
+
+**Issue:** `show_plan` prints `voice · model · stability · style · speed`. It does not print `similarity_boost` or `use_speaker_boost`, and those are exactly the two values `load_profile` fills in from `DEFAULT_SETTINGS` when a profile omits them. So the one setting that was wrong was the one setting the confirmation gate could not show, and the gate that exists specifically to catch a bad configuration before money is spent had a blind spot shaped precisely like the failure. It was caught only because Sapro knows his own numbers and noticed the absence. A gate that shows a subset of the state cannot be relied on to catch errors in the rest of it, and the omitted values are the highest-risk ones by construction — an explicitly configured value has been thought about at least once, while an inherited default never has.
+
+**Suggested improvement:** Have `show_plan` print the full effective calibration — every value that will be sent to the API — and mark each one's provenance: `stability 0.48 (profile)` vs `similarity_boost 0.75 (default)`. Marking provenance is the load-bearing half: it turns "these are the numbers" into "these two numbers nobody chose", which is the thing a reader can actually audit. Same treatment for `collapseBreaks`, `chapterPause`, `chunkSize` and `readTitle`, which are also silently defaulted.
+
+**Principle:** A confirmation gate must display every value it is about to commit, not the interesting subset — and it must distinguish configured values from inherited defaults, because a default is a decision nobody made and is where the wrong value hides.
