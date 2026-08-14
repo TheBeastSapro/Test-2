@@ -6,8 +6,10 @@
 #   breaks       spacy + en_core_web_sm, to find where a fronted phrase ends
 #   mastering    numpy scipy torch torchaudio, for humanize.py's forced alignment
 #
-# First run of each stage also downloads a model: distil-large-v3 (~750 MB) for the
-# read-check and MMS_FA (~1.2 GB) for the alignment. Both are cached afterwards.
+# First run of each stage also downloads a model: distil-large-v3 (1.5 GB) for the
+# read-check and MMS_FA (1.18 GB) for the alignment. Both are cached afterwards.
+# Both sizes measured on a cold container; the figures here were previously half
+# the real size for the ASR model. Both caches are verified before use.
 set -euo pipefail
 
 PIP=(python3 -m pip install --break-system-packages -q)

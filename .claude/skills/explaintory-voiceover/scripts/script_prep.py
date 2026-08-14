@@ -92,6 +92,51 @@ _GUIDE_HEAD = re.compile(
 _GUIDE_LINE = re.compile(r"^[\s\t]*[-*•●○·▪‣]?[\s\t]*(.+?)\s*[—–\-:=]\s+(.+?)\s*$")
 
 
+# A guide is organised as well as populated, and its own scaffolding matches the
+# entry pattern: "**Section 4 — Ross rifle**" splits into ('Section 4', 'Ross rifle')
+# exactly like a real entry does. Nine of those got into a 43-entry guide, and the
+# pre-flight then reported nine names "missing from the narration" that were never
+# names. A warning list that is mostly noise is one nobody reads, so the divider is
+# rejected here rather than filtered downstream.
+_GUIDE_DIVIDER = re.compile(r"^\s*(section|part|chapter)\s+\d+\s*$", re.I)
+
+# "**Heading: Chauchat** — *show-SHAH*" splits on the COLON first, because the regex
+# is non-greedy from the left. That yields the word 'Heading' — and since three
+# sections each contribute a "Heading:" line, all three collapsed onto one dict key
+# and two real entries were lost outright.
+_GUIDE_LABEL = re.compile(r"^(heading|word|name|term)\s*:\s*", re.I)
+
+
+def _guide_entry(line):
+    """-> (headword, respelling), or (None, None) if the line is not an entry.
+
+    The respelling is the part a human reads, so it carries trailing commentary —
+    'ROX-bruh* (not "rox-burg")'. Keep the pronunciation, drop the aside: it is the
+    headword that has to be exact, and a value with markdown still in it corrupts
+    any lexicon seeded from this guide.
+    """
+    m = _GUIDE_LINE.match(line)
+    if not m:
+        return None, None
+    w, say = m.group(1).strip(" *-•_"), m.group(2).strip(" *_")
+
+    # "**Heading: Chauchat** — *show-SHAH*" splits on the colon, which is the FIRST
+    # delimiter, so the pair arrives as ('Heading', 'Chauchat** — *show-SHAH*'). The
+    # real entry is inside the value: re-split it and keep that instead.
+    if _GUIDE_LABEL.fullmatch(w + ":"):
+        inner = _GUIDE_LINE.match(say)
+        if not inner:
+            return None, None
+        w, say = inner.group(1).strip(" *-•_"), inner.group(2).strip(" *_")
+
+    if not w or not say or _GUIDE_DIVIDER.match(w):
+        return None, None
+    if len(w.split()) > 4:                 # 'The slogan is a quoted advertising line'
+        return None, None                  # is a note to the reader, not a headword
+    say = re.sub(r"\s*\([^)]*\)\s*$", "", say).strip(" *_")   # drop trailing asides
+    return w, say
+
+
 def _looks_like_guide_body(lines):
     """A run of 'word — respelling' lines, allowing blanks and bullets.
 
@@ -166,11 +211,9 @@ def split_pronunciation_guide(text):
         if body is None:
             continue                     # a 'pronunciation' heading over prose
         for sub in body:
-            m = _GUIDE_LINE.match(sub)
-            if m:
-                w, say = m.group(1).strip(" *-•_"), m.group(2).strip(" *_")
-                if w and say:
-                    guide.setdefault(w, say)
+            w, say = _guide_entry(sub)
+            if w:
+                guide.setdefault(w, say)
         cut = i if cut is None else min(cut, i)
         break
 
@@ -202,6 +245,20 @@ def _appears_verbatim(word, text, fold=False):
     return re.search(patt, text, re.I if fold else 0) is not None
 
 
+def _appears_inflected(word, text):
+    """Is `word` present as the stem of an inflected token?
+
+    A guide lists the name — 'Lee-Enfield' — and the script uses it in a sentence:
+    'took Lee-Enfields off the British dead'. That is the guide doing its job, not a
+    drift, and warning about it spends the reader's attention on a non-problem. Only
+    trailing inflections count; a prefix match on its own would let 'Mark' vouch for
+    'Marketing'.
+    """
+    patt = (r"(?<!\w)" + r"\s+".join(re.escape(t) for t in word.split())
+            + r"(?:'s|’s|s|es)(?!\w)")
+    return re.search(patt, text) is not None
+
+
 def guide_preflight(narration, guide):
     """-> [warning lines]. Check the script against its own answer key BEFORE spending.
 
@@ -216,6 +273,8 @@ def guide_preflight(narration, guide):
     for word in guide or {}:
         if _appears_verbatim(word, narration):
             continue
+        if _appears_inflected(word, narration):
+            continue     # 'Lee-Enfield' guides the read of 'Lee-Enfields'
         if _appears_verbatim(word, narration, fold=True):
             out.append(f"guide entry “{word}” appears in the script only with "
                        f"different capitalisation")
