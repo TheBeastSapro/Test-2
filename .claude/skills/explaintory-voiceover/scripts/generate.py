@@ -497,11 +497,14 @@ def main():
     ap.add_argument("--approval", default="",
                     help="Sapro's own words approving THIS send. Required for any "
                          "send. An earlier approval does not carry forward.")
-    ap.add_argument("--budget", type=int, default=0,
-                    help="hard ceiling on characters this invocation may SEND. "
-                         "Above it the run stops and prints what it wanted to spend, "
-                         "so nobody discovers the bill afterwards. Raise it "
-                         "deliberately with --approve-spend.")
+    ap.add_argument("--budget", type=int, default=1000,
+                    help="hard ceiling on characters this invocation may SEND, on "
+                         "top of Sapro's approval. Above it the run stops and prints "
+                         "what it wanted to spend, so nobody discovers the bill "
+                         "afterwards. Raise it deliberately with --approve-spend. "
+                         "Sapro set this to 1000 (down from 2000) on 2026-08-14 — "
+                         "it is a backstop against a runaway send, NOT an allowance: "
+                         "--approval is required for every send at any size.")
     ap.add_argument("--approve-spend", type=int, default=0,
                     help="raise --budget to this many characters for this run")
     ap.add_argument("--spend-log",
