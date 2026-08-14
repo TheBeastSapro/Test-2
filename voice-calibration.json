@@ -19,6 +19,7 @@
     "similarity_boost": 0.80,
     "style": 0.05,
     "speed": 1.07,
+    "use_speaker_boost": true,
     "collapseBreaks": false,
     "chapterPause": "natural",
     "skipHeadings": false,
