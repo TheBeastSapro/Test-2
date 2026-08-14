@@ -176,3 +176,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Resolve relative to the script's own location (`os.path.dirname(__file__)` and its parents) rather than the cwd, and glob for `**/explaintory-vo-master/scripts/humanize.py` under the skills roots so a `synced/` or otherwise nested install is found. Failing that, check for `humanize.py` at startup rather than at the master stage, so an unresolvable path fails before any credits are spent instead of after.
 
 **Principle:** Resolve a dependency relative to the resolver, not the caller's cwd — and validate every prerequisite of a multi-stage run up front, because a check that runs last is a check that fails after all the money is spent.
+
+### Observation 12: Filtering a long job's output at write time destroys the record you need at read time
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** The mastering pass was launched as `... | tail -12` to keep the transcript small. It succeeded, but the run's own repair counts — how many over-full-scale regions were declipped, how many splice fragments were removed and where — scrolled past the 12-line window and are gone. The delivered figures had to be re-measured from the file, and the per-pass repair counts could not be reported at all without paying for another eight-minute run.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** running the pipeline — how stage output is captured
+
+**Issue:** The instinct to filter a noisy job (a 1.2 GB download emits hundreds of progress lines) is right, but applying the filter to the *pipe* rather than to the *read* is not: it decides, before the job has finished, which of its output will ever be knowable. Here the noise was a progress bar and the signal was the repair log, and `tail -12` kept neither reliably — it kept whichever happened to be last. The pipeline offers `tee` for exactly this and it was used on an earlier invocation and then dropped. The cost is asymmetric and one-directional: keeping the full log costs a few kilobytes of disk, while discarding it costs a full re-run of the stage, or a report with holes in it.
+
+**Suggested improvement:** Always redirect a stage's full output to a file (`> stage.log 2>&1`, or `| tee stage.log`) and filter when reading it (`grep -v "MB/s]" stage.log`). Worth a line in SKILL.md next to the resumable-stages table, since every stage there is long enough that its log is the only record of what it did — and worth a note that download progress bars are the thing to filter at read time, not the thing to filter at write time.
+
+**Principle:** Filter at read time, never at write time. A filter on the pipe is an irreversible decision, made before the output exists, about what will ever be knowable about a run — and the expensive-to-reproduce data is exactly what a naive filter drops.
