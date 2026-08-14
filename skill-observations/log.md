@@ -131,3 +131,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Emit a per-section line from `check_sections` matching the generate stage's format (`[readcheck] n/52 — WER x.xx`), so elapsed and remaining are readable from the log by both the agent and Sapro. Correct the SKILL.md figure to 1.5 GB, and state the MMS_FA figure from a measurement rather than an estimate while there.
 
 **Principle:** A long-running stage that prints nothing is indistinguishable from a hung one, and forces anyone asking "how long" to answer from process metrics instead of the tool's own output. Where a pipeline already has a progress convention, every stage of comparable length owes the user the same one — and a documented download size is a promise that should be measured, not estimated.
+
+### Observation 9: A failed mastering stage exits 0, so the run reports success with no file
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** `humanize.py` crashed on a corrupt alignment checkpoint. The pipeline printed "mastering produced no file" and exited **code 0**. The harness reported the background task as "completed", and the only thing standing between that and telling Sapro his voiceover was ready was reading the log body rather than trusting the status.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/voiceover.py` — the master stage's exit handling
+
+**Issue:** The master stage catches the failure well enough to print a diagnosis, then returns success anyway. Every layer above it — the shell, the background-task harness, any CI or cron wrapper — reads the exit code, not the prose. So the one failure mode that produces *no deliverable at all* is also the one that looks identical to a clean run from the outside. This is worse than an uncaught crash: an uncaught crash exits non-zero and is self-reporting. The skill's own delivery rule ("do not report a runtime from listening — read it out of humanize.py's own output") assumes that output exists; nothing enforces that it does.
+
+**Suggested improvement:** Exit non-zero whenever the master produces no file, and assert the delivered file exists and is non-empty before the run reports success — `os.path.isfile(final) and os.path.getsize(final) > 0`, plus a duration probe, since a zero-length or truncated MP3 should also fail. Same treatment for the generate stage's stitch.
+
+**Principle:** A process that detects its own failure and still exits 0 is worse than one that crashes, because it converts a loud failure into a silent one. Every stage that produces an artifact must assert the artifact exists before claiming success — the diagnosis in the log is for humans, the exit code is for everything else.
+
+### Observation 10: Large model downloads are cached without an integrity check, poisoning every later run
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** The MMS_FA alignment checkpoint (1,262,047,414 bytes upstream) arrived truncated twice — 1,252,654,245 then 1,240,881,315, short by different amounts each time. `torch.load` failed with "failed finding central directory ... your checkpoint file is corrupted", which reads like a bad file on the server rather than a bad transfer to here.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** setup / first-run downloads (MMS_FA in `humanize.py`, distil-large-v3 in `readcheck.py`)
+
+**Issue:** Both first-run downloads write straight into a cache with no verification that what arrived is what was sent. A truncated transfer produces a file that looks present, is never re-fetched, and makes every subsequent run fail identically — the cache turns a transient network fault into a permanent one, and the error message points at the wrong culprit. Re-running the same command cannot recover, which is the trap: the natural response to a failed run is to retry it, and the retry is guaranteed to fail the same way. The fix is not subtle — the server sends `content-length` and supports `accept-ranges: bytes`, so `curl --retry 6 --retry-all-errors -C -` fetched the exact byte count on the first try.
+
+**Suggested improvement:** Add a pre-flight step to the setup script that fetches both models with retry/resume and verifies each against the upstream `content-length`, then confirms loadability (`zipfile.is_zipfile` + `torch.load(weights_only=True)` for the checkpoint) before the first real run. When a model load fails at runtime, delete the cached file as part of the error path so the retry can actually succeed, and say so in the message.
+
+**Principle:** A cache with no integrity check upgrades a transient failure into a permanent one and misattributes it to the source. Anything downloaded once and reused forever must be verified at write time — and a failure path that leaves the poisoned artifact in place makes the obvious recovery action (retry) provably useless.
+
+### Observation 11: humanize.py discovery is cwd-relative, so it breaks in the work directory the pipeline itself encourages
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** Run from a scratch work directory with `--out-dir .`, the master stage failed with "Could not find humanize.py from the explaintory-vo-master skill." The file was present at `<repo>/.claude/skills/explaintory-vo-master/scripts/humanize.py`.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/voiceover.py` — `HUMANIZE_PATHS` / `find_humanize`
+
+**Issue:** The search list is `~/.claude/...`, `/root/.claude/...`, and `./.claude/...`. The third is relative to the current working directory, so it only resolves when the pipeline is run from the repository root — but the pipeline's own design pushes work into a separate directory (`--out-dir`, `--work`), and running from there breaks discovery. The installed copy on this machine also sat under `.../skills/synced/...`, which no entry anticipates. The failure lands at the very end of a run, after generation has already been paid for and the read-check has spent ten minutes.
+
+**Suggested improvement:** Resolve relative to the script's own location (`os.path.dirname(__file__)` and its parents) rather than the cwd, and glob for `**/explaintory-vo-master/scripts/humanize.py` under the skills roots so a `synced/` or otherwise nested install is found. Failing that, check for `humanize.py` at startup rather than at the master stage, so an unresolvable path fails before any credits are spent instead of after.
+
+**Principle:** Resolve a dependency relative to the resolver, not the caller's cwd — and validate every prerequisite of a multi-stage run up front, because a check that runs last is a check that fails after all the money is spent.
