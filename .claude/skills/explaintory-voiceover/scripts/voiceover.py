@@ -467,6 +467,9 @@ def main():
                          "request, no inserted silence. Auto-read from the script's "
                          "READ NOTE when not given.")
     ap.add_argument("--asr-model", default=rc.DEFAULT_ASR)
+    ap.add_argument("--approval", default="",
+                    help="Sapro's own words approving this send. Required for any "
+                         "generation; an earlier approval does not carry forward.")
     ap.add_argument("--approve-spend", type=int, default=0,
                     help="characters this RUN is allowed to send, across every "
                          "render including redos. Default ceiling is 2000; a full "
@@ -631,6 +634,12 @@ def main():
         gen_cmd += ["--lexicon", a.lexicon]
     if a.approve_spend:
         gen_cmd += ["--approve-spend", str(a.approve_spend)]
+    # Sapro's approval has to reach generate.py, which is where the gate lives.
+    # Without this passthrough the pipeline cannot send anything at all — which is
+    # the safe direction to fail, but it also means the gate was unreachable from
+    # the top-level tool until now.
+    if a.approval:
+        gen_cmd += ["--approval", a.approval]
     if runon:
         gen_cmd += ["--run-on"]
 
