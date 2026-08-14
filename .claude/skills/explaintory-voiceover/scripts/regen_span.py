@@ -122,6 +122,12 @@ def main():
     part = os.path.join(a.parts_dir, f"sec_{sec['index']:03d}.mp3")
     if not os.path.isfile(part):
         raise SystemExit(f"No existing take at {part} to splice into.")
+    # Back up before touching anything, so the auto-revert below has something to
+    # restore. Made unconditionally: the pre-write backup is what turned an
+    # earlier destructive bug into a non-event.
+    backup = part + ".pre-splice"
+    if not os.path.isfile(backup):
+        subprocess.run(["cp", part, backup], check=True)
 
     print(f"section {a.section}: {sec['chars']} chars")
     print(f"sentence          : {len(a.sentence)} chars   "
@@ -234,9 +240,33 @@ def main():
                     "-i", lst, "-c", "copy", out, "-y"], check=True)
     subprocess.run(["ffmpeg", "-v", "error", "-i", out, "-codec:a", "libmp3lame",
                     "-b:a", "128k", "-ar", "44100", "-ac", "1", part, "-y"], check=True)
-    print(f"\nspliced into {part}")
-    print("NOW: re-stitch, then transcribe the region and diff against the script — "
-          "a splice is a destructive edit and must be proved not to have eaten a word.")
+    # VERIFY, THEN KEEP — never the other way round.
+    #
+    # This used to print "NOW: transcribe and diff" and trust the caller to do it.
+    # The first real splice ate "personal insult" and the reminder did not stop it
+    # being written; only a diff run afterwards caught it. A destructive edit that
+    # asks to be checked is an unchecked edit, so the check is inline now and the
+    # edit is reverted automatically when it fails.
+    import difflib
+    print("\nverifying the splice (destructive edit — must be proved harmless)")
+    t, _ = rc.transcribe(model, part)
+    want = rc.normalize(text).split()
+    got = rc.normalize(t).split()
+    sm = difflib.SequenceMatcher(a=want, b=got, autojunk=False)
+    dropped = [want[i1:i2] for tag, i1, i2, _, _ in sm.get_opcodes() if tag == "delete"]
+    print(f"  script {len(want)} words, heard {len(got)} words, ratio {sm.ratio():.4f}")
+    if dropped:
+        subprocess.run(["cp", backup, part], check=True)
+        raise SystemExit(
+            "\nREVERTED. The splice removed: "
+            + "; ".join(" ".join(d) for d in dropped)
+            + f"\n{part} is restored byte-for-byte from {backup}.\n"
+            "Silencing something that turns out to be speech is worse than the "
+            "defect it replaced, and it is invisible to every level and waveform "
+            "check — only the transcript sees it.")
+    print("  dropped runs: NONE — every script word still present")
+    print(f"\nspliced into {part}   (backup at {backup})")
+    print("NEXT: re-stitch and re-master; the section file is updated in place.")
     return 0
 
 
