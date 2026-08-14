@@ -266,3 +266,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a sentence-level `--regen-span "<section>:<sentence index>"` (or a text match) that renders only the sentence carrying the defect, with the surrounding script passed as `previous_text` / `next_text` so the model matches the delivery instead of starting cold, then splices at silence on both sides of the span. Refuse the splice and fall back to the section when silence cannot be found at both edges. Report the level difference between the new clip and its neighbours, since the existing repair precedent succeeded on exactly that measurement — a replacement clip placed verbatim, no gain, because it already sat within 0.6 dB.
 
 **Principle:** The unit a system stores or generates in is not the unit a defect lives in. Repair at the size of the defect, not the size of the chunk — otherwise every fix silently re-does correct work, and each re-do is a fresh chance to make something that was right come out wrong.
+
+### Observation 18: Three detectors for the same defect, all wrong, and the last one nearly shipped
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** Sapro reported six audio defects one at a time across a single delivery, describing them as "echoing", "robotic", and "sounding like a separate word". Three detectors were built to catch them automatically. All three failed, and the third failed in the most dangerous way — it validated cleanly on the one labelled example and only fell apart on the full file.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/echogate.py`, `scripts/prosody_gate.py` — defect detection
+
+**Issue:** The failures rhyme. (1) Envelope autocorrelation flagged 2133 of 2371 words: the 56 ms peak it kept finding was pitch periodicity, present in all voiced speech. (2) Tail-template matching caught 2 of 3 named words and missed the third, which is what a wrong-but-adjacent signature looks like — it was measuring a repeat when the defect is timbre. (3) `prosody_gate.py` was tuned until it flagged exactly the one word Sapro had confirmed, in the one section containing it, and reported as validated. On all 53 sections it flagged 142 words, most-frequently "the" (12x) and "a" (10x), and 72 of the 142 had a frequency ratio of almost exactly 0.5x or 2x to their neighbours — pyin octave errors on short, creaky, barely-voiced syllables. The confirmed example itself was octave-error-shaped, so the validation was circular: the threshold was fitted to n=1 and the docstring even said "n=1 is not a calibration" while the tool was being reported as working.
+
+**Suggested improvement:** Octave-correct f0 against the local median before computing any pitch distance, and hold the gate as unreleased until a SECOND independently-confirmed example exists. More generally, add a required negative control to detector work: before trusting a detector, run it over material believed clean and report the base rate. A detector validated only on positives cannot be distinguished from one that fires everywhere. `orphans.py` was built with exactly this discipline — a decoy caught it being wrong in the way that mattered — and that lesson was available in HANDOFF the whole time.
+
+**Principle:** A detector validated only against known positives is not validated. The false-positive rate on believed-clean material is the number that decides whether it is usable, and it must be measured before the tool is described as working — tuning a threshold until it isolates the one confirmed example is curve-fitting, not calibration.
+
+### Observation 19: Eleven rounds of the same loop — the user was the detector all session
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** One voiceover, delivered four times. Sapro reported defects in eleven separate messages, stopped listening 5 minutes into a 12:30 file, and said "I'm not going to continue hearing the voiceover by myself... fix the code or workflow to give me clean voiceover next time without any issue."
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** the skill's premise — "what this exists to remove"
+
+**Issue:** The skill's stated purpose is to remove the listen-and-report loop: "Generating a voiceover meant listening to twelve minutes of audio, catching the two places the model misread a word... That listen-and-report loop is the cost, and it is the part a machine can do." It removes exactly one class — misread words, measurable as a transcript difference — and that class turned out not to be the one that costs Sapro time. Every defect this session was a correctly-read word with wrong ACOUSTICS, which the read-check cannot see by construction. So the loop the skill exists to remove ran eleven times anyway, and its final state is worse than the start: he stopped listening at the 5-minute mark, which means the back 60% of the file has never been checked by the only detector that has ever worked here — him.
+
+**Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
+
+**Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.

@@ -13,6 +13,56 @@ Deliver: `<Video Title> (final).mp3`. Report the runtime, the read-check result
 (which sections were redone and why), and the wpm/silence figures against the human
 reference. Do not ask which settings to use.
 
+## Read this before the next run — 2026-08-14
+
+One delivery took eleven rounds because of the things below. None of them are
+subtle in hindsight and all of them are now enforced somewhere; this list exists
+so the next run starts where that one finished.
+
+**Money.** `--approval "<his actual words>"` is required for EVERY send, at any
+size. `--budget` defaults to 1000 and is a runaway backstop, not an allowance.
+There is no threshold, no standing approval, and no carry-forward — and note how
+this broke: the rule was written down, then restated more permissively by the
+agent itself ("fixes inside an approved job are yours to make"), and the
+restatement was used as the authorisation. A rule the agent can rewrite is a rule
+the agent can repeal, which is why it lives in `generate.py` now.
+
+**Repair granularity.** Never re-roll a section to fix a word. Use
+`regen_span.py` on the sentence — 134 characters instead of 403, conditioned on
+the surrounding script and spliced inside measured silence. It refuses when there
+is no silence at an edge, and it verifies itself afterwards and auto-reverts if a
+word went missing (it ate "personal insult" once, before that check was inline).
+Re-rolling a section also re-rolls every correct word in it: a header re-roll
+made two names *worse* than plain spelling.
+
+**Defects the read-check cannot see.** Every complaint was a correctly-read word
+that sounds wrong — "echoing", "robotic", "like a separate word". The read-check
+compares audio to the SCRIPT, so it structurally cannot find these. Three
+detectors were built and all three failed: envelope autocorrelation flagged 2133
+of 2371 words, tail-template matching caught 2 of 3, and `prosody_gate.py` flags
+"the" twelve times because `pyin` makes octave errors on short function words.
+**Do not present a clean run from `prosody_gate.py` as evidence.** It needs
+octave correction and a second confirmed example before it is worth anything.
+
+**Verification.** The whole-file transcript invents dropped words — it did on all
+four deliveries, including a 25-word run that was present verbatim. Always
+confirm a candidate drop with a windowed re-transcription, and cross-check the
+alignment JSON: a word the forced aligner placed at high confidence is there.
+
+**Logs.** Never pipe a stage through `tail` or `head`. Write the full log to a
+file and filter at read time — a filter on the pipe decides, before the output
+exists, what will ever be knowable, and it lost a master's repair counts.
+
+**Profile.** `voice-calibration.json` at the repo root, committed, key-free. The
+container is not storage; it died three times today. `similarity_boost` is 0.80
+and appears nowhere in this file's examples — read it from the calibration.
+
+**Heading levelling.** `level_headings` compares syllables per second now, not
+words per minute; the old metric slowed a 4-word heading 15% to match a median
+set by 2-word ones. Even fixed, it still wanted to slow "James the Second's
+Bombard", so the last delivery ran with `--no-level-headings`. Check what it
+would do before enabling it.
+
 
 
 
