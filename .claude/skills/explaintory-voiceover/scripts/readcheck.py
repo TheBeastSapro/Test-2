@@ -27,11 +27,14 @@ Built on the standard tools rather than hand-rolled text matching:
   jiwer                WER and the reference/hypothesis alignment.
 """
 import argparse
+import glob
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import zipfile
 
 # Channel reference, measured from the human VO stem (see explaintory-vo-master):
 # overall 181 wpm, articulation 197 wpm. A raw TTS section outside this band has
@@ -76,6 +79,104 @@ def log(m):
 
 def run(cmd):
     return subprocess.run(cmd, capture_output=True, text=True)
+
+
+# ------------------------------------------------------------------ model cache
+# Both of this pipeline's big first-run downloads land in a cache that is never
+# checked again, and that is what turns one bad transfer into a permanent failure.
+#
+# The MMS_FA checkpoint (1,262,047,414 bytes upstream) arrived truncated twice —
+# 1,252,654,245 then 1,240,881,315, short by a different amount each time — and
+# torch reported "failed finding central directory ... your checkpoint file is
+# corrupted", which reads like a bad file on the server rather than a bad transfer
+# to here. Nothing re-fetched it, so every later run failed identically, and the
+# obvious recovery (run it again) was provably useless.
+#
+# So: verify what is on disk before trusting it, and when a load fails, DELETE the
+# cached file as part of the error path — a retry has to be able to succeed.
+def hf_cache_root():
+    """Where huggingface_hub keeps its blobs, honouring the same env vars it does."""
+    return (os.environ.get("HF_HUB_CACHE")
+            or os.path.join(os.environ.get("HF_HOME",
+                                           os.path.expanduser("~/.cache/huggingface")),
+                            "hub"))
+
+
+def asr_cache_dir(size=DEFAULT_ASR):
+    """-> the cache directory for `size`, or None when it is a local path."""
+    if os.path.isdir(size):
+        return None
+    repo = size
+    try:
+        from faster_whisper.utils import _MODELS
+        repo = _MODELS.get(size, size)
+    except Exception:
+        pass
+    if "/" not in repo:
+        return None
+    return os.path.join(hf_cache_root(), "models--" + repo.replace("/", "--"))
+
+
+def verify_hf_cache(directory):
+    """-> (ok, why) for a huggingface snapshot, without re-downloading anything.
+
+    A `.incomplete` blob is huggingface_hub's own marker for a transfer that never
+    finished; a snapshot missing `model.bin`, or holding a stub-sized one, is the
+    same fault seen from the other side. Neither costs a byte of network to check.
+    """
+    if not directory or not os.path.isdir(directory):
+        return True, "not downloaded yet"       # nothing cached is not corruption
+    part = glob.glob(os.path.join(directory, "blobs", "*.incomplete"))
+    if part:
+        return False, f"{len(part)} unfinished download(s) in blobs/"
+    weights = glob.glob(os.path.join(directory, "snapshots", "*", "model.bin"))
+    if not weights:
+        return False, "no model.bin in any snapshot"
+    small = [w for w in weights if os.path.getsize(os.path.realpath(w)) < 10_000_000]
+    if small:
+        return False, f"model.bin is only {os.path.getsize(os.path.realpath(small[0])):,} bytes"
+    return True, "ok"
+
+
+def verify_torch_checkpoint(path, expect_bytes=None):
+    """-> (ok, why) for a torch .pt checkpoint.
+
+    Size first because a truncated transfer is the failure actually seen, then
+    `zipfile.is_zipfile`, which is the exact thing torch.load complains about when
+    it cannot find the central directory — and it reads only the end of the file.
+    """
+    if not path or not os.path.isfile(path):
+        return True, "not downloaded yet"
+    size = os.path.getsize(path)
+    if expect_bytes and size != expect_bytes:
+        return False, f"{size:,} bytes on disk, upstream is {expect_bytes:,}"
+    if size < 1_000_000:
+        return False, f"only {size:,} bytes"
+    if not zipfile.is_zipfile(path):
+        return False, "not a readable zip archive (torch cannot find its directory)"
+    return True, "ok"
+
+
+def purge_cached_model(path, why=""):
+    """Delete a poisoned cache entry so the next run can re-download it. -> message.
+
+    This is the half that makes the diagnosis actionable. Leaving the bad file in
+    place means the retry everyone reaches for first cannot possibly work.
+    """
+    what = "directory" if os.path.isdir(path) else "file"
+    try:
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        elif os.path.exists(path):
+            os.remove(path)
+        else:
+            return f"nothing cached at {path}"
+    except OSError as e:
+        return (f"could not delete the cached {what} {path} ({e}) — delete it by hand, "
+                f"or the next run will fail the same way")
+    return (f"DELETED the cached {what} {path}"
+            + (f" ({why})" if why else "")
+            + " — the next run re-downloads it, so retrying can now succeed")
 
 
 # ------------------------------------------------------------------ text
@@ -204,8 +305,26 @@ def load_asr(size=DEFAULT_ASR, compute=DEFAULT_COMPUTE):
     if _MODEL is not None:
         return _MODEL
     from faster_whisper import WhisperModel
-    log(f"loading ASR ({size}, cpu {compute}) — first run downloads the model")
-    _MODEL = WhisperModel(size, device="cpu", compute_type=compute)
+    cache = asr_cache_dir(size)
+    ok, why = verify_hf_cache(cache)
+    if not ok:
+        # Checked before the load rather than after, so the message names the real
+        # fault instead of whatever the loader makes of half a file.
+        log(f"cached {size} looks damaged: {why}")
+        log(purge_cached_model(cache, why))
+    log(f"loading ASR ({size}, cpu {compute}) — first run downloads the model "
+        f"(distil-large-v3 is 1.5 GB on disk, measured)")
+    try:
+        _MODEL = WhisperModel(size, device="cpu", compute_type=compute)
+    except Exception as e:
+        # A cache with no integrity check upgrades a transient network fault into a
+        # permanent one. Clearing it here is what lets the obvious recovery — run it
+        # again — actually work.
+        msg = purge_cached_model(cache, "load failed") if cache else "no cache to clear"
+        raise SystemExit(
+            f"Could not load the ASR model {size}: {e}\n{msg}\n"
+            f"Re-run the check stage; if it fails again the download is being "
+            f"truncated in transit, not corrupted at rest.")
     return _MODEL
 
 
@@ -239,12 +358,21 @@ def slurred_runs(words):
 
 # ------------------------------------------------------------------ check
 def check_sections(sections, parts_dir, asr_size=DEFAULT_ASR, guide=None):
+    # One line per section, in the generate stage's format.
+    #
+    # Transcribing 52 sections at float32 takes five to ten minutes, and printing
+    # only at the end makes that indistinguishable from a hang — "how long will it
+    # take" had to be answered from `ps` showing 313% CPU, on a stage this skill
+    # owns. The generate stage already prints n/total per section; a stage of
+    # comparable length owes the reader the same.
     model = load_asr(asr_size)
+    total = len(sections)
     results = []
-    for sec in sections:
+    for n, sec in enumerate(sections, 1):
         i = sec["index"]
         path = os.path.join(parts_dir, f"sec_{i:03d}.mp3")
         if not os.path.isfile(path):
+            log(f"  {n}/{total} — MISSING audio (sec_{i:03d}.mp3)")
             results.append({"index": i, "problems": ["missing audio"], "regen": True})
             continue
 
@@ -309,6 +437,11 @@ def check_sections(sections, parts_dir, asr_size=DEFAULT_ASR, guide=None):
             if e - s >= 0.7 and s > 0.35 and e < m["duration"] - 0.35:
                 problems.append(f"{e-s:.2f}s of dead air at {s:.1f}s inside the section")
                 regen = True
+
+        log(f"  {n}/{total} — wer {wer:.2f}, {wpm:.0f} wpm, {m['duration']:.1f}s"
+            + (f"  REDO ({len(problems)} problem"
+               f"{'s' if len(problems) != 1 else ''})" if regen
+               else f"  note ({len(problems)})" if problems else ""))
 
         results.append({"index": i, "duration": round(m["duration"], 2),
                         "wpm": round(wpm), "peak_dbfs": m["peak_dbfs"],

@@ -13,6 +13,7 @@ minutes of audio.
 Every stage writes into --work, so a run can be resumed with --from.
 """
 import argparse
+import glob
 import json
 import os
 import re
@@ -24,34 +25,92 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import generate as gen  # noqa: E402
 import readcheck as rc  # noqa: E402
 from script_prep import (_META_LABELS, build_sections, detect_structure,  # noqa: E402
-                         master_script_lines, note_wants_runon,
+                         guide_preflight, master_script_lines, note_wants_runon,
                          split_pronunciation_guide, split_read_note)
 
 CHARS_PER_SEC = 14      # the studio's narration-pace constant, for the estimate
 
 STAGES = ["generate", "check", "master"]
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+
 # Where explaintory-vo-master keeps humanize.py. It is a separate skill; this one
 # drives it rather than duplicating its 560 lines of measured settings.
-HUMANIZE_CANDIDATES = [
-    "~/.claude/skills/explaintory-vo-master/scripts/humanize.py",
-    "/root/.claude/skills/explaintory-vo-master/scripts/humanize.py",
-    "./.claude/skills/explaintory-vo-master/scripts/humanize.py",
-]
+#
+# Everything here resolves against THIS FILE, never the cwd. An earlier list ended
+# in "./.claude/skills/..." which only works when the pipeline is run from the
+# repository root — while the pipeline's own design (--out-dir, --work) pushes the
+# run into a scratch directory, where that entry resolves to nothing. The failure
+# then landed at the very end of the run, after generation had been paid for and
+# the read-check had spent ten minutes.
+HUMANIZE_REL = os.path.join("explaintory-vo-master", "scripts", "humanize.py")
+
+# The installed copy is not always where the skill name suggests: on this machine it
+# sits under .../skills/synced/explaintory-vo-master/..., which no fixed path
+# anticipated. So the skills roots are globbed rather than guessed.
+
+# torchaudio's MMS_FA alignment checkpoint, downloaded by humanize.py on its first
+# run. Named here so a poisoned cache can be verified and cleared from the error
+# path — see readcheck.purge_cached_model for why that is not optional.
+MMS_FA_CHECKPOINT = os.path.expanduser("~/.cache/torch/hub/checkpoints/model.pt")
+MMS_FA_BYTES = 1_262_047_414          # measured against the upstream content-length
 
 
 def log(m):
     print(f"[voiceover] {m}", flush=True)
 
 
-def find_humanize(override=None):
-    for c in ([override] if override else []) + HUMANIZE_CANDIDATES:
-        p = os.path.expanduser(c)
+def _skills_roots():
+    """Every plausible skills directory, resolved from this script and from $HOME.
+
+    The parent walk is what makes a checkout work from any cwd: this file lives at
+    <root>/.claude/skills/explaintory-voiceover/scripts/, so its sibling skill is
+    somewhere above it no matter where the run was launched from.
+    """
+    roots, d = [], HERE
+    while True:
+        if os.path.basename(d) == "skills":
+            roots.append(d)                       # this script's own skills root
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        roots.append(os.path.join(d, ".claude", "skills"))
+        d = parent
+    roots += [os.path.expanduser("~/.claude/skills"), "/root/.claude/skills"]
+    seen, out = set(), []
+    for r in roots:
+        r = os.path.abspath(os.path.expanduser(r))
+        if r not in seen and os.path.isdir(r):
+            seen.add(r)
+            out.append(r)
+    return out
+
+
+def find_humanize(override=None, quiet=False):
+    """-> path to explaintory-vo-master's humanize.py. Raises if it cannot be found."""
+    if override:
+        p = os.path.abspath(os.path.expanduser(override))
         if os.path.isfile(p):
             return p
+        raise SystemExit(f"--humanize {override} is not a file")
+
+    roots = _skills_roots()
+    for root in roots:                       # the common, shallow layout first
+        p = os.path.join(root, HUMANIZE_REL)
+        if os.path.isfile(p):
+            return p
+    for root in roots:                       # then anything nested (synced/, vendor/…)
+        hits = sorted(glob.glob(os.path.join(root, "**", HUMANIZE_REL), recursive=True))
+        if hits:
+            if len(hits) > 1 and not quiet:
+                log(f"note: {len(hits)} copies of humanize.py found; using {hits[0]}")
+            return hits[0]
+
     raise SystemExit(
         "Could not find humanize.py from the explaintory-vo-master skill.\n"
-        "Pass --humanize /path/to/humanize.py, or install that skill.")
+        "Looked for */" + HUMANIZE_REL + " under:\n  "
+        + "\n  ".join(roots or ["(no skills directory found at all)"])
+        + "\nPass --humanize /path/to/humanize.py, or install that skill.")
 
 
 def safe_filename(s):
@@ -134,6 +193,19 @@ def suggest_breaks(script_lines):
                 if sub[0].i != sent.start:          # only FRONTED phrases
                     continue
                 last = sub[-1]
+                # Walk the LEFT edge back off its own punctuation before testing it.
+                #
+                # When a fronted modifier's subtree ends on its comma — "The better a
+                # submariner aimed, ‖ the more likely…" — last.text is "," and nxt is
+                # an ordinary word, so the "already punctuated" guard below passed and
+                # a ",|the" pair was emitted for a clause that is already punctuated.
+                # It cannot match anything downstream, and it is noise in a list whose
+                # whole purpose is to be short enough to read by hand. Both edges of a
+                # boundary have to be tested, not just the one the bug showed up on.
+                while last.is_punct and last.i > sub[0].i:
+                    last = doc[last.i - 1]
+                if last.is_punct:
+                    continue                        # the whole subtree was punctuation
                 nxt = doc[last.i + 1] if last.i + 1 < len(doc) else None
                 if nxt is None or nxt.is_punct or nxt.i >= sent.end:
                     continue                        # already punctuated — nothing to add
@@ -171,14 +243,41 @@ def chapter_names(sections):
             if s["is_heading"] and not s.get("is_title")]
 
 
+def _pack(pairs, width=76, indent="  "):
+    """Lay 'name value (source)' fragments out over as few lines as fit."""
+    lines, cur = [], ""
+    for frag in pairs:
+        cand = frag if not cur else cur + " · " + frag
+        if len(cand) > width - len(indent) and cur:
+            lines.append(indent + cur)
+            cur = frag
+        else:
+            cur = cand
+    if cur:
+        lines.append(indent + cur)
+    return lines
+
+
 def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None,
-              note=None, runon=False):
+              note=None, runon=False, overrides=None, warnings=None,
+              max_redos=0, auto_redo=False, humanize=None):
     """What the studio's structure panel and estimator show, before a credit is spent.
 
     Generation is the irreversible part of this pipeline — the read-check and the
     master can be re-run for free, but characters sent are characters billed. So
     the same numbers Sapro checks in the browser get printed here, and the run
     stops until he has seen them.
+
+    It prints EVERY value it is about to commit, each marked with where it came
+    from. It used to print voice · model · stability · style · speed, which left
+    out similarity_boost and use_speaker_boost — precisely the two values
+    load_profile fills in from DEFAULT_SETTINGS when the profile omits them. So the
+    one setting that was wrong (0.75 inherited, 0.80 locked in) was the one setting
+    the gate could not show, and it was caught only because Sapro knows his own
+    numbers and said "you missed similarity 80%". A gate that shows a subset of the
+    state cannot be trusted with the rest of it, and the omitted values are the
+    highest-risk ones by construction: an explicit value has been thought about at
+    least once, an inherited default never has.
     """
     st = detect_structure(raw)
     chars = sum(s["chars"] for s in sections)
@@ -224,15 +323,55 @@ def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None,
     elif runon:
         print("  chapter style: RUN-ON — name leads the first sentence, no beat")
 
+    # Everything the script's own answer key says is wrong with the script. Free,
+    # and the only place an export artifact that leaves the text well-formed can be
+    # caught — every downstream check compares against the same corrupted source.
+    if warnings:
+        print(f"\n  PRE-FLIGHT — {len(warnings)} thing(s) to look at before spending:")
+        for w in warnings:
+            print(f"    ! {w}")
+
     spoken_heads = len(chapters)
     print(f"\n  {len(sections)} sections ({spoken_heads} chapter announcements"
           f"{' + the title' if titled else ''})"
           f" · {chars:,} chars · ~{mins}:{secs_:02d} audio")
-    print(f"  voice {prof['voice_id']} · {prof['model']} · stability "
-          f"{prof['settings']['stability']} · style {prof['settings']['style']} · "
-          f"speed {prof['settings']['speed']}")
-    print(f"  COST: ~{chars:,} credits", end="")
 
+    # ---- the full effective calibration, every value marked with its provenance
+    src = dict(prof.get("source") or {})
+    src.update(overrides or {})
+
+    def p(key, label, value):
+        where = src.get(key, "default")
+        return f"{label} {value} ({where})"
+
+    s = prof["settings"]
+    print("\n  CALIBRATION — every value that will be sent, and who chose it:")
+    for line in _pack([p("voice_id", "voice", prof["voice_id"] or "MISSING"),
+                       p("model", "model", prof["model"])]):
+        print(line)
+    for line in _pack([p("stability", "stability", s["stability"]),
+                       p("similarity_boost", "similarity_boost", s["similarity_boost"]),
+                       p("style", "style", s["style"]),
+                       p("speed", "speed", s["speed"]),
+                       p("use_speaker_boost", "use_speaker_boost", s["use_speaker_boost"])]):
+        print(line)
+    for line in _pack([p("chunk_size", "chunkSize", prof["chunk_size"] or 450),
+                       p("chapter_pause", "chapterPause", prof["chapter_pause"]),
+                       p("collapse_breaks", "collapseBreaks", prof["collapse_breaks"]),
+                       p("read_title", "readTitle", prof["read_title"]),
+                       p("skip_headings", "skipHeadings", skip_headings)]):
+        print(line)
+    inherited = [k for k in ("stability", "similarity_boost", "style", "speed",
+                             "use_speaker_boost", "chunk_size", "chapter_pause",
+                             "collapse_breaks", "read_title", "skip_headings")
+                 if src.get(k, "default") == "default"]
+    if inherited:
+        print(f"  ^ {len(inherited)} value(s) nobody chose — inherited defaults, not "
+              f"settings: {', '.join(inherited)}")
+
+    # ---- cost, first pass AND worst case. The number at the gate has to be the
+    # ceiling for the whole run, not the cost of the first of several calls.
+    print(f"\n  COST: ~{chars:,} credits (first pass)", end="")
     if api_key:
         try:
             from elevenlabs.client import ElevenLabs
@@ -244,15 +383,67 @@ def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None,
             print("")
     else:
         print("")
+    rounds = max_redos if auto_redo else 0
+    worst = chars * (1 + rounds)
+    if rounds:
+        print(f"  redo rounds: up to {rounds}, AUTOMATIC (--auto-redo)")
+        print(f"  WORST CASE this run: ~{worst:,} credits "
+              f"({1 + rounds} x every section). --approve-spend is spent down across "
+              f"every render, so this is a ceiling, not a per-call allowance.")
+    else:
+        print(f"  redo rounds: off (--max-redos {max_redos}"
+              + ("; --auto-redo not given" if max_redos else "")
+              + ") — flagged sections are reported, not re-rendered")
+        print(f"  WORST CASE this run: ~{worst:,} credits")
+    if humanize:
+        print(f"  master: {humanize}")
     print()
 
 
-def run_stage(cmd):
+def run_stage(cmd, ok=(0,)):
+    """Run a stage and hold it to its exit code.
+
+    `ok` used to include 1, which is the exit code humanize.py and generate.py both
+    use to ABORT — a corrupt alignment checkpoint, a budget stop. Treating that as
+    success is how a run that produced nothing carried on and then reported itself
+    finished. A stage that means "done, with findings" has to say so by being passed
+    an explicit `ok`; the default is that only zero is success.
+    """
     log("$ " + " ".join(str(c) for c in cmd))
     p = subprocess.run(cmd)
-    if p.returncode not in (0, 1):
-        raise SystemExit(f"stage failed with exit {p.returncode}")
+    if p.returncode not in ok:
+        raise SystemExit(f"stage failed with exit {p.returncode}: "
+                         f"{os.path.basename(str(cmd[1]) if len(cmd) > 1 else cmd[0])}")
     return p.returncode
+
+
+def assert_artifact(path, what, min_seconds=1.0):
+    """Prove a stage's output exists before anything reports success.
+
+    The diagnosis in the log is for humans; the exit code is for everything else —
+    the shell, the background-task harness, CI. A stage that detects its own failure
+    and still exits 0 converts a loud failure into a silent one, and it is worse than
+    an uncaught crash, because a crash is at least self-reporting. So: the file
+    exists, it is not empty, and it is long enough to be the thing that was asked for.
+    """
+    if not os.path.isfile(path):
+        raise SystemExit(f"{what} produced no file — expected {path}")
+    size = os.path.getsize(path)
+    if size == 0:
+        raise SystemExit(f"{what} produced an EMPTY file at {path}")
+    try:
+        dur = rc.probe_duration(path)
+    except Exception as e:
+        log(f"WARNING: could not probe {path} ({e}) — duration unverified")
+        return None
+    if dur <= 0:
+        raise SystemExit(
+            f"{what} wrote {path} ({size:,} bytes) but it has no readable duration — "
+            f"it is not decodable audio")
+    if dur < min_seconds:
+        raise SystemExit(
+            f"{what} wrote {path} but it is only {dur:.2f}s long — truncated")
+    return dur
 
 
 def main():
@@ -277,10 +468,19 @@ def main():
                          "READ NOTE when not given.")
     ap.add_argument("--asr-model", default=rc.DEFAULT_ASR)
     ap.add_argument("--approve-spend", type=int, default=0,
-                    help="characters this run is allowed to send. Default ceiling "
-                         "is 2000; a full render needs this set to the plan's cost.")
-    ap.add_argument("--max-redos", type=int, default=2,
-                    help="rounds of re-rendering flagged sections before giving up")
+                    help="characters this RUN is allowed to send, across every "
+                         "render including redos. Default ceiling is 2000; a full "
+                         "render needs this set to the plan's worst-case cost.")
+    ap.add_argument("--max-redos", type=int, default=None,
+                    help="rounds of re-rendering flagged sections before giving up. "
+                         "Default 0: flagged sections are reported with their ASR "
+                         "evidence and the cost of re-rendering them, and nothing is "
+                         "spent. --auto-redo raises the default to 2.")
+    ap.add_argument("--auto-redo", action="store_true",
+                    help="re-render flagged sections without asking. OFF by default: "
+                         "the gate before generation is consent for one quantity of "
+                         "characters, not for every later render the pipeline decides "
+                         "to do. Spends from the same --approve-spend ceiling.")
     ap.add_argument("--from", dest="start", choices=STAGES, default="generate")
     ap.add_argument("--humanize", help="path to humanize.py")
     ap.add_argument("--max-wpm", type=float, default=0.0,
@@ -296,12 +496,30 @@ def main():
                          "first and let Sapro confirm before spending anything.")
     a = ap.parse_args()
 
+    # Approval is granted for a quantity, not for a category: the redo loop can
+    # invoke the generator again, so it does not get to do that unasked.
+    #
+    # --max-redos is how many rounds are ALLOWED; --auto-redo is permission to use
+    # them without asking. Without that permission the count is zero whatever was
+    # passed, because the confirmation collected before generation was consent for
+    # one quantity of characters, not for every later render the pipeline chooses.
+    auto_redo = a.auto_redo
+    max_redos = a.max_redos if a.max_redos is not None else (2 if auto_redo else 0)
+    redo_rounds = max_redos if auto_redo else 0
+
     # the studio's locked-in calibration supplies the defaults; explicit flags win
     prof = gen.load_profile(a.profile)
+    overrides = {}                      # key -> "flag", for the plan's provenance
     if a.skip_headings is None:
         a.skip_headings = prof["skip_headings"]
+    else:
+        overrides["skip_headings"] = "flag"
     if a.max_chunk is None:
         a.max_chunk = prof["chunk_size"] or 450
+    else:
+        overrides["chunk_size"] = "flag"
+    if a.chapter_pause:
+        overrides["chapter_pause"] = "flag"
 
     title, raw = derive_title(a.script, open(a.script, encoding="utf-8").read(),
                               a.title, prof["read_title"])
@@ -354,18 +572,55 @@ def main():
         log(f"pronunciation guide: {len(guide)} names, held out of the narration "
             f"({', '.join(list(guide)[:5])}{'…' if len(guide) > 5 else ''})")
 
+    # Check the script against its own answer key before anything is spent. A
+    # ". 303" that the Docs export made out of ".303" is well-formed text, so it is
+    # invisible to the read-check — which diffs the ASR against this same script and
+    # finds agreement — and it changes what the voice says.
+    warnings = guide_preflight(raw, guide)
+
+    # Every prerequisite of a multi-stage run, validated UP FRONT. The master stage
+    # used to look for humanize.py only when it got there, which is after generation
+    # has been paid for and the read-check has spent ten minutes.
+    hum = None
+    if not a.no_master:
+        try:
+            hum = find_humanize(a.humanize, quiet=a.plan)
+        except SystemExit as e:
+            if not a.plan:
+                raise
+            warnings.append(str(e).replace("\n", " "))
+        if hum:
+            ok, why = rc.verify_torch_checkpoint(MMS_FA_CHECKPOINT, MMS_FA_BYTES)
+            if not ok:
+                # A cache with no integrity check turns one bad transfer into a
+                # permanent failure, and the retry provably cannot succeed while the
+                # poisoned file is still there. Clear it now, before the run.
+                log(f"cached MMS_FA alignment checkpoint is damaged: {why}")
+                log(rc.purge_cached_model(MMS_FA_CHECKPOINT, why))
+
     if a.plan:
         show_plan(title, raw, guide, sections, prof, a.skip_headings,
-                  prof["api_key"], note, runon)
+                  prof["api_key"], note, runon, overrides=overrides,
+                  warnings=warnings, max_redos=max_redos, auto_redo=auto_redo,
+                  humanize=hum)
         return 0
 
+    for w in warnings:
+        log("PRE-FLIGHT ! " + w)
+
     start = STAGES.index(a.start)
-    here = os.path.dirname(os.path.abspath(__file__))
+    here = HERE
 
     # ---------------------------------------------------------- 1. generate
+    # The ledger is the run's budget, not this call's. Every generate.py invocation
+    # in this work dir — the first pass and every redo round — debits the same file,
+    # so --approve-spend is a ceiling for the run instead of a fresh allowance handed
+    # out again on each round.
+    spend_log = os.path.join(work, "spend.json")
     gen_cmd = [sys.executable, os.path.join(here, "generate.py"),
                "--script", source_txt, "--out", raw_vo, "--parts-dir", parts_dir,
-               "--sections-json", sections_json, "--max-chunk", str(a.max_chunk)]
+               "--sections-json", sections_json, "--max-chunk", str(a.max_chunk),
+               "--spend-log", spend_log]
     if a.profile:
         gen_cmd += ["--profile", a.profile]
     if a.skip_headings:
@@ -379,16 +634,22 @@ def main():
     if runon:
         gen_cmd += ["--run-on"]
 
+    def spent():
+        return max(0, gen.spend_so_far(spend_log))
+
     if start <= STAGES.index("generate"):
         run_stage(gen_cmd)
+        # The stitch is an artifact, so its existence is asserted rather than assumed.
+        assert_artifact(raw_vo, "generate (stitch)")
     elif not os.path.isfile(sections_json):
         raise SystemExit(f"--from {a.start} needs an earlier run's {sections_json}")
 
     # ---------------------------------------------------------- 2. read-check
     if start <= STAGES.index("check"):
         man = json.load(open(sections_json, encoding="utf-8"))
+        by_index = {s["index"]: s for s in man["sections"]}
         seen_subs, settled = {}, {}
-        for rnd in range(a.max_redos + 1):
+        for rnd in range(redo_rounds + 1):
             results = rc.check_sections(man["sections"], parts_dir, a.asr_model, guide)
             for r in rc.settle_repeats(results, seen_subs):
                 settled[r["index"]] = r["settled"]
@@ -398,10 +659,28 @@ def main():
             if not bad:
                 log(f"read-check clean after {rnd} redo round(s)")
                 break
-            if rnd == a.max_redos:
-                log(f"{len(bad)} section(s) still flagged after {a.max_redos} redo rounds — "
-                    "listen to these before publishing: " +
-                    ", ".join(str(r['index'] + 1) for r in bad))
+
+            cost = sum(by_index.get(r["index"], {}).get("chars", 0) for r in bad)
+            names = ", ".join(str(r["index"] + 1) for r in bad)
+            if rnd == redo_rounds:
+                if redo_rounds:
+                    log(f"{len(bad)} section(s) still flagged after {redo_rounds} redo "
+                        f"rounds — listen to these before publishing: {names}")
+                else:
+                    # Re-rendering spends money AFTER the gate, so it gets its own
+                    # gate. The evidence and the price are printed, and the command
+                    # that would do it is handed over rather than run.
+                    log(f"{len(bad)} section(s) flagged: {names}")
+                    log(f"NOT re-rendering — that would send ~{cost:,} more characters "
+                        f"and this run has spent {spent():,} so far. The read-check "
+                        f"evidence for each is above and in {check_json}."
+                        + (f" (--max-redos {max_redos} was given, but --auto-redo "
+                           f"was not.)" if max_redos else ""))
+                    log("To re-render them, approve the spend explicitly:\n"
+                        f"    python3 {os.path.join(here, 'voiceover.py')} "
+                        f"--script {a.script} --work {work} --from check "
+                        f"--auto-redo --max-redos 1 "
+                        f"--approve-spend {spent() + cost}")
                 break
 
             # A plain re-roll fixes a one-off misread. Hesitation is systematic, and
@@ -413,8 +692,11 @@ def main():
                 log(f"round {rnd+1}: nudging stability to {nudged:.2f}")
                 redo += ["--stability", f"{nudged:.3f}"]
             else:
-                log(f"re-rendering {len(bad)} flagged section(s), round {rnd+1}")
+                log(f"re-rendering {len(bad)} flagged section(s) (~{cost:,} chars), "
+                    f"round {rnd+1}; {spent():,} chars spent so far this run")
             run_stage(redo)
+            # a redo re-stitches, so the artifact has to hold up again
+            assert_artifact(raw_vo, "generate (re-stitch)")
 
         # sections that stopped being re-rendered because the render is consistent
         # still need an ear, so they are named rather than quietly passing
@@ -431,7 +713,8 @@ def main():
         return 0
 
     # ---------------------------------------------------------- 3. master
-    hum = find_humanize(a.humanize)
+    hum = hum or find_humanize(a.humanize)     # resolved at startup; re-checked here
+    assert_artifact(raw_vo, "the stitch this run is about to master")
     mcmd = [sys.executable, hum, "--audio", raw_vo, "--script", script_txt,
             "--out", final, "--report", report,
             "--align-cache", os.path.join(work, "align.json")]
@@ -441,11 +724,27 @@ def main():
         mcmd += ["--max-wpm", str(a.max_wpm)]
         log(f"levelling sentences above {a.max_wpm:.0f} wpm "
             "(off by default — this changes the approved sound)")
-    run_stage(mcmd)
+    try:
+        run_stage(mcmd)
+    except SystemExit:
+        # humanize.py's first failure here was a truncated MMS_FA checkpoint, whose
+        # error message ("your checkpoint file is corrupted") points at the server
+        # rather than at the transfer. Leaving the bad file cached makes the obvious
+        # recovery — run it again — provably useless, so it goes now.
+        ok, why = rc.verify_torch_checkpoint(MMS_FA_CHECKPOINT, MMS_FA_BYTES)
+        if not ok:
+            log(f"the cached MMS_FA alignment checkpoint is damaged: {why}")
+            log(rc.purge_cached_model(MMS_FA_CHECKPOINT, why))
+            log("re-run with --from master; the checkpoint will be fetched again")
+        raise
 
-    if not os.path.isfile(final):
-        raise SystemExit("mastering produced no file")
-    log(f"delivered {final} ({os.path.getsize(final)/1e6:.1f} MB)")
+    # The master's artifact is the deliverable, so nothing reports success until it
+    # is on disk and is real audio. A stage that diagnoses its own failure in prose
+    # and still exits 0 turns a loud failure into a silent one — every layer above
+    # (the shell, the background-task harness, CI) reads the exit code, not the log.
+    dur = assert_artifact(final, "mastering", min_seconds=5.0)
+    log(f"delivered {final} ({os.path.getsize(final)/1e6:.1f} MB"
+        + (f", {int(dur)//60}:{int(dur)%60:02d}" if dur else "") + ")")
     return 0
 
 

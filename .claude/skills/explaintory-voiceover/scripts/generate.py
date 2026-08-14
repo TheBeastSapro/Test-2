@@ -60,32 +60,66 @@ def run(cmd):
 # ------------------------------------------------------------------ profile
 def load_profile(path=None):
     """Voice id + calibrated settings. Same shape as the studio's voiceover_profile.json,
-    so that file can be dropped in unchanged."""
+    so that file can be dropped in unchanged.
+
+    Also returns `source`: key -> "env" | "profile" | "default" | "unset", i.e. where
+    each effective value actually came from. The spend gate prints it, because a value
+    the profile omits is a value nobody chose. That is not a hypothetical distinction:
+    a rebuilt profile left `similarity_boost` to fall back to DEFAULT_SETTINGS' 0.75
+    when Sapro's locked-in number is 0.80, and the plan output could not show it
+    because it only printed the four settings the profile happened to name.
+    """
     prof = {}
     if path and os.path.isfile(path):
         prof = json.load(open(path, encoding="utf-8"))
     cal = prof.get("calibration") or {}
+    src = {}
 
-    key = os.environ.get("ELEVENLABS_API_KEY") or prof.get("api_key") or ""
-    voice = os.environ.get("ELEVENLABS_VOICE_ID") or cal.get("voice") or prof.get("voice_id") or ""
-    model = os.environ.get("ELEVENLABS_MODEL") or cal.get("model") or prof.get("model") or DEFAULT_MODEL
+    env_key, env_voice = (os.environ.get("ELEVENLABS_API_KEY"),
+                          os.environ.get("ELEVENLABS_VOICE_ID"))
+    env_model = os.environ.get("ELEVENLABS_MODEL")
+    key = env_key or prof.get("api_key") or ""
+    src["api_key"] = "env" if env_key else "profile" if prof.get("api_key") else "unset"
+    voice = env_voice or cal.get("voice") or prof.get("voice_id") or ""
+    src["voice_id"] = ("env" if env_voice
+                       else "profile" if (cal.get("voice") or prof.get("voice_id"))
+                       else "unset")
+    model = env_model or cal.get("model") or prof.get("model") or DEFAULT_MODEL
+    src["model"] = ("env" if env_model
+                    else "profile" if (cal.get("model") or prof.get("model"))
+                    else "default")
 
     settings = dict(DEFAULT_SETTINGS)
+    for k in DEFAULT_SETTINGS:
+        src[k] = "default"
     for k in ("stability", "similarity_boost", "style", "speed"):
         v = cal.get(k, prof.get(k))
         if v is not None:
             settings[k] = float(v)
+            src[k] = "profile"
     if cal.get("use_speaker_boost") is not None:
         settings["use_speaker_boost"] = bool(cal["use_speaker_boost"])
+        src["use_speaker_boost"] = "profile"
+
+    def _opt(key, cal_key, prof_key, default, cast):
+        """One profile-or-default value, remembering which it was."""
+        v = cal.get(cal_key, prof.get(prof_key, None))
+        src[key] = "profile" if v is not None else "default"
+        return cast(default if v is None else v)
 
     return {"api_key": key, "voice_id": voice, "model": model, "settings": settings,
-            "collapse_breaks": bool(cal.get("collapseBreaks", prof.get("collapse_breaks", False))),
-            "chapter_pause": cal.get("chapterPause", prof.get("chapter_pause", "natural")),
-            "skip_headings": bool(cal.get("skipHeadings", prof.get("skip_headings", False))),
-            "chunk_size": int(cal.get("chunkSize", prof.get("chunk_size", 0)) or 0),
+            "source": src,
+            "collapse_breaks": _opt("collapse_breaks", "collapseBreaks",
+                                    "collapse_breaks", False, bool),
+            "chapter_pause": _opt("chapter_pause", "chapterPause",
+                                  "chapter_pause", "natural", str),
+            "skip_headings": _opt("skip_headings", "skipHeadings",
+                                  "skip_headings", False, bool),
+            "chunk_size": _opt("chunk_size", "chunkSize", "chunk_size", 0,
+                               lambda v: int(v or 0)),
             # the studio reads the title aloud by default; this pipeline follows the
             # profile rather than deciding for itself
-            "read_title": bool(cal.get("readTitle", prof.get("read_title", True)))}
+            "read_title": _opt("read_title", "readTitle", "read_title", True, bool)}
 
 
 def check_profile(prof):
@@ -159,9 +193,59 @@ def tts(client, prof, sections, index, prev_ids):
     raise RuntimeError(f"section {index+1}: gave up after retries")
 
 
-def generate_sections(prof, sections, parts_dir, only=None):
+# ------------------------------------------------------------------ spend ledger
+# The budget has to survive across invocations, not just inside one.
+#
+# The read-check loop re-invokes this script once per redo round, and it does it by
+# appending --regen to the SAME command line — so --approve-spend 12926 arrived
+# again, intact, on every round. A ceiling that is handed out fresh to each call is
+# not a ceiling: the number shown at the gate was the cost of one call, and the true
+# worst case was that number times (1 + max_redos). The ledger makes the approval a
+# quantity for the whole run, spent down section by section.
+def spend_so_far(path):
+    """Characters already sent by earlier invocations sharing this ledger."""
+    if not path or not os.path.isfile(path):
+        return 0
+    try:
+        return int(json.load(open(path, encoding="utf-8")).get("spent", 0))
+    except (ValueError, OSError, AttributeError):
+        # An unreadable ledger must not read as "nothing spent yet" — that is the
+        # failure it exists to prevent — but it must not wedge the run either. Say so
+        # and treat the budget as exhausted; --approve-spend can raise it deliberately.
+        log(f"WARNING: spend ledger {path} is unreadable — treating it as exhausted")
+        return -1
+
+
+def record_spend(path, chars, index=None):
+    """Debit `chars` from the run-wide ledger, immediately after they were SENT.
+
+    Written per section rather than per invocation on purpose: a run that dies on
+    section 30 of 52 has still been billed for 30, and a ledger that only records
+    completed invocations would hand that budget out a second time.
+    """
+    if not path:
+        return
+    led = {"spent": 0, "calls": []}
+    if os.path.isfile(path):
+        try:
+            led = json.load(open(path, encoding="utf-8"))
+        except (ValueError, OSError):
+            led = {"spent": 0, "calls": []}
+    led["spent"] = int(led.get("spent", 0)) + int(chars)
+    led.setdefault("calls", []).append(
+        {"pid": os.getpid(), "section": index, "chars": int(chars),
+         "when": time.strftime("%Y-%m-%dT%H:%M:%S")})
+    tmp = path + ".tmp"
+    json.dump(led, open(tmp, "w", encoding="utf-8"), indent=1)
+    os.replace(tmp, path)                 # never leave a half-written ledger behind
+
+
+def generate_sections(prof, sections, parts_dir, only=None, on_spend=None):
     """Render sections to parts_dir/sec_NNN.mp3. `only` = iterable of indexes to
-    (re)generate; everything else is reused from disk. Returns request ids."""
+    (re)generate; everything else is reused from disk. Returns request ids.
+
+    `on_spend(chars, index)` is called after each section is actually sent, so the
+    run-wide ledger is accurate even if the run dies part-way through."""
     os.makedirs(parts_dir, exist_ok=True)
     cl = client(prof)
     ids_path = os.path.join(parts_dir, "request_ids.json")
@@ -175,6 +259,8 @@ def generate_sections(prof, sections, parts_dir, only=None):
             kind = "chapter" if sec["is_heading"] else "CTA" if sec["is_cta"] else "section"
             log(f"  {i+1}/{len(sections)} {kind}, {sec['chars']} chars")
             audio, rid = tts(cl, prof, sections, i, prev_ids)
+            if on_spend:
+                on_spend(sec["chars"], i)
             open(path, "wb").write(audio)
             ids[str(i)] = rid
         rid = ids.get(str(i))
@@ -348,6 +434,11 @@ def main():
                          "deliberately with --approve-spend.")
     ap.add_argument("--approve-spend", type=int, default=0,
                     help="raise --budget to this many characters for this run")
+    ap.add_argument("--spend-log",
+                    help="JSON ledger of characters already sent by this RUN. The "
+                         "ceiling is debited against it rather than reset, so a redo "
+                         "round spends what is left of the approval instead of "
+                         "receiving a fresh copy of it.")
     ap.add_argument("--stability", type=float,
                     help="override the profile's stability for this run. Raising it "
                          "slightly is the studio's fix for false mid-sentence pauses.")
@@ -398,19 +489,43 @@ def main():
                   if only is None or not os.path.isfile(
                       os.path.join(parts_dir, f"sec_{i:03d}.mp3")) or i in set(only))
         ceiling = max(a.budget, a.approve_spend)
-        if due > ceiling:
+        already = spend_so_far(a.spend_log)
+        remaining = ceiling - already if already >= 0 else 0
+        if due > remaining:
             raise SystemExit(
                 f"\nSTOPPED before spending. This step would send {due:,} characters, "
-                f"over the {ceiling:,} ceiling.\n"
-                f"  {len(list(todo))} section(s): "
+                f"over the {remaining:,} left of the {ceiling:,} approved for this run"
+                + (f" ({already:,} already sent).\n" if already > 0 else ".\n")
+                + f"  {len(list(todo))} section(s): "
                 f"{', '.join(str(i+1) for i in list(todo)[:12])}"
                 f"{'…' if len(list(todo)) > 12 else ''}\n\n"
-                f"Approve it explicitly:  --approve-spend {due}\n")
-        log(f"sending {due:,} chars (ceiling {ceiling:,})")
-        generate_sections(prof, sections, parts_dir, only)
+                f"Approve it explicitly:  --approve-spend {already + due}\n")
+        log(f"sending {due:,} chars ({remaining:,} left of the {ceiling:,} approved"
+            + (f", {already:,} already sent this run)" if already > 0 else ")"))
+        generate_sections(prof, sections, parts_dir, only,
+                          on_spend=(lambda n, i: record_spend(a.spend_log, n, i))
+                          if a.spend_log else None)
 
     log("stitching")
     marks = stitch(parts_dir, sections, a.out, preset, level=not a.no_level_headings)
+    # The stitch is this stage's artifact, so this stage says whether it exists.
+    # ffmpeg reporting a problem on stderr and still exiting 0 has to end the run
+    # here, not four minutes later inside the master with a confusing message.
+    expect = marks[-1]["end"] if marks else 0.0
+    if not os.path.isfile(a.out) or os.path.getsize(a.out) == 0:
+        raise SystemExit(f"stitch produced no audio at {a.out} — nothing to master")
+    try:
+        import readcheck as _rc
+        got = _rc.probe_duration(a.out)
+    except Exception as e:                       # ffprobe missing or unhappy
+        log(f"WARNING: could not probe {a.out} ({e}) — length unverified")
+        got = 0.0
+    if got <= 0:
+        log(f"WARNING: {a.out} has no readable duration — length unverified")
+    elif expect and got < expect * 0.9:
+        raise SystemExit(
+            f"stitch at {a.out} is {got:.1f}s but the section marks add up to "
+            f"{expect:.1f}s — it is truncated. Not passing a short file to the master.")
     log(f"wrote {a.out}  ({marks[-1]['end']/60:.1f} min)")
 
     if a.sections_json:

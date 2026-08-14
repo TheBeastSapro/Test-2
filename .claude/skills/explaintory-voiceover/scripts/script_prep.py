@@ -115,14 +115,38 @@ _APPENDIX_HEAD = re.compile(
     r"^\s*#{0,6}\s*\**\s*(animator|animation|art|visual|thumbnail|production|"
     r"reference|source|research|accuracy)\b[^\n]{0,60}$", re.I)
 
+# A top-level heading closes the guide's own section. Used only by the fallback
+# below, to bound the block a guide heading owns when the document keeps going.
+_H1 = re.compile(r"^\s*#\s+\S")
+
+
+def _guide_section_end(lines, start):
+    """Index of the first line after the guide's own section.
+
+    The guide ends where the next H1 or the next appendix heading begins. Anything
+    lower — '## Names', a bullet, a blank — is still inside it.
+    """
+    for j in range(start + 1, len(lines)):
+        if _H1.match(lines[j]) or _APPENDIX_HEAD.match(lines[j]):
+            return j
+    return len(lines)
+
 
 def split_pronunciation_guide(text):
     """-> (script without the guide and any appendices, {word: respelling})
 
-    The whole document is searched, not just its last lines. When an animator note
-    follows the guide it can run to hundreds of lines, and a fixed tail window
-    misses the guide heading entirely — which is how a 11,500-character script
-    became a 19,295-character one that recited the art direction aloud.
+    Two ways of recognising the guide, in order:
+
+      1. Tail anchor (fast path). Everything after the heading looks like entries,
+         which is the shape of a script that ends with its guide.
+      2. Section anchor (fallback). A real production document is a container for
+         several documents — script, then guide, then a 1,400-word animator note or
+         a shot list — and with anything appended after it the guide is no longer
+         the tail, so the ratio test in (1) is dragged under by material that was
+         never part of the guide. Detection then missed entirely and the video
+         closed by reciting its own glossary AND the art direction. So the block
+         from the heading to the next H1 is tested on its own, and everything from
+         that heading onward is treated as non-narration.
 
     A mid-script line like 'The corvus — a boarding bridge — decided the battle'
     is still safe: the heading regex has to match first, and it must actually say
@@ -132,15 +156,23 @@ def split_pronunciation_guide(text):
     guide, cut = {}, None
 
     for i, ln in enumerate(lines):
-        if _GUIDE_HEAD.match(ln) and _looks_like_guide_body(lines[i + 1:]):
-            for sub in lines[i + 1:]:
-                m = _GUIDE_LINE.match(sub)
-                if m:
-                    w, say = m.group(1).strip(" *-•_"), m.group(2).strip(" *_")
-                    if w and say:
-                        guide.setdefault(w, say)
-            cut = i if cut is None else min(cut, i)
-            break
+        if not _GUIDE_HEAD.match(ln):
+            continue
+        tail = lines[i + 1:]                                  # 1. guide IS the tail
+        body = tail if _looks_like_guide_body(tail) else None
+        if body is None:                                      # 2. guide is a SECTION
+            block = lines[i + 1:_guide_section_end(lines, i)]
+            body = block if _looks_like_guide_body(block) else None
+        if body is None:
+            continue                     # a 'pronunciation' heading over prose
+        for sub in body:
+            m = _GUIDE_LINE.match(sub)
+            if m:
+                w, say = m.group(1).strip(" *-•_"), m.group(2).strip(" *_")
+                if w and say:
+                    guide.setdefault(w, say)
+        cut = i if cut is None else min(cut, i)
+        break
 
     for i, ln in enumerate(lines):
         if _APPENDIX_HEAD.match(ln):
@@ -150,6 +182,54 @@ def split_pronunciation_guide(text):
     if cut is None:
         return text, {}
     return "\n".join(lines[:cut]).rstrip(), guide
+
+
+# A decimal-leading calibre — ".303", ".22", ".50" — comes out of a Google Docs
+# export with the period detached and glued to the word before it: "it was fed
+# British. 303 made to loosen ones". The voice then reads a sentence boundary
+# mid-clause and says "three hundred and three".
+#
+# Nothing downstream can catch this. The text is well-formed, and the read-check
+# diffs the ASR against the SAME corrupted script, so it finds agreement and
+# reports the section clean. It was caught once, by a human reading the script
+# against the guide, which listed ".303 — read as three-oh-three".
+_ORPHAN_DECIMAL = re.compile(r"\w\.\s+\d{2,3}\b")
+
+
+def _appears_verbatim(word, text, fold=False):
+    """Is `word` in `text` as a whole token? Internal whitespace is allowed to vary."""
+    patt = r"(?<!\w)" + r"\s+".join(re.escape(t) for t in word.split()) + r"(?!\w)"
+    return re.search(patt, text, re.I if fold else 0) is not None
+
+
+def guide_preflight(narration, guide):
+    """-> [warning lines]. Check the script against its own answer key BEFORE spending.
+
+    The pronunciation guide is a machine-readable list of the words this script
+    cares about, shipped inside the script itself — and it was only ever used
+    downstream, to check the finished audio. Used up front it is a free proof-read:
+    a headword that does not appear verbatim in the narration is an export artifact,
+    a spelling drift, or a stale guide entry, and all three are worth one line here
+    rather than a re-render later.
+    """
+    out = []
+    for word in guide or {}:
+        if _appears_verbatim(word, narration):
+            continue
+        if _appears_verbatim(word, narration, fold=True):
+            out.append(f"guide entry “{word}” appears in the script only with "
+                       f"different capitalisation")
+        else:
+            out.append(f"guide entry “{word}” does not appear in the narration — "
+                       f"export artifact, spelling drift, or a stale guide entry")
+
+    for m in _ORPHAN_DECIMAL.finditer(narration):
+        s = max(0, m.start() - 26)
+        ctx = narration[s:m.end() + 12].replace("\n", " ").strip()
+        out.append(f"orphaned decimal point: “…{ctx}…” — a Docs export splits "
+                   f'".303" into ". 303", so the voice reads a sentence boundary '
+                   f"mid-clause and says the number in full. Fix the script.")
+    return out
 
 
 # A production note to the reader, at the top of the script: "READ NOTE — please

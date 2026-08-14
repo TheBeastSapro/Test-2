@@ -66,15 +66,30 @@ edits audio. Building it surfaced two traps, both documented in SKILL.md:
    MASTERED file if mastering can affect the defect.
 6. **Tell him before spending >2000 characters.** Enforced in generate.py.
 7. **Transcribe after every destructive edit** and confirm no words were lost.
-8. **Ask before regenerating any lines.** 2026-08-14, his words: "you should
-   ask me permission if you like to do regeneration some lines". This is not
-   covered by the pre-generation approval — that gate is passed once, and the
-   read-check's redo loop then re-renders flagged sections on its own, up to
-   `--max-redos` (default 2). Run interactive jobs with `--max-redos 0`, bring
-   him the flagged sections with the ASR evidence, and let him decide.
-   Note while you are there: the redo is `gen_cmd + --regen`, and `gen_cmd`
-   still carries `--approve-spend`, so **every redo round gets a fresh
-   full-size budget**. The approved number bounds one call, not the run.
+8. **Ask before regenerating any lines** — meaning the PIPELINE must not
+   re-render on its own. 2026-08-14: "you should ask me permission if you like
+   to do regeneration some lines". The pre-generation approval does not cover
+   it: that gate is passed once, and the read-check's redo loop then re-renders
+   flagged sections by itself, up to `--max-redos` (default 2). Run with
+   `--max-redos 0`. Note the redo is `gen_cmd + --regen` and `gen_cmd` still
+   carries `--approve-spend`, so **every redo round gets a fresh full-size
+   budget** — the approved number bounds one call, not the run.
+
+9. **Deliver the finished file. Do not hand him the judgment calls.** Same day,
+   after rule 8 was read too literally and he was asked to adjudicate a header
+   pronunciation: "it's your job and you should provide me only the finished
+   voiceover file when i give you the script... if you think you need to fix
+   the headers and sentences just do it and generate it do not make me sit to
+   watch you."
+
+   This refines rule 8 rather than cancelling it. The gate he wants is the
+   PLAN, before the first render. Fix-regenerations inside a job he already
+   approved are yours to make — do them, then report what was spent. Escalate
+   to him for taste (pacing, whether a line lands), never for correctness that
+   a measurement can settle. When a name is flagged, the body sections usually
+   contain the same name read correctly: that is a reference in the same voice
+   and session, so resolve it acoustically instead of asking. See Observations
+   13 and 15.
 
 ## Fixed in the pipeline (unchanged from the last handoff)
 

@@ -191,3 +191,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Always redirect a stage's full output to a file (`> stage.log 2>&1`, or `| tee stage.log`) and filter when reading it (`grep -v "MB/s]" stage.log`). Worth a line in SKILL.md next to the resumable-stages table, since every stage there is long enough that its log is the only record of what it did — and worth a note that download progress bars are the thing to filter at read time, not the thing to filter at write time.
 
 **Principle:** Filter at read time, never at write time. A filter on the pipe is an irreversible decision, made before the output exists, about what will ever be knowable about a run — and the expensive-to-reproduce data is exactly what a naive filter drops.
+
+### Observation 13: Deliver the finished file — do not hand the user the judgment calls
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** Sapro, after being asked to adjudicate a header pronunciation: "see you're making me to give idea... it's your job and you should provide me only the finished voiceover file when i give you the script... and if you think you need to fix the headers and sentences just do it and generate it do not make me sit to watch you".
+**Skill:** explaintory-voiceover
+**Type:** internal
+**Phase/Area:** SKILL.md — the delivery contract and the read-check hand-off
+
+**Issue:** The skill opens with the right contract ("do the whole job and deliver the mastered MP3... Nothing else is a question") and then the read-check section undoes it: sections still flagged are named and handed over with "listen to these before publishing". In this run that produced four separate hand-backs — a table of 14 flagged sections, an A/B clip of five headers, a request to adjudicate a hard G — for a job whose entire premise is that Sapro supplies a script and gets a finished file. Each hand-back was individually defensible and collectively they turned a delivery into a review session. The failure is that an ambiguous ASR result was treated as a question for the user, when it is a measurement problem the pipeline can solve: the body sections already contain the same names read correctly, which is a reference in the same voice and session.
+
+**Suggested improvement:** Rewrite the read-check hand-off so that a flagged name is resolved by measurement first — cut the word from the body sections and compare acoustically (see Observation 15) — and only reaches Sapro if no reference exists anywhere in the script. Escalate to him for taste (pacing, delivery, whether a line lands), never for correctness that can be measured. And when a fix IS needed, apply it and report what was done, rather than proposing it and waiting. Standing authorisation as of this date: fix-regenerations within a job he has already approved do not need a second approval — report the spend afterwards. Reconcile this with HANDOFF rule 8, which it refines rather than cancels: the approval gate is still the plan, before the first render.
+
+**Principle:** The deliverable is the finished artifact, not a well-documented list of decisions the user now has to make. Every question sent upstream should be one the person is uniquely able to answer — taste, intent, priorities — never one that a measurement could have settled.
+
+### Observation 14: A whole-file transcript invents dropped words, so the no-words-lost check needs a windowed second pass
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** Verifying that the master's splice-fragment removals ate no words. A full-file ASR pass over the 12:30 delivered MP3 reported two dropped runs: "more" (from "a quarter of a million were built, more than any...") and the entire "M16" chapter header. Both were false. Re-transcribing 14-second windows around each location recovered them verbatim — "...were built more than any automatic weapon of the war", "...taught it otherwise. M16, the American infantry."
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** the destructive-edit verification (transcribe-after-removal rule)
+
+**Issue:** Long-form decoding drops short isolated utterances between silences and unstressed function words — exactly what a chapter announcement is, and exactly what the pipeline surrounds with digital silence by design. So the instrument used to prove nothing was lost systematically reports losses of its own. A false "the M16 header is missing" is expensive in the wrong direction: it invites a re-render of a section that was always fine, which is the failure the "check the raw take first" rule exists to prevent. The forced-alignment report was the tell — humanize.py had aligned all 2371 words at 0.93 mean confidence and its pause report showed the header present at 510 s, while the ASR pass claimed it absent.
+
+**Suggested improvement:** Make the check two-stage: full-file transcript to LOCATE candidate drops, then a windowed re-transcription (±7 s) around each candidate to CONFIRM, and only report the ones that survive both. Cross-check against the alignment JSON before reporting anything — a word the forced aligner placed with high confidence is present, whatever the long-form pass says.
+
+**Principle:** A verification instrument has its own failure modes, and they are not neutral — long-form ASR fails toward *omission*, so it manufactures exactly the defect class the check is looking for. Confirm a negative finding with a second, differently-shaped measurement before acting on it.
+
+### Observation 15: A distance with no baseline is not evidence — and the respelling made two of three names worse
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** Choosing between four takes of the "Maginot Line" header by MFCC/DTW distance against the body sections that say the name correctly. The first comparison returned 11.28 for one take and 11.67 for another, which looked like a result and was not: with no control, neither number could be called near or far.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** pronunciation resolution / `pronounce.py`
+
+**Issue:** Two findings, one method and one factual. Method: adding a baseline — the same word measured between two different body sections, i.e. correct pronunciation, differing context — turned the numbers into a decision. The floor was 11.33 for Maginot and 4.05 for scythed, and only then was it visible that "Mazheeno" at 9.23 was the sole candidate closer to the body than the body is to itself, while every other respelling sat above the floor. Factual: respelling made things WORSE more often than better. Against the body reference, plain "Maginot" scored 11.28 and the guide-faithful "MA-zhee-noh" scored 11.67; plain "scythed" scored 10.65 and "sythed" 14.64. Only "Mazheeno", which is not the guide's respelling, beat the plain spelling. This is direct measured support for the skill's existing rule that the guide is a reference for checking rather than an automatic substitution — the guide describes the sound for a human reader, and the sequence of letters that makes a TTS model produce that sound is a different question that has to be tested.
+
+**Suggested improvement:** Add the reference-and-baseline comparison to `pronounce.py` as a subcommand: given a word, cut it from every section where it appears, use the sections the read-check passed as references, compute the body-vs-body floor, and score candidate respellings against it. Render candidates in one batch (a header is 10-20 characters, so four candidates cost under 70) and pick by measurement. Note in SKILL.md that a guide respelling is a hypothesis to test, not a fix to apply.
+
+**Principle:** A measurement without a control is a number, not evidence. Where the system already contains a known-good instance of the thing being judged, that instance is both the reference and the noise floor — and the floor is what makes the reference readable.
