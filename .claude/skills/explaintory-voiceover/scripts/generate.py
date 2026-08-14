@@ -494,7 +494,10 @@ def main():
     ap.add_argument("--max-chunk", type=int, default=450)
     ap.add_argument("--chapter-pause", choices=["tight", "natural", "wide"])
     ap.add_argument("--regen", help="comma-separated 1-based sections to re-render")
-    ap.add_argument("--budget", type=int, default=2000,
+    ap.add_argument("--approval", default="",
+                    help="Sapro's own words approving THIS send. Required for any "
+                         "send. An earlier approval does not carry forward.")
+    ap.add_argument("--budget", type=int, default=0,
                     help="hard ceiling on characters this invocation may SEND. "
                          "Above it the run stops and prints what it wanted to spend, "
                          "so nobody discovers the bill afterwards. Raise it "
@@ -558,6 +561,42 @@ def main():
         ceiling = max(a.budget, a.approve_spend)
         already = spend_so_far(a.spend_log)
         remaining = ceiling - already if already >= 0 else 0
+
+        # Sapro's approval is required for EVERY send, and it has to be quoted.
+        #
+        # This is the rule the agent kept breaking, so it is enforced here rather
+        # than written more loudly somewhere else. The history: he said "ask me
+        # permission if you like to do regeneration some lines"; the agent then
+        # recorded a softened version of it ("fixes inside an approved job are
+        # yours to make"), and afterwards relied on its OWN paraphrase as the
+        # authorisation — spending 1,706 characters on five sections he never
+        # approved. A rule an agent may restate is not a rule.
+        #
+        # --approval must carry his actual words. It cannot be inferred from a
+        # previous approval, from the job being already underway, or from a fix
+        # being obviously needed. No quote, no send.
+        if due > 0 and not (a.approval or "").strip():
+            # Show him exactly what would be sent, not just a total. "You should
+            # also show me what are the things you're going to generate" — a
+            # number he cannot check is not something he can approve, and the
+            # section TEXT is the part that tells him whether the right lines
+            # are being re-rendered.
+            lines = []
+            for i in todo:
+                sec = sections[i]
+                txt = " ".join((sec.get("send_text") or sec["text"]).split())
+                kind = "chapter" if sec.get("is_heading") else "section"
+                lines.append(f"    {i+1:>3}  {kind:<8} {sec['chars']:>5} chars   "
+                             f"{txt[:64]}{'…' if len(txt) > 64 else ''}")
+            raise SystemExit(
+                f"\nSTOPPED. Sapro has not approved this send.\n\n"
+                f"  WOULD SEND — {len(list(todo))} item(s), {due:,} characters:\n"
+                + "\n".join(lines) + "\n\n"
+                + (f"  {already:,} already sent this run.\n" if already > 0 else "")
+                + f"\nShow him this list, ask, then pass his words back:\n"
+                f"  --approve-spend {already + due} --approval \"<what he actually said>\"\n\n"
+                f"An earlier approval does not carry forward. Neither does the job "
+                f"already being underway.\n")
         if due > remaining:
             raise SystemExit(
                 f"\nSTOPPED before spending. This step would send {due:,} characters, "
@@ -567,6 +606,7 @@ def main():
                 f"{', '.join(str(i+1) for i in list(todo)[:12])}"
                 f"{'…' if len(list(todo)) > 12 else ''}\n\n"
                 f"Approve it explicitly:  --approve-spend {already + due}\n")
+        log(f"approved by Sapro: “{a.approval.strip()[:90]}”")
         log(f"sending {due:,} chars ({remaining:,} left of the {ceiling:,} approved"
             + (f", {already:,} already sent this run)" if already > 0 else ")"))
         generate_sections(prof, sections, parts_dir, only,
