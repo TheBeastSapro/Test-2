@@ -116,3 +116,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** (1) Gate the redo — after the read-check, print the flagged sections with the ASR evidence and the character cost of re-rendering them, and require confirmation before the first redo round; `--max-redos 0` should be the documented default for an interactive run, with the auto-redo behaviour behind an explicit opt-in flag. (2) Make the ceiling run-wide: track characters spent across every generate.py invocation in the work dir and have each call debit the remaining budget rather than receive a fresh copy of it. (3) Have `--plan` state the worst-case total, not just the first-pass cost.
 
 **Principle:** Approval is granted for a quantity, not for a category. A budget handed to a step that can invoke itself again must be decremented across invocations, or the number shown at the gate is not a ceiling at all — and any step that spends the user's money again, after the gate, needs its own gate.
+
+### Observation 8: The read-check runs for ten minutes with no progress output, and its download is twice the documented size
+
+**Status:** OPEN
+**Date:** 2026-08-14
+**Session context:** Sapro asked "how long will it take" during the read-check of a 12:35 stitch. The only honest answer available was an inference from `ps` — 313% CPU across 4 cores — because the stage prints one line when it starts loading the model and nothing again until every section is transcribed.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/readcheck.py` — `check_sections`; SKILL.md — setup/dependencies
+
+**Issue:** Two things, both about a stage understating what it costs. (1) `check_sections` transcribes all 52 sections in a loop and reports only at the end, so the stage is indistinguishable from a hang for five to ten minutes. The generate stage does this correctly — it prints `n/52, N chars` per section — so the pipeline already establishes the convention and the read-check departs from it. Having to answer a timing question from CPU percentages, on a stage the skill itself owns, is the tell. (2) SKILL.md states the first read-check "downloads distil-large-v3 (~750 MB)". Measured on a cold container, `models--Systran--faster-distil-whisper-large-v3` is **1.5 GB** — twice the documented figure. On a metered or slow connection that is the difference between a stated cost and a surprise.
+
+**Suggested improvement:** Emit a per-section line from `check_sections` matching the generate stage's format (`[readcheck] n/52 — WER x.xx`), so elapsed and remaining are readable from the log by both the agent and Sapro. Correct the SKILL.md figure to 1.5 GB, and state the MMS_FA figure from a measurement rather than an estimate while there.
+
+**Principle:** A long-running stage that prints nothing is indistinguishable from a hung one, and forces anyone asking "how long" to answer from process metrics instead of the tool's own output. Where a pipeline already has a progress convention, every stage of comparable length owes the user the same one — and a documented download size is a promise that should be measured, not estimated.
