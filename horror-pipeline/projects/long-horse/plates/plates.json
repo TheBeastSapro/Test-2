@@ -1,0 +1,75 @@
+{
+  "plates": [
+    {
+      "plate": "plate-4d8b527f409c.jpg",
+      "from": "A_Horse_At_Night_High_definition.jpg",
+      "crop_frac": 0.181,
+      "setting": "roadside verge and ridge, rural",
+      "time_of_day": "night"
+    },
+    {
+      "plate": "plate-bcabf2771de4.jpg",
+      "from": "Basement_visitor.jpeg",
+      "crop_frac": 0.227,
+      "setting": "abandoned basement or lower floor of an institutional building",
+      "time_of_day": "indoor artificial fluorescent light, time of day undetermined"
+    },
+    {
+      "plate": "plate-2f1f30537d41.jpg",
+      "from": "LH2.jpg",
+      "crop_frac": 0.171,
+      "setting": "large tree at night, wooded or garden",
+      "time_of_day": "night"
+    },
+    {
+      "plate": "plate-ad29b24fa1b0.jpg",
+      "from": "LH6.jpg",
+      "crop_frac": 0.305,
+      "setting": "bare deciduous woodland",
+      "time_of_day": "night"
+    },
+    {
+      "plate": "plate-e1c542d3f5a4.jpg",
+      "from": "Lh13.jpg",
+      "crop_frac": 0.328,
+      "setting": "roadside at the edge of a town, utility pole and chain-link fence",
+      "time_of_day": "night"
+    },
+    {
+      "plate": "plate-5770a421518d.jpg",
+      "from": "356374055_956824888959400_57486809395064",
+      "crop_frac": 0.45,
+      "setting": "outside a small board-clad building carrying a sign, possibly a fairground or park structure",
+      "time_of_day": "night"
+    },
+    {
+      "plate": "plate-48f4949e3e97.jpg",
+      "from": "Longhorse_motiveunknown.jpg",
+      "crop_frac": 0.308,
+      "setting": "school or hospital corridor with lockers",
+      "time_of_day": "indoor artificial light, time of day undetermined"
+    }
+  ],
+  "skipped": [
+    {
+      "from": "Screenshot_2020-04-26_Trevor_Henderson_(",
+      "why": "clean crop 280x158 = 16% of source"
+    },
+    {
+      "from": "TheHorse.jpg",
+      "why": "clean crop 360x202 = 24% of source"
+    },
+    {
+      "from": "Long_Horse.jpg",
+      "why": "no creature-free 16:9 region exists"
+    },
+    {
+      "from": "Screenshot_2020-04-25_Trevor_Henderson_(",
+      "why": "no creature-free 16:9 region exists"
+    },
+    {
+      "from": "LH3.jpg",
+      "why": "clean crop 242x136 = 5% of source"
+    }
+  ]
+}

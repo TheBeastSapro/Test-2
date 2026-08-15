@@ -1,0 +1,493 @@
+{
+ "creature": "Long Horse",
+ "duration": 62,
+ "vo": "vo.wav",
+ "shots": [
+  {
+   "t0": 0.0,
+   "t1": 2.48,
+   "ground": "plate:plate-ad29b24fa1b0.jpg",
+   "plate_scale": [
+    1.05,
+    1.11
+   ],
+   "hold": false
+  },
+  {
+   "t0": 2.48,
+   "t1": 3.92,
+   "ground": "plate:plate-e1c542d3f5a4.jpg",
+   "plate_scale": [
+    1.12,
+    1.06
+   ],
+   "hold": false,
+   "asset": "cut-stipple.png",
+   "from_": [
+    0.74,
+    0.6,
+    0.34
+   ],
+   "to": [
+    0.72,
+    0.58,
+    0.4
+   ]
+  },
+  {
+   "t0": 3.92,
+   "t1": 5.6,
+   "ground": "white",
+   "asset": "cut-head-branches.png",
+   "from_": [
+    0.5,
+    0.6,
+    0.62
+   ],
+   "to": [
+    0.5,
+    0.58,
+    0.66
+   ],
+   "hold": false
+  },
+  {
+   "t0": 5.6,
+   "t1": 6.76,
+   "ground": "plate:plate-5770a421518d.jpg",
+   "plate_scale": [
+    1.04,
+    1.1
+   ],
+   "hold": true,
+   "asset": "cut-neck-zigzag.png",
+   "from_": [
+    0.3,
+    0.42,
+    0.3
+   ],
+   "to": [
+    0.34,
+    0.44,
+    0.36
+   ]
+  },
+  {
+   "t0": 6.76,
+   "t1": 8.4,
+   "ground": "plate:plate-48f4949e3e97.jpg",
+   "plate_scale": [
+    1.14,
+    1.07
+   ],
+   "hold": false
+  },
+  {
+   "t0": 8.4,
+   "t1": 10.6,
+   "ground": "plate:plate-bcabf2771de4.jpg",
+   "asset": "cut-neck-loops.png",
+   "from_": [
+    0.72,
+    0.62,
+    0.3
+   ],
+   "to": [
+    0.7,
+    0.6,
+    0.36
+   ],
+   "hold": false
+  },
+  {
+   "t0": 10.6,
+   "t1": 12.8,
+   "ground": "plate:plate-bcabf2771de4.jpg",
+   "asset": "cut-neck-loops.png",
+   "from_": [
+    0.66,
+    0.6,
+    0.46
+   ],
+   "to": [
+    0.62,
+    0.58,
+    0.55
+   ],
+   "hold": false
+  },
+  {
+   "t0": 12.8,
+   "t1": 14.64,
+   "ground": "plate:plate-48f4949e3e97.jpg",
+   "plate_scale": [
+    1.06,
+    1.09
+   ],
+   "hold": true
+  },
+  {
+   "t0": 14.64,
+   "t1": 16.6,
+   "ground": "plate:art-skull.jpg",
+   "hold": false
+  },
+  {
+   "t0": 16.6,
+   "t1": 18.16,
+   "ground": "plate:art-skull.jpg",
+   "hold": false
+  },
+  {
+   "t0": 18.16,
+   "t1": 20.44,
+   "ground": "white",
+   "asset": "cut-head-branches.png",
+   "from_": [
+    0.5,
+    0.56,
+    0.78
+   ],
+   "to": [
+    0.5,
+    0.55,
+    0.86
+   ],
+   "hold": true
+  },
+  {
+   "t0": 20.44,
+   "t1": 22.56,
+   "ground": "white",
+   "asset": "cut-neck-zigzag.png",
+   "from_": [
+    0.42,
+    0.52,
+    0.72
+   ],
+   "to": [
+    0.56,
+    0.52,
+    0.78
+   ],
+   "hold": false
+  },
+  {
+   "t0": 22.56,
+   "t1": 24.6,
+   "ground": "white",
+   "asset": "cut-neck-zigzag.png",
+   "from_": [
+    0.54,
+    0.54,
+    0.92
+   ],
+   "to": [
+    0.44,
+    0.54,
+    1.0
+   ],
+   "hold": false
+  },
+  {
+   "t0": 24.6,
+   "t1": 26.6,
+   "ground": "white",
+   "asset": "cut-stipple.png",
+   "from_": [
+    0.5,
+    0.54,
+    0.74
+   ],
+   "to": [
+    0.5,
+    0.53,
+    0.82
+   ],
+   "hold": true
+  },
+  {
+   "t0": 26.6,
+   "t1": 28.34,
+   "ground": "plate:plate-ad29b24fa1b0.jpg",
+   "asset": "cut-neck-loops.png",
+   "from_": [
+    0.6,
+    0.58,
+    0.6
+   ],
+   "to": [
+    0.58,
+    0.56,
+    0.68
+   ],
+   "hold": false
+  },
+  {
+   "t0": 28.34,
+   "t1": 30.0,
+   "ground": "plate:plate-4d8b527f409c.jpg",
+   "plate_scale": [
+    1.16,
+    1.06
+   ],
+   "hold": false
+  },
+  {
+   "t0": 30.0,
+   "t1": 32.6,
+   "ground": "white",
+   "asset": "cut-head-branches.png",
+   "from_": [
+    0.66,
+    0.56,
+    0.7
+   ],
+   "to": [
+    0.66,
+    0.55,
+    0.76
+   ],
+   "hold": true
+  },
+  {
+   "t0": 32.6,
+   "t1": 35.8,
+   "ground": "white",
+   "asset": "cut-stipple.png",
+   "from_": [
+    0.62,
+    0.54,
+    0.8
+   ],
+   "to": [
+    0.62,
+    0.53,
+    0.88
+   ],
+   "hold": false
+  },
+  {
+   "t0": 35.8,
+   "t1": 38.4,
+   "ground": "white",
+   "asset": "cut-neck-zigzag.png",
+   "from_": [
+    0.6,
+    0.52,
+    0.84
+   ],
+   "to": [
+    0.66,
+    0.52,
+    0.92
+   ],
+   "hold": true
+  },
+  {
+   "t0": 38.4,
+   "t1": 42.36,
+   "ground": "white",
+   "asset": "cut-head-branches.png",
+   "from_": [
+    0.64,
+    0.55,
+    0.88
+   ],
+   "to": [
+    0.64,
+    0.54,
+    0.98
+   ],
+   "hold": false
+  },
+  {
+   "t0": 42.36,
+   "t1": 45.58,
+   "ground": "white",
+   "asset": "cut-stipple.png",
+   "from_": [
+    0.63,
+    0.54,
+    0.86
+   ],
+   "to": [
+    0.63,
+    0.53,
+    0.94
+   ],
+   "hold": true
+  },
+  {
+   "t0": 45.58,
+   "t1": 48.0,
+   "ground": "white",
+   "asset": "cut-neck-zigzag.png",
+   "from_": [
+    0.62,
+    0.53,
+    0.9
+   ],
+   "to": [
+    0.62,
+    0.53,
+    1.0
+   ],
+   "hold": false
+  },
+  {
+   "t0": 48.0,
+   "t1": 51.0,
+   "ground": "plate:art-heads.jpg",
+   "hold": true
+  },
+  {
+   "t0": 51.0,
+   "t1": 54.1,
+   "ground": "plate:plate-e1c542d3f5a4.jpg",
+   "asset": "cut-head-branches.png",
+   "from_": [
+    0.52,
+    0.56,
+    0.78
+   ],
+   "to": [
+    0.5,
+    0.55,
+    0.88
+   ],
+   "hold": false
+  },
+  {
+   "t0": 54.1,
+   "t1": 57.4,
+   "ground": "plate:art-skull.jpg",
+   "hold": true
+  },
+  {
+   "t0": 57.4,
+   "t1": 62.0,
+   "ground": "plate:art-frontal.jpg",
+   "hold": false
+  }
+ ],
+ "pops": [
+  {
+   "t0": 2.48,
+   "t1": 3.9,
+   "text": "CANNOT HURT YOU",
+   "y": 830
+  },
+  {
+   "t0": 3.92,
+   "t1": 5.55,
+   "text": "NOT GOOD NEWS",
+   "style": "ink",
+   "y": 830
+  },
+  {
+   "t0": 6.76,
+   "t1": 8.35,
+   "text": "IN HER DREAMS",
+   "y": 830
+  },
+  {
+   "t0": 18.16,
+   "t1": 20.35,
+   "text": "NO LOWER JAW",
+   "style": "ink side",
+   "y": 470
+  },
+  {
+   "t0": 22.56,
+   "t1": 24.5,
+   "text": "HUMAN FINGERS",
+   "style": "ink",
+   "y": 840
+  },
+  {
+   "t0": 28.34,
+   "t1": 29.95,
+   "text": "FOREVER",
+   "y": 840
+  },
+  {
+   "t0": 31.2,
+   "t1": 34.6,
+   "text": "100% FRIENDLY",
+   "style": "ink side",
+   "y": 470
+  },
+  {
+   "t0": 35.8,
+   "t1": 38.3,
+   "text": "INFINITE NECK",
+   "style": "ink side",
+   "y": 470
+  },
+  {
+   "t0": 42.36,
+   "t1": 45.4,
+   "text": "SMELLS OF CINNAMON",
+   "style": "ink side",
+   "y": 470
+  },
+  {
+   "t0": 45.58,
+   "t1": 47.9,
+   "text": "IT COMES TO WARN",
+   "style": "ink red side",
+   "y": 470
+  },
+  {
+   "t0": 54.1,
+   "t1": 57.3,
+   "text": "YOU WILL SURVIVE",
+   "y": 850
+  },
+  {
+   "t0": 58.6,
+   "t1": 61.9,
+   "text": "WHAT COMES AFTER",
+   "style": "red",
+   "y": 850
+  }
+ ],
+ "titles": [
+  {
+   "t0": 0.0,
+   "t1": 3.92,
+   "white": false
+  },
+  {
+   "t0": 3.92,
+   "t1": 5.6,
+   "white": true
+  },
+  {
+   "t0": 5.6,
+   "t1": 18.16,
+   "white": false
+  },
+  {
+   "t0": 18.16,
+   "t1": 26.6,
+   "white": true
+  },
+  {
+   "t0": 26.6,
+   "t1": 30.0,
+   "white": false
+  },
+  {
+   "t0": 30.0,
+   "t1": 48.0,
+   "white": true
+  },
+  {
+   "t0": 48.0,
+   "t1": 62.0,
+   "white": false
+  }
+ ]
+}

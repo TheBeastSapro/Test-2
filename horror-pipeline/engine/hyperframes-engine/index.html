@@ -5,59 +5,40 @@
     <meta name="viewport" content="width=1920, height=1080" />
     <script src="public/js/gsap.min.js"></script>
     <style>
-      /* Vu's ACTUAL face, confirmed by pixel comparison against his publish cut. */
+      /* Vu's actual face, confirmed by pixel comparison against his publish cut. */
       @font-face { font-family:"HouseTitle"; src:url("public/fonts/comic-sans-ms-bold.ttf") format("truetype"); font-display:block; }
-
       * { margin:0; padding:0; box-sizing:border-box; }
-      html, body { width:1920px; height:1080px; overflow:hidden; background:#FFFFFF; }
+      html, body { width:1920px; height:1080px; overflow:hidden; background:#000; }
+      .stage { position:absolute; inset:0; overflow:hidden; background:#000; }
+      .stage.white { background:#FFFFFF; }
+      .plate { position:absolute; left:0; top:0; width:1920px; height:1080px;
+               transform-origin:50% 50%; will-change:transform; }
+      .cut { position:absolute; left:0; top:0; transform-origin:50% 50%;
+             will-change:transform; }
+      /* Contact shadow. A cutout with no shadow reads as a sticker pasted on. */
+      .cut.grounded { filter: drop-shadow(0 18px 26px rgba(0,0,0,.55)); }
 
-      /* ------------------------------------------------------------------
-         THE GRAMMAR, measured from Vu's publish cut and M Simplified.
-
-         MOTION IS BIMODAL, NOT UNIFORM. Measured across Vu's 9:42: mean 26.4%
-         change per second but MEDIAN 15.3%, std dev 28.1%, with 30.8% of
-         seconds under 5% and 26.7% over 40%. He holds, then changes
-         decisively. A renderer that targets the 26% average produces constant
-         mid-level drift, hits the number exactly, and looks like an AI edit.
-         So: long holds with intent, punctuated by hard decisive changes.
-
-         STORY beats sit on a plate the editor owns, creature composited in.
-         SPEC beats bleed the creature on white. Then return to the plate.
-         ------------------------------------------------------------------ */
-
-      .stage { position:absolute; inset:0; overflow:hidden; }
-      .plate { position:absolute; inset:0; }
-      .plate img { position:absolute; left:0; top:0; width:1920px; height:1080px;
-                   transform-origin:50% 50%; will-change:transform; }
-      .white { position:absolute; inset:0; background:#FFFFFF; }
-      .creature { position:absolute; left:0; top:0; transform-origin:50% 50%;
-                  will-change:transform; }
-
-      /* Persistent creature name, top centre, on every frame.
-         Fill is CONTEXTUAL, measured from Vu: black with no stroke on a white
-         canvas; white with a dark stroke plus an outer white highlight over a
-         plate. The outer highlight comes from layered text-shadow rather than a
-         duplicated text node - a stacked copy reads to any checker as two
-         overlapping text blocks, and as white-on-white on the canvas beats. */
-      .title { position:absolute; left:0; top:38px; width:1920px; text-align:center;
-               font-family:"HouseTitle",sans-serif; font-size:82px;
+      /* Persistent creature name. Fill is CONTEXTUAL, measured from Vu:
+         black with no stroke on white canvas, white with a dark stroke plus an
+         outer white highlight over a plate. */
+      .title { position:absolute; left:0; top:34px; width:1920px; text-align:center;
+               font-family:"HouseTitle",sans-serif; font-size:96px;
                will-change:transform,opacity;
-               color:#FFFFFF; -webkit-text-stroke:7px #111111; paint-order:stroke fill;
-               text-shadow:
-                 5px 0 0 #FFF, -5px 0 0 #FFF, 0 5px 0 #FFF, 0 -5px 0 #FFF,
-                 4px 4px 0 #FFF, -4px 4px 0 #FFF, 4px -4px 0 #FFF, -4px -4px 0 #FFF; }
+               color:#FFFFFF; -webkit-text-stroke:8px #111111; paint-order:stroke fill;
+               text-shadow: 5px 0 0 #FFF,-5px 0 0 #FFF,0 5px 0 #FFF,0 -5px 0 #FFF,
+                            4px 4px 0 #FFF,-4px 4px 0 #FFF,4px -4px 0 #FFF,-4px -4px 0 #FFF; }
       .title.onWhite { color:#111111; -webkit-text-stroke-width:0; text-shadow:none; }
 
-      /* Keyword pops: 1 to 4 words, never a sentence. Anchored to spoken words. */
-      .pop { position:absolute; font-family:"HouseTitle",sans-serif; font-size:64px;
-             white-space:nowrap; will-change:transform,opacity;
-             color:#FFFFFF; -webkit-text-stroke:6px #111111; paint-order:stroke fill;
-             text-shadow:
-               4px 0 0 #FFF, -4px 0 0 #FFF, 0 4px 0 #FFF, 0 -4px 0 #FFF,
-               3px 3px 0 #FFF, -3px 3px 0 #FFF, 3px -3px 0 #FFF, -3px -3px 0 #FFF; }
+      /* Pops sized to the reference: big, not captions. */
+      .pop { position:absolute; left:0; width:1920px; text-align:center;
+             font-family:"HouseTitle",sans-serif; font-size:96px; white-space:nowrap;
+             will-change:transform,opacity;
+             color:#FFFFFF; -webkit-text-stroke:8px #111111; paint-order:stroke fill;
+             text-shadow: 5px 0 0 #FFF,-5px 0 0 #FFF,0 5px 0 #FFF,0 -5px 0 #FFF,
+                          4px 4px 0 #FFF,-4px 4px 0 #FFF,4px -4px 0 #FFF,-4px -4px 0 #FFF; }
+      .pop.side { width:900px; text-align:left; left:150px; }
       .pop.ink { color:#111111; -webkit-text-stroke-width:0; text-shadow:none; }
-      .pop.red { color:#D62020; -webkit-text-stroke:6px #111111; }
-
+      .pop.red { color:#D62020; }
       svg.ov { position:absolute; inset:0; width:1920px; height:1080px; overflow:visible; }
     </style>
   </head>
@@ -67,138 +48,212 @@
 
       <audio id="vo" class="clip" data-start="0" data-duration="62" src="public/vo.wav"></audio>
 
-      <!-- ============ A. HOOK on a plate. 0 - 14.64 ("hallway") ============ -->
-      <div id="sceneA-hook" class="clip stage" data-start="0" data-duration="14.64" data-track-index="1">
-        <div class="plate"><img id="pA" src="public/plate-street.jpg" /></div>
-        <div id="popA1" class="pop" style="left:0;width:1920px;text-align:center;top:790px;">
-          CANNOT HURT YOU</div>
-        <div id="popA2" class="pop red" style="left:0;width:1920px;text-align:center;top:790px;">
-          NOT GOOD NEWS</div>
-        <div id="popA3" class="pop" style="left:0;width:1920px;text-align:center;top:790px;">
-          IN HER DREAMS</div>
+      <div id="s01" class="clip stage" data-start="0.0" data-duration="2.48" data-track-index="1">
+        <img id="s01p" class="plate" src="public/plate-ad29b24fa1b0.jpg" />
       </div>
-
-      <!-- ============ B. THE REVEAL. 14.64 - 30.0 ============ -->
-      <div id="sceneB-reveal" class="clip stage" data-start="14.64" data-duration="15.36" data-track-index="1">
-        <div class="plate"><img id="pB" src="public/plate-interior.jpg" /></div>
-        <img id="catB" class="creature" src="public/lh-cutout.png" />
-        <div id="popB1" class="pop red" style="left:0;width:1920px;text-align:center;top:150px;">
-          NO LOWER JAW</div>
-        <div id="popB2" class="pop" style="left:0;width:1920px;text-align:center;top:820px;">
-          GIANT HUMAN FINGERS</div>
-        <div id="popB3" class="pop" style="left:0;width:1920px;text-align:center;top:820px;">
-          FOREVER</div>
+      <div id="s02" class="clip stage" data-start="2.48" data-duration="1.44" data-track-index="1">
+        <img id="s02p" class="plate" src="public/plate-e1c542d3f5a4.jpg" />
+        <img id="s02c" class="cut grounded" src="public/cut-stipple.png" />
       </div>
-
-      <!-- ============ C. SPEC BLOCK, bled on white. 30.0 - 48.0 ============ -->
-      <div id="sceneC-spec" class="clip stage" data-start="30" data-duration="18" data-track-index="1">
-        <div class="white"></div>
-        <img id="catC" class="creature" src="public/lh-cutout.png" />
-        <div id="popC1" class="pop ink" style="left:170px;top:300px;">
-          100% FRIENDLY</div>
-        <div id="popC2" class="pop ink" style="left:170px;top:400px;">
-          INFINITE NECK</div>
-        <div id="popC3" class="pop ink" style="left:170px;top:500px;">
-          SMELLS OF CINNAMON</div>
-        <div id="popC4" class="pop red" style="left:170px;top:600px;">
-          IT COMES TO WARN</div>
+      <div id="s03" class="clip stage white" data-start="3.92" data-duration="1.68" data-track-index="1">
+        <img id="s03c" class="cut" src="public/cut-head-branches.png" />
       </div>
-
-      <!-- ============ D. VERDICT, return to a plate. 48.0 - 62.0 ============ -->
-      <div id="sceneD-verdict" class="clip stage" data-start="48" data-duration="14" data-track-index="1">
-        <div class="plate"><img id="pD" src="public/plate-road.jpg" /></div>
-        <img id="catD" class="creature" src="public/lh-cutout.png" />
-        <div id="popD1" class="pop" style="left:0;width:1920px;text-align:center;top:830px;">
-          YOU WILL SURVIVE</div>
-        <div id="popD2" class="pop red" style="left:0;width:1920px;text-align:center;top:830px;">
-          WHAT COMES AFTER</div>
+      <div id="s04" class="clip stage" data-start="5.6" data-duration="1.16" data-track-index="1">
+        <img id="s04p" class="plate" src="public/plate-5770a421518d.jpg" />
+        <img id="s04c" class="cut grounded" src="public/cut-neck-zigzag.png" />
       </div>
-
-      <!-- persistent title, own tracks so it spans every canvas change -->
-      <div id="tA" class="clip title" data-start="0" data-duration="30" data-track-index="2">Long Horse</div>
-      <div id="tC" class="clip title onWhite" data-start="30" data-duration="18" data-track-index="3">Long Horse</div>
-      <div id="tD" class="clip title" data-start="48" data-duration="14" data-track-index="4">Long Horse</div>
+      <div id="s05" class="clip stage" data-start="6.76" data-duration="1.64" data-track-index="1">
+        <img id="s05p" class="plate" src="public/plate-48f4949e3e97.jpg" />
+      </div>
+      <div id="s06" class="clip stage" data-start="8.4" data-duration="2.2" data-track-index="1">
+        <img id="s06p" class="plate" src="public/plate-bcabf2771de4.jpg" />
+        <img id="s06c" class="cut grounded" src="public/cut-neck-loops.png" />
+      </div>
+      <div id="s07" class="clip stage" data-start="10.6" data-duration="2.2" data-track-index="1">
+        <img id="s07p" class="plate" src="public/plate-bcabf2771de4.jpg" />
+        <img id="s07c" class="cut grounded" src="public/cut-neck-loops.png" />
+      </div>
+      <div id="s08" class="clip stage" data-start="12.8" data-duration="1.84" data-track-index="1">
+        <img id="s08p" class="plate" src="public/plate-48f4949e3e97.jpg" />
+      </div>
+      <div id="s09" class="clip stage" data-start="14.64" data-duration="1.96" data-track-index="1">
+        <img id="s09p" class="plate" src="public/art-skull.jpg" />
+      </div>
+      <div id="s10" class="clip stage" data-start="16.6" data-duration="1.56" data-track-index="1">
+        <img id="s10p" class="plate" src="public/art-skull.jpg" />
+      </div>
+      <div id="s11" class="clip stage white" data-start="18.16" data-duration="2.28" data-track-index="1">
+        <img id="s11c" class="cut" src="public/cut-head-branches.png" />
+      </div>
+      <div id="s12" class="clip stage white" data-start="20.44" data-duration="2.12" data-track-index="1">
+        <img id="s12c" class="cut" src="public/cut-neck-zigzag.png" />
+      </div>
+      <div id="s13" class="clip stage white" data-start="22.56" data-duration="2.04" data-track-index="1">
+        <img id="s13c" class="cut" src="public/cut-neck-zigzag.png" />
+      </div>
+      <div id="s14" class="clip stage white" data-start="24.6" data-duration="2.0" data-track-index="1">
+        <img id="s14c" class="cut" src="public/cut-stipple.png" />
+      </div>
+      <div id="s15" class="clip stage" data-start="26.6" data-duration="1.74" data-track-index="1">
+        <img id="s15p" class="plate" src="public/plate-ad29b24fa1b0.jpg" />
+        <img id="s15c" class="cut grounded" src="public/cut-neck-loops.png" />
+      </div>
+      <div id="s16" class="clip stage" data-start="28.34" data-duration="1.66" data-track-index="1">
+        <img id="s16p" class="plate" src="public/plate-4d8b527f409c.jpg" />
+      </div>
+      <div id="s17" class="clip stage white" data-start="30.0" data-duration="2.6" data-track-index="1">
+        <img id="s17c" class="cut" src="public/cut-head-branches.png" />
+      </div>
+      <div id="s18" class="clip stage white" data-start="32.6" data-duration="3.2" data-track-index="1">
+        <img id="s18c" class="cut" src="public/cut-stipple.png" />
+      </div>
+      <div id="s19" class="clip stage white" data-start="35.8" data-duration="2.6" data-track-index="1">
+        <img id="s19c" class="cut" src="public/cut-neck-zigzag.png" />
+      </div>
+      <div id="s20" class="clip stage white" data-start="38.4" data-duration="3.96" data-track-index="1">
+        <img id="s20c" class="cut" src="public/cut-head-branches.png" />
+      </div>
+      <div id="s21" class="clip stage white" data-start="42.36" data-duration="3.22" data-track-index="1">
+        <img id="s21c" class="cut" src="public/cut-stipple.png" />
+      </div>
+      <div id="s22" class="clip stage white" data-start="45.58" data-duration="2.42" data-track-index="1">
+        <img id="s22c" class="cut" src="public/cut-neck-zigzag.png" />
+      </div>
+      <div id="s23" class="clip stage" data-start="48.0" data-duration="3.0" data-track-index="1">
+        <img id="s23p" class="plate" src="public/art-heads.jpg" />
+      </div>
+      <div id="s24" class="clip stage" data-start="51.0" data-duration="3.1" data-track-index="1">
+        <img id="s24p" class="plate" src="public/plate-e1c542d3f5a4.jpg" />
+        <img id="s24c" class="cut grounded" src="public/cut-head-branches.png" />
+      </div>
+      <div id="s25" class="clip stage" data-start="54.1" data-duration="3.3" data-track-index="1">
+        <img id="s25p" class="plate" src="public/art-skull.jpg" />
+      </div>
+      <div id="s26" class="clip stage" data-start="57.4" data-duration="4.6" data-track-index="1">
+        <img id="s26p" class="plate" src="public/art-frontal.jpg" />
+      </div>
+      <div id="pop01" class="clip pop " data-start="2.48" data-duration="1.14" data-track-index="6" style="top:830px;">CANNOT HURT YOU</div>
+      <div id="pop02" class="clip pop ink" data-start="3.92" data-duration="1.38" data-track-index="7" style="top:830px;">NOT GOOD NEWS</div>
+      <div id="pop03" class="clip pop " data-start="6.76" data-duration="1.34" data-track-index="8" style="top:830px;">IN HER DREAMS</div>
+      <div id="pop04" class="clip pop ink side" data-start="18.16" data-duration="1.98" data-track-index="9" style="top:470px;">NO LOWER JAW</div>
+      <div id="pop05" class="clip pop ink" data-start="22.56" data-duration="1.74" data-track-index="10" style="top:840px;">HUMAN FINGERS</div>
+      <div id="pop06" class="clip pop " data-start="28.34" data-duration="1.36" data-track-index="11" style="top:840px;">FOREVER</div>
+      <div id="pop07" class="clip pop ink side" data-start="31.2" data-duration="3.4" data-track-index="12" style="top:470px;">100% FRIENDLY</div>
+      <div id="pop08" class="clip pop ink side" data-start="35.8" data-duration="2.3" data-track-index="13" style="top:470px;">INFINITE NECK</div>
+      <div id="pop09" class="clip pop ink side" data-start="42.36" data-duration="2.92" data-track-index="14" style="top:470px;">SMELLS OF CINNAMON</div>
+      <div id="pop10" class="clip pop ink red side" data-start="45.58" data-duration="2.12" data-track-index="15" style="top:470px;">IT COMES TO WARN</div>
+      <div id="pop11" class="clip pop " data-start="54.1" data-duration="3.0" data-track-index="16" style="top:850px;">YOU WILL SURVIVE</div>
+      <div id="pop12" class="clip pop red" data-start="58.6" data-duration="3.1" data-track-index="17" style="top:850px;">WHAT COMES AFTER</div>
+      <div id="t01" class="clip title" data-start="0.0" data-duration="3.92" data-track-index="41">Long Horse</div>
+      <div id="t02" class="clip title onWhite" data-start="3.92" data-duration="1.68" data-track-index="42">Long Horse</div>
+      <div id="t03" class="clip title" data-start="5.6" data-duration="12.56" data-track-index="43">Long Horse</div>
+      <div id="t04" class="clip title onWhite" data-start="18.16" data-duration="8.44" data-track-index="44">Long Horse</div>
+      <div id="t05" class="clip title" data-start="26.6" data-duration="3.4" data-track-index="45">Long Horse</div>
+      <div id="t06" class="clip title onWhite" data-start="30.0" data-duration="18.0" data-track-index="46">Long Horse</div>
+      <div id="t07" class="clip title" data-start="48.0" data-duration="14.0" data-track-index="47">Long Horse</div>
     </div>
 
     <script>
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
-      const POP_IN = 0.22;
-
-      // A pop arrives ON its spoken word and leaves before the next one.
-      function pop(sel, t, dur) {
-        tl.fromTo(sel, {autoAlpha:0, y:26, scale:0.94},
-                       {autoAlpha:1, y:0, scale:1, duration:POP_IN, ease:"back.out(1.6)"}, t);
-        tl.to(sel, {autoAlpha:0, duration:0.16, ease:"power2.in"}, t + dur);
-      }
       gsap.set(".pop", {autoAlpha:0});
-
-      // ---- A. HOOK ------------------------------------------------------
-      // Camera WITH INTENT, not idle wobble: one continuous travel across the
-      // whole beat that arrives somewhere, rather than a drift to fill time.
-      gsap.set("#pA", {scale:1.06, xPercent:0});
-      tl.to("#pA", {scale:1.16, x:-46, duration:14.64, ease:"none"}, 0);
-      pop("#popA1", 2.48, 1.5);        // "cannot hurt you"
-      pop("#popA2", 3.92, 1.6);        // "not good news"
-      pop("#popA3", 6.76, 1.5);        // "dreams"
-      // 8.3 -> 14.64 is deliberately quiet. The measured reference is under 5%
-      // change for ~31% of its runtime; this is the hold before the reveal.
-
-      // ---- B. THE REVEAL ------------------------------------------------
-      // Hard cut on the word "hallway". The creature is ALREADY in frame at the
-      // cut, mid-move, never growing from nothing.
-      gsap.set("#pB", {scale:1.20});
-      gsap.set("#catB", {xPercent:-50, yPercent:-50, x:1180, y:430, scale:0.62, rotation:-4});
-      tl.to("#pB",   {scale:1.10, duration:15.36, ease:"none"}, 14.64);
-      // bends INTO frame, the skull arriving around the door frame
-      tl.fromTo("#catB", {x:1720, scale:0.52, autoAlpha:0.85},
-                         {x:1180, scale:0.62, autoAlpha:1, duration:1.5, ease:"power3.out"}, 14.64);
-      pop("#popB1", 18.16, 1.9);       // "no lower jaw" - the canon anatomy beat
-      // the neck keeps going: one continuous travel under the narration
-      tl.to("#catB", {x:840, scale:0.94, rotation:0, duration:7.2, ease:"none"}, 20.44);
-      pop("#popB2", 22.56, 1.7);       // "giant human fingers"
-      pop("#popB3", 28.34, 1.5);       // "forever"
-
-      // ---- C. SPEC BLOCK -------------------------------------------------
-      // Bled on white, no box, no border. Labels arrive ONE AT A TIME on their
-      // own spoken beat; a pre-assembled list sitting for 5s is a graded fail.
-      gsap.set("#catC", {xPercent:-50, yPercent:-50, x:1290, y:600, scale:0.86});
-      tl.to("#catC", {x:1230, scale:0.94, duration:18, ease:"none"}, 30);
-      pop("#popC1", 31.20, 3.6);
-      pop("#popC2", 35.80, 3.4);       // "genuinely infinite"
-      pop("#popC3", 42.36, 2.6);       // "cinnamon"
-      pop("#popC4", 45.58, 2.2);       // "to warn"
-
-      // ---- D. VERDICT ----------------------------------------------------
-      // Return to a plate, closer than we left it, so the section escalates.
-      // The closer lands ON THE CREATURE. Never a gag as the final frame.
-      gsap.set("#pD", {scale:1.10});
-      gsap.set("#catD", {xPercent:-50, yPercent:-50, x:960, y:600, scale:1.05});
-      tl.to("#pD",   {scale:1.20, duration:14, ease:"none"}, 48);
-      tl.to("#catD", {scale:1.28, y:560, duration:14, ease:"none"}, 48);
-      pop("#popD1", 54.10, 2.2);       // "you will survive long horse"
-      pop("#popD2", 58.60, 2.6);
-
-      // ---- titles: animate in, never appear by cutting to them ------------
-      [["#tA",0],["#tC",30],["#tD",48]].forEach(([s,t]) => {
-        tl.from(s, {y:-30, autoAlpha:0, duration:0.38, ease:"power3.out"}, t);
-      });
-
-      // Hard kills at every clip boundary. Non-linear seeking can land after a
-      // fade-out tween and leave an element visible; a tl.set is unambiguous.
-      tl.set("#popA1", {autoAlpha:0}, 14.64);
-      tl.set("#popA2", {autoAlpha:0}, 14.64);
-      tl.set("#popA3", {autoAlpha:0}, 14.64);
-      tl.set("#popB1", {autoAlpha:0}, 30);
-      tl.set("#popB2", {autoAlpha:0}, 30);
-      tl.set("#popB3", {autoAlpha:0}, 30);
-      tl.set("#popC1", {autoAlpha:0}, 48);
-      tl.set("#popC2", {autoAlpha:0}, 48);
-      tl.set("#popC3", {autoAlpha:0}, 48);
-      tl.set("#popC4", {autoAlpha:0}, 48);
-      tl.set("#popD1", {autoAlpha:0}, 61.99);
-      tl.set("#popD2", {autoAlpha:0}, 61.99);
-
+      gsap.set("#s01p", {scale:1.05});
+      tl.to("#s01p", {scale:1.11, duration:2.48, ease:"none"}, 0.0);
+      gsap.set("#s02p", {scale:1.12});
+      tl.to("#s02p", {scale:1.06, duration:1.44, ease:"none"}, 2.48);
+      gsap.set("#s02c", {xPercent:-50, yPercent:-50, x:1421, y:648, scale:0.34});
+      tl.to("#s02c", {x:1382, y:626, scale:0.4, duration:1.44, ease:"none"}, 2.48);
+      gsap.set("#s03c", {xPercent:-50, yPercent:-50, x:960, y:648, scale:0.62});
+      tl.to("#s03c", {x:960, y:626, scale:0.66, duration:1.68, ease:"none"}, 3.92);
+      gsap.set("#s04p", {scale:1.04});
+      gsap.set("#s04c", {xPercent:-50, yPercent:-50, x:576, y:454, scale:0.3});
+      gsap.set("#s05p", {scale:1.14});
+      tl.to("#s05p", {scale:1.07, duration:1.64, ease:"none"}, 6.76);
+      gsap.set("#s06p", {scale:1.06});
+      tl.to("#s06p", {scale:1.13, duration:2.2, ease:"none"}, 8.4);
+      gsap.set("#s06c", {xPercent:-50, yPercent:-50, x:1382, y:670, scale:0.3});
+      tl.to("#s06c", {x:1344, y:648, scale:0.36, duration:2.2, ease:"none"}, 8.4);
+      gsap.set("#s07p", {scale:1.06});
+      tl.to("#s07p", {scale:1.13, duration:2.2, ease:"none"}, 10.6);
+      gsap.set("#s07c", {xPercent:-50, yPercent:-50, x:1267, y:648, scale:0.46});
+      tl.to("#s07c", {x:1190, y:626, scale:0.55, duration:2.2, ease:"none"}, 10.6);
+      gsap.set("#s08p", {scale:1.06});
+      gsap.set("#s09p", {scale:1.06});
+      tl.to("#s09p", {scale:1.13, duration:1.96, ease:"none"}, 14.64);
+      gsap.set("#s10p", {scale:1.06});
+      tl.to("#s10p", {scale:1.13, duration:1.56, ease:"none"}, 16.6);
+      gsap.set("#s11c", {xPercent:-50, yPercent:-50, x:960, y:605, scale:0.78});
+      gsap.set("#s12c", {xPercent:-50, yPercent:-50, x:806, y:562, scale:0.72});
+      tl.to("#s12c", {x:1075, y:562, scale:0.78, duration:2.12, ease:"none"}, 20.44);
+      gsap.set("#s13c", {xPercent:-50, yPercent:-50, x:1037, y:583, scale:0.92});
+      tl.to("#s13c", {x:845, y:583, scale:1.0, duration:2.04, ease:"none"}, 22.56);
+      gsap.set("#s14c", {xPercent:-50, yPercent:-50, x:960, y:583, scale:0.74});
+      gsap.set("#s15p", {scale:1.06});
+      tl.to("#s15p", {scale:1.13, duration:1.74, ease:"none"}, 26.6);
+      gsap.set("#s15c", {xPercent:-50, yPercent:-50, x:1152, y:626, scale:0.6});
+      tl.to("#s15c", {x:1114, y:605, scale:0.68, duration:1.74, ease:"none"}, 26.6);
+      gsap.set("#s16p", {scale:1.16});
+      tl.to("#s16p", {scale:1.06, duration:1.66, ease:"none"}, 28.34);
+      gsap.set("#s17c", {xPercent:-50, yPercent:-50, x:1267, y:605, scale:0.7});
+      gsap.set("#s18c", {xPercent:-50, yPercent:-50, x:1190, y:583, scale:0.8});
+      tl.to("#s18c", {x:1190, y:572, scale:0.88, duration:3.2, ease:"none"}, 32.6);
+      gsap.set("#s19c", {xPercent:-50, yPercent:-50, x:1152, y:562, scale:0.84});
+      gsap.set("#s20c", {xPercent:-50, yPercent:-50, x:1229, y:594, scale:0.88});
+      tl.to("#s20c", {x:1229, y:583, scale:0.98, duration:3.96, ease:"none"}, 38.4);
+      gsap.set("#s21c", {xPercent:-50, yPercent:-50, x:1210, y:583, scale:0.86});
+      gsap.set("#s22c", {xPercent:-50, yPercent:-50, x:1190, y:572, scale:0.9});
+      tl.to("#s22c", {x:1190, y:572, scale:1.0, duration:2.42, ease:"none"}, 45.58);
+      gsap.set("#s23p", {scale:1.08});
+      gsap.set("#s24p", {scale:1.06});
+      tl.to("#s24p", {scale:1.13, duration:3.1, ease:"none"}, 51.0);
+      gsap.set("#s24c", {xPercent:-50, yPercent:-50, x:998, y:605, scale:0.78});
+      tl.to("#s24c", {x:960, y:594, scale:0.88, duration:3.1, ease:"none"}, 51.0);
+      gsap.set("#s25p", {scale:1.08});
+      gsap.set("#s26p", {scale:1.06});
+      tl.to("#s26p", {scale:1.13, duration:4.6, ease:"none"}, 57.4);
+      tl.fromTo("#pop01", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 2.48);
+      tl.to("#pop01", {autoAlpha:0, duration:0.14}, 3.48);
+      tl.set("#pop01", {autoAlpha:0}, 3.62);
+      tl.fromTo("#pop02", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 3.92);
+      tl.to("#pop02", {autoAlpha:0, duration:0.14}, 5.16);
+      tl.set("#pop02", {autoAlpha:0}, 5.3);
+      tl.fromTo("#pop03", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 6.76);
+      tl.to("#pop03", {autoAlpha:0, duration:0.14}, 7.96);
+      tl.set("#pop03", {autoAlpha:0}, 8.1);
+      tl.fromTo("#pop04", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 18.16);
+      tl.to("#pop04", {autoAlpha:0, duration:0.14}, 20.0);
+      tl.set("#pop04", {autoAlpha:0}, 20.14);
+      tl.fromTo("#pop05", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 22.56);
+      tl.to("#pop05", {autoAlpha:0, duration:0.14}, 24.16);
+      tl.set("#pop05", {autoAlpha:0}, 24.3);
+      tl.fromTo("#pop06", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 28.34);
+      tl.to("#pop06", {autoAlpha:0, duration:0.14}, 29.56);
+      tl.set("#pop06", {autoAlpha:0}, 29.7);
+      tl.fromTo("#pop07", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 31.2);
+      tl.to("#pop07", {autoAlpha:0, duration:0.14}, 34.46);
+      tl.set("#pop07", {autoAlpha:0}, 34.6);
+      tl.fromTo("#pop08", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 35.8);
+      tl.to("#pop08", {autoAlpha:0, duration:0.14}, 37.96);
+      tl.set("#pop08", {autoAlpha:0}, 38.1);
+      tl.fromTo("#pop09", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 42.36);
+      tl.to("#pop09", {autoAlpha:0, duration:0.14}, 45.14);
+      tl.set("#pop09", {autoAlpha:0}, 45.28);
+      tl.fromTo("#pop10", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 45.58);
+      tl.to("#pop10", {autoAlpha:0, duration:0.14}, 47.56);
+      tl.set("#pop10", {autoAlpha:0}, 47.7);
+      tl.fromTo("#pop11", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 54.1);
+      tl.to("#pop11", {autoAlpha:0, duration:0.14}, 56.96);
+      tl.set("#pop11", {autoAlpha:0}, 57.1);
+      tl.fromTo("#pop12", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 58.6);
+      tl.to("#pop12", {autoAlpha:0, duration:0.14}, 61.56);
+      tl.set("#pop12", {autoAlpha:0}, 61.7);
+      tl.from("#t01", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 0.0);
+      tl.from("#t02", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 3.92);
+      tl.from("#t03", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 5.6);
+      tl.from("#t04", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 18.16);
+      tl.from("#t05", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 26.6);
+      tl.from("#t06", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 30.0);
+      tl.from("#t07", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 48.0);
       window.__timelines["main"] = tl;
     </script>
   </body>
