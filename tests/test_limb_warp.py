@@ -202,3 +202,45 @@ def test_the_bend_reaches_the_rendered_clip(creature, tmp_path, monkeypatch):
         int((np.abs(a - b).max(axis=2) > 25).sum())
         for a, b in zip(frames["bend"], frames["flat"], strict=True))
     assert moved > 200, f"the bend did not reach the clip (only {moved}px differ)"
+
+
+# ------------------------------------------------- the plate that is one shot long
+
+
+@needs_ffmpeg
+def test_seeking_past_the_end_of_a_short_plate_still_yields_a_clip(tmp_path):
+    """The bug that killed the first canon run that ever reached the renderer.
+
+    A video plate is normally long enough for several shots, so the cutting plan seeks
+    into it. An animated canon shot is not: `drift_clip` renders it at the shot's own
+    length — 3.03 seconds — and the plan then seeks 6 seconds in for the second shot
+    sharing that plate. ffmpeg decodes no frames and writes a 262-byte file with no
+    duration *without failing*, so the run died much later at the concat with "could
+    not read duration", having already paid for every stage upstream.
+
+    `-vsync cfr` holds the last frame of a source that is merely short. It cannot hold
+    a frame that was never decoded.
+    """
+    from forgecast.render.ffmpeg import (
+        RenderError,
+        ffprobe_duration,
+        normalise_clip,
+        still_to_clip,
+    )
+
+    frame = Image.new("RGB", (640, 360), (40, 30, 30))
+    ImageDraw.Draw(frame).ellipse([(200, 100), (440, 260)], fill=(200, 60, 60))
+    still = tmp_path / "still.png"
+    frame.save(still)
+    source = still_to_clip(still, tmp_path / "short.mp4", 3.0,
+                           width=640, height=360, fps=30)
+    assert ffprobe_duration(source) < 4.0
+
+    out = normalise_clip(source, tmp_path / "cut.mp4", 3.0,
+                         width=640, height=360, seek=6.0, fps=30)
+
+    assert out.stat().st_size > 1000, "a seek past the end produced an empty file"
+    try:
+        assert ffprobe_duration(out) > 1.0
+    except RenderError:  # pragma: no cover - this is the bug, stated plainly
+        raise AssertionError("the clip has no readable duration") from None

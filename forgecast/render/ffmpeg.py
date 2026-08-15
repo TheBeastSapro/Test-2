@@ -442,6 +442,13 @@ def still_to_clip(
     return out_path
 
 
+#: How much of a source has to remain after a seek for the seek to be worth making.
+#: Input-side `-ss` lands on the nearest keyframe at or before the timestamp, so a seek
+#: clamped to the last frame can still leave nothing decodable — a 3.0s clip clamped to
+#: 2.967s wrote the same empty file the clamp was added to prevent.
+SEEK_TAIL = 0.25
+
+
 def normalise_clip(
     src: Path,
     out_path: Path,
@@ -464,6 +471,33 @@ def normalise_clip(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     duration = max(seconds, 0.2)
     rate = resolve_fps(fps)
+
+    # A seek past the end of the source decodes no frames at all, and ffmpeg writes a
+    # 262-byte file with no duration rather than failing — so the run dies later at the
+    # concat, having already paid for everything upstream. `-vsync cfr` below holds the
+    # last frame of a source that is merely *short*; it cannot hold a frame that was
+    # never decoded.
+    #
+    # Reachable whenever a video plate is about as long as one shot, which is exactly
+    # what the canon lane's animated shots are: a drift clip is rendered at its own
+    # shot's length, 3.03s, and the cutting plan seeks 6s into it for the second shot
+    # that shares it. Clamped rather than refused, because the footage that is there is
+    # a perfectly good shot.
+    # A tail rather than a frame. Input-side `-ss` seeks to the nearest keyframe at or
+    # before the timestamp, and clamping to one frame's width off the end can still land
+    # somewhere with nothing decodable after it — measured: a 3.0s clip clamped to 2.967s
+    # produced the same empty file. A quarter of a second always holds frames, and a
+    # source with less than that left to give is not worth seeking into at all.
+    if seek > 0:
+        try:
+            available = ffprobe_duration(src)
+        except RenderError:
+            available = 0.0
+        if available > 0:
+            seek = min(seek, available - SEEK_TAIL)
+            if seek < SEEK_TAIL:
+                seek = 0.0
+
     vf = (
         f"{_punch_crop(punch_in)}"
         f"scale={width}:{height}:force_original_aspect_ratio=increase,"
