@@ -327,3 +327,35 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Before building a heuristic that infers behaviour from data, sample the real data and count — a dozen instances is usually enough to tell a signal from a coincidence. If the count does not support it, do not build it, and do not delete the measurement: write the numbers and the sample size into the module where the heuristic would have gone, with enough specificity that somebody could repeat it. Be suspicious of a threshold you had to tune to make a sample pass; that is the shape of fitting to noise. And treat "I checked and it is not there" as a result to record rather than a dead end to hide, because the alternative is the same investigation done again by someone with less context.
 
 **Principle:** Checking whether the data supports a heuristic is real work whether or not the answer is yes. A negative result left out of the code is an invitation to redo it — and a heuristic built on a signal that is not there is worse than the explicit choice it replaced, because it fails invisibly and looks like intelligence.
+
+### Observation 21: A capability claim can be true of the code and false of the deployment
+
+**Status:** OPEN
+**Date:** 2026-08-15
+**Session context:** Reviewing an application's own copy and finding it promising a feature that cannot work where the application is actually running.
+
+**Skill:** documentation-and-adrs
+**Type:** open-source
+**Phase/Area:** Interface copy that describes what the software can do
+
+**Issue:** Three separate surfaces told the user that a particular operation needed no credentials, because the software falls back to an unauthenticated route. That statement was accurate about the code and false about the machine: the upstream service refuses that route from datacentre addresses, so on any hosted install the feature was present, correctly implemented, and refused every time. The failure mode was the worst kind — a fetch that returned nothing, no error, and copy on the same screen insisting no setup was required. The user's only available conclusion was that they had pasted the wrong thing, which was the one thing that was fine. What made this hard to see is that the copy is *right* in the environment where it was written, so reading the code or running it locally confirms it. I only caught it because I had independently hit the block earlier in the session and recognised the claim when I read it back.
+
+**Suggested improvement:** When copy states that something works, ask where — a claim about capability is implicitly a claim about the environment, and those diverge whenever the software ships to somewhere other than a developer's machine. For any path that depends on an external service tolerating you (unauthenticated scraping, rate-limited endpoints, IP-reputation-sensitive APIs), write the caveat as a *condition* alongside the claim: what to do if nothing comes back, and both fixes. Phrase it conditionally rather than as a prediction, because the code cannot know where it is running and the same build genuinely works elsewhere. And keep the sentence in the module that owns the path rather than on each page: I found three surfaces describing one failure, which is exactly the arrangement where two of them keep saying something the third has stopped saying.
+
+**Principle:** "It works" is a statement about an environment, not about code. Copy written where it is true will be shipped where it is not, and the resulting failure looks like user error — so the environment-dependence belongs beside the claim, phrased as a condition.
+
+### Observation 22: Sweep the rendered output for internal identifiers, not the source
+
+**Status:** OPEN
+**Date:** 2026-08-15
+**Session context:** Looking for internal names leaking into a user interface, across pages whose templates I had not read.
+
+**Skill:** frontend-ui-engineering
+**Type:** open-source
+**Phase/Area:** Reviewing an interface for polish
+
+**Issue:** Enum values, tool names and pipeline slugs were reaching users verbatim — machine identifiers with underscores, sitting in tables and prose beside sentences in plain English. I had already fixed several by reading templates, which found the ones I happened to look at. What found the rest was mechanical: render each page in a browser, take `document.body.innerText`, and regex it for `snake_case`. That is a two-line check, it covers every page including the ones nobody thought to inspect, and it reads what the user sees rather than what the template says — so it catches identifiers that arrive through data, through JavaScript, or through a helper three layers down, none of which a source grep for the template would find. It also produced a clean signal on pages that were fine, which is what let me stop looking. One hit it returned was on a page I would not have reviewed at all.
+
+**Suggested improvement:** Add a rendered-output sweep to interface review: load each page, extract the visible text, and search it for the shapes internal names take — `snake_case`, `SCREAMING_CASE`, `camelCase` in prose, bare enum values, class or module names. Do it against the running application rather than the templates, because the leak is often in data rather than markup. Then decide each hit deliberately rather than renaming on sight: an identifier is correct where the subject *is* the identifier — a tool-call log should name the tool — and wrong where the subject is the product. Where you do translate, put the mapping in one place and have the live-updating parts of the page use the same one, or the page will render the friendly word and then replace it with the raw one on its next refresh.
+
+**Principle:** What leaks into an interface is visible in the output and often invisible in the source. Grep what the user sees.
