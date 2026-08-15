@@ -29,6 +29,24 @@ keeps in-shot movement modest.
 """
 import argparse, json, os
 
+
+ICON_SVG = {
+    # Black stick figure. Both references use it as SCALE and as victim, and it
+    # reacts - it is never a static pictogram sitting on the frame.
+    "figure": ('<g><circle cx="0" cy="-96" r="19" fill="{c}"/>'
+               '<line x1="0" y1="-77" x2="0" y2="-26" stroke="{c}" stroke-width="12"/>'
+               '<line x1="0" y1="-64" x2="-26" y2="-38" stroke="{c}" stroke-width="11"/>'
+               '<line x1="0" y1="-64" x2="26" y2="-38" stroke="{c}" stroke-width="11"/>'
+               '<line x1="0" y1="-26" x2="-20" y2="10" stroke="{c}" stroke-width="11"/>'
+               '<line x1="0" y1="-26" x2="20" y2="10" stroke="{c}" stroke-width="11"/></g>'),
+    # Red annotation arrow. Red is RESERVED for annotation in both references.
+    "arrow": ('<g><line x1="0" y1="0" x2="-150" y2="66" stroke="#D62020" stroke-width="13"/>'
+              '<polygon points="-150,66 -104,44 -108,84" fill="#D62020"/></g>'),
+    # Red X over a silhouette: danger, death or absence.
+    "redx": ('<g><line x1="-52" y1="-52" x2="52" y2="52" stroke="#D62020" stroke-width="16"/>'
+             '<line x1="52" y1="-52" x2="-52" y2="52" stroke="#D62020" stroke-width="16"/></g>'),
+}
+
 HEAD = '''<!doctype html>
 <html lang="en">
   <head>
@@ -113,6 +131,19 @@ def build(sheet, out_html):
         if s.get("asset"):
             gnd = "" if white else " grounded"
             html.append(f'        <img id="{sid}c" class="cut{gnd}" src="public/{s["asset"]}" />')
+        for j, ic in enumerate(s.get("icons", []), 1):
+            iid = f"{sid}i{j}"
+            colour = "#111111" if white else "#FFFFFF"
+            body = ICON_SVG[ic["kind"]].replace("{c}", colour)
+            html.append(f'        <svg class="ov" id="{iid}"><g transform="translate('
+                        f'{round(ic["x"]*1920)},{round(ic["y"]*1080)}) scale({ic.get("scale",1)})">'
+                        f'{body}</g></svg>')
+            at = ic.get("at", t0)
+            js.append(f'      tl.fromTo("#{iid}", {{autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}}, '
+                      f'{{autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}}, {at});')
+            if ic.get("react"):
+                js.append(f'      tl.to("#{iid}", {{rotation:{ic["react"]}, x:"+={ic.get("dx",0)}", '
+                          f'duration:0.42, ease:"power3.out"}}, {ic["react_at"]});')
         html.append('      </div>')
 
         # HELD SHOTS. Vu is under 5% change for 30.8% of his runtime while still

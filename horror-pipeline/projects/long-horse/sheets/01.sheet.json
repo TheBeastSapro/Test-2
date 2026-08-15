@@ -32,6 +32,15 @@
     0.72,
     0.58,
     0.4
+   ],
+   "icons": [
+    {
+     "kind": "redx",
+     "x": 0.3,
+     "y": 0.44,
+     "scale": 3.0,
+     "at": 2.7
+    }
    ]
   },
   {
@@ -97,7 +106,16 @@
     0.6,
     0.36
    ],
-   "hold": false
+   "hold": false,
+   "icons": [
+    {
+     "kind": "figure",
+     "x": 0.3,
+     "y": 0.86,
+     "scale": 2.86,
+     "at": 9.1
+    }
+   ]
   },
   {
    "t0": 10.6,
@@ -114,7 +132,19 @@
     0.58,
     0.55
    ],
-   "hold": false
+   "hold": false,
+   "icons": [
+    {
+     "kind": "figure",
+     "x": 0.26,
+     "y": 0.88,
+     "scale": 3.75,
+     "at": 11.0,
+     "react": -16,
+     "dx": -30,
+     "react_at": 12.1
+    }
+   ]
   },
   {
    "t0": 12.8,
@@ -130,7 +160,19 @@
    "t0": 14.64,
    "t1": 16.6,
    "ground": "plate:art-skull.jpg",
-   "hold": false
+   "hold": false,
+   "icons": [
+    {
+     "kind": "figure",
+     "x": 0.22,
+     "y": 0.9,
+     "scale": 4.59,
+     "at": 15.1,
+     "react": -64,
+     "dx": -120,
+     "react_at": 15.9
+    }
+   ]
   },
   {
    "t0": 16.6,
@@ -153,7 +195,16 @@
     0.55,
     0.86
    ],
-   "hold": true
+   "hold": true,
+   "icons": [
+    {
+     "kind": "arrow",
+     "x": 0.62,
+     "y": 0.52,
+     "scale": 2.64,
+     "at": 18.5
+    }
+   ]
   },
   {
    "t0": 20.44,
@@ -239,16 +290,25 @@
    "ground": "white",
    "asset": "cut-head-branches.png",
    "from_": [
-    0.66,
+    0.76,
     0.56,
     0.7
    ],
    "to": [
-    0.66,
+    0.76,
     0.55,
     0.76
    ],
-   "hold": true
+   "hold": true,
+   "icons": [
+    {
+     "kind": "figure",
+     "x": 0.24,
+     "y": 0.84,
+     "scale": 2.4,
+     "at": 31.4
+    }
+   ]
   },
   {
    "t0": 32.6,
@@ -273,12 +333,12 @@
    "ground": "white",
    "asset": "cut-neck-zigzag.png",
    "from_": [
-    0.6,
+    0.79,
     0.52,
     0.84
    ],
    "to": [
-    0.66,
+    0.79,
     0.52,
     0.92
    ],
@@ -307,12 +367,12 @@
    "ground": "white",
    "asset": "cut-stipple.png",
    "from_": [
-    0.63,
+    0.79,
     0.54,
     0.86
    ],
    "to": [
-    0.63,
+    0.79,
     0.53,
     0.94
    ],
@@ -324,22 +384,32 @@
    "ground": "white",
    "asset": "cut-neck-zigzag.png",
    "from_": [
-    0.62,
+    0.79,
     0.53,
     0.9
    ],
    "to": [
-    0.62,
+    0.79,
     0.53,
     1.0
    ],
-   "hold": false
+   "hold": false,
+   "icons": []
   },
   {
    "t0": 48.0,
    "t1": 51.0,
    "ground": "plate:art-heads.jpg",
-   "hold": true
+   "hold": true,
+   "icons": [
+    {
+     "kind": "figure",
+     "x": 0.78,
+     "y": 0.88,
+     "scale": 3.22,
+     "at": 48.8
+    }
+   ]
   },
   {
    "t0": 51.0,
@@ -362,7 +432,16 @@
    "t0": 54.1,
    "t1": 57.4,
    "ground": "plate:art-skull.jpg",
-   "hold": true
+   "hold": true,
+   "icons": [
+    {
+     "kind": "figure",
+     "x": 0.8,
+     "y": 0.88,
+     "scale": 3.6,
+     "at": 54.6
+    }
+   ]
   },
   {
    "t0": 57.4,
