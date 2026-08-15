@@ -187,9 +187,16 @@ def test_what_only_claude_can_do_is_stated_rather_than_hidden(client):
     chatgpt = next(e for e in client.get("/api/agent/prefs").json()["engines"]
                    if e["key"] == "chatgpt")
     limits = "\n".join(chatgpt["limits"]).lower()
-    # The toggle that has no effect on this backend, and the tool it is never given.
+    # The toggle that has no effect on this backend, and the thing it can never do.
     assert "confirm calls" in limits
-    assert "decide_gate" in limits
+    # Asserted as the capability, not as `decide_gate`. The tool's name was the proxy
+    # this used to check, and it broke when the copy stopped printing an identifier from
+    # `agent/tools.py` at somebody reading a settings page — which is the copy getting
+    # better, not the limitation going unstated. What has to be true is that a reader
+    # learns this backend cannot approve a gate for them; how the sentence says it is
+    # the copy's business.
+    assert "approve a gate" in limits
+    assert "real spend" in limits
     assert engines.BY_KEY["claude"].limits == []
 
 
