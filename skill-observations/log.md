@@ -359,3 +359,35 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a rendered-output sweep to interface review: load each page, extract the visible text, and search it for the shapes internal names take — `snake_case`, `SCREAMING_CASE`, `camelCase` in prose, bare enum values, class or module names. Do it against the running application rather than the templates, because the leak is often in data rather than markup. Then decide each hit deliberately rather than renaming on sight: an identifier is correct where the subject *is* the identifier — a tool-call log should name the tool — and wrong where the subject is the product. Where you do translate, put the mapping in one place and have the live-updating parts of the page use the same one, or the page will render the friendly word and then replace it with the raw one on its next refresh.
 
 **Principle:** What leaks into an interface is visible in the output and often invisible in the source. Grep what the user sees.
+
+### Observation 23: Render the intermediate representation, not just the output
+
+**Status:** OPEN
+**Date:** 2026-08-15
+**Session context:** Building a shape detector whose output feeds a visual effect, where two plausible implementations were both wrong on real inputs.
+
+**Skill:** debugging-and-error-recovery
+**Type:** open-source
+**Phase/Area:** Verifying a computed intermediate before anything consumes it
+
+**Issue:** I needed to identify which pixels of a shape were its appendages. The first implementation walked the shape's skeleton from each free end back to the first junction — a standard, correct-sounding decomposition. Its summary statistics looked healthy: it reported three regions on one input, one on another, plausible sizes. Only when I tinted each detected region on the image and looked did I see it had found a single *finger* of a claw and missed both arms entirely, because an arm ending in three fingers has the fingers as branches and the arm as an internal segment. The second implementation — threshold the shape by thickness — also produced believable counts, and the picture showed why it was wrong too: every silhouette has a thin rim, so the rim connected both arms into one region. Neither failure was visible in the numbers. Both were obvious in about a second once drawn. The eventual method was found by testing the *third* idea against the picture before building anything on it.
+
+**Suggested improvement:** When a step computes a structured intermediate — a segmentation, a clustering, a parse tree, a matched set — render it before writing the code that consumes it, and render it *on real inputs* rather than on a fixture built to match your mental model. For anything spatial, tint the regions and overlay the anchors on the source image; the check costs a few lines and it is the only view in which "found three regions" and "found the right three regions" are different statements. Summary counts are compatible with almost any wrong answer, so treat them as a smoke test rather than as evidence. And when the picture contradicts the method, prefer changing the method to tuning it: both wrong versions here had parameters that could be adjusted, and no setting of them would have been right.
+
+**Principle:** A count tells you the algorithm ran. A picture tells you what it found. For a structured intermediate those are different questions, and only the second one is the one you care about.
+
+### Observation 24: Building on an assumption is what finally tests it
+
+**Status:** OPEN
+**Date:** 2026-08-15
+**Session context:** Starting a feature that depended on inputs being a particular kind of thing, and discovering that half of them were not.
+
+**Skill:** doubt-driven-development
+**Type:** open-source
+**Phase/Area:** Beginning work that rests on an earlier classification
+
+**Issue:** A pipeline I had built classified its inputs into two kinds and treated them differently. The classifier used a cheap proxy available before the data was fetched, and I had noted in its own docstring that the proxy was a heuristic. It shipped, the tests passed, and the outputs were plausible. Weeks later I began a feature that needed one of those kinds specifically — and the first thing that feature does is examine the data closely. Within minutes it was obvious that a third of the inputs classified as kind A were kind B: the proxy separated them by a property both kinds happen to share. Rendering one showed the consequence immediately, and it was ugly and had been shipping the whole time. The new feature did not cause the bug or reveal it by accident; it revealed it because building on a classification is the first activity that actually depends on the classification being right. Everything before that had only depended on it being *plausible*.
+
+**Suggested improvement:** When starting work that rests on an existing classification, inference, or heuristic — especially one you wrote and labelled as approximate — spend the first few minutes verifying it on real data rather than assuming the earlier self did. Treat a docstring that says "this is a heuristic" as an open ticket rather than as a disclosure that settles the matter. And when the new work needs to look closely at data an earlier stage only glanced at, run that closer look across the whole input set first: the cheap proxy is usually right on the examples that motivated it and wrong on a class nobody sampled. Fix the classification before building on it — a feature layered on a wrong split inherits the wrongness and makes it harder to see.
+
+**Principle:** A heuristic is only tested by something that depends on it being correct rather than merely reasonable. Until then it is an assumption with a passing test suite, and the moment you start building on it is the cheapest moment you will ever have to check it.
