@@ -49,11 +49,11 @@
       <audio id="vo" class="clip" data-start="0" data-duration="62" src="public/vo.wav"></audio>
 
       <div id="s01" class="clip stage" data-start="0.0" data-duration="2.48" data-track-index="1">
-        <img id="s01p" class="plate" src="public/plate-ad29b24fa1b0.jpg" />
+        <img id="s01p" class="plate" src="public/art-heads.jpg" />
       </div>
       <div id="s02" class="clip stage" data-start="2.48" data-duration="1.44" data-track-index="1">
         <img id="s02p" class="plate" src="public/plate-e1c542d3f5a4.jpg" />
-        <img id="s02c" class="cut grounded" src="public/cut-stipple.png" />
+        <img id="s02c" class="cut grounded" src="public/cut-head-branches.png" />
         <svg class="ov" id="s02i1"><g transform="translate(576,475) scale(3.0)"><g><line x1="-52" y1="-52" x2="52" y2="52" stroke="#D62020" stroke-width="16"/><line x1="52" y1="-52" x2="-52" y2="52" stroke="#D62020" stroke-width="16"/></g></g></svg>
       </div>
       <div id="s03" class="clip stage white" data-start="3.92" data-duration="1.68" data-track-index="1">
@@ -65,6 +65,7 @@
       </div>
       <div id="s05" class="clip stage" data-start="6.76" data-duration="1.64" data-track-index="1">
         <img id="s05p" class="plate" src="public/plate-48f4949e3e97.jpg" />
+        <img id="s05c" class="cut grounded" src="public/cut-stipple.png" />
       </div>
       <div id="s06" class="clip stage" data-start="8.4" data-duration="2.2" data-track-index="1">
         <img id="s06p" class="plate" src="public/plate-bcabf2771de4.jpg" />
@@ -165,19 +166,21 @@
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
       gsap.set(".pop", {autoAlpha:0});
-      gsap.set("#s01p", {scale:1.05});
-      tl.to("#s01p", {scale:1.11, duration:2.48, ease:"none"}, 0.0);
+      gsap.set("#s01p", {scale:1.22});
+      tl.to("#s01p", {scale:1.1, duration:2.48, ease:"none"}, 0.0);
       tl.fromTo("#s02i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 2.7);
       gsap.set("#s02p", {scale:1.12});
       tl.to("#s02p", {scale:1.06, duration:1.44, ease:"none"}, 2.48);
-      gsap.set("#s02c", {xPercent:-50, yPercent:-50, x:1421, y:648, scale:0.34});
-      tl.to("#s02c", {x:1382, y:626, scale:0.4, duration:1.44, ease:"none"}, 2.48);
+      gsap.set("#s02c", {xPercent:-50, yPercent:-50, x:1190, y:583, scale:0.62});
+      tl.to("#s02c", {x:1152, y:572, scale:0.7, duration:1.44, ease:"none"}, 2.48);
       gsap.set("#s03c", {xPercent:-50, yPercent:-50, x:960, y:648, scale:0.62});
       tl.to("#s03c", {x:960, y:626, scale:0.66, duration:1.68, ease:"none"}, 3.92);
       gsap.set("#s04p", {scale:1.04});
-      gsap.set("#s04c", {xPercent:-50, yPercent:-50, x:576, y:454, scale:0.3});
+      gsap.set("#s04c", {xPercent:-50, yPercent:-50, x:691, y:497, scale:0.52});
       gsap.set("#s05p", {scale:1.14});
       tl.to("#s05p", {scale:1.07, duration:1.64, ease:"none"}, 6.76);
+      gsap.set("#s05c", {xPercent:-50, yPercent:-50, x:1306, y:562, scale:0.58});
+      tl.to("#s05c", {x:1267, y:551, scale:0.64, duration:1.64, ease:"none"}, 6.76);
       tl.fromTo("#s06i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 9.1);
       gsap.set("#s06p", {scale:1.06});
       tl.to("#s06p", {scale:1.13, duration:2.2, ease:"none"}, 8.4);

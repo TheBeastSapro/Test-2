@@ -7,9 +7,9 @@ from the v4 script. Four renders, each measured against Vu's publish cut.*
 
 | metric | this cut | Vu's publish cut | house bar | verdict |
 |---|---|---|---|---|
-| motion mean | 27.6% | 26.4% | >= 22% | PASS |
-| motion median | 16.3% | 15.3% | - | - |
-| std dev | 30.9 | 28.1 | - | - |
+| motion mean | 28.8% | 26.4% | >= 22% | PASS |
+| motion median | 16.7% | 15.3% | - | - |
+| std dev | 31.1 | 28.1 | - | - |
 | seconds under 5% | 23.0% | 30.8% | - | - |
 | seconds over 40% | 24.6% | 26.7% | - | - |
 | static runs >= 4s | 0 | 0 | 0 | PASS |
@@ -54,7 +54,35 @@ range that the source never had.
 | v2 | 31.1 | 18.6 | 27.9 | **1.6** | 24.6 | cuts added, stillness destroyed |
 | v3 | 27.6 | 16.0 | 30.2 | 21.3 | 24.6 | held shots restored |
 | v4 | 27.6 | 16.3 | 30.9 | 23.0 | 24.6 | art shots, subjects in the opening |
+| v5 | - | - | - | - | - | icons added, but at ~10% frame height they read as specks |
+| v6 | - | - | - | - | - | icons scaled 2.2-3.4x; label collisions cleared |
+| v7 | 28.0 | 16.3 | 30.7 | 23.0 | 24.6 | red X moved to the beat it actually means |
+| v8 | 28.8 | 16.7 | 31.1 | 23.0 | 24.6 | cold open rebuilt: creature on frame one |
 | Vu | 26.4 | 15.3 | 28.1 | 30.8 | 26.7 | |
+
+## The cold open
+
+v7 still opened on 2.5 seconds of empty wood plate. House rule is first fact at
+0:01, and the chat log is blunt that the hook IS the retention document: a 14
+second static opening was measured at 0-3% frame change and modelled to cost
+45-55% of viewers by 0:30.
+
+v8 opens full-frame on the creature artwork, pushing out rather than in so it
+reads as an arrival, then cuts to the red X crossing out the threat on "cannot
+hurt you", a white-canvas beat on "not good news", the basement approach with a
+stick figure that appears and then reacts, a deliberately held beat, and the
+reveal at 15s with the figure carrying scale.
+
+## Still open
+
+- **seconds under 5%: 23.0 against Vu's 30.8.** More of the runtime should sit
+  genuinely still. Adding held shots is the lever and it is cheap.
+- **LRA 2.80.** Upstream VO problem, diagnosed above.
+- **The sheet bakes resolved times.** Anchors were resolved once and the seconds
+  written into the sheet, which is exactly what the build packet says never to
+  do. A VO regen currently means re-authoring the sheet rather than re-running
+  the resolver. This is the next structural fix and it is what makes the
+  section survive a pickup.
 
 v2 is the instructive one. Adding cuts alone hit the change target and
 collapsed stillness to 1.6%, which is idle wobble arriving from the opposite

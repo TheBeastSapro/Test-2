@@ -6,10 +6,10 @@
   {
    "t0": 0.0,
    "t1": 2.48,
-   "ground": "plate:plate-ad29b24fa1b0.jpg",
+   "ground": "plate:art-heads.jpg",
    "plate_scale": [
-    1.05,
-    1.11
+    1.22,
+    1.1
    ],
    "hold": false
   },
@@ -22,16 +22,16 @@
     1.06
    ],
    "hold": false,
-   "asset": "cut-stipple.png",
+   "asset": "cut-head-branches.png",
    "from_": [
-    0.74,
-    0.6,
-    0.34
+    0.62,
+    0.54,
+    0.62
    ],
    "to": [
-    0.72,
-    0.58,
-    0.4
+    0.6,
+    0.53,
+    0.7
    ],
    "icons": [
     {
@@ -71,14 +71,14 @@
    "hold": true,
    "asset": "cut-neck-zigzag.png",
    "from_": [
-    0.3,
-    0.42,
-    0.3
+    0.36,
+    0.46,
+    0.52
    ],
    "to": [
-    0.34,
-    0.44,
-    0.36
+    0.4,
+    0.48,
+    0.6
    ]
   },
   {
@@ -89,7 +89,18 @@
     1.14,
     1.07
    ],
-   "hold": false
+   "hold": false,
+   "asset": "cut-stipple.png",
+   "from_": [
+    0.68,
+    0.52,
+    0.58
+   ],
+   "to": [
+    0.66,
+    0.51,
+    0.64
+   ]
   },
   {
    "t0": 8.4,
