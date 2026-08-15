@@ -187,16 +187,10 @@ def _other_way_to_read_a_channel() -> str:
     not, that is the fix worth naming. Read from the store rather than assumed, because
     telling somebody to connect something they already connected is its own dead end.
     """
-    from . import connectors
-
-    try:
-        rows = connectors.Store.load().listing()
-    except Exception:                                              # pragma: no cover
+    linked = _connected("nexlev")
+    if linked is None:
         return ""
-    row = next((item for item in rows if item.get("key") == "nexlev"), None)
-    if row is None:
-        return ""
-    if row.get("connected"):
+    if linked:
         return ("NexLev is connected — read the channel with its tools instead of "
                 "reporting this as a dead end.")
     # The same sentence the research and styles pages show, from the module that owns
@@ -205,6 +199,40 @@ def _other_way_to_read_a_channel() -> str:
     from ..research.keyless import BLOCKED_NOTE
 
     return f"Without a YouTube API key this reads with yt-dlp. {BLOCKED_NOTE}"
+
+
+def _connected(key: str) -> bool | None:
+    """Whether one connector is linked. `None` when the store cannot be read.
+
+    Three tools now change what they suggest based on this, so the lookup is one
+    function: a copy per caller is a copy that keeps saying "connect NexLev" after
+    somebody has.
+    """
+    from . import connectors
+
+    try:
+        rows = connectors.Store.load().listing()
+    except Exception:                                              # pragma: no cover
+        return None
+    row = next((item for item in rows if item.get("key") == key), None)
+    return bool(row.get("connected")) if row else None
+
+
+def _how_to_fetch_comments() -> str:
+    """Where a video's comments come from on this install.
+
+    The audience backlog is this format's growth loop — the reference asks for requests
+    in its outro and the requests become videos — and nothing in this app can fetch a
+    comment. yt-dlp is not a fallback here even where it works: comments are not on the
+    listing page it reads.
+    """
+    linked = _connected("nexlev")
+    if linked:
+        return ("NexLev is connected — its video-comments tool is the fetch, then hand "
+                "the rows back here.")
+    return ("Nothing here can fetch comments: they are not on the page yt-dlp reads. "
+            "Connect NexLev in Settings for its video-comments tool, or paste the "
+            "comments in directly.")
 
 
 class Studio:
@@ -1434,8 +1462,15 @@ class Studio:
 
         rows = list(comments or [])
         if not rows:
+            # Names the tool that fetches them when there is one connected, for the
+            # same reason the channel-read failure does: "fetch them first" is correct
+            # and leaves the agent to work out how, and the how is different depending
+            # on what this account has linked. yt-dlp cannot help here at all — YouTube
+            # refuses it from a datacentre address, and comments are not on the listing
+            # page it reads even when it works.
             return {"error": "No comments passed. Fetch them first, then hand them "
-                             "here — this tallies, it does not fetch."}
+                             "here — this tallies, it does not fetch.",
+                    "how": _how_to_fetch_comments()}
         backlog = read(rows)
         return {
             **backlog.as_dict(),

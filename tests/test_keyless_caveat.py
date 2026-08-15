@@ -97,3 +97,62 @@ def test_no_tool_name_is_shown_where_a_sentence_belongs(client: TestClient):
 
     assert "decide_gate" not in page
     assert "never approve a gate for you" in page
+
+
+# ------------------------------------------------------------ what can fetch comments
+
+
+def _store(monkeypatch, *, connected: bool):
+    from forgecast.agent import connectors
+
+    monkeypatch.setattr(connectors.Store, "load",
+                        classmethod(lambda cls, path=None: connectors.Store(path=None)))
+    monkeypatch.setattr(connectors.Store, "listing",
+                        lambda self, **kw: [{"key": "nexlev", "connected": connected}])
+
+
+def test_the_comment_miner_says_what_can_actually_fetch_them(monkeypatch):
+    """The audience backlog is this format's growth loop — the reference asks for
+    requests in its outro and the requests become videos — and nothing in this app can
+    fetch a comment. "Fetch them first" is correct and leaves the agent to work out how.
+
+    yt-dlp is not a fallback here even where it is not blocked: comments are not on the
+    listing page it reads.
+    """
+    from forgecast.agent import studio
+
+    _store(monkeypatch, connected=False)
+
+    said = studio._how_to_fetch_comments()
+
+    assert "not on the page yt-dlp reads" in said
+    assert "NexLev" in said
+
+
+def test_when_nexlev_is_linked_the_answer_is_use_it(monkeypatch):
+    from forgecast.agent import studio
+
+    _store(monkeypatch, connected=True)
+
+    said = studio._how_to_fetch_comments()
+
+    assert "is connected" in said
+    assert "Connect NexLev in Settings" not in said
+
+
+def test_the_connector_lookup_is_one_function_not_one_per_caller(monkeypatch):
+    """Three tools change their suggestion on this. A copy per caller is a copy that
+    keeps saying "connect NexLev" after somebody has."""
+    import inspect
+
+    from forgecast.agent import studio
+
+    _store(monkeypatch, connected=True)
+    assert studio._connected("nexlev") is True
+    assert studio._connected("nothing-by-that-name") is None
+
+    # Both callers go through it rather than reading the store themselves.
+    for helper in (studio._how_to_fetch_comments, studio._other_way_to_read_a_channel):
+        source = inspect.getsource(helper)
+        assert "_connected(" in source
+        assert "Store.load" not in source
