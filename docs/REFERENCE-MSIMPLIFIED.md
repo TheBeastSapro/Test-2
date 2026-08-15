@@ -164,6 +164,13 @@ background plates. Verified three ways:
   plate behind them. The *backgrounds* carry the generation artefacts — smeared texture,
   incoherent architecture — and the creatures do not.
 
+**Not every image on a page is a cutout, and the shape does not tell you which.** Of
+seven assets pulled off three wikis, three are transparent PNGs of the creature alone
+and four are finished *scene* photographs — Amber's is a 2265x2265 opaque picture of it
+standing on a road at night. Both kinds are square, so aspect ratio cannot separate
+them; transparency can, and by a mile (0.000 against 0.565–0.767). A pipeline that
+treats a scene shot as a cutout composites a photograph onto wallpaper.
+
 So the format's asset pipeline is **retrieval, not generation**, for the thing the video
 is actually about. Generation is used only for the plate it stands on.
 
@@ -197,10 +204,17 @@ the source material carries no signal to choose them from: across nine real crea
 pages on three wikis only three contain any weather word and each appears exactly once,
 one "fog" in Seek's 13,471 characters. That is recorded rather than retried.
 
-**Still open:** every move here is rigid. Amber's arm moving independently of its torso
-needs the cut-out segmented into parts, which nothing in this tree can do — it is a
-part-segmentation model, not a filter, and it is the honest boundary of what layer
-motion reaches without one.
+**The limb warp is built too.** `layers/parts` finds a creature's arms from the alpha —
+a limb is a thin run of skeleton attached to a thick body — and `layers/warp` rotates
+each about its own anchor, weighted per pixel, so the tip swings and the shoulder does
+not. No part-segmentation model was needed and one would have been the wrong tool:
+those are trained on people and animals, and Seek is a black slime with two claws.
+Measured against the same clip without it, at matched frames with drift and lean off:
+the arms differ by four to nine thousand pixels and the body by one.
+
+**Still open:** nothing here knows what an arm *is* — only that something thin sticks
+out of something thick, so a creature drawn with its limbs folded against its body has
+none by this definition. That is a smaller gap than it sounds and it is a real one.
 
 The ration itself was the harder bug. `edit/segment.py` marked motion onto the story
 beat, which opens on a wide — so the two shots it marked were the two with no cut-out
