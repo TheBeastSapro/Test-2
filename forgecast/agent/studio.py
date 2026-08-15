@@ -199,10 +199,12 @@ def _other_way_to_read_a_channel() -> str:
     if row.get("connected"):
         return ("NexLev is connected — read the channel with its tools instead of "
                 "reporting this as a dead end.")
-    return ("A hosted install usually cannot read YouTube directly: without a YouTube "
-            "API key this falls back to yt-dlp, and YouTube blocks that from "
-            "datacentre addresses. Connecting NexLev in Settings reads the same "
-            "numbers through an API, or set a YouTube API key.")
+    # The same sentence the research and styles pages show, from the module that owns
+    # the path it is about. Three surfaces describe this failure and three copies is how
+    # two of them come to say something the third has stopped saying.
+    from ..research.keyless import BLOCKED_NOTE
+
+    return f"Without a YouTube API key this reads with yt-dlp. {BLOCKED_NOTE}"
 
 
 class Studio:

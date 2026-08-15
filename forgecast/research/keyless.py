@@ -76,6 +76,20 @@ VIDEO_SOURCE_NOTE = (
     "label, so they carry no range."
 )
 
+# Where this path does not work, and it is not a small exception. yt-dlp reads the same
+# public page a browser does, and YouTube answers a datacentre address with "Sign in to
+# confirm you're not a bot" — so on any hosted install the keyless route is present,
+# installed, correct, and refused. The same build on a laptop reads fine.
+#
+# One sentence, in the module that owns the path, because three pages offer it and three
+# copies of a caveat is how two of them come to say something the third has stopped
+# saying. It is a condition rather than a fact: this cannot know where it is running, so
+# it says what to do if nothing comes back rather than predicting that nothing will.
+BLOCKED_NOTE = (
+    "On a hosted or datacentre install YouTube usually blocks that read — if nothing "
+    "comes back, connect NexLev in Settings or set a YouTube API key."
+)
+
 # One request for the whole listing, so this is the only timeout that matters. Generous
 # because a 200-video channel on a slow connection is a legitimately slow read, and the
 # failure mode of being too eager is a research desk that times out on big channels —

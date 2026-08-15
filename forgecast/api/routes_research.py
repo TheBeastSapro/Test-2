@@ -125,11 +125,18 @@ def research_page(request: Request, session: Session = Depends(get_session)) -> 
             # comes back as `via` with the results and the page prints it there, so
             # using it here as well put the same paragraph on screen twice — once
             # above the button and once below it.
+            #
+            # `BLOCKED_NOTE` is appended because "no API key needed" is true about the
+            # capability and wrong about this machine: YouTube refuses that read from a
+            # datacentre address, so on a hosted install this box promised a fetch that
+            # cannot happen and the operator found out by getting nothing back and
+            # going to check their link. It comes from `keyless` rather than being
+            # written here, because two other surfaces say the same thing.
             "fetch_note": (
                 "" if settings.youtube_api_key
                 else "No API key needed: the public channel page is read instead, so "
                      "publish dates are approximate and a video whose verdict turns on "
-                     "one comes back with a range."
+                     "one comes back with a range. " + keyless.BLOCKED_NOTE
                 if keyless_ready
                 else keyless_fix
             ),

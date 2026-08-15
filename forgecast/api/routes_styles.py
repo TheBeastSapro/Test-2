@@ -73,6 +73,7 @@ def styles_page(
     session: Session = Depends(get_session),
     selected: str = "",
 ) -> HTMLResponse:
+    from ..research import keyless
     from .routes_web import TEMPLATES, shell
 
     user = optional_user(request, session)
@@ -97,6 +98,11 @@ def styles_page(
         "styles.html",
         {
             **shell(session, user, "styles", channels=channels),
+            # Learning from links downloads the videos, which is the same yt-dlp read
+            # the research desk uses and the same one YouTube refuses from a datacentre
+            # address. Uploading files is unaffected — that is why the caveat sits
+            # under the link box rather than at the top of the page.
+            "links_note": keyless.BLOCKED_NOTE,
             "styles": rows,
             "chosen": chosen,
             # Refinements are stored on the style rather than recomputed, so the page

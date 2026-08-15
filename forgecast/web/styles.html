@@ -90,6 +90,9 @@
 
   <label for="links" class="mt-6">Or links, one per line</label>
   <textarea id="links" rows="2"></textarea>
+  {# Under the box it applies to. Uploading files above works on any install; only the
+     link path goes through the read YouTube refuses from a datacentre address. #}
+  <p class="sub">{{ links_note }}</p>
 
   <ul class="refs" id="reflist"></ul>
 

@@ -108,8 +108,12 @@ ENGINES: list[Engine] = [
         limits=[
             "Runs each turn non-interactively, so it cannot stop to ask before editing "
             "a file — “Confirm calls” has no effect on this backend.",
-            "It is never given decide_gate: approving a gate releases real spend and "
-            "this backend has no way to pause and ask you first.",
+            # Named as the thing it does, not as the tool that does it. `decide_gate`
+            # is an identifier from `agent/tools.py`, and a reader on this page has no
+            # way to know that — what they need to know is that this backend cannot
+            # approve gates, which is a sentence about the product.
+            "It can never approve a gate for you: approving one releases real spend, "
+            "and this backend has no way to pause and ask first.",
             "Needs OpenAI's Codex CLI installed once (npm install -g @openai/codex). "
             "Claude needs nothing new.",
         ],
