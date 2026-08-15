@@ -236,3 +236,42 @@ def test_the_contact_point_is_reported_relative_to_the_image_centre(assets, tmp_
     assert abs(dx) < width * 0.05, "the contact point should sit near the centre line"
     assert dy > 0, "the feet are below the image centre"
     assert Image.open(made["subject"]).size == (width, height)
+
+
+# ------------------------------------------------------- subject or already a shot
+#
+# Found while starting the limb warp: half the assets I had been treating as cut-outs
+# are not cut-outs. `Asset.is_portrait_crop` decides from the dimensions, and both
+# shapes are square — Amber's artwork on doctor-nowhere-creatures is a 2265x2265
+# *photograph* of the creature on a road at night, fully opaque. The compositor scaled
+# that whole picture and pasted it onto a generated plate, which rendered a photo stuck
+# on wallpaper, and had done since the lane was built.
+
+
+def test_transparency_and_not_shape_decides_what_is_a_cut_out(tmp_path):
+    """Measured across seven real assets off three wikis: the three scene shots are
+    0.000 transparent and the three cut-outs are 0.565, 0.693 and 0.767. Nothing is
+    tuned — the threshold only has to sit in an enormous gap."""
+    square_photo = Image.new("RGB", (600, 600), (40, 40, 50))
+    cutout = Image.new("RGBA", (600, 600), (0, 0, 0, 0))
+    ImageDraw.Draw(cutout).ellipse([(200, 100), (400, 500)], fill=(200, 40, 40, 255))
+
+    photo_path = tmp_path / "photo.png"
+    cut_path = tmp_path / "cut.png"
+    square_photo.save(photo_path)
+    cutout.save(cut_path)
+
+    assert layers.is_cutout(cut_path)
+    assert not layers.is_cutout(photo_path)
+    # Both are square, so the shape test cannot tell them apart — which is the bug.
+    assert square_photo.size == cutout.size
+
+
+def test_an_image_saved_with_alpha_but_fully_opaque_is_still_a_shot(tmp_path):
+    """RGBA is not the test either. A scene exported as a PNG with an alpha channel it
+    never uses is a whole shot with four channels."""
+    opaque = Image.new("RGBA", (400, 400), (30, 30, 30, 255))
+    path = tmp_path / "opaque_rgba.png"
+    opaque.save(path)
+
+    assert not layers.is_cutout(path)

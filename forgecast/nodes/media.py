@@ -525,7 +525,19 @@ def _stand_subject(ctx: NodeContext, shot: dict, slug: str, subject: Path,
     composite fails. A cut-out on black is a poor shot and a missing shot is a hole; the
     poor shot is recoverable and says so in the log.
     """
-    from ..layers.shot import place
+    from ..layers.shot import is_cutout, place
+
+    # The plan's `composite` is a guess from the file's dimensions, made before anything
+    # was downloaded. Now the pixels are here, and they are the answer: an asset with no
+    # transparency is not a subject, it is already a whole shot, and standing it on a
+    # plate renders a photograph pasted onto wallpaper. That is what Amber's artwork did
+    # — a 2265x2265 opaque picture of the creature on a road at night, square, so the
+    # shape test called it a cut-out.
+    if shot.get("composite") and not is_cutout(subject):
+        ctx.log(f"{slug}: {shot.get('asset')} has no transparency — it is a finished "
+                f"shot rather than a cut-out, so it is used as it is",
+                level="info")
+        return subject
 
     if not shot.get("composite") or plate_path is None:
         # Said out loud rather than performed quietly. A shot marked for motion that

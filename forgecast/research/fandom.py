@@ -531,10 +531,18 @@ class Asset:
 
     @property
     def is_portrait_crop(self) -> bool:
-        """Roughly square or taller — the shape a subject cut-out arrives in.
+        """Roughly square or taller. A *hint* about how the asset will be used.
 
-        Worth knowing because it decides how the asset is used: a square portrait is a
-        subject to composite onto a plate, and a 16:9 image is already a shot.
+        It is not the cut-out test and must not be used as one. Measured across seven
+        real assets: Amber's artwork is a 2265x2265 photograph of the creature on a road
+        at night, fully opaque, and this returns True for it — so a caller trusting this
+        stood a whole scene photograph on a plate and rendered a picture on wallpaper.
+        Both shapes are square; only the alpha channel separates them, and this reader
+        has the dimensions from the API without downloading a byte.
+
+        So this orders candidates at planning time, and `layers.shot.is_cutout` decides
+        at render time from the pixels. The split is deliberate: knowing for certain
+        costs a download, and the plan runs before anything is fetched.
         """
         return self.height >= self.width * 0.92
 

@@ -85,6 +85,37 @@ class Placed:
 #: rendering a shot and looking at it; the numbers alone looked right.
 ALPHA_FLOOR = 40
 
+#: How much of an image has to be transparent before it is a subject rather than a
+#: picture. Nothing is tuned here: measured across seven real assets off three wikis the
+#: answer is binary — the three scene shots are 0.000 and the three cut-outs are 0.565,
+#: 0.693 and 0.767 — so this only has to sit somewhere in an enormous gap.
+CUTOUT_TRANSPARENCY = 0.05
+
+
+def is_cutout(image) -> bool:
+    """Whether this asset is a subject to stand on a plate, or already a whole shot.
+
+    Decided from the pixels, which is the only place the answer is. `Asset`'s shape
+    test — square or taller — was standing in for this and is measurably wrong: Amber's
+    artwork on doctor-nowhere-creatures is a 2265x2265 *photograph* of the creature on
+    a road at night, fully opaque, and the compositor duly scaled that whole square
+    picture and pasted it onto a generated plate. It rendered a photo stuck on
+    wallpaper.
+
+    Aspect ratio cannot tell these apart because both are square. Transparency can, and
+    it is not a close call — see `CUTOUT_TRANSPARENCY`.
+
+    Takes a path or an opened image. A file with no alpha channel at all is the common
+    case and answers immediately without decoding the pixels.
+    """
+    opened = image if isinstance(image, Image.Image) else Image.open(image)
+    if "A" not in opened.getbands():
+        return False
+    alpha = opened.convert("RGBA").getchannel("A")
+    histogram = alpha.histogram()
+    clear = sum(histogram[:ALPHA_FLOOR])
+    return clear / max(1, sum(histogram)) >= CUTOUT_TRANSPARENCY
+
 
 def opaque_box(image: Image.Image, floor: int = ALPHA_FLOOR) -> tuple[int, int, int, int]:
     """The subject's actual bounds inside its canvas.
