@@ -1,0 +1,249 @@
+[
+  {
+    "line": "Long Horse.",
+    "things": [
+      {
+        "noun": "horse",
+        "kind": "canon",
+        "query": null,
+        "why": "creature noun"
+      }
+    ]
+  },
+  {
+    "line": "The last creature on this list cannot hurt you.",
+    "things": [
+      {
+        "noun": "creature",
+        "kind": "canon",
+        "query": null,
+        "why": "creature noun"
+      },
+      {
+        "noun": "list",
+        "kind": "roster",
+        "query": null,
+        "why": "refers to this video's own list"
+      }
+    ]
+  },
+  {
+    "line": "That is not good news.",
+    "things": []
+  },
+  {
+    "line": "A girl kept hearing something in her dreams, a soft, dry crack, like a joint popping, coming closer every night.",
+    "things": [
+      {
+        "noun": "girl",
+        "kind": "icon",
+        "icon": "figure",
+        "query": null,
+        "why": "person, drawn not photographed"
+      },
+      {
+        "noun": "dream",
+        "kind": "photo",
+        "query": "empty bed dark bedroom night",
+        "role": "plate",
+        "why": "concept stand-in"
+      },
+      {
+        "noun": "crack",
+        "kind": "photo",
+        "query": "crack",
+        "role": "insert",
+        "why": "object"
+      }
+    ]
+  },
+  {
+    "line": "Then one evening she heard it while she was awake, from the hallway.",
+    "things": [
+      {
+        "noun": "hallway",
+        "kind": "photo",
+        "query": "dark corridor interior",
+        "role": "plate",
+        "why": "concept stand-in"
+      }
+    ]
+  },
+  {
+    "line": "Around her door frame bent a horse's skull with no lower jaw, on a neck that kept going and going, vertebrae like giant human fingers, disappearing down the stairs and around the corner and, as far as anyone can tell, forever.",
+    "things": [
+      {
+        "noun": "skull",
+        "kind": "canon",
+        "query": null,
+        "why": "creature noun"
+      },
+      {
+        "noun": "neck",
+        "kind": "canon",
+        "query": null,
+        "why": "creature noun"
+      },
+      {
+        "noun": "frame",
+        "kind": "photo",
+        "query": "door frame interior",
+        "role": "plate",
+        "why": "concept stand-in"
+      },
+      {
+        "noun": "finger",
+        "kind": "photo",
+        "query": "giant fingers",
+        "role": "insert",
+        "why": "body"
+      },
+      {
+        "noun": "stair",
+        "kind": "photo",
+        "query": "staircase interior dark",
+        "role": "plate",
+        "why": "concept stand-in"
+      },
+      {
+        "noun": "corner",
+        "kind": "photo",
+        "query": "corridor corner interior",
+        "role": "plate",
+        "why": "concept stand-in"
+      }
+    ]
+  },
+  {
+    "line": "Long Horse is one of the only creatures its creator has personally marked one hundred percent friendly.",
+    "things": [
+      {
+        "noun": "horse",
+        "kind": "canon",
+        "query": null,
+        "why": "creature noun"
+      },
+      {
+        "noun": "creature",
+        "kind": "canon",
+        "query": null,
+        "why": "creature noun"
+      },
+      {
+        "noun": "creator",
+        "kind": "icon",
+        "icon": "figure",
+        "query": null,
+        "why": "person, drawn not photographed"
+      }
+    ]
+  },
+  {
+    "line": "Its neck is genuinely infinite.",
+    "things": [
+      {
+        "noun": "neck",
+        "kind": "canon",
+        "query": null,
+        "why": "creature noun"
+      }
+    ]
+  },
+  {
+    "line": "It travels through dreams, it likes music and apples, and for whatever reason, it smells like cinnamon.",
+    "things": [
+      {
+        "noun": "dream",
+        "kind": "photo",
+        "query": "empty bed dark bedroom night",
+        "role": "plate",
+        "why": "concept stand-in"
+      },
+      {
+        "noun": "music",
+        "kind": "photo",
+        "query": "vinyl record player turntable",
+        "role": "insert",
+        "why": "concept stand-in"
+      },
+      {
+        "noun": "apple",
+        "kind": "photo",
+        "query": "apples",
+        "role": "insert",
+        "why": "food"
+      },
+      {
+        "noun": "cinnamon",
+        "kind": "photo",
+        "query": "cinnamon",
+        "role": "insert",
+        "why": "plant"
+      }
+    ]
+  },
+  {
+    "line": "It appears for exactly one purpose: to warn.",
+    "things": [
+      {
+        "noun": "purpose",
+        "kind": "photo",
+        "query": "signpost direction",
+        "role": "insert",
+        "why": "concept stand-in"
+      },
+      {
+        "noun": "warn",
+        "kind": "photo",
+        "query": "warning road sign",
+        "why": "verb",
+        "role": "insert"
+      }
+    ]
+  },
+  {
+    "line": "Seeing it means misfortune is coming soon, not because of Long Horse, but because of whatever comes after it.",
+    "things": [
+      {
+        "noun": "horse",
+        "kind": "canon",
+        "query": null,
+        "why": "creature noun"
+      },
+      {
+        "noun": "misfortune",
+        "kind": "photo",
+        "query": "car crash wreck roadside",
+        "role": "insert",
+        "why": "concept stand-in"
+      }
+    ]
+  },
+  {
+    "line": "So yes, you will survive Long Horse.",
+    "things": [
+      {
+        "noun": "horse",
+        "kind": "canon",
+        "query": null,
+        "why": "creature noun"
+      }
+    ]
+  },
+  {
+    "line": "It showed up to make sure of that.",
+    "things": []
+  },
+  {
+    "line": "Whether you survive what it came to warn you about is a different question.",
+    "things": [
+      {
+        "noun": "warn",
+        "kind": "photo",
+        "query": "warning road sign",
+        "why": "verb",
+        "role": "insert"
+      }
+    ]
+  }
+]
