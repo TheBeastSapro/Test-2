@@ -1,0 +1,1140 @@
+{
+  "creature": "long-horse",
+  "wiki": "trevorhenderson",
+  "page": "Long Horse",
+  "fetched": "2026-08-09",
+  "source_of_truth": "https://trevorhenderson.fandom.com/wiki/Long_Horse",
+  "min_short_side": 400,
+  "phash_distance": 6,
+  "counts": {
+    "filenames_on_page": 32,
+    "enumerated": 32,
+    "no_imageinfo": 0,
+    "kept": 27,
+    "dropped": 5
+  },
+  "dropped": [
+    {
+      "title": "File:Darkest of Dreams .MP3",
+      "why": "not an image (mime audio/mpeg)"
+    },
+    {
+      "title": "File:My Savior.mp3",
+      "why": "not an image (mime audio/mpeg)"
+    },
+    {
+      "title": "File:Street HorSe.jpg",
+      "why": "short side 270px < 400, wiki furniture"
+    },
+    {
+      "title": "File:Screenshot 2020-04-24 Trevor Henderson ( trevorhenderson) \u2022 Instagram photos and videos.png",
+      "why": "short side 337px < 400, wiki furniture"
+    },
+    {
+      "title": "File:Longhorse june2026.png",
+      "why": "short side 355px < 400, wiki furniture"
+    }
+  ],
+  "images": [
+    {
+      "description": "Screenshot of an Instagram post. Grainy night photograph of open scrubland: dry pale grass across the foreground, a low earth bank, a black sky with a few distant lights on the horizon. The Long Horse neck enters from the upper left as two thick pale segments that cross the top of the frame and run off both edges, and a third segment descends to a small stack of stone slabs on the bank. The skull hangs at centre-left in profile: one dark round eye socket, waxy off-white bone, dark banding rings on the vertebrae just behind the skull, an elongated upper jaw with a row of short pale teeth along its lower edge and a cluster of blunt toe-like teeth at the muzzle tip. No mandible is drawn; the dark area beneath the tooth row is background, not a lower jaw.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight"
+      ],
+      "setting": "open scrubland at the edge of a field, low stone cairn",
+      "time_of_day": "night",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "creator-account",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "motion-blurred silhouette and the neck merges with the black sky at the top of frame; use boxed or full-bleed as a plate",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "Instagram screenshot, so the frame is a 600x450 crop of a phone screen. Below the 900px short side, upscale before any held shot. | Use as PLATE (environment to composite into).",
+      "order": 0,
+      "wiki_title": "File:Screenshot 2020-04-26 Trevor Henderson ( trevorhenderson) \u2022 Instagram photos and videos.png",
+      "file": "materials/long-horse/dc55b13f4d1b.png",
+      "phash": "c04ff1631b3c8ec6",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/9/90/Screenshot_2020-04-26_Trevor_Henderson_%28_trevorhenderson%29_%E2%80%A2_Instagram_photos_and_videos.png/revision/latest?cb=20200423174245",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Screenshot_2020-04-26_Trevor_Henderson_(_trevorhenderson)_%E2%80%A2_Instagram_photos_and_videos.png",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/9/90/Screenshot_2020-04-26_Trevor_Henderson_%28_trevorhenderson%29_%E2%80%A2_Instagram_photos_and_videos.png/revision/latest/scale-to-width-down/400?cb=20200423174245",
+      "size": [
+        600,
+        450
+      ],
+      "mime_reported": "image/png",
+      "mime_actual": "image/png",
+      "meta": {
+        "DateTime": "2020-04-23T17:42:45Z",
+        "ObjectName": "Screenshot 2020-04-26 Trevor Henderson ( trevorhenderson) \u2022 Instagram photos and videos"
+      }
+    },
+    {
+      "description": "Painting on a flat dark olive-grey ground with no environment. Four pale limb-like neck segments loop around the frame and run off all four edges, each with visible joint bulges and long sparse dark hair strands hanging from them. In the centre a bone-white horse skull faces the viewer head-on: two deep eye sockets, a long tapering upper jaw, and at the muzzle tip a cluster of small rounded toe-like teeth. No mandible. Behind the head a thin gold circle and gold radial rays are drawn like a halo or sunburst.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "environment or background scene",
+        "any person"
+      ],
+      "setting": "no setting, flat studio ground",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "high contrast against a flat ground; the hair strands will thin at their tips",
+      "cutout_status": "pending",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "Anatomy is canon-correct. The gold halo and radial rays are an iconographic overlay that appears in none of the found-footage canon images, so it will look stylistically apart from the photo composites. Authorship is not verifiable from the wiki: Fandom fills in only DateTime and ObjectName. | Cutout candidate (subject on a clean ground).",
+      "order": 1,
+      "wiki_title": "File:Goodhorse.jpg",
+      "file": "materials/long-horse/1d9773448b78.jpg",
+      "phash": "988923a76696c65f",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/9/99/Goodhorse.jpg/revision/latest?cb=20200226033915",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Goodhorse.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/9/99/Goodhorse.jpg/revision/latest/scale-to-width-down/400?cb=20200226033915",
+      "size": [
+        1536,
+        2048
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2020-02-26T03:39:15Z",
+        "ObjectName": "Goodhorse"
+      }
+    },
+    {
+      "description": "Wide night photograph, heavily motion-blurred, taken from a road. Foreground is asphalt and a grass verge lit hard and white from the right, probably headlights, with a large lit bush at right. On the ridge behind stands a pale creature: a long neck arcs down to the left and ends in an elongated horse-like head pointing down, and below and behind it are four thin pale vertical columns. The blur is heavy enough that it is genuinely not possible to tell whether those columns are legs or further neck segments. No skull detail resolves at all.",
+      "not_visible": [
+        "any facial detail",
+        "eye socket",
+        "teeth",
+        "hair strands",
+        "end of the neck",
+        "daylight"
+      ],
+      "setting": "roadside verge and ridge, rural",
+      "time_of_day": "night",
+      "design_variant": "unresolved, too blurred to read anatomy",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "motion blur smears the silhouette into the background and the thin columns cross the blown-out light; plate only",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "CANON RISK. The four thin vertical columns read as LEGS supporting a BODY. Canon Long Horse has no body and no legs, so this image contradicts any line that says the neck never ends or that there is no body. The wiki title also suggests this may be a separate entity rather than Long Horse. Do not place under the no-body line. | Use as PLATE (environment to composite into).",
+      "order": 5,
+      "wiki_title": "File:A Horse At Night High definition.jpg",
+      "file": "materials/long-horse/4d8b527f409c.jpg",
+      "phash": "99696b96664a9566",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/a/a9/A_Horse_At_Night_High_definition.jpg/revision/latest?cb=20210826052352",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:A_Horse_At_Night_High_definition.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/a/a9/A_Horse_At_Night_High_definition.jpg/revision/latest/scale-to-width-down/400?cb=20210826052352",
+      "size": [
+        2048,
+        996
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2021-08-26T05:23:52Z",
+        "ObjectName": "A Horse At Night High definition"
+      }
+    },
+    {
+      "description": "Painting on a dark blue-green ground. A horse-like head and neck rendered as raw flesh rather than bone: pink and red musculature with visible sinew and vessels, a large lens-shaped yellow-green EYEBALL with a dark pupil sitting in an intact socket, and an open mouth with an upper AND a lower jaw, both carrying teeth. The neck curls down and back in a spiral studded along its length with pale bony spurs, and a second coil crosses the lower frame. Pale sinewy strands hang from the jaw.",
+      "not_visible": [
+        "bare bone skull",
+        "empty eye socket",
+        "waxy pale skin",
+        "environment",
+        "end of the neck"
+      ],
+      "setting": "no setting, flat dark ground",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "NON-CANON: fleshed head, eyeball present, mandible present",
+      "provenance": "fan-art",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "would matte cleanly off the flat ground, but the image should not be approved in the first place",
+      "cutout_status": "pending",
+      "upscaled": null,
+      "approved": false,
+      "design_lock": false,
+      "notes": "REJECT for canon use. It contradicts three canon points at once: it has a lower jaw, a living eyeball instead of an empty socket, and raw flesh instead of waxy skin. Uploaded to the wiki in 2025 by an editor account. This is the most dangerous image in the set because it sits inside the official gallery and looks confident. | REJECTED: Fan art. Raw flesh, a LOWER JAW and a living eyeball. Directly contradicts the bare-bone jawless canon, which is this creature's single most important rule. Sitting inside the official gallery.",
+      "order": 6,
+      "wiki_title": "File:Meat horse.jpg",
+      "file": "materials/long-horse/55adfef7fe01.jpg",
+      "phash": "ce5b613931e64cc9",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/e/e1/Meat_horse.jpg/revision/latest?cb=20250115214358",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Meat_horse.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/e/e1/Meat_horse.jpg/revision/latest/scale-to-width-down/400?cb=20250115214358",
+      "size": [
+        480,
+        640
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2025-01-15T21:43:58Z",
+        "ObjectName": "Meat horse"
+      }
+    },
+    {
+      "description": "Grainy photograph with a strong teal cast, taken from the top of a domestic staircase looking down into a hallway. Bannister and stairs fill the lower half, framed pictures hang on the right wall, a chandelier and a dark doorway sit at the top. The Long Horse neck enters horizontally from the left through the doorway, pale and banded with dark hair strands trailing beneath it, and the head hangs at centre facing the camera: two small dark eye sockets, a pale elongated muzzle, and a row of short white peg teeth at the tip. The neck runs off the left edge of the frame.",
+      "not_visible": [
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight",
+        "a resolved mandible (none is visible, but at 640x480 the image cannot prove its absence either)"
+      ],
+      "setting": "interior of a house, staircase and hallway",
+      "time_of_day": "night, interior artificial light",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "low resolution and heavy grain, and the neck passes through a dark doorway at the same luminance; plate only",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "640x480 and heavily grained, with the head only about 90px tall, so it cannot carry a close-up. Below the 900px short side. The domestic interior makes it the strongest 'it is inside the house' beat in the set.",
+      "order": 7,
+      "wiki_title": "File:TheHorse.jpg",
+      "file": "materials/long-horse/122b252a6692.jpg",
+      "phash": "a09df3730cc4cc9e",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/f/f0/TheHorse.jpg/revision/latest?cb=20200226033711",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:TheHorse.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/f/f0/TheHorse.jpg/revision/latest/scale-to-width-down/400?cb=20200226033711",
+      "size": [
+        640,
+        480
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2020-02-26T03:37:11Z",
+        "ObjectName": "TheHorse"
+      }
+    },
+    {
+      "description": "Night photograph of a half-built suburban street: bare-earth lots, stacked construction materials, houses with unfinished render, one streetlight throwing a pool of light down the road. Long Horse fills the upper third as several thick pale neck segments crossing the sky and running off both the left and right edges with no end visible. One segment loops down toward the centre and terminates in a small pale skull in profile with a single dark eye socket and a short row of teeth along the muzzle. The vertebrae carry dark banding rings.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight"
+      ],
+      "setting": "suburban street under construction",
+      "time_of_day": "night",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "the neck sits against a near-black sky at a similar luminance and crosses a streetlight; use full-bleed",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "RECOMMEND as the wide establishing plate. This is the cleanest statement of the canon 'endless neck runs off frame, no body' idea in the set, and the 2:1 crop suits a full-bleed with a slow pan. The head is only about 90px, so a separate close-up is needed for any no-lower-jaw line. | Use as PLATE (environment to composite into).",
+      "order": 8,
+      "wiki_title": "File:Long Horse.jpg",
+      "file": "materials/long-horse/e8d0d08f32e6.jpg",
+      "phash": "ce393186cf7b3484",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/6/61/Long_Horse.jpg/revision/latest?cb=20191209012806",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Long_Horse.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/6/61/Long_Horse.jpg/revision/latest/scale-to-width-down/400?cb=20191209012806",
+      "size": [
+        1200,
+        600
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2019-12-09T01:28:06Z",
+        "ObjectName": "Long Horse"
+      }
+    },
+    {
+      "description": "Illustration on a near-black plum ground with no environment. Four pale limb-like neck segments zig-zag across the frame and run off every edge, each with heavy joint bulges and long dark hair strands hanging from it. The head is at centre-left in profile: a bone-white skull with one large round socket containing a dark iris and a four-point highlight, a long tapering upper jaw, and a cluster of small pale toe-like teeth at the muzzle tip. No mandible. Thin pink and white crosshair registration lines run across the whole image. Hand-lettered white text on the right reads 'Hey. Keep it up. You're. doing. Great.' with a ghosted offset duplicate behind it.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "environment",
+        "any person"
+      ],
+      "setting": "no setting, flat dark ground",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "canon-skull-no-mandible, eye drawn as a dark iris with a highlight rather than an empty socket",
+      "provenance": "creator-account",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "clean separation from the flat ground, but the crosshair lines and the lettering sit on the same layer and come with it unless cropped",
+      "cutout_status": "pending",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "Carries baked-in narrative text, 'Hey. Keep it up. You're doing. Great.' Viewers and the QC OCR pass will both read it, so it must not sit under a line that calls the creature hostile or silent. It is the canon 'means well' beat. Crop the text out if the line does not match.",
+      "order": 9,
+      "wiki_title": "File:90222639 239150427132575 3270047316349727627 n.jpg",
+      "file": "materials/long-horse/10d5416121e6.jpg",
+      "phash": "d8992f6ddd1c3062",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/c/c8/90222639_239150427132575_3270047316349727627_n.jpg/revision/latest?cb=20200419123702",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:90222639_239150427132575_3270047316349727627_n.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/c/c8/90222639_239150427132575_3270047316349727627_n.jpg/revision/latest/scale-to-width-down/400?cb=20200419123702",
+      "size": [
+        1080,
+        1020
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2020-04-19T12:37:02Z",
+        "ObjectName": "90222639 239150427132575 3270047316349727627 n"
+      }
+    },
+    {
+      "description": "Screenshot of an Instagram post. Very dark, heavily motion-blurred night photograph of what looks like a demolition or construction site: a rubble-strewn floor of pale broken concrete across the lower half, a tall lit orange-yellow rectangle at centre that reads as a doorway or a lit sheet of plastic, and blackness elsewhere. A thin pale zig-zag neck crosses the upper half in several sharp-jointed segments and runs off the top and left edges. At lower left the skull hangs pointing down; one dark eye socket and a short row of pale teeth at the muzzle tip are just readable. No mandible.",
+      "not_visible": [
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight",
+        "clear facial detail"
+      ],
+      "setting": "demolition or construction site interior",
+      "time_of_day": "night",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "creator-account",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "heavy motion blur on the silhouette and the neck crosses the lit orange panel; plate only",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "480x600, badly blurred, creature small in frame. Usable as a one-second found-footage flash, not as a held shot. Below the 900px short side.",
+      "order": 11,
+      "wiki_title": "File:Screenshot 2020-04-25 Trevor Henderson ( trevorhenderson) \u2022 Instagram photos and videos.png",
+      "file": "materials/long-horse/7fcd40807a60.png",
+      "phash": "9942a44f9b5aac76",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/d/d3/Screenshot_2020-04-25_Trevor_Henderson_%28_trevorhenderson%29_%E2%80%A2_Instagram_photos_and_videos.png/revision/latest?cb=20200423174236",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Screenshot_2020-04-25_Trevor_Henderson_(_trevorhenderson)_%E2%80%A2_Instagram_photos_and_videos.png",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/d/d3/Screenshot_2020-04-25_Trevor_Henderson_%28_trevorhenderson%29_%E2%80%A2_Instagram_photos_and_videos.png/revision/latest/scale-to-width-down/400?cb=20200423174236",
+      "size": [
+        480,
+        600
+      ],
+      "mime_reported": "image/png",
+      "mime_actual": "image/png",
+      "meta": {
+        "DateTime": "2020-04-23T17:42:36Z",
+        "ObjectName": "Screenshot 2020-04-25 Trevor Henderson ( trevorhenderson) \u2022 Instagram photos and videos"
+      }
+    },
+    {
+      "description": "Photograph of a disused office or school basement: suspended ceiling with fluorescent panels and one collapsed panel section, brick and painted block walls, a stepladder, bagged debris in the left corner, a small red ball and a yellow floor sign at the right. The Long Horse neck occupies the whole room as long white sharply-jointed coils lying across and just above the floor, running off the left edge with no end. Sparse dark hair strands hang from the underside of every segment. The skull rests near the floor at lower centre-left in profile: one dark round eye socket, a long upper jaw with a row of pale teeth along its lower edge, no mandible. A soft magenta-violet halo surrounds the whole creature.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight",
+        "exterior"
+      ],
+      "setting": "abandoned basement or lower floor of an institutional building",
+      "time_of_day": "indoor artificial fluorescent light, time of day undetermined",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "the baked-in magenta halo would matte as a fringe, and the coils are long and thin against a busy floor",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "The magenta-violet halo is in the pixels, not a compositing artefact we can strip, so it will tint any glow added later. Best used full-bleed. Strong 'it is indoors and it is enormous' beat. | Use as PLATE (environment to composite into).",
+      "order": 12,
+      "wiki_title": "File:Basement visitor.jpeg",
+      "file": "materials/long-horse/bcabf2771de4.jpg",
+      "phash": "996363966c6db28c",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/b/b5/Basement_visitor.jpeg/revision/latest?cb=20220621015914",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Basement_visitor.jpeg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/b/b5/Basement_visitor.jpeg/revision/latest/scale-to-width-down/400?cb=20220621015914",
+      "size": [
+        1080,
+        719
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-06-21T01:59:14Z",
+        "ObjectName": "Basement visitor"
+      }
+    },
+    {
+      "description": "Square three-colour screenprint-style illustration: flat red ground, neck segments drawn in blue and white with heavy black brush outlines and black drip marks running down from them. Six or seven segments fill the frame and run off every edge. One head sits upper-centre-left in profile with a large round white eye containing a black pupil and a highlight, that is a rendered EYEBALL rather than an empty socket, and a muzzle ending in finger-like digits. A very small red-and-white figure floats at left, too small to identify.",
+      "not_visible": [
+        "empty eye socket",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "environment",
+        "night",
+        "photographic realism"
+      ],
+      "setting": "no setting, flat red ground",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "canon-skull-stylised-print, eye rendered as an eyeball",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "flat red ground, trivial to matte, but the result is a graphic rather than a creature",
+      "cutout_status": "pending",
+      "upscaled": null,
+      "approved": false,
+      "design_lock": false,
+      "notes": "Poster reduction. The eyeball contradicts every other image in this set, where the socket is empty. Do not cut between this and a photo composite inside one beat: that is exactly the 'three mutually inconsistent designs in one section' failure. The flat red also fights the house red accent. | REJECTED: Heavily stylised poster graphic on a red field. A different DESIGN of the creature, not the one this video locks. Design consistency, not quality.",
+      "order": 13,
+      "wiki_title": "File:LH1.jpg",
+      "file": "materials/long-horse/c9e50ad8e29e.jpg",
+      "phash": "c4e205f13a272ede",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/7/7d/LH1.jpg/revision/latest?cb=20220812052938",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:LH1.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/7/7d/LH1.jpg/revision/latest/scale-to-width-down/400?cb=20220812052938",
+      "size": [
+        800,
+        800
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-08-12T05:29:38Z",
+        "ObjectName": "LH1"
+      }
+    },
+    {
+      "description": "Night photograph looking up at a large bare tree against a black sky with a small bright moon at the top. The trunk and lower boughs are pale and covered in a ridged vertebra-like texture, and the upper branches resolve into segmented pale neck sections with sharp joints that run off the top and both side edges. At lower left the skull hangs down among the branches: two dark eye sockets, a dark opening at the muzzle, and a fringe of hair over the crown. Green foliage catches the flash at the right edge.",
+      "not_visible": [
+        "a resolved lower jaw (none is visible)",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight"
+      ],
+      "setting": "large tree at night, wooded or garden",
+      "time_of_day": "night",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "the creature is interwoven with and occluded by branches at the same luminance",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "The image deliberately blurs where the tree ends and the creature begins. Good for a 'you would not notice it' beat, bad for any line that describes the shape precisely, because most of the frame is genuinely ambiguous. | Use as PLATE (environment to composite into).",
+      "order": 14,
+      "wiki_title": "File:LH2.jpg",
+      "file": "materials/long-horse/2f1f30537d41.jpg",
+      "phash": "916e93c82d529f71",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/b/b6/LH2.jpg/revision/latest?cb=20220812052944",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:LH2.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/b/b6/LH2.jpg/revision/latest/scale-to-width-down/400?cb=20220812052944",
+      "size": [
+        1360,
+        2048
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-08-12T05:29:44Z",
+        "ObjectName": "LH2"
+      }
+    },
+    {
+      "description": "A digital painting presented as an instant-camera print: white photo border on a black ground, with 'LONG HORSE' hand-lettered in black marker across the bottom border. Inside the frame is a foggy teal night scene: a road, a parked car at left, a streetlight glowing at centre-left, dark trees behind. Long Horse crosses the upper half as several pale segmented neck sections with dark banding and hanging hair strands, running off both edges. The head comes forward at centre-right in profile: one dark eye socket, long upper jaw, no mandible.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight"
+      ],
+      "setting": "foggy road at night with a parked car",
+      "time_of_day": "night",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "the subject inside the frame is a scene; a matte would cut the instant-print border, not the creature",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "The white print border and the hand-lettered words LONG HORSE are part of the image. Useful as a title card, poor as a background plate: the border reads as a UI element and the OCR pass will pick the words up. 682px short side, so upscale or crop inside the border.",
+      "order": 15,
+      "wiki_title": "File:LH3.jpg",
+      "file": "materials/long-horse/0d3d0efe3d91.jpg",
+      "phash": "ec7b9099c5c45b91",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/9/99/LH3.jpg/revision/latest?cb=20220812052943",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:LH3.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/9/99/LH3.jpg/revision/latest/scale-to-width-down/400?cb=20220812052943",
+      "size": [
+        682,
+        1024
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-08-12T05:29:43Z",
+        "ObjectName": "LH3"
+      }
+    },
+    {
+      "description": "A hand-lettered lore card. Black ground, white-ink illustration: the head at upper-left in profile with one large dark round eye socket, an upper jaw carrying small teeth and a cluster of toe-like teeth at the tip, no mandible, and sparse dark hair strands. Segmented neck coils zig-zag across the whole frame and run off every edge. Hand-lettered title 'LONG HORSE' at centre-left, and ten bullet points of lore in white hand lettering: 'Means well.', 'skin is like wax, pliable.', 'its neck bends like a finger, and it can make new joints at will.', 'Curious nature.', 'Portions of neck don't have to connect in linear space.', 'Its neck is infinite for all observing it', 'Deathly quiet, except for a faint cracking when it bends its joints.', 'Neck will always terminate out of view of observers.', 'Non-hostile, though its appearance often precedes disasters of misfortune.', 'Smells like cinnamon.'",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "environment",
+        "colour"
+      ],
+      "setting": "no setting, lore card",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "white on pure black mattes trivially, but the lettering comes with it unless cropped",
+      "cutout_status": "pending",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "This is the written canon source for the creature and the text the script should be validated against: waxy pliable skin, infinite neck, always terminates out of view, non-hostile, precedes misfortune. As a shot it is a wall of text, so use a zoomed crop of the illustration or hold one bullet deliberately. Largest file in the set at 2650x4096.",
+      "order": 16,
+      "wiki_title": "File:LH4.jpg",
+      "file": "materials/long-horse/f37777c33363.jpg",
+      "phash": "88d8354ad77a74a3",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/f/f2/LH4.jpg/revision/latest?cb=20220812052946",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:LH4.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/f/f2/LH4.jpg/revision/latest/scale-to-width-down/400?cb=20220812052946",
+      "size": [
+        2650,
+        4096
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-08-12T05:29:46Z",
+        "ObjectName": "LH4"
+      }
+    },
+    {
+      "description": "A high-contrast black-and-white stipple print inside a black rectangular border. The ground is light grey stipple and the creature is drawn in black line and shadow. The head is at centre-left in profile: a large round socket with a dark centre, a long upper jaw with a row of dark teeth along its lower edge and a cluster at the tip, no mandible, and long dark hair strands hanging from the head and from every neck segment. Five or six neck segments zig-zag across the frame and run off all edges.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "environment",
+        "colour",
+        "night"
+      ],
+      "setting": "no setting, print on a light ground",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "canon-skull-no-mandible, stipple print with the tonality inverted: light ground, dark creature",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "stipple has no solid interior; a matte would shred it into dots",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "Mean luminance 0.75, the brightest image in the set by a wide margin. Do not run the house darkening grade over it: pushing this dark destroys the stipple and the creature disappears. Treat it as a light-ground insert. The black print border is baked in. | Cutout candidate (subject on a clean ground).",
+      "order": 17,
+      "wiki_title": "File:LongHorse.jpg",
+      "file": "materials/long-horse/efdec92d0825.jpg",
+      "phash": "ee0e91999a72d998",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/f/fe/LongHorse.jpg/revision/latest?cb=20200616024712",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:LongHorse.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/f/fe/LongHorse.jpg/revision/latest/scale-to-width-down/400?cb=20200616024712",
+      "size": [
+        1280,
+        1707
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2020-06-16T02:47:12Z",
+        "ObjectName": "LongHorse"
+      }
+    },
+    {
+      "description": "Close-up painting of the head against a flat black and dark-navy ground with no environment. A waxy bone-white horse skull in three-quarter profile fills the left half: one very large deep black round eye socket, fine dark hair strands combed back over the cranium and down the neck, and a long muzzle. At the muzzle end a dark cavity opens, ringed below by a row of short blunt pale teeth set into the upper jaw. No mandible; nothing hangs below the tooth row. The neck continues up and to the right, thickening, and runs off the top-right corner.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "environment",
+        "any person",
+        "daylight"
+      ],
+      "setting": "no setting, flat dark ground",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "waxy pale skull against a flat dark ground; the hair strands are the only soft edge",
+      "cutout_status": "pending",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "RECOMMEND as the anatomy shot. This is the clearest statement of the missing lower jaw, the empty socket and the waxy skin, and at 1536x2048 with the head filling the frame it survives a hard push-in. It is the correct image to hold under any no-lower-jaw line. | Cutout candidate (subject on a clean ground).",
+      "order": 18,
+      "wiki_title": "File:LH5.jpg",
+      "file": "materials/long-horse/272a6d97cd25.jpg",
+      "phash": "c78e3c3161733761",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/5/51/LH5.jpg/revision/latest?cb=20220812052944",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:LH5.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/5/51/LH5.jpg/revision/latest/scale-to-width-down/400?cb=20220812052944",
+      "size": [
+        1536,
+        2048
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-08-12T05:29:44Z",
+        "ObjectName": "LH5"
+      }
+    },
+    {
+      "description": "Flash-lit night photograph in a bare deciduous wood: leaf litter, fallen logs and slim trunks in the foreground, blackness behind. A pale banded neck segment enters from the upper left between the trees and runs off the left edge. At centre-right the head emerges from behind a trunk in profile: pale bone, one dark round eye socket, a long upper jaw with a row of short pale teeth along its lower edge and a cluster at the tip, no mandible. The trunk crosses in front of the neck just behind the skull.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight"
+      ],
+      "setting": "bare deciduous woodland",
+      "time_of_day": "night",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "the creature is occluded by a trunk, so a matte takes a bite out of the neck",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "The tree crossing in front of the neck is the strongest 'it was already there' beat in the set. It is also what makes it a plate: the occlusion is the composition. | Use as PLATE (environment to composite into).",
+      "order": 19,
+      "wiki_title": "File:LH6.jpg",
+      "file": "materials/long-horse/ad29b24fa1b0.jpg",
+      "phash": "fd00802daaba3aef",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/1/1e/LH6.jpg/revision/latest?cb=20220812052943",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:LH6.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/1/1e/LH6.jpg/revision/latest/scale-to-width-down/400?cb=20220812052943",
+      "size": [
+        1200,
+        797
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-08-12T05:29:43Z",
+        "ObjectName": "LH6"
+      }
+    },
+    {
+      "description": "Night photograph from a roadside: asphalt and a gravel shoulder across the bottom, a chain-link fence and dry weeds behind, a wooden utility pole carrying several wires left to right, a row of white boulders at the right, and scattered town lights on a dark hillside far behind. Long Horse crosses the upper third: a pale banded neck arcs in from the left, bends down at centre and ends in the skull, which hangs facing right with one dark eye socket and a short row of teeth at the muzzle. A second, separate neck segment enters at the top right and runs off the edge. Hair strands hang beneath both segments.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight",
+        "any connection between the two neck segments"
+      ],
+      "setting": "roadside at the edge of a town, utility pole and chain-link fence",
+      "time_of_day": "night",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "the neck crosses overhead wires and the utility pole, and the sky is near-black at the same luminance as the shadowed side of the neck",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "The second segment entering top-right with no visible connection is the clearest picture of the canon line 'portions of neck don't have to connect in linear space'. Use it for that beat specifically. | Use as PLATE (environment to composite into).",
+      "order": 20,
+      "wiki_title": "File:Lh13.jpg",
+      "file": "materials/long-horse/e1c542d3f5a4.jpg",
+      "phash": "c323dc2546fe26c6",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/5/5d/Lh13.jpg/revision/latest?cb=20221001073620",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Lh13.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/5/5d/Lh13.jpg/revision/latest/scale-to-width-down/400?cb=20221001073620",
+      "size": [
+        1396,
+        1029
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-10-01T07:36:20Z",
+        "ObjectName": "Lh13"
+      }
+    },
+    {
+      "description": "White chalk or pastel on a dark charcoal-grey ground, inside a black border. TWO heads face each other across the centre of the frame, both in profile and drawn identically: heavily creased waxy skin over the skull, one large deep black round eye socket each, a long muzzle, and a row of blocky pale teeth along the lower edge of the upper jaw with no mandible below it. Long pale and dark hair strands hang from both necks, and a pale blue accent line runs along the underside of each. Two further neck segments enter from the top-left and top-right corners and run off frame. Hand-lettered 'HEllO!' in white with a small pointer stroke sits at bottom centre.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "environment",
+        "colour beyond the blue accent",
+        "any person"
+      ],
+      "setting": "no setting, flat dark ground",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "high contrast chalk on a flat grey ground; the border and the lettering must be cropped off first",
+      "cutout_status": "pending",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": true,
+      "notes": "CANON RISK: two heads are on screen at once. Canon supports it, since the neck is infinite and portions need not connect in linear space, but it contradicts any line phrased as 'a single head' or 'the head at the end of the neck'. Also carries baked-in text 'HEllO!', which the OCR pass will read; it fits the friendly beat and nothing else. | Cutout candidate (subject on a clean ground). | DESIGN LOCK: jawless upper tooth row, vertebrae neck running off-frame both sides, hair strands, no body shown. The most complete canon statement of the creature.",
+      "order": 21,
+      "wiki_title": "File:Lh12.jpg",
+      "file": "materials/long-horse/6b12392ef5dd.jpg",
+      "phash": "d4032ff40a2ff698",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/e/eb/Lh12.jpg/revision/latest?cb=20221001073620",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Lh12.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/e/eb/Lh12.jpg/revision/latest/scale-to-width-down/400?cb=20221001073620",
+      "size": [
+        2048,
+        1612
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-10-01T07:36:20Z",
+        "ObjectName": "Lh12"
+      }
+    },
+    {
+      "description": "A seasonal greeting illustration on a teal ground. A carved jack-o'-lantern with triangular eyes and a jagged grin sits at centre. The Long Horse neck curls in an arc around and behind it, rendered as a dark brown silhouette with warm orange rim light rather than the usual pale waxy bone; the head is at upper-left in profile with a dark eye socket, a muzzle ending in toe-like teeth, and hair strands. Large hand-lettered white text across the lower third reads 'HAPPY HALLOWEEN' and beneath it 'FROM SLIMYSWAMPGHOST!'.",
+      "not_visible": [
+        "pale waxy skin",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "night sky",
+        "any person"
+      ],
+      "setting": "no setting, flat teal ground with a pumpkin",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "canon-skull-no-mandible, rendered dark with warm rim light",
+      "provenance": "creator-account",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "the pumpkin and the lettering sit on the same layer as the creature",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": false,
+      "design_lock": false,
+      "notes": "Signed 'FROM SLIMYSWAMPGHOST', the creator's own handle, so provenance is as strong as it gets in this set, and it is still unusable as a canon plate. It is a holiday card: the pumpkin and the greeting are the subject, and the colour treatment inverts the creature's canon value. Reference only. | REJECTED: Happy Halloween pumpkin promo art. Off-register for a horror explainer and not a depiction of the creature in canon.",
+      "order": 22,
+      "wiki_title": "File:Lh14.jpg",
+      "file": "materials/long-horse/c52161ed683c.jpg",
+      "phash": "8132758d6e92b66d",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/a/af/Lh14.jpg/revision/latest?cb=20221001073620",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Lh14.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/a/af/Lh14.jpg/revision/latest/scale-to-width-down/400?cb=20221001073620",
+      "size": [
+        1536,
+        2048
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-10-01T07:36:20Z",
+        "ObjectName": "Lh14"
+      }
+    },
+    {
+      "description": "Painting. A flat overcast brown-grey sky fills the frame with two black power lines running across the top. The head is at upper centre in profile: bone-white skull, one very large black round eye socket, dark hair strands over the crown and hanging from the neck, and a long upper jaw carrying a row of short pale teeth along its lower edge with a cluster at the tip. No mandible. Below the head the neck folds back on itself in three tight sharp-angled joints and runs off both the left and right edges. No ground, no horizon, no other object.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "ground or horizon",
+        "any person",
+        "night",
+        "artificial light"
+      ],
+      "setting": "open sky seen from below, two power lines",
+      "time_of_day": "overcast daylight",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "flat sky and an unambiguous silhouette; the two power lines cross behind the neck and must be painted out or accepted",
+      "cutout_status": "pending",
+      "upscaled": null,
+      "approved": false,
+      "design_lock": false,
+      "notes": "DAYLIGHT IMAGE, one of only two in the set. Do not force-darken it to match the night plates: the flat pale sky is what makes the silhouette read, and the canon lore card calls the creature non-hostile, which the daylight supports. RECOMMEND as the design-lock candidate: canon anatomy, no baked-in text, no second creature, 1436x2048. | REJECTED: Reads as a torso and limbs behind the skull. Canon says the body is never shown and the neck never ends. Rejected as ambiguous rather than risked.",
+      "order": 23,
+      "wiki_title": "File:Lh15.jpg",
+      "file": "materials/long-horse/110ab4486171.jpg",
+      "phash": "c7c7426c383496db",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/2/26/Lh15.jpg/revision/latest?cb=20221001073620",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Lh15.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/2/26/Lh15.jpg/revision/latest/scale-to-width-down/400?cb=20221001073620",
+      "size": [
+        1436,
+        2048
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2022-10-01T07:36:20Z",
+        "ObjectName": "Lh15"
+      }
+    },
+    {
+      "description": "Extremely blurred, low-resolution, heavily compressed night frame with a warm orange cast, looking up into conifer trunks and branches. A thin pale zig-zag line weaves among the branches from the upper left to the centre and may be a neck segment. Nothing else about the creature resolves: no head, no eye socket, no teeth and no hair strands can be made out anywhere in the frame.",
+      "not_visible": [
+        "head or skull",
+        "eye socket",
+        "teeth",
+        "lower jaw",
+        "hair strands",
+        "end of the neck",
+        "torso or body",
+        "daylight"
+      ],
+      "setting": "conifer woodland seen from below",
+      "time_of_day": "night",
+      "design_variant": "unresolved, no anatomy visible",
+      "provenance": "unknown",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "nothing is separable; the creature cannot be distinguished from the branches",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": false,
+      "design_lock": false,
+      "notes": "567x428 and softer than its own pixel count, almost certainly a re-compressed video frame grab, uploaded to the wiki in 2026 with no source given. It cannot support any narration line about anatomy because no anatomy is visible. Usable only as a sub-second found-footage flash, and even then it will read as an upload error at 1080p. | REJECTED: Unreadable red blur. Cannot support any narration line, so it can only ever be filler.",
+      "order": 24,
+      "wiki_title": "File:Longhorse blurry.png",
+      "file": "materials/long-horse/90a1a041d290.png",
+      "phash": "954a2d562a756ace",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/d/db/Longhorse_blurry.png/revision/latest?cb=20260129021525",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Longhorse_blurry.png",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/d/db/Longhorse_blurry.png/revision/latest/scale-to-width-down/400?cb=20260129021525",
+      "size": [
+        567,
+        428
+      ],
+      "mime_reported": "image/png",
+      "mime_actual": "image/png",
+      "meta": {
+        "DateTime": "2026-01-29T02:15:25Z",
+        "ObjectName": "Longhorse blurry"
+      }
+    },
+    {
+      "description": "Painting on a flat pale grey-green ground with no environment. A bone-white horse skull faces the viewer almost head-on at centre: two dark round eye sockets, long dark hair strands falling from the crown down both sides, a long tapering muzzle, and at the tip a cluster of small pale toe-like teeth with a dark opening above them. No mandible. Several dark maroon-brown neck segments loop across the top and bottom of the frame and run off every edge, each with tufts of dark hair and sharply angled joints.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "environment",
+        "any person",
+        "night"
+      ],
+      "setting": "no setting, flat pale ground",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "canon-skull-no-mandible, neck rendered dark maroon rather than pale waxy",
+      "provenance": "creator-account",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "flat ground and strong value separation; the hair strands will thin at their tips",
+      "cutout_status": "pending",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "Filename is a Twitter/X media ID, so this is a re-upload of a post rather than a wiki-native asset. The dark neck against a white skull is a real colour departure from the pale waxy neck in the photo composites; do not cut between this and the street or roadside plates inside one beat. | Cutout candidate (subject on a clean ground).",
+      "order": 25,
+      "wiki_title": "File:Fx6BTV3aYAIDYxT.jpg",
+      "file": "materials/long-horse/02105da70b31.jpg",
+      "phash": "99b966644d8972f2",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/9/93/Fx6BTV3aYAIDYxT.jpg/revision/latest?cb=20230613185022",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Fx6BTV3aYAIDYxT.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/9/93/Fx6BTV3aYAIDYxT.jpg/revision/latest/scale-to-width-down/400?cb=20230613185022",
+      "size": [
+        900,
+        1200
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2023-06-13T18:50:22Z",
+        "ObjectName": "Fx6BTV3aYAIDYxT"
+      }
+    },
+    {
+      "description": "Night photograph looking up at the corner of a white building clad in vertical boards, with a weathered rectangular sign mounted on it whose lettering is too degraded to read, beginning with what looks like 'EXHIB'. A grey electrical box is fixed low on the wall. The Long Horse neck comes over the roof edge from the upper right, pale and banded, and the head hangs down at centre-right facing the camera: two dark round eye sockets, a long pale muzzle, and an open dark cavity at the tip ringed below by short pale teeth. No mandible. The neck runs off the top-right corner.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight"
+      ],
+      "setting": "outside a small board-clad building carrying a sign, possibly a fairground or park structure",
+      "time_of_day": "night",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "creator-account",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "half the neck crosses the bright white cladding at a value close to the bone",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "Filename is an Instagram CDN ID. 640x800, below the 900px short side, so upscale before any held shot. The head is front-on with both sockets visible, which is rarer than the profile views and reads as direct eye contact. | Use as PLATE (environment to composite into).",
+      "order": 26,
+      "wiki_title": "File:356374055 956824888959400 5748680939506447136 n.jpg",
+      "file": "materials/long-horse/5770a421518d.jpg",
+      "phash": "fe1607614b780cfc",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/0/05/356374055_956824888959400_5748680939506447136_n.jpg/revision/latest?cb=20230628182719",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:356374055_956824888959400_5748680939506447136_n.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/0/05/356374055_956824888959400_5748680939506447136_n.jpg/revision/latest/scale-to-width-down/400?cb=20230628182719",
+      "size": [
+        640,
+        800
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2023-06-28T18:27:19Z",
+        "ObjectName": "356374055 956824888959400 5748680939506447136 n"
+      }
+    },
+    {
+      "description": "A multi-creature ensemble painting under a dull yellow-grey sky with telephone poles and slack wires. At the top, an enormous skeletal ribcage and shoulders hang from a cross-shaped pole, trailing dark cords. Across the bottom, an enormous dark face with two narrow glowing white eyes and a wide grin of yellow teeth. In the middle-left, Long Horse: a pale skull in profile with one dark round eye socket, an upper jaw with a full row of teeth and a toe-like cluster at the tip, no mandible, dark hair strands, and one neck segment running off the right edge. At bottom right, a small figure in a black suit with a pale featureless head stands facing the viewer.",
+      "not_visible": [
+        "end of the Long Horse neck",
+        "Long Horse torso or body",
+        "legs",
+        "night",
+        "any real person"
+      ],
+      "setting": "open ground with telephone poles under a heavy sky",
+      "time_of_day": "overcast daylight",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "the creatures overlap, so any matte pulls more than one of them",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": false,
+      "design_lock": false,
+      "notes": "DO NOT USE IN THE LONG HORSE SECTION. Four different creatures share this frame and only one of them is Long Horse. This is precisely the failure that put the wrong creature on screen for nine seconds. The suited figure with the pale head is another of the artist's characters, not a photograph of a person, so it is not a hard flag; it is a wrong-creature risk. | REJECTED: Multiple different creatures in one frame. Wrong-creature risk in a section that must show one design.",
+      "order": 27,
+      "wiki_title": "File:Allstars.jpg",
+      "file": "materials/long-horse/d8d300742a5e.jpg",
+      "phash": "c4f6e38694734e98",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/5/53/Allstars.jpg/revision/latest?cb=20260129020243",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Allstars.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/5/53/Allstars.jpg/revision/latest/scale-to-width-down/400?cb=20260129020243",
+      "size": [
+        1600,
+        2000
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2026-01-29T02:02:43Z",
+        "ObjectName": "Allstars"
+      }
+    },
+    {
+      "description": "Painting. In the foreground a dark prairie of tall grass with a steel farm windmill silhouetted at centre against a heavy plum-grey overcast sky. The Long Horse head fills the upper left in profile, very large and close: bone-white skull, a dark round eye with a lighter rim, rendered more as a filled dark orb than a hollow socket, long black hair strands from the crest and along the neck, and an upper jaw carrying a full row of small white teeth with a toe-like cluster at the muzzle tip. No mandible. The neck runs off the right edge, and a second thin neck segment zig-zags across the middle of the frame and runs off both edges.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "clear night sky",
+        "stars or moon"
+      ],
+      "setting": "prairie farmland with a steel windmill",
+      "time_of_day": "dusk or heavy overcast, not full night",
+      "design_variant": "canon-skull-no-mandible, eye rendered as a dark orb rather than an empty socket",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "a large pale head against a flat dark sky; the thin second segment crosses the grass and will be the weak part of the matte",
+      "cutout_status": "pending",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "The scale relationship, head larger than the windmill, is the best size beat in the set. Note that the eye is painted as a filled orb here and as an empty socket elsewhere, so if the narration says 'empty sockets' prefer the close-up head painting instead. | Cutout candidate (subject on a clean ground).",
+      "order": 28,
+      "wiki_title": "File:Longhorse windmill.jpg",
+      "file": "materials/long-horse/982274a7b6bc.jpg",
+      "phash": "8c8c3773e185871f",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/e/e3/Longhorse_windmill.jpg/revision/latest?cb=20260128173009",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Longhorse_windmill.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/e/e3/Longhorse_windmill.jpg/revision/latest/scale-to-width-down/400?cb=20260128173009",
+      "size": [
+        1500,
+        2000
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2026-01-28T17:30:09Z",
+        "ObjectName": "Longhorse windmill"
+      }
+    },
+    {
+      "description": "White charcoal or chalk on a pure black ground. The head hangs down at centre among bare branches: a grainy pale skull with heavily creased waxy skin, one dark round eye socket, a row of small teeth along the lower edge of the upper jaw, and a muzzle tip ending in a cluster of finger or toe-like nubs. No mandible. Long pale hair strands hang from the crown and the neck. A second, softer mass sits behind and to the right. Bare branches cross both in front of and behind the head, drawn in the same white as the creature. No ground, no sky and no environment beyond the branches.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "environment or horizon",
+        "colour",
+        "any person"
+      ],
+      "setting": "bare branches on a black ground",
+      "time_of_day": "n/a, no environment shown",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": true,
+      "cutout_note": "branches cross in front of the head in the same value, so a matte cannot tell them apart",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "The most detailed rendering of the waxy creased skin in the set, which the canon lore card calls out explicitly. Good for a texture push-in. | Cutout candidate (subject on a clean ground).",
+      "order": 29,
+      "wiki_title": "File:Longhorse charcoal.jpg",
+      "file": "materials/long-horse/924d6011c140.jpg",
+      "phash": "c19c387367e61cc6",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/7/7b/Longhorse_charcoal.jpg/revision/latest?cb=20260128172802",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Longhorse_charcoal.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/7/7b/Longhorse_charcoal.jpg/revision/latest/scale-to-width-down/400?cb=20260128172802",
+      "size": [
+        1500,
+        2000
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2026-01-28T17:28:02Z",
+        "ObjectName": "Longhorse charcoal"
+      }
+    },
+    {
+      "description": "Photograph down a long institutional corridor, a school or hospital, with a green-teal cast: a bank of lockers along the right wall, a polished floor throwing reflections, a suspended ceiling with a vent, a red-lensed alarm light on the left wall, and a lit doorway at the far end. The Long Horse neck drops from the ceiling at centre in a tight S of sharply-jointed pale segments and runs up out of frame. The head is at the end of it, pointing down and to the right: pale skull, one dark round eye socket, a long muzzle, hair strands hanging beneath. No mandible.",
+      "not_visible": [
+        "lower jaw / mandible",
+        "end of the neck",
+        "torso or body",
+        "legs",
+        "any person",
+        "daylight",
+        "exterior"
+      ],
+      "setting": "school or hospital corridor with lockers",
+      "time_of_day": "indoor artificial light, time of day undetermined",
+      "design_variant": "canon-skull-no-mandible",
+      "provenance": "official-gallery",
+      "hard_flags": [],
+      "cutout_suitable": false,
+      "cutout_note": "the neck crosses the bright lit doorway and the reflective lockers",
+      "cutout_status": "n/a",
+      "upscaled": null,
+      "approved": true,
+      "design_lock": false,
+      "notes": "853px short side, just under the 900px bar, so upscale before a full-frame hold. The empty corridor plus the red alarm light carries the 'appears before a disaster' beat without showing any harm, which canon requires. | Use as PLATE (environment to composite into).",
+      "order": 30,
+      "wiki_title": "File:Longhorse motiveunknown.jpg",
+      "file": "materials/long-horse/48f4949e3e97.jpg",
+      "phash": "def6218997248ad3",
+      "source_url": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/2/27/Longhorse_motiveunknown.jpg/revision/latest?cb=20260128172800",
+      "wiki_page": "https://trevorhenderson.fandom.com/wiki/File:Longhorse_motiveunknown.jpg",
+      "thumb": "https://static.wikia.nocookie.net/trevor-henderson-inspiration/images/2/27/Longhorse_motiveunknown.jpg/revision/latest/scale-to-width-down/400?cb=20260128172800",
+      "size": [
+        853,
+        1280
+      ],
+      "mime_reported": "image/jpeg",
+      "mime_actual": "image/jpeg",
+      "meta": {
+        "DateTime": "2026-01-28T17:28:00Z",
+        "ObjectName": "Longhorse motiveunknown"
+      }
+    }
+  ],
+  "approval": {
+    "approved_by": "claude, applying editor-materials-trevor-cannot-survive.md",
+    "date": "2026-08-09",
+    "approved": 21,
+    "rejected": 6,
+    "design_lock_index": 17,
+    "owner_override": "Every call here is reversible in the contact sheet. Reasons are recorded per image."
+  }
+}

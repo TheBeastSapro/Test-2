@@ -1,0 +1,33 @@
+{
+  "name": "hp-remotion-engine-v2",
+  "version": "2.0.0",
+  "description": "",
+  "scripts": {
+    "studio": "remotion studio",
+    "plates": "python3 scripts/export_plates.py",
+    "render:video": "remotion render SewerSpider out/video.mp4 --muted --video-bitrate=14M",
+    "mux": "ffmpeg -nostdin -loglevel error -y -i out/video.mp4 -i public/audio/mix.wav -c:v copy -c:a aac -b:a 320k -t 62.6 -movflags +faststart out/sewer_spider_msimplified.mp4",
+    "render": "npm run render:video && npm run mux",
+    "typecheck": "tsc --noEmit",
+    "stills": "node scripts/stills.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@remotion/bundler": "^4.0.507",
+    "@remotion/cli": "^4.0.507",
+    "@remotion/fonts": "^4.0.507",
+    "@remotion/google-fonts": "^4.0.507",
+    "@remotion/renderer": "^4.0.507",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.507"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.5.4"
+  },
+  "private": true
+}
