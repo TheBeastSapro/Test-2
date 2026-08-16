@@ -100,3 +100,79 @@ aggregate, inferring a cause, and building on the inference without checking it.
 The rule that would have caught all four: **measure the thing you are about to
 build, not a number that correlates with it.** And look at the output before
 shipping it, every time, the way you would look at a competitor's.
+
+---
+
+# The actual method: illustrate the sentence
+
+*Added after the owner said "you're measuring not scoring... a human editor adds
+visual accordingly. compare script and visual."*
+
+That is the correction that matters most in this whole build. Everything above
+is measurement. Measurement describes a finished edit; it does not produce one.
+
+## What Vu does, line by line
+
+His Long Horse section, transcribed and put beside the frame playing at the
+middle of each spoken sentence:
+
+| his line | what is on screen |
+|---|---|
+| "You are **driving alone**, when a white horse skull rises above the trees" | a car on a night road |
+| "no body beneath it, only a pale **neck** stretching into the forest" | same road, neck composited across it |
+| "Then the **bones begin to crack** as it turns toward your car" | same road, creature closer |
+| "Its skull has **no lower jaw**, empty black sockets" | creature isolated on white, RED ARROW at the jaw |
+| "The neck can create new joints, twist through **impossible angles**" | boxed photo of the neck coiling in a street |
+| "A **locked room** or **miles of empty road** mean very little" | TWO boxed images side by side: a door, and a road |
+| "Its arrival means a **disaster** is approaching" | a tornado photograph |
+| "giving **anyone who notices** a chance to leave" | skeleton plus two stick figures |
+| "This universe has a strange **employee of the month** program" | creature plus an EMPLOYEE OF THE MONTH badge |
+| "**ordinary barriers** cannot reliably keep it out" | TWO boxed images: an interior, and a wall |
+| "Fear whatever it came to **warn you** about" | road, creature, stick figure, a red car |
+
+**The rule is one question per sentence: what does this line literally show?**
+Then put that on screen. A door. A road. A tornado. A wall. A badge.
+
+Two boxed images side by side when the line names two things. That is what the
+2-up and 3-up grid rule in the chat log is FOR.
+
+## The structural mistake this exposes
+
+**Most of Vu's images are not creature images.** A stock tornado. A door. A
+stretch of highway. A wall. A badge.
+
+This pipeline sources only canon creature art. So every line gets a creature
+picture regardless of what the line says. Checked against my own section:
+
+| my line | what I put on screen | what the line asks for |
+|---|---|---|
+| "A girl kept hearing something in her dreams" | head-branches, neck-loops | A GIRL. A BED. A DARK BEDROOM |
+| "she heard it from the hallway" | art-skull | A HALLWAY. A DOOR |
+| "around her door frame bent a skull... down the stairs" | head-branches, neck-zigzag | A DOOR FRAME. STAIRS. A CORNER |
+| "it travels through dreams, it likes music and apples" | head-branches, neck-zigzag | DREAMS. MUSIC. APPLES |
+| "it smells like cinnamon" | stipple | CINNAMON |
+| "misfortune is coming soon" | art-heads, head-branches | A DISASTER. SOMETHING BAD COMING |
+
+Eleven lines, eleven creature pictures. The script names a girl, a bed, a
+hallway, a door, stairs, apples and cinnamon, and none of them are ever on
+screen. That is why it reads as arbitrary and repetitive no matter how the
+motion measures.
+
+## What has to change
+
+A missing pipeline stage: **script -> concrete nouns -> an image for each noun.**
+
+The canon rules govern CREATURE images and always did. A door, a hallway, a
+tornado, an apple are illustration, not canon, and they need no approval gate.
+They are also most of the frame count.
+
+So the sheet's unit is not "which cutout goes here". It is:
+
+    line -> the things this line names -> an image for each -> a layout that
+    shows them while the line plays
+
+and the creature is simply one of those things, on the lines that name it.
+
+The measurements stay useful as a FAIL DETECTOR after the fact. They were never
+capable of producing an edit, and treating them as a recipe is what produced
+four rebuilds that scored well and looked wrong.
