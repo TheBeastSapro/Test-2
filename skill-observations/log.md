@@ -391,3 +391,27 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When starting work that rests on an existing classification, inference, or heuristic — especially one you wrote and labelled as approximate — spend the first few minutes verifying it on real data rather than assuming the earlier self did. Treat a docstring that says "this is a heuristic" as an open ticket rather than as a disclosure that settles the matter. And when the new work needs to look closely at data an earlier stage only glanced at, run that closer look across the whole input set first: the cheap proxy is usually right on the examples that motivated it and wrong on a class nobody sampled. Fix the classification before building on it — a feature layered on a wrong split inherits the wrongness and makes it harder to see.
 
 **Principle:** A heuristic is only tested by something that depends on it being correct rather than merely reasonable. Until then it is an assumption with a passing test suite, and the moment you start building on it is the cheapest moment you will ever have to check it.
+
+### Observation 25: A guard placed downstream of the wrong question cannot fire
+
+**Status:** OPEN
+**Date:** 2026-08-16
+**Session context:** A search-backed asset lane returned an absurd result; I added a relevance refusal, unit-tested it, and the next real run produced the identical absurd result.
+
+**Issue:** A lane searched a public index for a background image and got back something wildly unrelated — the wrong subject entirely, under every shot in the video. I diagnosed it as "the search relaxes its query until something comes back", added a check that refuses results the search itself grades as weak, wrote a test that proved the refusal worked, and shipped it. The next end-to-end run rendered the same wrong picture. The refusal never fired, and it was right not to: the query had been reduced to two words that happened to name the *subject* rather than the *place*, and the index's answer matched half of them, which grades as relevant. The result was a good answer to the question that was asked. My guard sat downstream checking the quality of answers, when the defect was in the question. The unit test passed because I had written it around my diagnosis rather than around the observed failure — I fed it a result pre-labelled "weak" and asserted the refusal fired, which tests the refusal and not the bug.
+
+**Suggested improvement:** When a step produces a bad result through a search, a query, a model call or any other request, reconstruct and read the actual request before deciding what to fix. Print the literal string that was sent. A guard on the response is only correct if the request was well-formed; if the request was wrong, every response is wrong and no amount of grading catches it. Concretely: when writing a regression test for a failure you did not reproduce end to end, make the test's *input* the real input from the failing run rather than a fixture shaped like your hypothesis — if I had fed the test the real query, it would have failed immediately and pointed at the query builder. And treat "my fix is written and unit-tested but not yet seen working on real data" as unfinished rather than as done-pending-verification.
+
+**Principle:** A bad answer to a bad question is not a quality problem. Validate the request before you validate the response, because a filter on the output cannot see a defect that lives in the input.
+
+### Observation 26: A ranking that is right for ordering is often wrong for truncating
+
+**Status:** OPEN
+**Date:** 2026-08-16
+**Session context:** Tracking down why a stage downstream kept reusing two source items across forty outputs, when the source had nine suitable ones.
+
+**Issue:** A reader fetched candidate items, sorted them by an obvious quality signal — size — and returned the top N. The sort was well chosen and documented as "orders the candidates, does not pick". The consumer then filtered that list to the one subset it could actually use, and got almost nothing, so it reused what little it had over and over. The visible symptom was repetition two stages downstream and it looked like a defect in the consumer. It was not: the source page had 32 candidates and 9 usable ones, and the twelve largest contained 2 of the 9, because the usable kind is systematically smaller than the unusable kind. The ranking was fine. The *truncation* silently spent the whole budget on one category. Nothing warned, because from the reader's point of view it had returned twelve good candidates ranked correctly.
+
+**Suggested improvement:** Whenever a list is cut to a limit, ask what the consumer will filter it down to, and check whether the ranking signal correlates with that filter. If it does — and it often does, because size, recency, popularity and score all correlate with category — fill the limit from each category rather than taking a flat top-N. Measure it: count how many of each kind survive the cut on real data, not on a fixture. And when a downstream stage complains about scarcity or repetition, look upstream at what was discarded before assuming the stage is at fault; a truncation is invisible at the point where it hurts.
+
+**Principle:** Sorting decides order and truncating decides membership, and they are separate decisions. A signal that ranks well can still cut catastrophically when it correlates with the category the consumer needs.
