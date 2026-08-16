@@ -380,6 +380,57 @@ def test_the_gallery_call_asks_for_the_metadata_that_carries_the_colour_type():
     assert "metadata" in source and "iiprop" in source
 
 
+def _sized(name, width, height, *, alpha=True):
+    return fandom.Asset(name=name, url="u", page="p", width=width, height=height,
+                        colour_type="truecolour-alpha" if alpha else "truecolour",
+                        mime="image/png")
+
+
+def test_the_gallery_limit_does_not_spend_itself_on_screenshots():
+    """Size orders the candidates well and truncates them badly.
+
+    Measured on Doors' Figure article: 32 usable images, 9 of them cut-outs, and the
+    twelve biggest contain 2 of those 9 — a 1080p gameplay screenshot is three times
+    the pixels of a 600x600 render and this wiki has a lot of gameplay screenshots.
+    The planner then narrowed to the cut-outs it had been handed and put 40 shots on 2
+    pictures, which is the one-monster-shot failure with its cause a layer upstream of
+    where it showed.
+    """
+    found = sorted(
+        [_sized(f"screenshot{i}.png", 1920, 1080, alpha=False) for i in range(20)]
+        + [_sized(f"cutout{i}.png", 600, 600) for i in range(9)],
+        key=lambda asset: asset.pixels, reverse=True)
+
+    kept = fandom._keep(found, 12)
+
+    cutouts = [a for a in kept if a.name.startswith("cutout")]
+    assert len(kept) == 12
+    assert len(cutouts) == 6, f"only {len(cutouts)} cut-outs survived the limit"
+
+
+def test_a_page_with_no_cut_outs_still_returns_a_full_gallery():
+    """Half the budget is reserved for cut-outs only where there are cut-outs. A page
+    of pure scene photography has to come back with its twelve, or narrowing the pool
+    upstream turns a poor segment into no segment."""
+    found = [_sized(f"wide{i}.png", 1920, 1080, alpha=False) for i in range(20)]
+
+    assert len(fandom._keep(found, 12)) == 12
+
+
+def test_the_kept_gallery_is_still_handed_back_largest_first():
+    """This changes which twelve, not how they are ordered — callers downstream read
+    the list as ranked."""
+    found = sorted(
+        [_sized("big-wide.png", 1920, 1080, alpha=False),
+         _sized("small-cutout.png", 600, 600),
+         _sized("huge-cutout.png", 2000, 2000)],
+        key=lambda asset: asset.pixels, reverse=True)
+
+    kept = fandom._keep(found, 3)
+
+    assert [a.pixels for a in kept] == sorted((a.pixels for a in kept), reverse=True)
+
+
 def test_assets_sort_largest_first_by_pixels_not_by_edge():
     """A 1546x2048 is a bigger asset than a 2000x900 despite the shorter long edge."""
     tall = fandom.Asset(name="t", url="u", page="p", width=1546, height=2048)

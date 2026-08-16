@@ -463,11 +463,23 @@ async def _canon_plate(ctx: NodeContext, shot: dict, cache: dict, image_provider
     # which is the whole reason a stock source is usable here at all: unlike the wiki
     # art, this is a licence the app can actually state.
     if prompt:
-        from ..providers.stock import OpenverseProvider
+        # No query means the script never said where this happens — the direction was
+        # the creature's name and camera language, and both come out. Searching anyway
+        # is what put a box of G.I. Joe figures under every shot of run 14: asked for a
+        # "figure", the index answered with one. So the stock lane is skipped rather
+        # than sent something it cannot answer, and the plate is generated.
+        query = str(shot.get("plate_query") or "")
+        lanes = [(image_provider, "generated", prompt)]
+        if query:
+            from ..providers.stock import OpenverseProvider
 
-        query = str(shot.get("plate_query") or "") or prompt
-        for source, label, asked in ((OpenverseProvider(), "found", query),
-                                     (image_provider, "generated", prompt)):
+            lanes.insert(0, (OpenverseProvider(), "found", query))
+        else:
+            ctx.log(f"plate for {group or 'the canon segment'}: the script names no "
+                    f"place for this segment, only the creature — generating a "
+                    f"background rather than searching for one", level="info")
+
+        for source, label, asked in lanes:
             try:
                 made = await source.generate(
                     asked, out_path=out_path, width=width, height=height)
@@ -847,19 +859,48 @@ def _plate_prompt(entity: dict, scenes: list[dict]) -> str:
     return f"Background plate: {setting}. {PLATE_CONSTRAINT}"
 
 
-def _plate_query(entity: dict, scenes: list[dict]) -> str:
-    """The same setting as words to *search* for, without the drawing instructions.
+def _plate_query(entity: dict, scenes: list[dict], *, others=()) -> str:
+    """The *place*, as words to search a photo index for — or "" for don't search.
 
     `_plate_prompt` ends in a paragraph telling a model what not to draw, which is
-    exactly right for generation and is noise in a search box — "empty environment only,
-    no creature, no figure" describes the picture nobody indexed. The stock lane gets
-    the setting alone.
+    exactly right for generation and is noise in a search box: "empty environment only,
+    no creature, no figure" describes the picture nobody indexed.
+
+    The creature's name comes out too, and that is the part that matters. A plate is the
+    room with nothing in it — the subject is composited on top — so searching a photo
+    index for the creature can only return the wrong thing twice over: the creature
+    itself, which would render two of them, or a homonym. It returned a homonym. The
+    scene direction for this run reduced to the two words `seek figure`, and a stock
+    index asked for a *figure* answers with "G.I. Joe 1982 Collection." — tagged
+    `figure`, graded relevant on half its words, and rendered under every shot in the
+    video. The refusal that was supposed to catch this could not: on the search's own
+    terms the result was a good match for what it had been asked.
+
+    So what is left after the names are removed has to be an actual place, and when
+    nothing is left this returns "" and the caller generates instead. That is not a
+    degradation — the reference generates about one plate in ten, and a generated
+    corridor is the right answer to "the script never said where this happens".
     """
     direction = next((str(scene.get("visual_prompt") or "").strip()
                       for scene in scenes if str(scene.get("visual_prompt") or "").strip()),
                      "")
-    return (direction[:PLATE_PROMPT_CHARS]
-            or f"{entity.get('title', '')} environment").strip()
+    if not direction:
+        return ""
+
+    from ..providers.stock import search_terms
+
+    # Every creature in the run, not only this one. The script's direction for Figure's
+    # scenes still says "seek and figure" — one segment's plate would have gone looking
+    # for the other segment's creature.
+    #
+    # Whole words, so a creature called Halt does not strip "halted" out of a setting.
+    names = set()
+    for title in (str(entity.get("title") or ""), *(str(other) for other in others)):
+        names |= set(re.findall(r"[a-z0-9]+", title.lower()))
+
+    kept = [word for word in search_terms(direction[:PLATE_PROMPT_CHARS])
+            if word not in names]
+    return " ".join(kept).strip()
 
 
 #: The atmospheres `render/particles` can draw. Named here as well so a typo is caught
@@ -980,7 +1021,9 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
         # scale and position changing — so a plate per shot would be paying for variety
         # the format does not have and the eye reads as a different location each cut.
         plate_prompt = _plate_prompt(entity, owned)
-        plate_query = _plate_query(entity, owned)
+        plate_query = _plate_query(
+            entity, owned,
+            others=[other.get("title") for other in entities if other is not entity])
         # Each shot lands on whichever scene its start time falls in, so the shot list
         # keeps the (scene_index, plate_index) shape everything downstream already
         # reads. Boundaries are the scenes' own durations — the plan is laid over the

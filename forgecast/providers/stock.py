@@ -354,15 +354,31 @@ def to_query(prompt: str) -> str:
     drift from the prompt the generator actually uses — and when the two disagree, the
     free lane searches for one thing while the fallback generates another.
     """
-    noise = {
-        "cinematic", "establishing", "shot", "illustrating", "moody", "lighting",
-        "shallow", "depth", "of", "field", "b-roll", "broll", "documentary",
-        "camera", "slow", "push", "in", "pan", "left", "right", "static", "closeup",
-        "close-up", "wide", "angle", "lens", "natural", "light", "high", "contrast",
-        "composition", "subject", "beat", "the", "a", "an", "with", "and", "for",
-    }
+    # Six words is about where stock relevance peaks; beyond that recall collapses.
+    return " ".join(search_terms(prompt)[:6]) or prompt[:60]
+
+
+#: Words that describe how a picture was *taken* rather than what is in it. A stock
+#: index cannot use any of them and they crowd out the words it can.
+QUERY_NOISE = {
+    "cinematic", "establishing", "shot", "illustrating", "moody", "lighting",
+    "shallow", "depth", "of", "field", "b-roll", "broll", "documentary",
+    "camera", "slow", "push", "in", "pan", "left", "right", "static", "closeup",
+    "close-up", "wide", "angle", "lens", "natural", "light", "high", "contrast",
+    "composition", "subject", "beat", "the", "a", "an", "with", "and", "for",
+}
+
+
+def search_terms(prompt: str) -> list[str]:
+    """The words in a prompt a photo index could actually match on.
+
+    Separate from `to_query` because the empty case matters to some callers and
+    `to_query` hides it: with nothing left it falls back to the raw prompt, which is the
+    right answer for a caller that must search *something* and the wrong one for a
+    caller deciding whether to search at all. The plate lane is the second kind — a
+    prompt with no place left in it should be generated, not searched — and it found
+    that out by rendering a horror creature onto a box of G.I. Joe figures.
+    """
     cleaned = prompt.lower().replace("-", " ").replace("/", " ")
     words = [word.strip(",.;:\"'()") for word in cleaned.split()]
-    kept = [word for word in words if word and word not in noise and len(word) > 2]
-    # Six words is about where stock relevance peaks; beyond that recall collapses.
-    return " ".join(kept[:6]) or prompt[:60]
+    return [word for word in words if word and word not in QUERY_NOISE and len(word) > 2]

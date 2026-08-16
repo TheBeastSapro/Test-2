@@ -174,6 +174,32 @@ treats a scene shot as a cutout composites a photograph onto wallpaper.
 So the format's asset pipeline is **retrieval, not generation**, for the thing the video
 is actually about. Generation is used only for the plate it stands on.
 
+**The wiki has far more cut-outs than a size ranking will find.** Doors' *Figure*
+article carries 32 usable images and 9 of them are cut-outs, but the twelve *biggest*
+contain only 2 — a 1080p gameplay screenshot is three times the pixels of a 600×600
+render and these wikis are mostly gameplay screenshots. A gallery reader that sorts by
+size and truncates therefore starves the only pool the segment can be built from, and
+the symptom appears two stages later as one creature image held across forty shots.
+Measured after filling the limit from both kinds alternately: Figure 2 → 6 cut-outs,
+Seek 5 → 6, Halt 1 → 6.
+
+The alpha channel is knowable before any download: MediaWiki returns a PNG's
+`colorType` in the same batched `imageinfo` call that carries the sizes. `truecolour`
+is decisive — no alpha channel, so not a cut-out — and JPEG is decided by its mime type.
+GIF and WEBP report nothing, so they are left in and settled at render time. Across the
+whole Figure gallery this separates the two real cut-outs from the near-black,
+motion-blurred `FIGURE WITH EARS OMGGG.png`, which is the same shape as both of them.
+
+**A plate is a place, and must never be searched for by the creature's name.** The
+plate is the room with nothing in it; the subject is composited on top. Run 14 built
+its plate query from the script's visual direction, which reduced to the two words
+`seek figure` — and a photo index asked for a *figure* returns "G.I. Joe 1982
+Collection.", a box of action figures, graded relevant on half its words. All 63
+composites in that run stood on it. The refusal built for weak matches could not fire,
+because by the search's own measure the answer was good. The fix is upstream of the
+grading: strip every creature's name out of the query, and when what is left names no
+place, generate rather than search.
+
 **Motion.** Predominantly static images with a Ken Burns push. A small number of shots
 carry real animation — Amber's arm stretching (0:10), the Housewalker's legs (1:07) —
 which look like puppet-warp or a short image-to-video loop rather than a generated

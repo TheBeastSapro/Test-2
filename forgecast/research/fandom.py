@@ -32,6 +32,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
+from itertools import zip_longest
 
 import httpx
 
@@ -708,4 +709,36 @@ async def images(wiki: str, title: str, *, limit: int = 12,
         ))
 
     found.sort(key=lambda asset: asset.pixels, reverse=True)
-    return found[:limit]
+    return _keep(found, limit)
+
+
+def _keep(found: list[Asset], limit: int) -> list[Asset]:
+    """Cut the candidate list to `limit` without starving either kind.
+
+    Size orders the candidates well and truncates them badly, and on a real page the
+    difference is the whole segment. Doors' Figure article carries 32 usable images, 9
+    of them cut-outs. Taking the 12 biggest takes 2 of those 9 — because a 1080p
+    gameplay screenshot is three times the pixels of a 600x600 render, and this wiki
+    has a lot of gameplay screenshots. The planner then narrowed to the cut-outs it was
+    given and put 40 shots on 2 pictures, which is the "one monster shot" failure with
+    the cause one layer upstream of where it showed.
+
+    So the two kinds are filled alternately, each still largest-first. A page with no
+    cut-outs returns the same twelve wides it always did; a page with plenty gets half
+    its budget spent on the half the segment is actually built from. Re-sorted by size
+    at the end so the caller still receives a largest-first list — this changes *which*
+    twelve, not how they are ordered.
+    """
+    def _is_subject(asset: Asset) -> bool:
+        return asset.has_alpha and asset.is_portrait_crop
+
+    subjects = [asset for asset in found if _is_subject(asset)]
+    rest = [asset for asset in found if not _is_subject(asset)]
+
+    kept: list[Asset] = []
+    for pair in zip_longest(subjects, rest):
+        for asset in pair:
+            if asset is not None and len(kept) < limit:
+                kept.append(asset)
+    kept.sort(key=lambda asset: asset.pixels, reverse=True)
+    return kept

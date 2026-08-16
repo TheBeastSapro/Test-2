@@ -744,3 +744,80 @@ async def test_a_weak_public_match_is_refused_rather_than_used(tmp_path, monkeyp
     await media_node.shots_node(context)
 
     assert len(images.prompts) == 1, "a weak public match was used instead of generating"
+
+
+# ------------------------------------------------- the plate is a place, not a subject
+#
+# Run 14 rendered every one of its 63 composites onto the same picture: "G.I. Joe 1982
+# Collection.", a photograph of a box of action figures. Nothing failed and the weak-
+# match refusal above did not fire, because on the search's own terms the result was a
+# good answer — it had been asked for a *figure*.
+#
+# The plate query was built from the script's visual direction, which for this run
+# reduced to the two words `seek figure`. A plate is the room with nothing in it; the
+# creature is composited on top. So searching a photo index for the creature's name can
+# only return the wrong picture twice over — the creature itself, which renders two of
+# them, or a homonym.
+
+
+def test_the_creatures_names_are_stripped_out_of_the_plate_search():
+    """Every creature in the run, not only this segment's. The direction written for
+    Figure's scenes still says "seek and figure"."""
+    scenes = [{"visual_prompt": "a dark flooded hotel corridor with seek in it, "
+                                "peeling wallpaper, figure lurking"}]
+
+    query = media_node._plate_query({"title": "Seek"}, scenes, others=["Figure"])
+
+    assert "seek" not in query and "figure" not in query
+    assert "corridor" in query and "wallpaper" in query
+
+
+def test_a_direction_that_names_no_place_returns_no_query_at_all():
+    """Run 14's own direction. What is left after the camera language and the creatures
+    come out is nothing, and 'nothing' has to be distinguishable from 'a short query' —
+    `to_query` cannot, because with nothing left it falls back to the raw prompt."""
+    scenes = [{"visual_prompt": "cinematic establishing shot illustrating seek and "
+                                "figure, beat 1, moody lighting, shallow depth of field"}]
+
+    assert media_node._plate_query({"title": "Seek"}, scenes, others=["Figure"]) == ""
+
+
+def test_a_creature_called_halt_does_not_strip_halted_out_of_the_setting():
+    """Whole words. Doors has an entity called Halt and another called Rift."""
+    scenes = [{"visual_prompt": "a halted lift in a rifted concrete stairwell"}]
+
+    query = media_node._plate_query({"title": "Halt"}, scenes, others=["Rift"])
+
+    assert "halted" in query and "rifted" in query
+
+
+@pytest.mark.asyncio
+async def test_with_no_place_named_the_plate_is_generated_without_searching(
+        tmp_path, monkeypatch):
+    """The end of the wire. Skipping the search is the fix; refusing its answer was
+    not enough, because the answer graded as relevant."""
+    from forgecast.providers import stock
+
+    searched: list[str] = []
+
+    class Watched(stock.OpenverseProvider):
+        async def generate(self, prompt, *, out_path, width, height):
+            searched.append(prompt)
+            raise AssertionError("the stock lane was asked for a plate with no place")
+
+    monkeypatch.setattr(stock, "OpenverseProvider", Watched)
+    monkeypatch.setattr(media_node, "_fetch_canon",
+                        lambda ctx, shot, slug: _stub_asset(ctx, slug))
+    images = _CountingImages(tmp_path)
+
+    shot = _canon_shot()
+    shot["plate_query"] = ""
+
+    context = _context(tmp_path, node="shots")
+    context.upstream_outputs["broll_plan"] = {"shots": [shot]}
+    monkeypatch.setattr(context.registry, "image", lambda: images)
+
+    await media_node.shots_node(context)
+
+    assert not searched, "a plate with no place in it was still searched for"
+    assert len(images.prompts) == 1, "the plate was not generated instead"
