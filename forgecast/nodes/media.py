@@ -503,6 +503,22 @@ async def _canon_plate(ctx: NodeContext, shot: dict, cache: dict, image_provider
 
             plate = made.path
             credit = made.meta.get("attribution") or made.meta.get("licence") or ""
+            grade = str(made.meta.get("relevance") or "")
+            # A partial match on a plate is worth an operator's eye, and the grade alone
+            # cannot decide it. Measured on three real settings: `relaxed` returned
+            # "Bisbee, Arizona at night" — a lit hillside town — for a flooded hotel
+            # corridor, and also "Messy bedroom, Nocton Hall hospital remains", a decayed
+            # room with debris on the floor that is a better horror plate than the
+            # `exact` result for the same run. Refusing the grade would have thrown away
+            # the good one. So this names the picture and the grade and leaves the call
+            # where it belongs; one plate is a whole segment, so it is a warning rather
+            # than a line in the log nobody reads.
+            if grade and grade != "exact":
+                ctx.log(f"plate for {group or 'the canon segment'} is a {grade} match "
+                        f"for {asked[:60]!r} — it is "
+                        f"{str(made.meta.get('title') or 'untitled')!r}, and one plate "
+                        f"stands under every shot of this segment. Look at it.",
+                        level="warning")
             ctx.log(f"plate for {group or 'the canon segment'} {label} once and reused "
                     f"across its shots" + (f" — {credit}" if credit else ""),
                     plate_source=made.provider or label,

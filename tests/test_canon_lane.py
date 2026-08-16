@@ -821,3 +821,47 @@ async def test_with_no_place_named_the_plate_is_generated_without_searching(
 
     assert not searched, "a plate with no place in it was still searched for"
     assert len(images.prompts) == 1, "the plate was not generated instead"
+
+
+@pytest.mark.asyncio
+async def test_a_partial_plate_match_is_named_rather_than_silently_used(
+        tmp_path, monkeypatch):
+    """The grade cannot decide this and the operator can.
+
+    Measured against Openverse on three real settings: `relaxed` returned "Bisbee,
+    Arizona at night" — a lit hillside town — for a flooded hotel corridor, and also
+    "Messy bedroom, Nocton Hall hospital remains", a decayed room with debris on the
+    floor that makes a better horror plate than the `exact` result for the same run.
+    Refusing the grade throws away the good one; using it silently ships the bad one
+    under every shot in the segment.
+    """
+    from PIL import Image
+
+    from forgecast.providers import MediaResult, stock
+
+    class Partial(stock.OpenverseProvider):
+        async def generate(self, prompt, *, out_path, width, height):
+            path = Path(f"{out_path}.png")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("RGB", (width, height), (40, 40, 50)).save(path)
+            return MediaResult(path=path, mime="image/png", credits=0,
+                               provider="openverse",
+                               meta={"licence": "cc0", "relevance": "relaxed",
+                                     "title": "Bisbee, Arizona at night"})
+
+    monkeypatch.setattr(stock, "OpenverseProvider", Partial)
+    monkeypatch.setattr(media_node, "_fetch_canon",
+                        lambda ctx, shot, slug: _stub_asset(ctx, slug))
+
+    shot = _canon_shot()
+    shot["plate_query"] = "dark flooded hotel corridor peeling wallpaper"
+
+    context = _context(tmp_path, node="shots")
+    context.upstream_outputs["broll_plan"] = {"shots": [shot]}
+    monkeypatch.setattr(context.registry, "image", lambda: _CountingImages(tmp_path))
+
+    await media_node.shots_node(context)
+
+    said = [message for level, message, _ in context._logs if level == "warning"]
+    assert any("relaxed match" in message and "Bisbee" in message for message in said), \
+        f"the partial match was used without naming it: {said}"
