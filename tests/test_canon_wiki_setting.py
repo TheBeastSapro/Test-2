@@ -266,3 +266,73 @@ def test_when_nexlev_is_already_connected_it_says_to_use_it(monkeypatch):
 
     assert "is connected" in said
     assert "Settings" not in said
+
+
+# ------------------------------------------------------------- naming the creatures
+#
+# The lane read `params["entities"]` and its own warning told operators to "pass
+# `entities` on the run". Nothing in the app could. So every run fell through to the
+# brief's beat names, which on the shipped brief are "Beat 1".."Beat 8" — and a real
+# run built canon segments about the Doors soundtrack listing and a Tower Heroes
+# crossover, because the wiki's search answers a placeholder as confidently as a name.
+
+
+def _context(*, params=None, options=None):
+    """A NodeContext with only the fields `_entity_names` reads."""
+    from types import SimpleNamespace
+
+    return SimpleNamespace(params=params or {}, options=options or {})
+
+
+def test_the_creatures_can_be_named_on_the_run_rather_than_only_in_params():
+    """`options` is where the run form puts them and `params` is where a pipeline
+    builder would. Reading one and documenting the other is how the lane came to
+    advertise a control that did not exist."""
+    from forgecast.nodes.research import _entity_names
+
+    brief = {"beats": [{"name": "Beat 1"}, {"name": "Beat 2"}]}
+
+    assert _entity_names(_context(options={"entities": ["Seek", "Figure"]}), brief) == \
+        ["Seek", "Figure"]
+    assert _entity_names(_context(params={"entities": "Seek, Figure"}), brief) == \
+        ["Seek", "Figure"]
+
+
+def test_params_win_over_options_and_both_win_over_the_beats():
+    from forgecast.nodes.research import _entity_names
+
+    brief = {"beats": [{"name": "Beat 1"}]}
+    ctx = _context(params={"entities": ["Halt"]}, options={"entities": ["Seek"]})
+
+    assert _entity_names(ctx, brief) == ["Halt"]
+    assert _entity_names(_context(), brief) == ["Beat 1"]
+
+
+def test_the_run_form_carries_the_typed_creatures_into_the_runs_options(
+        client: TestClient, session: Session, channel: Channel):
+    """End of the wire, because every piece of this existed already and the run still
+    could not name a creature."""
+    from forgecast.models import Run
+
+    client.post("/runs", data={"channel_id": str(channel.id), "topic": "Seek and Figure",
+                               "pipeline": "faceless_longform", "target_seconds": "120",
+                               "entities": "Seek, Figure ,"},
+                follow_redirects=True)
+
+    run = session.query(Run).order_by(Run.id.desc()).first()
+    assert run is not None
+    assert (run.options or {}).get("entities") == ["Seek", "Figure"]
+
+
+def test_an_empty_entities_box_leaves_the_lane_on_the_beats(
+        client: TestClient, session: Session, channel: Channel):
+    """The field is shown to every channel including the ones with no canon wiki, so
+    blank has to mean 'unchanged' rather than 'no entities'."""
+    from forgecast.models import Run
+
+    client.post("/runs", data={"channel_id": str(channel.id), "topic": "Deep sea cables",
+                               "pipeline": "faceless_longform", "target_seconds": "120",
+                               "entities": "   "}, follow_redirects=True)
+
+    run = session.query(Run).order_by(Run.id.desc()).first()
+    assert "entities" not in (run.options or {})

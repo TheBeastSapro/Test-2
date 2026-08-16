@@ -446,6 +446,7 @@ def create_run_form(
     topic: str = Form(...),
     pipeline: str = Form("faceless_longform"),
     target_seconds: int = Form(0),
+    entities: str = Form(""),
     user: User = Depends(current_user),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
@@ -454,6 +455,14 @@ def create_run_form(
         raise HTTPException(status_code=404, detail="channel not found")
 
     options = {"target_seconds": target_seconds} if target_seconds else {}
+    # Which creatures this run is about, for a channel with a canon wiki. Typed rather
+    # than inferred, and it has to be typed somewhere: the canon lane falls back to the
+    # brief's beat names, and a brief that calls them "Beat 1".."Beat 8" sent the wiki
+    # eight placeholder queries. Nothing here derives them from the topic — "Seek and
+    # Figure" happens to name two, and "seven scariest creatures" names none.
+    named = [part.strip() for part in entities.split(",") if part.strip()]
+    if named:
+        options["entities"] = named
     try:
         run = create_run(
             session, channel=channel, topic=topic, pipeline=pipeline, options=options

@@ -275,6 +275,54 @@ def test_an_asset_knows_whether_it_is_a_subject_or_a_shot():
     assert not wide.is_portrait_crop
 
 
+def test_a_search_answer_about_a_different_subject_is_refused():
+    """MediaWiki's search answers everything, and the canon lane believed it.
+
+    Every pair here was measured against the live Doors wiki. A brief whose beats never
+    got the creatures written into them hands the lane `Beat 1`..`Beat 8`, and the wiki
+    returns a real, readable, illustrated page for each one — so a run built canon
+    segments about a Tower Heroes crossover and the soundtrack listing. For a format
+    whose audience polices canon, a confident page about the wrong subject is worse than
+    a missing one.
+    """
+    from forgecast.research.fandom import resembles
+
+    for query, title in [("Beat 1", "Soundtracks/Volume 1"),
+                         ("Beat 2", "Second Tower Heroes Collab"),
+                         ("Beat 3", "Floor 3"),
+                         ("Beat 5", "Achievements/List"),
+                         ("Sirenhead", "First Tower Heroes Collab")]:
+        assert not resembles(query, title), f"{query!r} accepted {title!r}"
+
+
+def test_the_overlap_is_on_whole_words_because_beat_is_inside_heartbeat():
+    """`Beat 1` returns `Heartbeat Control Minigame` on the real wiki, and on a
+    substring test that reads as a match."""
+    from forgecast.research.fandom import resembles
+
+    assert not resembles("Beat 1", "Heartbeat Control Minigame")
+
+
+def test_a_near_miss_a_human_would_accept_still_resolves():
+    """Loose on purpose. Being loose costs a near-miss somebody has to correct; being
+    tight costs a segment about the wrong creature, and only one of those is
+    recoverable."""
+    from forgecast.research.fandom import resembles
+
+    assert resembles("seek and figure", "Seek")
+    assert resembles("The Rake", "Rake")
+    assert resembles("Siren Head", "Siren Head (creature)")
+
+
+def test_a_query_with_no_identity_in_it_is_refused_rather_than_matched():
+    """There is nothing to check the answer against, so there is no way to tell whether
+    it is right — and 'cannot tell' resolves to no, not to yes."""
+    from forgecast.research.fandom import resembles
+
+    assert not resembles("the", "Seek")
+    assert not resembles("", "Seek")
+
+
 def test_an_asset_knows_whether_it_can_be_a_cut_out_without_being_downloaded():
     """The shape is a hint and the alpha channel is the answer, and the API gives both.
 

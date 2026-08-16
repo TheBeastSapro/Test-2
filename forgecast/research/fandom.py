@@ -480,10 +480,56 @@ async def lookup(wiki: str, query: str, *, timeout: float = 20.0) -> Entity | No
     for title in await search(wiki, query, limit=3, timeout=timeout):
         if direct is not None and title == direct.title:
             continue                    # already read, already rejected
+        if not resembles(query, title):
+            log.info("fandom search on %s answered %r with %r, which is a different "
+                     "subject — refused", wiki, query, title)
+            continue
         found = await page(wiki, title, timeout=timeout)
         if found is not None and found.usable:
             return found
     return None
+
+
+#: Words that carry no identity, so an overlap on one of them is not a match. Short and
+#: deliberately not a general stopword list — this is only ever comparing a creature's
+#: name against a page title.
+NO_IDENTITY = {"the", "a", "an", "and", "or", "of", "in", "on", "at", "for", "with",
+               "from", "to", "is", "it", "its"}
+
+
+def _identity(text: str) -> set[str]:
+    """The words in a name that say *which* thing it is."""
+    return {word for word in re.findall(r"[a-z0-9]+", str(text or "").lower())
+            if len(word) >= 3 and word not in NO_IDENTITY}
+
+
+def resembles(query: str, title: str) -> bool:
+    """Whether a searched-up page is plausibly the thing that was asked for.
+
+    MediaWiki's search answers everything. Asked for `Beat 3` — a placeholder beat name
+    out of a brief that never got the creatures written into it — the Doors wiki returns
+    `Floor 3`, `Update Logs/Development Logs` and `First Tower Heroes Collab`, and a
+    lookup that takes the first usable one builds a canon segment about a crossover
+    event nobody mentioned. That is the worst failure this format has: the audience
+    polices canon, and a confident page about the wrong subject is not a weak shot, it
+    is a lie in the video's own voice.
+
+    So the test is whole-word overlap on the words that carry identity, in either
+    direction. Whole-word matters and is not fussiness: `Beat 1` returns `Heartbeat
+    Control Minigame`, and on substrings that reads as a match.
+
+    Deliberately generous rather than clever. `seek and figure` keeps `Seek`, a
+    subtitle or a disambiguator keeps its page, and a real miss like `Sirenhead` on the
+    Doors wiki — which returns `First Tower Heroes Collab` — has nothing in common and
+    is refused. Being loose here costs a near-miss that a human would have accepted;
+    being tight costs a wrong creature, and only one of those is recoverable.
+    """
+    asked, offered = _identity(query), _identity(title)
+    if not asked:
+        # Nothing in the query to check against, so there is no way to tell whether the
+        # answer is right. Refusing is the honest end of that.
+        return False
+    return bool(asked & offered)
 
 
 # ----------------------------------------------------------------------- the gallery

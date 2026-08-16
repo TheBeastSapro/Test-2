@@ -103,6 +103,16 @@
           <span class="muted">— 0 keeps the channel's own target</span></label>
         <input id="target_seconds" name="target_seconds" type="number"
                value="0" min="0" max="{{ format.length_max }}">
+        {# Only meaningful for a channel with a canon wiki, and shown to every channel
+           anyway: the alternative is a field that appears and disappears as the channel
+           select changes, and an empty box costs nothing. The names are typed because
+           nothing can derive them — the wiki's own search answers "Beat 3" with a real
+           page about a crossover event. #}
+        <label for="entities">Creatures, comma separated
+          <span class="muted">— for a channel reading a canon wiki; blank uses the
+            brief's beats</span></label>
+        <input id="entities" name="entities" type="text" value=""
+               placeholder="Seek, Figure, Halt">
         <div class="mt-6"><button class="primary" type="submit">Queue run</button></div>
       </form>
     {% else %}

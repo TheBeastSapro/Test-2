@@ -77,18 +77,23 @@ async def research_node(ctx: NodeContext) -> NodeResult:
 def _entity_names(ctx: NodeContext, brief: dict) -> list[str]:
     """Which entities this run is about, from the run rather than from inference.
 
-    Run params first, because an operator who typed the list has settled it. Failing
-    that, the brief's beat names — for this format the beat *is* the creature, and the
-    outline that says "Amber / Sun Man / The Rake" is the entity list already written
-    down. Nothing is derived from the topic string: "seven scariest creatures" names
-    no creature, and a lane that invented seven would be doing the one thing this
+    What the operator typed first, because somebody who wrote the list has settled it.
+    Both places are read: `params` is where a pipeline builder would put it and
+    `options` is where the run form does, and a lane that only read one of them told
+    operators to "pass `entities` on the run" while there was no way to.
+
+    Failing that, the brief's beat names — for this format the beat *is* the creature,
+    and the outline that says "Amber / Sun Man / The Rake" is the entity list already
+    written down. Nothing is derived from the topic string: "seven scariest creatures"
+    names no creature, and a lane that invented seven would be doing the one thing this
     module exists to stop.
     """
-    supplied = ctx.params.get("entities")
-    if isinstance(supplied, str):
-        supplied = [part.strip() for part in supplied.split(",")]
-    if isinstance(supplied, (list, tuple)) and any(str(name).strip() for name in supplied):
-        return [str(name).strip() for name in supplied if str(name).strip()]
+    for supplied in (ctx.params.get("entities"), (ctx.options or {}).get("entities")):
+        if isinstance(supplied, str):
+            supplied = [part.strip() for part in supplied.split(",")]
+        if isinstance(supplied, (list, tuple)) and any(
+                str(name).strip() for name in supplied):
+            return [str(name).strip() for name in supplied if str(name).strip()]
 
     return [str(beat.get("name") or "").strip()
             for beat in (brief.get("beats") or [])
