@@ -132,9 +132,11 @@ async def test_the_written_shot_list_is_what_the_run_renders(tmp_path, monkeypat
     # Every one carries a real file URL off the wiki rather than a prompt to invent one.
     urls = {shot["asset_url"] for shot in canon_shots}
     assert urls and all(url.startswith("https://static.example/") for url in urls)
-    # ...and more than one picture, which is the difference between an edit and a
-    # slideshow with a Ken Burns push on it.
-    assert len({shot["asset"] for shot in canon_shots}) >= 3
+    # Every cut-out the page has, and nothing else. The wides in this gallery are the
+    # shape a gameplay screenshot arrives in — see `test_segment_plan` for the twelve
+    # real Figure assets that settled this.
+    used = {shot["asset"] for shot in canon_shots}
+    assert used == {"Seek2.png", "EyeRender.png"}
 
 
 @pytest.mark.asyncio
@@ -396,6 +398,24 @@ class _CountingImages:
         return MediaResult(path=path, mime="image/png", credits=1, provider="stub")
 
 
+def _no_stock(monkeypatch):
+    """Keep the public-picture search off the network.
+
+    The plate lane looks for a real photograph before it generates one, which is a
+    live search — and this module's whole contract is that it touches nothing. Tests
+    that care about the *generated* rung stub the stock rung out; the one below cares
+    about the order and stubs both.
+    """
+    from forgecast.providers import stock
+
+    class Refuses(stock.OpenverseProvider):
+        async def generate(self, *args, **kwargs):
+            from forgecast.providers import ProviderError
+            raise ProviderError("no network in tests", provider="openverse")
+
+    monkeypatch.setattr(stock, "OpenverseProvider", Refuses)
+
+
 def _canon_shot(**over) -> dict:
     shot = {"scene_index": 1, "plate_index": 0, "plates": 2, "planned_shots": 2,
             "kind": "canon", "seconds": 3.0, "beat": "appearance",
@@ -407,6 +427,7 @@ def _canon_shot(**over) -> dict:
             "composite": True, "plate_group": "Seek",
             "plate_prompt": "Background plate: a dark hotel corridor. Empty environment "
                             "only. No creature, no figure, no person.",
+            "plate_query": "a dark hotel corridor",
             "plate_asset": "Seeklight.jpeg",
             "plate_url": "https://static.example/Seeklight.jpeg",
             "overlays": [], "animate": False, "tier": "standard", "model": "",
@@ -432,6 +453,7 @@ async def test_one_plate_is_bought_for_a_segment_and_not_one_per_shot(
         return path
 
     monkeypatch.setattr(media_node, "_fetch_canon", fake_fetch)
+    _no_stock(monkeypatch)
     images = _CountingImages(tmp_path)
 
     context = _context(tmp_path, node="shots")
@@ -609,3 +631,116 @@ def test_a_name_inside_a_longer_word_is_not_a_match():
     owned, _ = media_node._scenes_for(RUSH, _scenes("Rushing water fills the room."))
 
     assert owned == []
+
+
+# --------------------------------------------------------- where a plate comes from
+#
+# The creature has to be the franchise's own artwork because the audience knows it. The
+# room it stands in does not — so a real photograph of a corridor is both free and more
+# convincing than a model's idea of one, and it carries a licence this app can actually
+# state, which the wiki art never does.
+
+
+@pytest.mark.asyncio
+async def test_a_public_picture_is_tried_before_anything_is_generated(
+        tmp_path, monkeypatch):
+    from PIL import Image
+
+    from forgecast.providers import MediaResult, stock
+
+    asked: list[str] = []
+
+    class Finds(stock.OpenverseProvider):
+        async def generate(self, prompt, *, out_path, width, height):
+            asked.append(prompt)
+            path = Path(f"{out_path}.png")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("RGB", (width, height), (30, 30, 40)).save(path)
+            return MediaResult(path=path, mime="image/png", credits=0,
+                               provider="openverse",
+                               meta={"licence": "cc0", "attribution": "somebody"})
+
+    monkeypatch.setattr(stock, "OpenverseProvider", Finds)
+    monkeypatch.setattr(media_node, "_fetch_canon",
+                        lambda ctx, shot, slug: _stub_asset(ctx, slug))
+    images = _CountingImages(tmp_path)
+
+    context = _context(tmp_path, node="shots")
+    context.upstream_outputs["broll_plan"] = {"shots": [_canon_shot()]}
+    monkeypatch.setattr(context.registry, "image", lambda: images)
+
+    await media_node.shots_node(context)
+
+    assert asked, "the public-picture search was never tried"
+    assert images.prompts == [], "it generated a plate it did not need to buy"
+    # Searched on the setting, not on the drawing instructions: "no creature, no figure"
+    # describes the picture nobody indexed.
+    assert "No creature" not in asked[0]
+
+
+@pytest.mark.asyncio
+async def test_generation_still_covers_a_setting_nothing_public_matches(
+        tmp_path, monkeypatch):
+    """Openverse has a lot of corridors and no Roblox hotel. Falling through to the
+    model is the point of having two rungs."""
+    _no_stock(monkeypatch)
+    monkeypatch.setattr(media_node, "_fetch_canon",
+                        lambda ctx, shot, slug: _stub_asset(ctx, slug))
+    images = _CountingImages(tmp_path)
+
+    context = _context(tmp_path, node="shots")
+    context.upstream_outputs["broll_plan"] = {"shots": [_canon_shot()]}
+    monkeypatch.setattr(context.registry, "image", lambda: images)
+
+    await media_node.shots_node(context)
+
+    assert len(images.prompts) == 1
+    # The generated rung keeps its constraints — a model handed scene text about a
+    # creature draws the creature, and the cut-out is going on top of it.
+    assert "No creature" in images.prompts[0]
+
+
+def _stub_asset(ctx, slug):
+    from PIL import Image
+
+    path = Path(ctx.path_for(f"{slug}.png"))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGBA", (400, 400), (200, 30, 30, 255)).save(path)
+    return path
+
+
+@pytest.mark.asyncio
+async def test_a_weak_public_match_is_refused_rather_than_used(tmp_path, monkeypatch):
+    """The search relaxes its query until something comes back, and something always
+    does. Asked for a dark hotel corridor it returned "G.I. Joe 1982 Collection", and
+    the run rendered a horror creature standing on a toy-box illustration.
+
+    One bad plate is every shot in the segment, not one shot, which is why this rung
+    refuses on a grade `shots_node` merely warns about.
+    """
+    from PIL import Image
+
+    from forgecast.providers import MediaResult, stock
+
+    class Irrelevant(stock.OpenverseProvider):
+        async def generate(self, prompt, *, out_path, width, height):
+            path = Path(f"{out_path}.png")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("RGB", (width, height), (90, 70, 40)).save(path)
+            return MediaResult(path=path, mime="image/png", credits=0,
+                               provider="openverse",
+                               meta={"licence": "cc0", "relevance": "weak",
+                                     "title": "G.I. Joe 1982 Collection."})
+
+    monkeypatch.setattr(stock, "OpenverseProvider", Irrelevant)
+    monkeypatch.setattr(media_node, "_fetch_canon",
+                        lambda ctx, shot, slug: _stub_asset(ctx, slug))
+    images = _CountingImages(tmp_path)
+
+    context = _context(tmp_path, node="shots")
+    context.upstream_outputs["broll_plan"] = {"shots": [_canon_shot()]}
+    monkeypatch.setattr(context.registry, "image", lambda: images)
+
+    await media_node.shots_node(context)
+
+    assert len(images.prompts) == 1, "a weak public match was used instead of generating"

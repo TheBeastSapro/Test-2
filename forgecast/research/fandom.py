@@ -524,10 +524,38 @@ class Asset:
     width: int = 0
     height: int = 0
     licence: dict = field(default_factory=dict)
+    #: Whether the file can carry transparency at all, read from the API rather than
+    #: from the pixels. `None` where the API does not say — see `has_alpha`.
+    colour_type: str | None = None
+    mime: str = ""
 
     @property
     def pixels(self) -> int:
         return self.width * self.height
+
+    @property
+    def has_alpha(self) -> bool:
+        """Whether this file could be a cut-out, decided without downloading it.
+
+        MediaWiki hands back a PNG's `colorType` in the same batched `imageinfo` call
+        that carries the sizes, and it is decisive in one direction: `truecolour` means
+        the file has no alpha channel, so it is certainly not a cut-out. Measured across
+        the Doors wiki's whole Figure gallery, fourteen usable files: every PNG reports
+        a colour type, and JPEG, GIF and WEBP report none.
+
+        A JPEG cannot carry alpha whatever it says, so that one is answered from the
+        mime type. Anything else unmeasured is left as `True` — this filter is here to
+        exclude what is provably flat, not to guess about what it cannot see, and
+        `layers.shot.is_cutout` still checks the real pixels at render time.
+
+        The remaining gap is stated rather than hidden: `truecolour-alpha` means the
+        channel exists, not that it is used. `Figurehide.png` reports it and measures
+        0.0% transparent — an opaque screenshot saved as RGBA. Only the download settles
+        that one, and the render-time test does.
+        """
+        if self.colour_type:
+            return "alpha" in self.colour_type.lower()
+        return "jpeg" not in self.mime.lower()
 
     @property
     def is_portrait_crop(self) -> bool:
@@ -549,7 +577,19 @@ class Asset:
     def as_dict(self) -> dict:
         return {"name": self.name, "url": self.url, "page": self.page,
                 "size": [self.width, self.height], "licence": self.licence,
-                "portrait": self.is_portrait_crop}
+                "portrait": self.is_portrait_crop, "alpha": self.has_alpha}
+
+
+def _colour_type(metadata) -> str | None:
+    """A PNG's colour type out of `imageinfo`'s metadata list, or `None`.
+
+    The list is MediaWiki's generic name/value shape and only PNGs carry this entry, so
+    a miss is the ordinary case rather than a fault.
+    """
+    for entry in metadata or []:
+        if isinstance(entry, dict) and entry.get("name") == "colorType":
+            return str(entry.get("value") or "") or None
+    return None
 
 
 def _worth_fetching(name: str) -> bool:
@@ -571,6 +611,11 @@ async def images(wiki: str, title: str, *, limit: int = 12,
     Sizes come back in one batched `imageinfo` call rather than one per file, because a
     page with a full gallery would otherwise be a dozen round trips against somebody
     else's wiki for information they will hand over in a single request.
+
+    That call also asks for `metadata`, which carries a PNG's colour type and so answers
+    whether a file can be a cut-out before anything is downloaded. It costs nothing —
+    same request, same round trip — and it is the difference between a shot list built
+    on the aspect ratio and one built on the alpha channel.
     """
     try:
         data = await _api(wiki, {"action": "parse", "page": title,
@@ -590,7 +635,7 @@ async def images(wiki: str, title: str, *, limit: int = 12,
     try:
         info = await _api(wiki, {
             "action": "query", "titles": titles, "prop": "imageinfo",
-            "iiprop": "url|size|mime|extmetadata",
+            "iiprop": "url|size|mime|metadata|extmetadata",
         }, timeout=timeout)
     except (httpx.HTTPError, ValueError) as exc:
         log.info("fandom imageinfo batch failed on %s: %s", wiki, exc)
@@ -608,6 +653,8 @@ async def images(wiki: str, title: str, *, limit: int = 12,
             name=str(page_data.get("title", "")).removeprefix("File:"),
             url=detail["url"], page=detail.get("descriptionurl", ""),
             width=width, height=height,
+            colour_type=_colour_type(detail.get("metadata")),
+            mime=str(detail.get("mime") or ""),
             licence={k: v.get("value") for k, v in
                      (detail.get("extmetadata") or {}).items()
                      if k in ("LicenseShortName", "License", "UsageTerms", "Artist",

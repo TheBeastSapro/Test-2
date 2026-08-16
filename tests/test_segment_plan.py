@@ -200,17 +200,26 @@ def test_the_studio_hands_back_something_a_person_can_argue_with():
     assert "attribution" in source, "a plan built on somebody's art carries its credit"
 
 
-def test_a_beat_prefers_a_shape_and_is_never_restricted_to_one():
-    """Nine unused pictures beside a beat repeating three is the failure this format
-    is named for.
+def test_the_creature_comes_off_the_cut_outs_and_never_off_a_screenshot():
+    """This rule has been round twice, and the second answer is the right one.
 
-    Measured on a real page: the Doors wiki's Figure carries twelve usable images of
-    which three are portrait crops. Filtering the appearance beat down to portraits
-    cycled those three across eight shots — one picture four times — with the rest of
-    the gallery untouched. The lead preference is right; the exclusion never was.
+    It began as cut-outs only. I widened it to the whole gallery because Figure's
+    appearance beat was cycling three pictures across eight shots while nine sat
+    unused, which read as the "one monster shot" failure this format is named for.
+
+    Then a finished video showed what those nine are. Downloading Figure's twelve and
+    looking: two are creature art, five are gameplay screenshots with the game's own
+    HUD in frame — hotbars, coin counters, a share button — two are dim in-game
+    scenes, one is a motion-blurred phone photo, and `Figurebreaksthelamp.jpg` is a
+    picture of a room with no creature in it. Widening the pool did not find nine more
+    shots of the creature; it put somebody's screen recording on screen.
+
+    The split is total and measurable: of those twelve, the two usable assets are the
+    only two with an alpha channel — 62% and 63% transparent against 0.0% for every
+    other one.
     """
-    gallery = [{"name": f"wide{index}.png", "portrait": False} for index in range(9)]
-    gallery += [{"name": f"tall{index}.png", "portrait": True} for index in range(3)]
+    gallery = [{"name": f"screenshot{index}.png", "portrait": False} for index in range(9)]
+    gallery += [{"name": f"cutout{index}.png", "portrait": True} for index in range(3)]
     entity = {"title": "Figure", "gallery": gallery,
               "stats": {"height": "9 ft"},
               "beats": {"appearance": "tall" * 60, "behaviour": "moves" * 60,
@@ -219,14 +228,78 @@ def test_a_beat_prefers_a_shape_and_is_never_restricted_to_one():
     planned = plan(entity, seconds=62.0)
 
     used = {shot.asset for shot in planned.shots if shot.asset}
-    assert len(used) == 12, f"only {len(used)} of 12 pictures reached the timeline"
+    assert used, "nothing was planned at all"
+    assert all(name.startswith("cutout") for name in used), (
+        f"a wide asset reached the timeline as a creature shot: "
+        f"{sorted(name for name in used if not name.startswith('cutout'))}")
 
-    appearance = [shot.asset for shot in planned.shots if shot.beat == "appearance"]
-    assert appearance, "no appearance beat was planned"
-    # It still LEADS on a portrait — that is the whole point of the preference.
-    assert appearance[0].startswith("tall")
-    # ...and it does not repeat one while the gallery has pictures it has not used.
-    assert len(set(appearance)) == len(appearance)
+
+def test_a_square_asset_with_no_alpha_channel_is_not_treated_as_a_creature_shot():
+    """The shape is not the test, and on a real page the difference is a third of the
+    pool.
+
+    Figure's gallery has three roughly-square images. Two are the creature's artwork;
+    the third — `FIGURE WITH EARS OMGGG.png` — is a near-black motion-blurred capture
+    of the game, and the API reports it as `truecolour` where the other two are
+    `truecolour-alpha`. On shape alone it was one subject shot in three.
+    """
+    gallery = [{"name": "cutout0.png", "portrait": True, "alpha": True},
+               {"name": "cutout1.png", "portrait": True, "alpha": True},
+               {"name": "blurry.png", "portrait": True, "alpha": False}]
+    gallery += [{"name": f"screenshot{i}.jpg", "portrait": False, "alpha": False}
+                for i in range(9)]
+    entity = {"title": "Figure", "gallery": gallery, "stats": {},
+              "beats": {"appearance": "tall" * 60, "behaviour": "moves" * 60,
+                        "survival": "hide" * 60}}
+
+    planned = plan(entity, seconds=62.0)
+
+    used = {shot.asset for shot in planned.shots if shot.asset}
+    assert used == {"cutout0.png", "cutout1.png"}, (
+        f"an asset with no alpha channel reached the timeline as a creature shot: "
+        f"{sorted(used - {'cutout0.png', 'cutout1.png'})}")
+
+
+def test_a_gallery_that_says_nothing_about_alpha_is_still_planned_on_shape():
+    """Only PNGs report a colour type, so a page of WEBP artwork carries no alpha flag
+    at all. Treating silence as 'not a cut-out' would empty the subject pool for a whole
+    wiki; the render-time test still checks the pixels."""
+    gallery = [{"name": f"cutout{index}.png", "portrait": True} for index in range(3)]
+    gallery += [{"name": "wide.png", "portrait": False}]
+    entity = {"title": "Seek", "gallery": gallery, "stats": {},
+              "beats": {"appearance": "tall" * 60, "behaviour": "moves" * 60}}
+
+    planned = plan(entity, seconds=62.0)
+
+    assert {shot.asset for shot in planned.shots} == {
+        "cutout0.png", "cutout1.png", "cutout2.png"}
+
+
+def test_every_cut_out_still_gets_used_before_any_is_repeated():
+    """The half of the old concern that was right. Narrowing the pool to cut-outs is
+    not licence to hammer one of them — the reference reuses a creature image across a
+    segment, but it uses the ones it has."""
+    gallery = [{"name": f"cutout{index}.png", "portrait": True} for index in range(4)]
+    entity = {"title": "Seek", "gallery": gallery, "stats": {},
+              "beats": {"appearance": "tall" * 60, "behaviour": "moves" * 60}}
+
+    planned = plan(entity, seconds=62.0)
+
+    assert len({shot.asset for shot in planned.shots}) == 4
+
+
+def test_a_page_with_only_screenshots_still_makes_a_segment():
+    """Some pages have no cut-out at all. Refusing would drop the entity entirely, and
+    a screenshot of the creature is a worse shot than its artwork but a better one than
+    a hole in the video."""
+    gallery = [{"name": f"shot{index}.jpg", "portrait": False} for index in range(4)]
+    entity = {"title": "Halt", "gallery": gallery, "stats": {},
+              "beats": {"behaviour": "moves" * 60}}
+
+    planned = plan(entity, seconds=40.0)
+
+    assert planned.shots
+    assert {shot.asset for shot in planned.shots} <= {f"shot{i}.jpg" for i in range(4)}
 
 
 def test_motion_is_only_planned_where_there_is_something_to_move():

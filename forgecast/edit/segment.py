@@ -198,10 +198,21 @@ def plan(entity: dict, *, seconds: float = 62.0, target_hold: float = 3.0,
                        warnings=["no readable sections — this entity cannot carry a "
                                  "segment"])
 
-    # Subjects first: a portrait crop composited onto a plate is the shot this format is
-    # built from, and a wide image is a background or an establisher.
-    subjects = [item for item in gallery if item.get("portrait")]
-    wides = [item for item in gallery if not item.get("portrait")]
+    # Subjects first: a cut-out composited onto a plate is the shot this format is built
+    # from, and everything else is a background or an establisher.
+    #
+    # Two conditions, and the second is the one that matters. The shape says how the
+    # asset will be framed; the alpha channel says whether it is a creature or somebody's
+    # screen. Figure's gallery has three roughly-square images and only two of them are
+    # cut-outs — the third, `FIGURE WITH EARS OMGGG.png`, is a near-black motion-blurred
+    # capture of the game, and on shape alone it was a third of the subject pool.
+    # `research.fandom.Asset.has_alpha` reads that off the API's PNG colour type in the
+    # call that already fetches the sizes, so this costs nothing and is not a guess.
+    def _is_subject(item: dict) -> bool:
+        return bool(item.get("portrait")) and bool(item.get("alpha", True))
+
+    subjects = [item for item in gallery if _is_subject(item)]
+    wides = [item for item in gallery if not _is_subject(item)]
     if not gallery:
         warnings.append("no artwork on the page — every shot here is a hole to fill")
 
@@ -221,18 +232,34 @@ def plan(entity: dict, *, seconds: float = 62.0, target_hold: float = 3.0,
         count = max(1, round(span / _hold_for(beat, target_hold)))
         hold = span / count
 
-        # A preference for what OPENS the beat, over the whole gallery — never a filter
-        # down to one shape. The story beat wants a place for the encounter to happen in,
-        # so it opens on a wide; the other two want to show the thing, so they open on a
-        # subject crop.
+        # The creature comes off the subject crops and nowhere else.
         #
-        # This was `subjects or wides`, and on a real page it was the "one monster shot"
-        # failure with extra steps: Figure's gallery is twelve images of which three are
-        # portrait, so the appearance beat cycled those three across eight shots — the
-        # same picture four times — while nine unused images sat beside it. The
-        # preference is worth keeping and the exclusion never was.
-        leads = (wides or subjects) if beat == "behaviour" else (subjects or wides)
-        pool = (wides + subjects) if beat == "behaviour" else (subjects + wides)
+        # This has been round twice and the second answer is the right one for a reason
+        # the first version could not have known. It began as `subjects or wides`; I
+        # widened it to the whole gallery because Figure's appearance beat was cycling
+        # three pictures across eight shots while nine sat unused — which read as the
+        # "one monster shot" failure this format is named for.
+        #
+        # Then a finished video showed what those nine actually are. Downloading Figure's
+        # twelve and looking at them: two are creature art, five are gameplay screenshots
+        # with the game's own HUD in frame — hotbars, coin counters, a share button — two
+        # more are dim in-game scenes, one is a motion-blurred phone photo, and one
+        # (`Figurebreaksthelamp.jpg`) is a picture of a room with no creature in it at
+        # all. Widening the pool did not find nine more shots of the creature. It put
+        # somebody's screen recording on screen.
+        #
+        # Measured, the split is total: the two usable assets are the only two in the
+        # twelve with an alpha channel — 62% and 63% transparent against 0.0% for every
+        # other one. So the pool is the cut-outs, which is what `subjects` now means.
+        #
+        # The repetition that prompted the widening is not a defect to fix here. The
+        # reference reuses one creature image across a whole segment and varies scale and
+        # position, which is exactly what `_spread` and the shot's own framing already
+        # do; a page that genuinely has one usable image gets the "leaning on too few
+        # pictures" warning below, which is an editorial problem with an editorial answer
+        # rather than something to paper over with screenshots.
+        pool = subjects or wides
+        leads = pool
         # The opener is chosen from the preferred shape and the rest cycle on from it.
         # Dropping the exclusion alone was not enough: with a cursor that carries across
         # beats, ordering the pool by preference only shifts the cycle's phase, so the

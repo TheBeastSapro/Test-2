@@ -450,18 +450,52 @@ async def _canon_plate(ctx: NodeContext, shot: dict, cache: dict, image_provider
 
     plate: Path | None = None
     prompt = str(shot.get("plate_prompt") or "")
+    out_path = ctx.path_for(f"canon_plate_{_slugify(group)}")
+
+    # A public picture before a generated one. The creature has to be the franchise's own
+    # artwork because the audience knows it; the room it stands in does not, and a real
+    # photograph of a corridor is both free and more convincing than a model's idea of
+    # one. `OpenverseProvider` is an `ImageProvider` like any other — it searches
+    # commercial-safe Creative Commons work and relaxes the query rung by rung — so this
+    # is the same call with a different provider in front of it.
+    #
+    # The licence travels on `meta` and reaches `attribution.md` through the artifact,
+    # which is the whole reason a stock source is usable here at all: unlike the wiki
+    # art, this is a licence the app can actually state.
     if prompt:
-        try:
-            made = await image_provider.generate(
-                prompt, out_path=ctx.path_for(f"canon_plate_{_slugify(group)}"),
-                width=width, height=height,
-            )
+        from ..providers.stock import OpenverseProvider
+
+        query = str(shot.get("plate_query") or "") or prompt
+        for source, label, asked in ((OpenverseProvider(), "found", query),
+                                     (image_provider, "generated", prompt)):
+            try:
+                made = await source.generate(
+                    asked, out_path=out_path, width=width, height=height)
+            except ProviderError as exc:
+                ctx.log(f"plate for {group or 'the canon segment'} not {label} "
+                        f"({exc})", level="warning")
+                continue
+
+            # A weak stock match is worse than no stock match. The search relaxes its
+            # query rung by rung until something comes back, and something always does:
+            # asked for a dark hotel corridor it returned "G.I. Joe 1982 Collection", and
+            # the run rendered a horror creature standing on a toy-box illustration.
+            # `stock` already grades this and `shots_node` already refuses on it; the
+            # plate lane has more reason to, because one bad plate is every shot in the
+            # segment rather than one.
+            if made.meta.get("relevance") == "weak":
+                ctx.log(f"plate for {group or 'the canon segment'}: the best public "
+                        f"picture for {asked[:60]!r} does not depict it — generating "
+                        f"one instead", level="warning")
+                continue
+
             plate = made.path
-            ctx.log(f"plate for {group or 'the canon segment'} generated once and reused "
-                    f"across its shots")
-        except ProviderError as exc:
-            ctx.log(f"plate for {group or 'the canon segment'} could not be generated "
-                    f"({exc}) — falling back to the page's own wide", level="warning")
+            credit = made.meta.get("attribution") or made.meta.get("licence") or ""
+            ctx.log(f"plate for {group or 'the canon segment'} {label} once and reused "
+                    f"across its shots" + (f" — {credit}" if credit else ""),
+                    plate_source=made.provider or label,
+                    plate_licence=str(made.meta.get("licence") or ""))
+            break
 
     if plate is None and shot.get("plate_url"):
         plate = await asyncio.to_thread(
@@ -813,6 +847,21 @@ def _plate_prompt(entity: dict, scenes: list[dict]) -> str:
     return f"Background plate: {setting}. {PLATE_CONSTRAINT}"
 
 
+def _plate_query(entity: dict, scenes: list[dict]) -> str:
+    """The same setting as words to *search* for, without the drawing instructions.
+
+    `_plate_prompt` ends in a paragraph telling a model what not to draw, which is
+    exactly right for generation and is noise in a search box — "empty environment only,
+    no creature, no figure" describes the picture nobody indexed. The stock lane gets
+    the setting alone.
+    """
+    direction = next((str(scene.get("visual_prompt") or "").strip()
+                      for scene in scenes if str(scene.get("visual_prompt") or "").strip()),
+                     "")
+    return (direction[:PLATE_PROMPT_CHARS]
+            or f"{entity.get('title', '')} environment").strip()
+
+
 #: The atmospheres `render/particles` can draw. Named here as well so a typo is caught
 #: at planning time, where the operator is still looking, rather than silently producing
 #: a segment with no weather on it three stages later.
@@ -931,6 +980,7 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
         # scale and position changing — so a plate per shot would be paying for variety
         # the format does not have and the eye reads as a different location each cut.
         plate_prompt = _plate_prompt(entity, owned)
+        plate_query = _plate_query(entity, owned)
         # Each shot lands on whichever scene its start time falls in, so the shot list
         # keeps the (scene_index, plate_index) shape everything downstream already
         # reads. Boundaries are the scenes' own durations — the plan is laid over the
@@ -991,6 +1041,7 @@ def _canon_shots(ctx, scenes: list[dict]) -> tuple[dict, dict]:
                 # plate once and re-uses it.
                 "plate_group": entity["title"] if shot.composite else "",
                 "plate_prompt": plate_prompt if shot.composite else "",
+                "plate_query": plate_query if shot.composite else "",
                 "plate_asset": str(plate.get("name") or ""),
                 "plate_url": str(plate.get("url") or ""),
                 "atmosphere": weather,

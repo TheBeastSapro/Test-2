@@ -275,6 +275,63 @@ def test_an_asset_knows_whether_it_is_a_subject_or_a_shot():
     assert not wide.is_portrait_crop
 
 
+def test_an_asset_knows_whether_it_can_be_a_cut_out_without_being_downloaded():
+    """The shape is a hint and the alpha channel is the answer, and the API gives both.
+
+    Measured against the Doors wiki's Figure gallery, fourteen usable files: every PNG
+    reports a `colorType` in `imageinfo`'s metadata and JPEG, GIF and WEBP report none.
+    `truecolour` is decisive — no alpha channel, so certainly not a cut-out — which is
+    what separates `FIGURE WITH EARS OMGGG.png`, a near-black motion-blurred capture of
+    the game, from the two real cut-outs it sits beside at the same aspect ratio.
+    """
+    cutout = fandom.Asset(name="a", url="u", page="p", width=1932, height=2464,
+                          colour_type="truecolour-alpha", mime="image/png")
+    flat = fandom.Asset(name="b", url="u", page="p", width=1166, height=1080,
+                        colour_type="truecolour", mime="image/png")
+
+    assert cutout.is_portrait_crop and flat.is_portrait_crop, \
+        "the shapes have to match or this test is not about the alpha channel"
+    assert cutout.has_alpha
+    assert not flat.has_alpha
+
+
+def test_a_jpeg_is_never_a_cut_out_even_though_it_reports_no_colour_type():
+    """JPEG carries no alpha channel by construction, so the mime type answers it and
+    the missing metadata is not a reason to guess."""
+    assert not fandom.Asset(name="j", url="u", page="p", width=1128, height=684,
+                            mime="image/jpeg").has_alpha
+
+
+def test_a_file_the_api_says_nothing_about_is_left_in_rather_than_guessed_out():
+    """WEBP and GIF report no colour type on these wikis. This filter exists to exclude
+    what is provably flat, not to decide about what it cannot see — `layers.shot`
+    checks the real pixels at render time, and over-filtering here would drop a real
+    cut-out with no way to find out."""
+    assert fandom.Asset(name="w", url="u", page="p", width=620, height=620,
+                        mime="image/webp").has_alpha
+
+
+def test_the_colour_type_is_read_out_of_mediawikis_name_value_list():
+    """It arrives buried in a generic metadata list beside resolutions and a schema
+    version, and only PNGs carry it at all — so a miss is the ordinary case."""
+    metadata = [{"name": "bitDepth", "value": 8},
+                {"name": "colorType", "value": "truecolour-alpha"},
+                {"name": "_MW_PNG_VERSION", "value": 1}]
+
+    assert fandom._colour_type(metadata) == "truecolour-alpha"
+    assert fandom._colour_type([{"name": "bitDepth", "value": 8}]) is None
+    assert fandom._colour_type(None) is None
+
+
+def test_the_gallery_call_asks_for_the_metadata_that_carries_the_colour_type():
+    """One batched request already fetches the sizes; the colour type rides along in it
+    for nothing. Asserted on the source because the alternative is a live wiki call."""
+    import inspect
+
+    source = inspect.getsource(fandom.images)
+    assert "metadata" in source and "iiprop" in source
+
+
 def test_assets_sort_largest_first_by_pixels_not_by_edge():
     """A 1546x2048 is a bigger asset than a 2000x900 despite the shorter long edge."""
     tall = fandom.Asset(name="t", url="u", page="p", width=1546, height=2048)
