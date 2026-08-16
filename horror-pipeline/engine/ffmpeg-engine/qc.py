@@ -58,10 +58,22 @@ CONTACT_COLS, CONTACT_ROWS = 5, 4
 CONTACT_EVERY_S = 3
 TAIL_S = 5.0
 
+# The pops this cut is SUPPOSED to contain, read from the sheet that produced
+# it via --sheet. The default below is the Sewer Alligator section and it used
+# to be the only list this file had, so every other section was OCR-checked
+# against another creature's captions and reported nine missing pops no matter
+# what it actually rendered. A check that cannot pass is not a check.
 INTENDED_POPS = [
     "Not alligators", "Spiders", "Former city worker", "4 legs", "3 joints",
     "Body never seen", "Name: fan-coined", "Plural", "No open manholes",
 ]
+
+
+def load_intended(sheet_path):
+    """Pop texts from a sheet, so QC checks THIS cut against THIS plan."""
+    with open(sheet_path) as f:
+        d = json.load(f)
+    return [p["text"] for p in d.get("pops", []) if p.get("text")]
 
 
 def sh(cmd):
@@ -424,9 +436,15 @@ def verdict_table(rows):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("video")
+    ap.add_argument("--sheet", default=None,
+                    help="sheet JSON this cut was built from; its pops become "
+                         "the intended list the OCR pass checks against")
     ap.add_argument("--workdir", default=None)
     ap.add_argument("--keep", action="store_true")
     args = ap.parse_args()
+    global INTENDED_POPS
+    if args.sheet:
+        INTENDED_POPS = load_intended(args.sheet)
 
     path = os.path.abspath(args.video)
     if not os.path.exists(path):

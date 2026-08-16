@@ -21,11 +21,22 @@ WHAT THE SHOT LIST ENCODES, and why each field is there:
                 moves, which measures as dead air.
   pop           keyword text, 1-4 words, anchored to its spoken word.
 
-MOTION SHAPE. Measured across Vu's publish cut: mean 26.4% change per second,
-median 15.3%, std dev 28.1%, with 30.8% of seconds under 5% and 26.7% over 40%.
-That distribution comes from MANY HARD CUTS between held framings, not from
-long slow moves. So the generator targets shot COUNT and cut placement, and
-keeps in-shot movement modest.
+MOTION SHAPE, and a correction. This file used to say that the reference's
+26.4% average frame change came from MANY HARD CUTS between held framings, and
+that the generator should therefore target shot COUNT. That was inferred from
+an aggregate and never measured, and it was wrong.
+
+Measured by frame differencing at 10 fps over 130 seconds: the reference cuts
+15.2 times a minute against this generator's 18.4, and holds one framing for as
+long as 23.1 seconds against a longest hold of 6.1. He cuts LESS. The motion
+comes from events INSIDE a held frame - a screen turns on, static resolves, an
+image appears, it multiplies, the camera pulls back - and reproducing his
+number by cutting 26 times is what made the output read as a machine.
+
+So the shot list this file renders is now produced by build_scenes.py, which
+targets scenes and the events inside them. This file stays the renderer: it
+turns whatever it is given into HyperFrames HTML, and it no longer has an
+opinion about how many shots there should be.
 """
 import argparse, json, os
 
@@ -89,6 +100,17 @@ HEAD = '''<!doctype html>
       .pop.ink { color:#111111; -webkit-text-stroke-width:0; text-shadow:none; }
       .pop.red { color:#D62020; }
       svg.ov { position:absolute; inset:0; width:1920px; height:1080px; overflow:visible; }
+
+      /* BOXED INSERT. The reference's answer to a line that names a thing:
+         the thing appears in a bordered box over the scene, and when a line
+         names two things there are two boxes side by side. This is the layer
+         that lets a framing be HELD for twenty seconds and still change every
+         couple of seconds, which is the whole point. */
+      .box { position:absolute; transform-origin:50% 50%; will-change:transform,opacity;
+             border:9px solid #111111; background:#FFFFFF; overflow:hidden;
+             box-shadow:0 22px 40px rgba(0,0,0,.55); }
+      .box.on-white { box-shadow:0 14px 26px rgba(0,0,0,.28); }
+      .box > img { width:100%; height:100%; object-fit:cover; display:block; }
     </style>
   </head>
   <body>
@@ -131,6 +153,63 @@ def build(sheet, out_html):
         if s.get("asset"):
             gnd = "" if white else " grounded"
             html.append(f'        <img id="{sid}c" class="cut{gnd}" src="public/{s["asset"]}" />')
+        # CREATURE LAYERS. The reference's held sequences are alive because
+        # things ARRIVE inside them: a screen lights, an image appears, it
+        # duplicates. A cutout that is simply present from the first frame of a
+        # twenty second shot gives five identical frames, which is what the
+        # first scene-based cut produced. So every creature part named by the
+        # narration enters on its own spoken word.
+        for j, cl in enumerate(s.get("layers", []), 1):
+            lid = f"{sid}L{j}"
+            gnd = "" if white else " grounded"
+            html.append(f'        <img id="{lid}" class="cut{gnd}" '
+                        f'src="public/{cl["src"]}" />')
+            x, y, sc = cl["x"], cl["y"], cl["scale"]
+            js.append(f'      gsap.set("#{lid}", {{xPercent:-50, yPercent:-50, '
+                      f'x:{round(x*1920)}, y:{round(y*1080)}, scale:{sc}, '
+                      f'autoAlpha:{1 if cl.get("carried") else 0}}});')
+            # enters from the side the neck runs to, so it reads as the
+            # creature extending into frame rather than a layer switching on
+            dx = -260 if cl.get("from_left") else 260
+            if cl.get("carried"):
+                js.append(f'      tl.to("#{lid}", {{scale:{round(sc*1.07,3)}, '
+                          f'duration:{max(0.6, round(t1-t0,3))}, ease:"none"}}, {t0});')
+                continue
+            js.append(f'      tl.fromTo("#{lid}", {{autoAlpha:0, x:"+={dx}", '
+                      f'scale:{round(sc*0.92,3)}}}, {{autoAlpha:1, x:{round(x*1920)}, '
+                      f'scale:{sc}, duration:0.44, ease:"power3.out"}}, {cl["at"]});')
+            js.append(f'      tl.to("#{lid}", {{scale:{round(sc*1.07,3)}, '
+                      f'duration:{max(0.6, round(t1-cl["at"],3))}, ease:"none"}}, {cl["at"]});')
+
+        # Inserts arrive one at a time inside the held framing. Each one is an
+        # EVENT: before its `at` it is not there, after it is. A scene with
+        # three inserts changes three times without a single cut.
+        for j, bx in enumerate(s.get("inserts", []), 1):
+            bid = f"{sid}b{j}"
+            w, h = round(bx["w"] * 1920), round(bx.get("h", bx["w"] * 0.62) * 1080)
+            x, y = round(bx["x"] * 1920 - w / 2), round(bx["y"] * 1080 - h / 2)
+            cls = "box on-white" if white else "box"
+            html.append(f'        <div id="{bid}" class="{cls}" style="left:{x}px;'
+                        f'top:{y}px;width:{w}px;height:{h}px;">'
+                        f'<img src="public/{bx["src"]}" /></div>')
+            at = bx.get("at", t0)
+            if bx.get("carried"):
+                # already on screen before this cut: appear instantly, no
+                # re-entrance, or every punch restages the same box
+                js.append(f'      gsap.set("#{bid}", {{autoAlpha:1, scale:1, '
+                          f'rotation:{bx.get("tilt", 0)}}});')
+            else:
+                js.append(f'      gsap.set("#{bid}", {{autoAlpha:0}});')
+                js.append(f'      tl.fromTo("#{bid}", {{autoAlpha:0, scale:0.86, '
+                          f'rotation:{bx.get("tilt", 0)}}}, {{autoAlpha:1, scale:1, '
+                          f'duration:0.26, ease:"back.out(1.6)"}}, {at});')
+            # A box that stays perfectly still for the rest of a long hold is
+            # the dead-frame failure again, so it keeps a slow push of its own.
+            js.append(f'      tl.to("#{bid}", {{scale:1.05, duration:{max(0.5, round(t1-at,3))}, '
+                      f'ease:"none"}}, {at});')
+            if bx.get("out"):
+                js.append(f'      tl.to("#{bid}", {{autoAlpha:0, duration:0.18}}, {bx["out"]});')
+
         for j, ic in enumerate(s.get("icons", []), 1):
             iid = f"{sid}i{j}"
             colour = "#111111" if white else "#FFFFFF"
@@ -206,11 +285,20 @@ def build(sheet, out_html):
 
     open(out_html, "w").write("".join(x + "\n" for x in html) +
                               TAIL.replace("{body}", "\n".join(js)))
-    print(f"{len(shots)} shots, {len(sheet.get('pops',[]))} pops -> {out_html}")
+    ins = sum(len(s.get("inserts", [])) for s in shots)
+    ico = sum(len(s.get("icons", [])) for s in shots)
+    print(f"{len(shots)} shots, {ins} inserts, {ico} icons, "
+          f"{len(sheet.get('pops',[]))} pops -> {out_html}")
     cuts = [s["t0"] for s in shots]
-    gaps = [round(cuts[i+1]-cuts[i], 2) for i in range(len(cuts)-1)]
-    print(f"  cut every {sum(gaps)/len(gaps):.2f}s mean, "
-          f"min {min(gaps)}s max {max(gaps)}s   (Vu cuts ~2.6s)")
+    gaps = [round(cuts[i+1]-cuts[i], 2) for i in range(len(cuts)-1)] or [0]
+    dur = sheet["duration"]
+    # Both numbers matter and they pull in opposite directions. Cuts per minute
+    # is measured at 15.2 for the reference. Seconds-per-EVENT is the other
+    # half: a long hold is only allowed because things keep happening inside it.
+    events = len(cuts) + ins + ico + len(sheet.get("pops", []))
+    print(f"  {60.0*len(cuts)/dur:.1f} cuts/min (reference 15.2), "
+          f"longest hold {max(gaps):.1f}s (reference 23.1s)")
+    print(f"  an event every {dur/max(1,events):.1f}s (house max unchanged frame 4.0s)")
 
 
 if __name__ == "__main__":

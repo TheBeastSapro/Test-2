@@ -1,0 +1,590 @@
+{
+ "creature": "LONG HORSE",
+ "duration": 62.34,
+ "vo": "audio/mix-final.wav",
+ "shots": [
+  {
+   "t0": 0.0,
+   "t1": 1.16,
+   "ground": "plate:assets/../plates/plate-48f4949e3e97.jpg",
+   "hold": false,
+   "plate_scale": [
+    1.05,
+    1.076
+   ],
+   "scene_lines": [
+    "Long Horse."
+   ],
+   "asset": "assets/cut-head-down.png",
+   "from_": [
+    0.54696,
+    0.58,
+    0.243
+   ],
+   "to": [
+    0.5330400000000001,
+    0.565,
+    0.249
+   ]
+  },
+  {
+   "t0": 1.16,
+   "t1": 5.34,
+   "ground": "plate:assets/../plates/plate-4d8b527f409c.jpg",
+   "hold": false,
+   "plate_scale": [
+    1.05,
+    1.142
+   ],
+   "scene_lines": [
+    "The last creature on this list cannot hurt you.",
+    "That is not good news."
+   ],
+   "asset": "assets/cut-neck-loops.png",
+   "from_": [
+    0.56508,
+    0.58,
+    0.121
+   ],
+   "to": [
+    0.51492,
+    0.565,
+    0.131
+   ]
+  },
+  {
+   "t0": 5.34,
+   "t1": 8.81,
+   "ground": "plate:illus/empty-bed-dark-bedroom-night-0.jpg",
+   "hold": true,
+   "plate_scale": [
+    1.05,
+    1.126
+   ],
+   "scene_lines": [
+    "A girl kept hearing something in her dreams, a soft, dry crack, like a joint popping, coming closer every night."
+   ],
+   "icons": [
+    {
+     "kind": "figure",
+     "x": 0.2,
+     "y": 0.62,
+     "scale": 2.4,
+     "at": 5.36,
+     "word": "girl"
+    }
+   ]
+  },
+  {
+   "t0": 8.81,
+   "t1": 12.26,
+   "ground": "plate:illus/empty-bed-dark-bedroom-night-0.jpg",
+   "hold": true,
+   "plate_scale": [
+    1.25,
+    1.326
+   ],
+   "scene_lines": [
+    "A girl kept hearing something in her dreams, a soft, dry crack, like a joint popping, coming closer every night."
+   ],
+   "icons": [
+    {
+     "kind": "figure",
+     "x": 0.2,
+     "y": 0.62,
+     "scale": 2.4,
+     "at": 8.81,
+     "word": "girl",
+     "carried": true
+    }
+   ]
+  },
+  {
+   "t0": 12.26,
+   "t1": 15.76,
+   "ground": "plate:illus/dark-corridor-interior-0.jpg",
+   "hold": true,
+   "plate_scale": [
+    1.05,
+    1.127
+   ],
+   "scene_lines": [
+    "Then one evening she heard it while she was awake, from the hallway."
+   ]
+  },
+  {
+   "t0": 15.76,
+   "t1": 23.033,
+   "ground": "plate:illus/staircase-interior-dark-0.jpg",
+   "hold": false,
+   "plate_scale": [
+    1.05,
+    1.21
+   ],
+   "scene_lines": [
+    "Around her door frame bent a horse's skull with no lower jaw, on a neck that kept going and going, vertebrae like giant human fingers, disappearing down the stairs and around the corner and, as far as anyone can tell, forever.",
+    "Long Horse is one of the only creatures its creator has personally marked one hundred percent friendly.",
+    "Its neck is genuinely infinite."
+   ],
+   "layers": [
+    {
+     "src": "assets/cut-neck-rise.png",
+     "at": 19.86,
+     "word": "neck",
+     "x": 0.24,
+     "y": 0.7,
+     "scale": 0.312,
+     "from_left": true
+    }
+   ],
+   "asset": "assets/cut-neck-profile.png",
+   "from_": [
+    0.63,
+    0.58,
+    0.618
+   ],
+   "to": [
+    0.45000000000000007,
+    0.565,
+    0.905
+   ]
+  },
+  {
+   "t0": 23.033,
+   "t1": 26.207,
+   "ground": "plate:illus/staircase-interior-dark-0.jpg",
+   "hold": false,
+   "plate_scale": [
+    1.25,
+    1.32
+   ],
+   "scene_lines": [
+    "Around her door frame bent a horse's skull with no lower jaw, on a neck that kept going and going, vertebrae like giant human fingers, disappearing down the stairs and around the corner and, as far as anyone can tell, forever.",
+    "Long Horse is one of the only creatures its creator has personally marked one hundred percent friendly.",
+    "Its neck is genuinely infinite."
+   ],
+   "layers": [
+    {
+     "src": "assets/cut-neck-rise.png",
+     "at": 23.033,
+     "word": "neck",
+     "x": 0.24,
+     "y": 0.7,
+     "scale": 0.312,
+     "from_left": true,
+     "carried": true
+    }
+   ],
+   "asset": "assets/cut-neck-profile.png",
+   "from_": [
+    0.51,
+    0.56,
+    0.754
+   ],
+   "to": [
+    0.5,
+    0.55,
+    0.814
+   ]
+  },
+  {
+   "t0": 26.207,
+   "t1": 38.98,
+   "ground": "plate:illus/staircase-interior-dark-0.jpg",
+   "hold": false,
+   "plate_scale": [
+    1.45,
+    1.731
+   ],
+   "scene_lines": [
+    "Around her door frame bent a horse's skull with no lower jaw, on a neck that kept going and going, vertebrae like giant human fingers, disappearing down the stairs and around the corner and, as far as anyone can tell, forever.",
+    "Long Horse is one of the only creatures its creator has personally marked one hundred percent friendly.",
+    "Its neck is genuinely infinite."
+   ],
+   "layers": [
+    {
+     "src": "assets/cut-neck-rise.png",
+     "at": 26.207,
+     "word": "neck",
+     "x": 0.24,
+     "y": 0.7,
+     "scale": 0.312,
+     "from_left": true,
+     "carried": true
+    },
+    {
+     "src": "assets/cut-stipple.png",
+     "at": 29.38,
+     "word": "creature",
+     "x": 0.78,
+     "y": 0.7,
+     "scale": 0.348,
+     "from_left": false
+    }
+   ],
+   "asset": "assets/cut-neck-profile.png",
+   "from_": [
+    0.51,
+    0.56,
+    0.89
+   ],
+   "to": [
+    0.5,
+    0.55,
+    0.961
+   ],
+   "icons": [
+    {
+     "kind": "figure",
+     "x": 0.2,
+     "y": 0.62,
+     "scale": 2.4,
+     "at": 31.64,
+     "word": "creator"
+    }
+   ]
+  },
+  {
+   "t0": 38.98,
+   "t1": 44.67,
+   "ground": "plate:illus/empty-bed-dark-bedroom-night-0.jpg",
+   "hold": true,
+   "plate_scale": [
+    1.05,
+    1.175
+   ],
+   "scene_lines": [
+    "It travels through dreams, it likes music and apples, and for whatever reason, it smells like cinnamon."
+   ],
+   "inserts": [
+    {
+     "src": "illus/apples-0.jpg",
+     "x": 0.5,
+     "y": 0.44,
+     "w": 0.27,
+     "h": 0.29760000000000003,
+     "at": 39.13,
+     "tilt": 0,
+     "word": "apple",
+     "out": null
+    },
+    {
+     "src": "illus/vinyl-record-player-turntable-0.jpg",
+     "x": 0.22,
+     "y": 0.44,
+     "w": 0.27,
+     "h": 0.29760000000000003,
+     "at": 39.2,
+     "tilt": 0,
+     "word": "music",
+     "out": null
+    },
+    {
+     "src": "illus/cinnamon-0.jpg",
+     "x": 0.78,
+     "y": 0.44,
+     "w": 0.27,
+     "h": 0.29760000000000003,
+     "at": 42.36,
+     "tilt": 0,
+     "word": "cinnamon",
+     "out": null
+    }
+   ]
+  },
+  {
+   "t0": 44.67,
+   "t1": 46.98,
+   "ground": "plate:illus/empty-bed-dark-bedroom-night-0.jpg",
+   "hold": true,
+   "plate_scale": [
+    1.25,
+    1.301
+   ],
+   "scene_lines": [
+    "It travels through dreams, it likes music and apples, and for whatever reason, it smells like cinnamon."
+   ],
+   "inserts": [
+    {
+     "src": "illus/apples-0.jpg",
+     "x": 0.5,
+     "y": 0.44,
+     "w": 0.27,
+     "h": 0.29760000000000003,
+     "at": 44.67,
+     "tilt": 0,
+     "word": "apple",
+     "out": null,
+     "carried": true
+    },
+    {
+     "src": "illus/vinyl-record-player-turntable-0.jpg",
+     "x": 0.22,
+     "y": 0.44,
+     "w": 0.27,
+     "h": 0.29760000000000003,
+     "at": 44.67,
+     "tilt": 0,
+     "word": "music",
+     "out": null,
+     "carried": true
+    },
+    {
+     "src": "illus/cinnamon-0.jpg",
+     "x": 0.78,
+     "y": 0.44,
+     "w": 0.27,
+     "h": 0.29760000000000003,
+     "at": 44.67,
+     "tilt": 0,
+     "word": "cinnamon",
+     "out": null,
+     "carried": true
+    }
+   ]
+  },
+  {
+   "t0": 46.98,
+   "t1": 53.24,
+   "ground": "white",
+   "hold": false,
+   "plate_scale": [
+    1.05,
+    1.188
+   ],
+   "scene_lines": [
+    "It appears for exactly one purpose: to warn.",
+    "Seeing it means misfortune is coming soon, not because of Long Horse, but because of whatever comes after it.",
+    "So yes, you will survive Long Horse.",
+    "It showed up to make sure of that.",
+    "Whether you survive what it came to warn you about is a different question."
+   ],
+   "asset": "assets/cut-head-down.png",
+   "from_": [
+    0.62856,
+    0.58,
+    0.243
+   ],
+   "to": [
+    0.45144,
+    0.565,
+    0.315
+   ],
+   "inserts": [
+    {
+     "src": "illus/warning-road-sign-0.jpg",
+     "x": 0.5,
+     "y": 0.46,
+     "w": 0.44,
+     "h": 0.48497777777777773,
+     "at": 46.98,
+     "tilt": 0,
+     "word": "warn",
+     "out": null
+    },
+    {
+     "src": "illus/car-crash-wreck-roadside-0.jpg",
+     "x": 0.5,
+     "y": 0.46,
+     "w": 0.44,
+     "h": 0.48497777777777773,
+     "at": 49.76,
+     "tilt": 0,
+     "word": "misfortune",
+     "out": null
+    }
+   ]
+  },
+  {
+   "t0": 53.24,
+   "t1": 58.7,
+   "ground": "white",
+   "hold": false,
+   "plate_scale": [
+    1.25,
+    1.37
+   ],
+   "scene_lines": [
+    "It appears for exactly one purpose: to warn.",
+    "Seeing it means misfortune is coming soon, not because of Long Horse, but because of whatever comes after it.",
+    "So yes, you will survive Long Horse.",
+    "It showed up to make sure of that.",
+    "Whether you survive what it came to warn you about is a different question."
+   ],
+   "layers": [
+    {
+     "src": "assets/cut-neck-loops.png",
+     "at": 56.32,
+     "word": "horse",
+     "x": 0.24,
+     "y": 0.7,
+     "scale": 0.105,
+     "from_left": true
+    }
+   ],
+   "asset": "assets/cut-head-down.png",
+   "from_": [
+    0.51,
+    0.56,
+    0.296
+   ],
+   "to": [
+    0.5,
+    0.55,
+    0.32
+   ],
+   "inserts": [
+    {
+     "src": "illus/warning-road-sign-0.jpg",
+     "x": 0.5,
+     "y": 0.46,
+     "w": 0.44,
+     "h": 0.48497777777777773,
+     "at": 53.24,
+     "tilt": 0,
+     "word": "warn",
+     "out": null,
+     "carried": true
+    },
+    {
+     "src": "illus/car-crash-wreck-roadside-0.jpg",
+     "x": 0.5,
+     "y": 0.46,
+     "w": 0.44,
+     "h": 0.48497777777777773,
+     "at": 53.24,
+     "tilt": 0,
+     "word": "misfortune",
+     "out": null,
+     "carried": true
+    }
+   ]
+  },
+  {
+   "t0": 58.7,
+   "t1": 62.34,
+   "ground": "white",
+   "hold": false,
+   "plate_scale": [
+    1.45,
+    1.517
+   ],
+   "scene_lines": [
+    "It appears for exactly one purpose: to warn.",
+    "Seeing it means misfortune is coming soon, not because of Long Horse, but because of whatever comes after it.",
+    "So yes, you will survive Long Horse.",
+    "It showed up to make sure of that.",
+    "Whether you survive what it came to warn you about is a different question."
+   ],
+   "layers": [
+    {
+     "src": "assets/cut-neck-loops.png",
+     "at": 58.7,
+     "word": "horse",
+     "x": 0.24,
+     "y": 0.7,
+     "scale": 0.105,
+     "from_left": true,
+     "carried": true
+    }
+   ],
+   "asset": "assets/cut-head-down.png",
+   "from_": [
+    0.51,
+    0.56,
+    0.35
+   ],
+   "to": [
+    0.5,
+    0.55,
+    0.378
+   ],
+   "inserts": [
+    {
+     "src": "illus/warning-road-sign-0.jpg",
+     "x": 0.5,
+     "y": 0.46,
+     "w": 0.44,
+     "h": 0.48497777777777773,
+     "at": 58.7,
+     "tilt": 0,
+     "word": "warn",
+     "out": null,
+     "carried": true
+    },
+    {
+     "src": "illus/car-crash-wreck-roadside-0.jpg",
+     "x": 0.5,
+     "y": 0.46,
+     "w": 0.44,
+     "h": 0.48497777777777773,
+     "at": 58.7,
+     "tilt": 0,
+     "word": "misfortune",
+     "out": null,
+     "carried": true
+    },
+    {
+     "src": "illus/warning-road-sign-0.jpg",
+     "x": 0.5,
+     "y": 0.46,
+     "w": 0.44,
+     "h": 0.48497777777777773,
+     "at": 61.08,
+     "tilt": 0,
+     "word": "warn",
+     "out": null
+    }
+   ]
+  }
+ ],
+ "pops": [
+  {
+   "t0": 6.76,
+   "t1": 8.86,
+   "text": "DREAMS",
+   "word": "dreams",
+   "y": 806
+  },
+  {
+   "t0": 14.64,
+   "t1": 15.56,
+   "text": "HALLWAY",
+   "word": "hallway",
+   "y": 806
+  },
+  {
+   "t0": 31.64,
+   "t1": 33.74,
+   "text": "CREATOR",
+   "word": "creator",
+   "y": 806
+  },
+  {
+   "t0": 39.2,
+   "t1": 41.3,
+   "text": "MUSIC",
+   "word": "music",
+   "y": 806
+  },
+  {
+   "t0": 46.98,
+   "t1": 49.08,
+   "text": "WARN",
+   "word": "warn",
+   "y": 806
+  }
+ ],
+ "titles": [
+  {
+   "t0": 0.0,
+   "t1": 46.98,
+   "white": false
+  },
+  {
+   "t0": 46.98,
+   "t1": 62.34,
+   "white": true
+  }
+ ]
+}

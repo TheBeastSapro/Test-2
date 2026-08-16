@@ -40,241 +40,202 @@
       .pop.ink { color:#111111; -webkit-text-stroke-width:0; text-shadow:none; }
       .pop.red { color:#D62020; }
       svg.ov { position:absolute; inset:0; width:1920px; height:1080px; overflow:visible; }
+
+      /* BOXED INSERT. The reference's answer to a line that names a thing:
+         the thing appears in a bordered box over the scene, and when a line
+         names two things there are two boxes side by side. This is the layer
+         that lets a framing be HELD for twenty seconds and still change every
+         couple of seconds, which is the whole point. */
+      .box { position:absolute; transform-origin:50% 50%; will-change:transform,opacity;
+             border:9px solid #111111; background:#FFFFFF; overflow:hidden;
+             box-shadow:0 22px 40px rgba(0,0,0,.55); }
+      .box.on-white { box-shadow:0 14px 26px rgba(0,0,0,.28); }
+      .box > img { width:100%; height:100%; object-fit:cover; display:block; }
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-duration="62"
+    <div id="root" data-composition-id="main" data-start="0" data-duration="62.34"
          data-width="1920" data-height="1080" data-fps="30">
 
-      <audio id="vo" class="clip" data-start="0" data-duration="62" src="public/vo.wav"></audio>
+      <audio id="vo" class="clip" data-start="0" data-duration="62.34" src="public/audio/mix-final.wav"></audio>
 
-      <div id="s01" class="clip stage" data-start="0.0" data-duration="2.48" data-track-index="1">
-        <img id="s01p" class="plate" src="public/art-heads.jpg" />
+      <div id="s01" class="clip stage" data-start="0.0" data-duration="1.16" data-track-index="1">
+        <img id="s01p" class="plate" src="public/assets/../plates/plate-48f4949e3e97.jpg" />
+        <img id="s01c" class="cut grounded" src="public/assets/cut-head-down.png" />
       </div>
-      <div id="s02" class="clip stage" data-start="2.48" data-duration="1.44" data-track-index="1">
-        <img id="s02p" class="plate" src="public/plate-e1c542d3f5a4.jpg" />
-        <img id="s02c" class="cut grounded" src="public/cut-head-branches.png" />
-        <svg class="ov" id="s02i1"><g transform="translate(576,475) scale(3.0)"><g><line x1="-52" y1="-52" x2="52" y2="52" stroke="#D62020" stroke-width="16"/><line x1="52" y1="-52" x2="-52" y2="52" stroke="#D62020" stroke-width="16"/></g></g></svg>
+      <div id="s02" class="clip stage" data-start="1.16" data-duration="4.18" data-track-index="1">
+        <img id="s02p" class="plate" src="public/assets/../plates/plate-4d8b527f409c.jpg" />
+        <img id="s02c" class="cut grounded" src="public/assets/cut-neck-loops.png" />
       </div>
-      <div id="s03" class="clip stage white" data-start="3.92" data-duration="1.68" data-track-index="1">
-        <img id="s03c" class="cut" src="public/cut-head-branches.png" />
+      <div id="s03" class="clip stage" data-start="5.34" data-duration="3.47" data-track-index="1">
+        <img id="s03p" class="plate" src="public/illus/empty-bed-dark-bedroom-night-0.jpg" />
+        <svg class="ov" id="s03i1"><g transform="translate(384,670) scale(2.4)"><g><circle cx="0" cy="-96" r="19" fill="#FFFFFF"/><line x1="0" y1="-77" x2="0" y2="-26" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="-64" x2="-26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-64" x2="26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="-20" y2="10" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="20" y2="10" stroke="#FFFFFF" stroke-width="11"/></g></g></svg>
       </div>
-      <div id="s04" class="clip stage" data-start="5.6" data-duration="1.16" data-track-index="1">
-        <img id="s04p" class="plate" src="public/plate-5770a421518d.jpg" />
-        <img id="s04c" class="cut grounded" src="public/cut-neck-zigzag.png" />
+      <div id="s04" class="clip stage" data-start="8.81" data-duration="3.45" data-track-index="1">
+        <img id="s04p" class="plate" src="public/illus/empty-bed-dark-bedroom-night-0.jpg" />
+        <svg class="ov" id="s04i1"><g transform="translate(384,670) scale(2.4)"><g><circle cx="0" cy="-96" r="19" fill="#FFFFFF"/><line x1="0" y1="-77" x2="0" y2="-26" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="-64" x2="-26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-64" x2="26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="-20" y2="10" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="20" y2="10" stroke="#FFFFFF" stroke-width="11"/></g></g></svg>
       </div>
-      <div id="s05" class="clip stage" data-start="6.76" data-duration="1.64" data-track-index="1">
-        <img id="s05p" class="plate" src="public/plate-48f4949e3e97.jpg" />
-        <img id="s05c" class="cut grounded" src="public/cut-stipple.png" />
+      <div id="s05" class="clip stage" data-start="12.26" data-duration="3.5" data-track-index="1">
+        <img id="s05p" class="plate" src="public/illus/dark-corridor-interior-0.jpg" />
       </div>
-      <div id="s06" class="clip stage" data-start="8.4" data-duration="2.2" data-track-index="1">
-        <img id="s06p" class="plate" src="public/plate-bcabf2771de4.jpg" />
-        <img id="s06c" class="cut grounded" src="public/cut-neck-loops.png" />
-        <svg class="ov" id="s06i1"><g transform="translate(576,929) scale(2.86)"><g><circle cx="0" cy="-96" r="19" fill="#FFFFFF"/><line x1="0" y1="-77" x2="0" y2="-26" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="-64" x2="-26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-64" x2="26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="-20" y2="10" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="20" y2="10" stroke="#FFFFFF" stroke-width="11"/></g></g></svg>
+      <div id="s06" class="clip stage" data-start="15.76" data-duration="7.273" data-track-index="1">
+        <img id="s06p" class="plate" src="public/illus/staircase-interior-dark-0.jpg" />
+        <img id="s06c" class="cut grounded" src="public/assets/cut-neck-profile.png" />
+        <img id="s06L1" class="cut grounded" src="public/assets/cut-neck-rise.png" />
       </div>
-      <div id="s07" class="clip stage" data-start="10.6" data-duration="2.2" data-track-index="1">
-        <img id="s07p" class="plate" src="public/plate-bcabf2771de4.jpg" />
-        <img id="s07c" class="cut grounded" src="public/cut-neck-loops.png" />
-        <svg class="ov" id="s07i1"><g transform="translate(499,950) scale(3.75)"><g><circle cx="0" cy="-96" r="19" fill="#FFFFFF"/><line x1="0" y1="-77" x2="0" y2="-26" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="-64" x2="-26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-64" x2="26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="-20" y2="10" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="20" y2="10" stroke="#FFFFFF" stroke-width="11"/></g></g></svg>
+      <div id="s07" class="clip stage" data-start="23.033" data-duration="3.174" data-track-index="1">
+        <img id="s07p" class="plate" src="public/illus/staircase-interior-dark-0.jpg" />
+        <img id="s07c" class="cut grounded" src="public/assets/cut-neck-profile.png" />
+        <img id="s07L1" class="cut grounded" src="public/assets/cut-neck-rise.png" />
       </div>
-      <div id="s08" class="clip stage" data-start="12.8" data-duration="1.84" data-track-index="1">
-        <img id="s08p" class="plate" src="public/plate-48f4949e3e97.jpg" />
+      <div id="s08" class="clip stage" data-start="26.207" data-duration="12.773" data-track-index="1">
+        <img id="s08p" class="plate" src="public/illus/staircase-interior-dark-0.jpg" />
+        <img id="s08c" class="cut grounded" src="public/assets/cut-neck-profile.png" />
+        <img id="s08L1" class="cut grounded" src="public/assets/cut-neck-rise.png" />
+        <img id="s08L2" class="cut grounded" src="public/assets/cut-stipple.png" />
+        <svg class="ov" id="s08i1"><g transform="translate(384,670) scale(2.4)"><g><circle cx="0" cy="-96" r="19" fill="#FFFFFF"/><line x1="0" y1="-77" x2="0" y2="-26" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="-64" x2="-26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-64" x2="26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="-20" y2="10" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="20" y2="10" stroke="#FFFFFF" stroke-width="11"/></g></g></svg>
       </div>
-      <div id="s09" class="clip stage" data-start="14.64" data-duration="1.96" data-track-index="1">
-        <img id="s09p" class="plate" src="public/art-skull.jpg" />
-        <svg class="ov" id="s09i1"><g transform="translate(422,972) scale(4.59)"><g><circle cx="0" cy="-96" r="19" fill="#FFFFFF"/><line x1="0" y1="-77" x2="0" y2="-26" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="-64" x2="-26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-64" x2="26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="-20" y2="10" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="20" y2="10" stroke="#FFFFFF" stroke-width="11"/></g></g></svg>
+      <div id="s09" class="clip stage" data-start="38.98" data-duration="5.69" data-track-index="1">
+        <img id="s09p" class="plate" src="public/illus/empty-bed-dark-bedroom-night-0.jpg" />
+        <div id="s09b1" class="box" style="left:701px;top:315px;width:518px;height:321px;"><img src="public/illus/apples-0.jpg" /></div>
+        <div id="s09b2" class="box" style="left:163px;top:315px;width:518px;height:321px;"><img src="public/illus/vinyl-record-player-turntable-0.jpg" /></div>
+        <div id="s09b3" class="box" style="left:1239px;top:315px;width:518px;height:321px;"><img src="public/illus/cinnamon-0.jpg" /></div>
       </div>
-      <div id="s10" class="clip stage" data-start="16.6" data-duration="1.56" data-track-index="1">
-        <img id="s10p" class="plate" src="public/art-skull.jpg" />
+      <div id="s10" class="clip stage" data-start="44.67" data-duration="2.31" data-track-index="1">
+        <img id="s10p" class="plate" src="public/illus/empty-bed-dark-bedroom-night-0.jpg" />
+        <div id="s10b1" class="box" style="left:701px;top:315px;width:518px;height:321px;"><img src="public/illus/apples-0.jpg" /></div>
+        <div id="s10b2" class="box" style="left:163px;top:315px;width:518px;height:321px;"><img src="public/illus/vinyl-record-player-turntable-0.jpg" /></div>
+        <div id="s10b3" class="box" style="left:1239px;top:315px;width:518px;height:321px;"><img src="public/illus/cinnamon-0.jpg" /></div>
       </div>
-      <div id="s11" class="clip stage white" data-start="18.16" data-duration="2.28" data-track-index="1">
-        <img id="s11c" class="cut" src="public/cut-head-branches.png" />
-        <svg class="ov" id="s11i1"><g transform="translate(1190,562) scale(2.64)"><g><line x1="0" y1="0" x2="-150" y2="66" stroke="#D62020" stroke-width="13"/><polygon points="-150,66 -104,44 -108,84" fill="#D62020"/></g></g></svg>
+      <div id="s11" class="clip stage white" data-start="46.98" data-duration="6.26" data-track-index="1">
+        <img id="s11c" class="cut" src="public/assets/cut-head-down.png" />
+        <div id="s11b1" class="box on-white" style="left:538px;top:235px;width:845px;height:524px;"><img src="public/illus/warning-road-sign-0.jpg" /></div>
+        <div id="s11b2" class="box on-white" style="left:538px;top:235px;width:845px;height:524px;"><img src="public/illus/car-crash-wreck-roadside-0.jpg" /></div>
       </div>
-      <div id="s12" class="clip stage white" data-start="20.44" data-duration="2.12" data-track-index="1">
-        <img id="s12c" class="cut" src="public/cut-neck-zigzag.png" />
+      <div id="s12" class="clip stage white" data-start="53.24" data-duration="5.46" data-track-index="1">
+        <img id="s12c" class="cut" src="public/assets/cut-head-down.png" />
+        <img id="s12L1" class="cut" src="public/assets/cut-neck-loops.png" />
+        <div id="s12b1" class="box on-white" style="left:538px;top:235px;width:845px;height:524px;"><img src="public/illus/warning-road-sign-0.jpg" /></div>
+        <div id="s12b2" class="box on-white" style="left:538px;top:235px;width:845px;height:524px;"><img src="public/illus/car-crash-wreck-roadside-0.jpg" /></div>
       </div>
-      <div id="s13" class="clip stage white" data-start="22.56" data-duration="2.04" data-track-index="1">
-        <img id="s13c" class="cut" src="public/cut-neck-zigzag.png" />
+      <div id="s13" class="clip stage white" data-start="58.7" data-duration="3.64" data-track-index="1">
+        <img id="s13c" class="cut" src="public/assets/cut-head-down.png" />
+        <img id="s13L1" class="cut" src="public/assets/cut-neck-loops.png" />
+        <div id="s13b1" class="box on-white" style="left:538px;top:235px;width:845px;height:524px;"><img src="public/illus/warning-road-sign-0.jpg" /></div>
+        <div id="s13b2" class="box on-white" style="left:538px;top:235px;width:845px;height:524px;"><img src="public/illus/car-crash-wreck-roadside-0.jpg" /></div>
+        <div id="s13b3" class="box on-white" style="left:538px;top:235px;width:845px;height:524px;"><img src="public/illus/warning-road-sign-0.jpg" /></div>
       </div>
-      <div id="s14" class="clip stage white" data-start="24.6" data-duration="2.0" data-track-index="1">
-        <img id="s14c" class="cut" src="public/cut-stipple.png" />
-      </div>
-      <div id="s15" class="clip stage" data-start="26.6" data-duration="1.74" data-track-index="1">
-        <img id="s15p" class="plate" src="public/plate-ad29b24fa1b0.jpg" />
-        <img id="s15c" class="cut grounded" src="public/cut-neck-loops.png" />
-      </div>
-      <div id="s16" class="clip stage" data-start="28.34" data-duration="1.66" data-track-index="1">
-        <img id="s16p" class="plate" src="public/plate-4d8b527f409c.jpg" />
-      </div>
-      <div id="s17" class="clip stage white" data-start="30.0" data-duration="2.6" data-track-index="1">
-        <img id="s17c" class="cut" src="public/cut-head-branches.png" />
-        <svg class="ov" id="s17i1"><g transform="translate(461,907) scale(2.4)"><g><circle cx="0" cy="-96" r="19" fill="#111111"/><line x1="0" y1="-77" x2="0" y2="-26" stroke="#111111" stroke-width="12"/><line x1="0" y1="-64" x2="-26" y2="-38" stroke="#111111" stroke-width="11"/><line x1="0" y1="-64" x2="26" y2="-38" stroke="#111111" stroke-width="11"/><line x1="0" y1="-26" x2="-20" y2="10" stroke="#111111" stroke-width="11"/><line x1="0" y1="-26" x2="20" y2="10" stroke="#111111" stroke-width="11"/></g></g></svg>
-      </div>
-      <div id="s18" class="clip stage white" data-start="32.6" data-duration="3.2" data-track-index="1">
-        <img id="s18c" class="cut" src="public/cut-stipple.png" />
-      </div>
-      <div id="s19" class="clip stage white" data-start="35.8" data-duration="2.6" data-track-index="1">
-        <img id="s19c" class="cut" src="public/cut-neck-zigzag.png" />
-      </div>
-      <div id="s20" class="clip stage white" data-start="38.4" data-duration="3.96" data-track-index="1">
-        <img id="s20c" class="cut" src="public/cut-head-branches.png" />
-      </div>
-      <div id="s21" class="clip stage white" data-start="42.36" data-duration="3.22" data-track-index="1">
-        <img id="s21c" class="cut" src="public/cut-stipple.png" />
-      </div>
-      <div id="s22" class="clip stage white" data-start="45.58" data-duration="2.42" data-track-index="1">
-        <img id="s22c" class="cut" src="public/cut-neck-zigzag.png" />
-      </div>
-      <div id="s23" class="clip stage" data-start="48.0" data-duration="3.0" data-track-index="1">
-        <img id="s23p" class="plate" src="public/art-heads.jpg" />
-        <svg class="ov" id="s23i1"><g transform="translate(1498,950) scale(3.22)"><g><circle cx="0" cy="-96" r="19" fill="#FFFFFF"/><line x1="0" y1="-77" x2="0" y2="-26" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="-64" x2="-26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-64" x2="26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="-20" y2="10" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="20" y2="10" stroke="#FFFFFF" stroke-width="11"/></g></g></svg>
-      </div>
-      <div id="s24" class="clip stage" data-start="51.0" data-duration="3.1" data-track-index="1">
-        <img id="s24p" class="plate" src="public/plate-e1c542d3f5a4.jpg" />
-        <img id="s24c" class="cut grounded" src="public/cut-head-branches.png" />
-      </div>
-      <div id="s25" class="clip stage" data-start="54.1" data-duration="3.3" data-track-index="1">
-        <img id="s25p" class="plate" src="public/art-skull.jpg" />
-        <svg class="ov" id="s25i1"><g transform="translate(1536,950) scale(3.6)"><g><circle cx="0" cy="-96" r="19" fill="#FFFFFF"/><line x1="0" y1="-77" x2="0" y2="-26" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="-64" x2="-26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-64" x2="26" y2="-38" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="-20" y2="10" stroke="#FFFFFF" stroke-width="11"/><line x1="0" y1="-26" x2="20" y2="10" stroke="#FFFFFF" stroke-width="11"/></g></g></svg>
-      </div>
-      <div id="s26" class="clip stage" data-start="57.4" data-duration="4.6" data-track-index="1">
-        <img id="s26p" class="plate" src="public/art-frontal.jpg" />
-      </div>
-      <div id="pop01" class="clip pop " data-start="2.48" data-duration="1.14" data-track-index="6" style="top:830px;">CANNOT HURT YOU</div>
-      <div id="pop02" class="clip pop ink" data-start="3.92" data-duration="1.38" data-track-index="7" style="top:830px;">NOT GOOD NEWS</div>
-      <div id="pop03" class="clip pop " data-start="6.76" data-duration="1.34" data-track-index="8" style="top:830px;">IN HER DREAMS</div>
-      <div id="pop04" class="clip pop ink side" data-start="18.16" data-duration="1.98" data-track-index="9" style="top:470px;">NO LOWER JAW</div>
-      <div id="pop05" class="clip pop ink" data-start="22.56" data-duration="1.74" data-track-index="10" style="top:840px;">HUMAN FINGERS</div>
-      <div id="pop06" class="clip pop " data-start="28.34" data-duration="1.36" data-track-index="11" style="top:840px;">FOREVER</div>
-      <div id="pop07" class="clip pop ink side" data-start="31.2" data-duration="3.4" data-track-index="12" style="top:470px;">100% FRIENDLY</div>
-      <div id="pop08" class="clip pop ink side" data-start="35.8" data-duration="2.3" data-track-index="13" style="top:470px;">INFINITE NECK</div>
-      <div id="pop09" class="clip pop ink side" data-start="42.36" data-duration="2.92" data-track-index="14" style="top:470px;">SMELLS OF CINNAMON</div>
-      <div id="pop10" class="clip pop ink red side" data-start="45.58" data-duration="2.12" data-track-index="15" style="top:470px;">IT COMES TO WARN</div>
-      <div id="pop11" class="clip pop " data-start="54.1" data-duration="3.0" data-track-index="16" style="top:850px;">YOU WILL SURVIVE</div>
-      <div id="pop12" class="clip pop red" data-start="58.6" data-duration="3.1" data-track-index="17" style="top:850px;">WHAT COMES AFTER</div>
-      <div id="t01" class="clip title" data-start="0.0" data-duration="3.92" data-track-index="41">Long Horse</div>
-      <div id="t02" class="clip title onWhite" data-start="3.92" data-duration="1.68" data-track-index="42">Long Horse</div>
-      <div id="t03" class="clip title" data-start="5.6" data-duration="12.56" data-track-index="43">Long Horse</div>
-      <div id="t04" class="clip title onWhite" data-start="18.16" data-duration="8.44" data-track-index="44">Long Horse</div>
-      <div id="t05" class="clip title" data-start="26.6" data-duration="3.4" data-track-index="45">Long Horse</div>
-      <div id="t06" class="clip title onWhite" data-start="30.0" data-duration="18.0" data-track-index="46">Long Horse</div>
-      <div id="t07" class="clip title" data-start="48.0" data-duration="14.0" data-track-index="47">Long Horse</div>
+      <div id="pop01" class="clip pop " data-start="6.76" data-duration="2.1" data-track-index="6" style="top:806px;">DREAMS</div>
+      <div id="pop02" class="clip pop " data-start="14.64" data-duration="0.82" data-track-index="7" style="top:806px;">HALLWAY</div>
+      <div id="pop03" class="clip pop " data-start="31.64" data-duration="2.1" data-track-index="8" style="top:806px;">CREATOR</div>
+      <div id="pop04" class="clip pop " data-start="39.2" data-duration="2.1" data-track-index="9" style="top:806px;">MUSIC</div>
+      <div id="pop05" class="clip pop " data-start="46.98" data-duration="2.1" data-track-index="10" style="top:806px;">WARN</div>
+      <div id="t01" class="clip title" data-start="0.0" data-duration="46.98" data-track-index="41">LONG HORSE</div>
+      <div id="t02" class="clip title onWhite" data-start="46.98" data-duration="15.36" data-track-index="42">LONG HORSE</div>
     </div>
 
     <script>
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
       gsap.set(".pop", {autoAlpha:0});
-      gsap.set("#s01p", {scale:1.22});
-      tl.to("#s01p", {scale:1.1, duration:2.48, ease:"none"}, 0.0);
-      tl.fromTo("#s02i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 2.7);
-      gsap.set("#s02p", {scale:1.12});
-      tl.to("#s02p", {scale:1.06, duration:1.44, ease:"none"}, 2.48);
-      gsap.set("#s02c", {xPercent:-50, yPercent:-50, x:1190, y:583, scale:0.62});
-      tl.to("#s02c", {x:1152, y:572, scale:0.7, duration:1.44, ease:"none"}, 2.48);
-      gsap.set("#s03c", {xPercent:-50, yPercent:-50, x:960, y:648, scale:0.62});
-      tl.to("#s03c", {x:960, y:626, scale:0.66, duration:1.68, ease:"none"}, 3.92);
-      gsap.set("#s04p", {scale:1.04});
-      gsap.set("#s04c", {xPercent:-50, yPercent:-50, x:691, y:497, scale:0.52});
-      gsap.set("#s05p", {scale:1.14});
-      tl.to("#s05p", {scale:1.07, duration:1.64, ease:"none"}, 6.76);
-      gsap.set("#s05c", {xPercent:-50, yPercent:-50, x:1306, y:562, scale:0.58});
-      tl.to("#s05c", {x:1267, y:551, scale:0.64, duration:1.64, ease:"none"}, 6.76);
-      tl.fromTo("#s06i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 9.1);
-      gsap.set("#s06p", {scale:1.06});
-      tl.to("#s06p", {scale:1.13, duration:2.2, ease:"none"}, 8.4);
-      gsap.set("#s06c", {xPercent:-50, yPercent:-50, x:1382, y:670, scale:0.3});
-      tl.to("#s06c", {x:1344, y:648, scale:0.36, duration:2.2, ease:"none"}, 8.4);
-      tl.fromTo("#s07i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 11.0);
-      tl.to("#s07i1", {rotation:-16, x:"+=-30", duration:0.42, ease:"power3.out"}, 12.1);
-      gsap.set("#s07p", {scale:1.06});
-      tl.to("#s07p", {scale:1.13, duration:2.2, ease:"none"}, 10.6);
-      gsap.set("#s07c", {xPercent:-50, yPercent:-50, x:1267, y:648, scale:0.46});
-      tl.to("#s07c", {x:1190, y:626, scale:0.55, duration:2.2, ease:"none"}, 10.6);
-      gsap.set("#s08p", {scale:1.06});
-      tl.fromTo("#s09i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 15.1);
-      tl.to("#s09i1", {rotation:-64, x:"+=-120", duration:0.42, ease:"power3.out"}, 15.9);
-      gsap.set("#s09p", {scale:1.06});
-      tl.to("#s09p", {scale:1.13, duration:1.96, ease:"none"}, 14.64);
-      gsap.set("#s10p", {scale:1.06});
-      tl.to("#s10p", {scale:1.13, duration:1.56, ease:"none"}, 16.6);
-      tl.fromTo("#s11i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 18.5);
-      gsap.set("#s11c", {xPercent:-50, yPercent:-50, x:960, y:605, scale:0.78});
-      gsap.set("#s12c", {xPercent:-50, yPercent:-50, x:806, y:562, scale:0.72});
-      tl.to("#s12c", {x:1075, y:562, scale:0.78, duration:2.12, ease:"none"}, 20.44);
-      gsap.set("#s13c", {xPercent:-50, yPercent:-50, x:1037, y:583, scale:0.92});
-      tl.to("#s13c", {x:845, y:583, scale:1.0, duration:2.04, ease:"none"}, 22.56);
-      gsap.set("#s14c", {xPercent:-50, yPercent:-50, x:960, y:583, scale:0.74});
-      gsap.set("#s15p", {scale:1.06});
-      tl.to("#s15p", {scale:1.13, duration:1.74, ease:"none"}, 26.6);
-      gsap.set("#s15c", {xPercent:-50, yPercent:-50, x:1152, y:626, scale:0.6});
-      tl.to("#s15c", {x:1114, y:605, scale:0.68, duration:1.74, ease:"none"}, 26.6);
-      gsap.set("#s16p", {scale:1.16});
-      tl.to("#s16p", {scale:1.06, duration:1.66, ease:"none"}, 28.34);
-      tl.fromTo("#s17i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 31.4);
-      gsap.set("#s17c", {xPercent:-50, yPercent:-50, x:1459, y:605, scale:0.7});
-      gsap.set("#s18c", {xPercent:-50, yPercent:-50, x:1190, y:583, scale:0.8});
-      tl.to("#s18c", {x:1190, y:572, scale:0.88, duration:3.2, ease:"none"}, 32.6);
-      gsap.set("#s19c", {xPercent:-50, yPercent:-50, x:1517, y:562, scale:0.84});
-      gsap.set("#s20c", {xPercent:-50, yPercent:-50, x:1229, y:594, scale:0.88});
-      tl.to("#s20c", {x:1229, y:583, scale:0.98, duration:3.96, ease:"none"}, 38.4);
-      gsap.set("#s21c", {xPercent:-50, yPercent:-50, x:1517, y:583, scale:0.86});
-      gsap.set("#s22c", {xPercent:-50, yPercent:-50, x:1517, y:572, scale:0.9});
-      tl.to("#s22c", {x:1517, y:572, scale:1.0, duration:2.42, ease:"none"}, 45.58);
-      tl.fromTo("#s23i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 48.8);
-      gsap.set("#s23p", {scale:1.08});
-      gsap.set("#s24p", {scale:1.06});
-      tl.to("#s24p", {scale:1.13, duration:3.1, ease:"none"}, 51.0);
-      gsap.set("#s24c", {xPercent:-50, yPercent:-50, x:998, y:605, scale:0.78});
-      tl.to("#s24c", {x:960, y:594, scale:0.88, duration:3.1, ease:"none"}, 51.0);
-      tl.fromTo("#s25i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 54.6);
-      gsap.set("#s25p", {scale:1.08});
-      gsap.set("#s26p", {scale:1.06});
-      tl.to("#s26p", {scale:1.13, duration:4.6, ease:"none"}, 57.4);
-      tl.fromTo("#pop01", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 2.48);
-      tl.to("#pop01", {autoAlpha:0, duration:0.14}, 3.48);
-      tl.set("#pop01", {autoAlpha:0}, 3.62);
-      tl.fromTo("#pop02", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 3.92);
-      tl.to("#pop02", {autoAlpha:0, duration:0.14}, 5.16);
-      tl.set("#pop02", {autoAlpha:0}, 5.3);
-      tl.fromTo("#pop03", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 6.76);
-      tl.to("#pop03", {autoAlpha:0, duration:0.14}, 7.96);
-      tl.set("#pop03", {autoAlpha:0}, 8.1);
-      tl.fromTo("#pop04", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 18.16);
-      tl.to("#pop04", {autoAlpha:0, duration:0.14}, 20.0);
-      tl.set("#pop04", {autoAlpha:0}, 20.14);
-      tl.fromTo("#pop05", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 22.56);
-      tl.to("#pop05", {autoAlpha:0, duration:0.14}, 24.16);
-      tl.set("#pop05", {autoAlpha:0}, 24.3);
-      tl.fromTo("#pop06", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 28.34);
-      tl.to("#pop06", {autoAlpha:0, duration:0.14}, 29.56);
-      tl.set("#pop06", {autoAlpha:0}, 29.7);
-      tl.fromTo("#pop07", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 31.2);
-      tl.to("#pop07", {autoAlpha:0, duration:0.14}, 34.46);
-      tl.set("#pop07", {autoAlpha:0}, 34.6);
-      tl.fromTo("#pop08", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 35.8);
-      tl.to("#pop08", {autoAlpha:0, duration:0.14}, 37.96);
-      tl.set("#pop08", {autoAlpha:0}, 38.1);
-      tl.fromTo("#pop09", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 42.36);
-      tl.to("#pop09", {autoAlpha:0, duration:0.14}, 45.14);
-      tl.set("#pop09", {autoAlpha:0}, 45.28);
-      tl.fromTo("#pop10", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 45.58);
-      tl.to("#pop10", {autoAlpha:0, duration:0.14}, 47.56);
-      tl.set("#pop10", {autoAlpha:0}, 47.7);
-      tl.fromTo("#pop11", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 54.1);
-      tl.to("#pop11", {autoAlpha:0, duration:0.14}, 56.96);
-      tl.set("#pop11", {autoAlpha:0}, 57.1);
-      tl.fromTo("#pop12", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 58.6);
-      tl.to("#pop12", {autoAlpha:0, duration:0.14}, 61.56);
-      tl.set("#pop12", {autoAlpha:0}, 61.7);
+      gsap.set("#s01p", {scale:1.05});
+      tl.to("#s01p", {scale:1.076, duration:1.16, ease:"none"}, 0.0);
+      gsap.set("#s01c", {xPercent:-50, yPercent:-50, x:1050, y:626, scale:0.243});
+      tl.to("#s01c", {x:1023, y:610, scale:0.249, duration:1.16, ease:"none"}, 0.0);
+      gsap.set("#s02p", {scale:1.05});
+      tl.to("#s02p", {scale:1.142, duration:4.18, ease:"none"}, 1.16);
+      gsap.set("#s02c", {xPercent:-50, yPercent:-50, x:1085, y:626, scale:0.121});
+      tl.to("#s02c", {x:989, y:610, scale:0.131, duration:4.18, ease:"none"}, 1.16);
+      tl.fromTo("#s03i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 5.36);
+      gsap.set("#s03p", {scale:1.05});
+      tl.fromTo("#s04i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 8.81);
+      gsap.set("#s04p", {scale:1.25});
+      gsap.set("#s05p", {scale:1.05});
+      gsap.set("#s06L1", {xPercent:-50, yPercent:-50, x:461, y:756, scale:0.312, autoAlpha:0});
+      tl.fromTo("#s06L1", {autoAlpha:0, x:"+=-260", scale:0.287}, {autoAlpha:1, x:461, scale:0.312, duration:0.44, ease:"power3.out"}, 19.86);
+      tl.to("#s06L1", {scale:0.334, duration:3.173, ease:"none"}, 19.86);
+      gsap.set("#s06p", {scale:1.05});
+      tl.to("#s06p", {scale:1.21, duration:7.273, ease:"none"}, 15.76);
+      gsap.set("#s06c", {xPercent:-50, yPercent:-50, x:1210, y:626, scale:0.618});
+      tl.to("#s06c", {x:864, y:610, scale:0.905, duration:7.273, ease:"none"}, 15.76);
+      gsap.set("#s07L1", {xPercent:-50, yPercent:-50, x:461, y:756, scale:0.312, autoAlpha:1});
+      tl.to("#s07L1", {scale:0.334, duration:3.174, ease:"none"}, 23.033);
+      gsap.set("#s07p", {scale:1.25});
+      tl.to("#s07p", {scale:1.32, duration:3.174, ease:"none"}, 23.033);
+      gsap.set("#s07c", {xPercent:-50, yPercent:-50, x:979, y:605, scale:0.754});
+      tl.to("#s07c", {x:960, y:594, scale:0.814, duration:3.174, ease:"none"}, 23.033);
+      gsap.set("#s08L1", {xPercent:-50, yPercent:-50, x:461, y:756, scale:0.312, autoAlpha:1});
+      tl.to("#s08L1", {scale:0.334, duration:12.773, ease:"none"}, 26.207);
+      gsap.set("#s08L2", {xPercent:-50, yPercent:-50, x:1498, y:756, scale:0.348, autoAlpha:0});
+      tl.fromTo("#s08L2", {autoAlpha:0, x:"+=260", scale:0.32}, {autoAlpha:1, x:1498, scale:0.348, duration:0.44, ease:"power3.out"}, 29.38);
+      tl.to("#s08L2", {scale:0.372, duration:9.6, ease:"none"}, 29.38);
+      tl.fromTo("#s08i1", {autoAlpha:0, scale:0.0, transformOrigin:"50% 50%"}, {autoAlpha:1, scale:1, duration:0.2, ease:"back.out(2)"}, 31.64);
+      gsap.set("#s08p", {scale:1.45});
+      tl.to("#s08p", {scale:1.731, duration:12.773, ease:"none"}, 26.207);
+      gsap.set("#s08c", {xPercent:-50, yPercent:-50, x:979, y:605, scale:0.89});
+      tl.to("#s08c", {x:960, y:594, scale:0.961, duration:12.773, ease:"none"}, 26.207);
+      gsap.set("#s09b1", {autoAlpha:0});
+      tl.fromTo("#s09b1", {autoAlpha:0, scale:0.86, rotation:0}, {autoAlpha:1, scale:1, duration:0.26, ease:"back.out(1.6)"}, 39.13);
+      tl.to("#s09b1", {scale:1.05, duration:5.54, ease:"none"}, 39.13);
+      gsap.set("#s09b2", {autoAlpha:0});
+      tl.fromTo("#s09b2", {autoAlpha:0, scale:0.86, rotation:0}, {autoAlpha:1, scale:1, duration:0.26, ease:"back.out(1.6)"}, 39.2);
+      tl.to("#s09b2", {scale:1.05, duration:5.47, ease:"none"}, 39.2);
+      gsap.set("#s09b3", {autoAlpha:0});
+      tl.fromTo("#s09b3", {autoAlpha:0, scale:0.86, rotation:0}, {autoAlpha:1, scale:1, duration:0.26, ease:"back.out(1.6)"}, 42.36);
+      tl.to("#s09b3", {scale:1.05, duration:2.31, ease:"none"}, 42.36);
+      gsap.set("#s09p", {scale:1.05});
+      gsap.set("#s10b1", {autoAlpha:1, scale:1, rotation:0});
+      tl.to("#s10b1", {scale:1.05, duration:2.31, ease:"none"}, 44.67);
+      gsap.set("#s10b2", {autoAlpha:1, scale:1, rotation:0});
+      tl.to("#s10b2", {scale:1.05, duration:2.31, ease:"none"}, 44.67);
+      gsap.set("#s10b3", {autoAlpha:1, scale:1, rotation:0});
+      tl.to("#s10b3", {scale:1.05, duration:2.31, ease:"none"}, 44.67);
+      gsap.set("#s10p", {scale:1.25});
+      gsap.set("#s11b1", {autoAlpha:0});
+      tl.fromTo("#s11b1", {autoAlpha:0, scale:0.86, rotation:0}, {autoAlpha:1, scale:1, duration:0.26, ease:"back.out(1.6)"}, 46.98);
+      tl.to("#s11b1", {scale:1.05, duration:6.26, ease:"none"}, 46.98);
+      gsap.set("#s11b2", {autoAlpha:0});
+      tl.fromTo("#s11b2", {autoAlpha:0, scale:0.86, rotation:0}, {autoAlpha:1, scale:1, duration:0.26, ease:"back.out(1.6)"}, 49.76);
+      tl.to("#s11b2", {scale:1.05, duration:3.48, ease:"none"}, 49.76);
+      gsap.set("#s11c", {xPercent:-50, yPercent:-50, x:1207, y:626, scale:0.243});
+      tl.to("#s11c", {x:867, y:610, scale:0.315, duration:6.26, ease:"none"}, 46.98);
+      gsap.set("#s12L1", {xPercent:-50, yPercent:-50, x:461, y:756, scale:0.105, autoAlpha:0});
+      tl.fromTo("#s12L1", {autoAlpha:0, x:"+=-260", scale:0.097}, {autoAlpha:1, x:461, scale:0.105, duration:0.44, ease:"power3.out"}, 56.32);
+      tl.to("#s12L1", {scale:0.112, duration:2.38, ease:"none"}, 56.32);
+      gsap.set("#s12b1", {autoAlpha:1, scale:1, rotation:0});
+      tl.to("#s12b1", {scale:1.05, duration:5.46, ease:"none"}, 53.24);
+      gsap.set("#s12b2", {autoAlpha:1, scale:1, rotation:0});
+      tl.to("#s12b2", {scale:1.05, duration:5.46, ease:"none"}, 53.24);
+      gsap.set("#s12c", {xPercent:-50, yPercent:-50, x:979, y:605, scale:0.296});
+      tl.to("#s12c", {x:960, y:594, scale:0.32, duration:5.46, ease:"none"}, 53.24);
+      gsap.set("#s13L1", {xPercent:-50, yPercent:-50, x:461, y:756, scale:0.105, autoAlpha:1});
+      tl.to("#s13L1", {scale:0.112, duration:3.64, ease:"none"}, 58.7);
+      gsap.set("#s13b1", {autoAlpha:1, scale:1, rotation:0});
+      tl.to("#s13b1", {scale:1.05, duration:3.64, ease:"none"}, 58.7);
+      gsap.set("#s13b2", {autoAlpha:1, scale:1, rotation:0});
+      tl.to("#s13b2", {scale:1.05, duration:3.64, ease:"none"}, 58.7);
+      gsap.set("#s13b3", {autoAlpha:0});
+      tl.fromTo("#s13b3", {autoAlpha:0, scale:0.86, rotation:0}, {autoAlpha:1, scale:1, duration:0.26, ease:"back.out(1.6)"}, 61.08);
+      tl.to("#s13b3", {scale:1.05, duration:1.26, ease:"none"}, 61.08);
+      gsap.set("#s13c", {xPercent:-50, yPercent:-50, x:979, y:605, scale:0.35});
+      tl.to("#s13c", {x:960, y:594, scale:0.378, duration:3.64, ease:"none"}, 58.7);
+      tl.fromTo("#pop01", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 6.76);
+      tl.to("#pop01", {autoAlpha:0, duration:0.14}, 8.72);
+      tl.set("#pop01", {autoAlpha:0}, 8.86);
+      tl.fromTo("#pop02", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 14.64);
+      tl.to("#pop02", {autoAlpha:0, duration:0.14}, 15.32);
+      tl.set("#pop02", {autoAlpha:0}, 15.46);
+      tl.fromTo("#pop03", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 31.64);
+      tl.to("#pop03", {autoAlpha:0, duration:0.14}, 33.6);
+      tl.set("#pop03", {autoAlpha:0}, 33.74);
+      tl.fromTo("#pop04", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 39.2);
+      tl.to("#pop04", {autoAlpha:0, duration:0.14}, 41.16);
+      tl.set("#pop04", {autoAlpha:0}, 41.3);
+      tl.fromTo("#pop05", {autoAlpha:0, y:24, scale:0.95}, {autoAlpha:1, y:0, scale:1, duration:0.2, ease:"back.out(1.7)"}, 46.98);
+      tl.to("#pop05", {autoAlpha:0, duration:0.14}, 48.94);
+      tl.set("#pop05", {autoAlpha:0}, 49.08);
       tl.from("#t01", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 0.0);
-      tl.from("#t02", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 3.92);
-      tl.from("#t03", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 5.6);
-      tl.from("#t04", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 18.16);
-      tl.from("#t05", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 26.6);
-      tl.from("#t06", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 30.0);
-      tl.from("#t07", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 48.0);
+      tl.from("#t02", {y:-26, autoAlpha:0, duration:0.34, ease:"power3.out"}, 46.98);
       window.__timelines["main"] = tl;
     </script>
   </body>

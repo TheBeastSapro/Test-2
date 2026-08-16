@@ -23,7 +23,7 @@
       "noun": "dream",
       "query": "empty bed dark bedroom night",
       "role": "plate",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -46,7 +46,7 @@
       "noun": "dream",
       "query": "empty bed dark bedroom night",
       "role": "plate",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -69,7 +69,8 @@
       "noun": "dream",
       "query": "empty bed dark bedroom night",
       "role": "plate",
-      "approved": false
+      "approved": false,
+      "rejected_because": "editorial: wrong picture for the beat (purple front door, hospital bed frames, rocks in snow, a museum, a cinnamon bun, a road arrow, a yoga pose)"
     },
     {
       "source": "openverse",
@@ -92,7 +93,7 @@
       "noun": "hallway",
       "query": "dark corridor interior",
       "role": "plate",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -115,7 +116,7 @@
       "noun": "hallway",
       "query": "dark corridor interior",
       "role": "plate",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -138,7 +139,8 @@
       "noun": "frame",
       "query": "door frame interior",
       "role": "plate",
-      "approved": false
+      "approved": false,
+      "rejected_because": "editorial: wrong picture for the beat (purple front door, hospital bed frames, rocks in snow, a museum, a cinnamon bun, a road arrow, a yoga pose)"
     },
     {
       "source": "openverse",
@@ -161,7 +163,8 @@
       "noun": "frame",
       "query": "door frame interior",
       "role": "plate",
-      "approved": false
+      "approved": false,
+      "rejected_because": "editorial: wrong picture for the beat (purple front door, hospital bed frames, rocks in snow, a museum, a cinnamon bun, a road arrow, a yoga pose)"
     },
     {
       "source": "openverse",
@@ -184,7 +187,8 @@
       "noun": "finger",
       "query": "giant fingers",
       "role": "insert",
-      "approved": false
+      "approved": false,
+      "rejected_because": "editorial: wrong picture for the beat (purple front door, hospital bed frames, rocks in snow, a museum, a cinnamon bun, a road arrow, a yoga pose)"
     },
     {
       "source": "openverse",
@@ -207,7 +211,8 @@
       "noun": "finger",
       "query": "giant fingers",
       "role": "insert",
-      "approved": false
+      "approved": false,
+      "rejected_because": "editorial: wrong picture for the beat (purple front door, hospital bed frames, rocks in snow, a museum, a cinnamon bun, a road arrow, a yoga pose)"
     },
     {
       "source": "openverse",
@@ -230,7 +235,8 @@
       "noun": "finger",
       "query": "giant fingers",
       "role": "insert",
-      "approved": false
+      "approved": false,
+      "rejected_because": "editorial: wrong picture for the beat (purple front door, hospital bed frames, rocks in snow, a museum, a cinnamon bun, a road arrow, a yoga pose)"
     },
     {
       "source": "openverse",
@@ -253,7 +259,7 @@
       "noun": "stair",
       "query": "staircase interior dark",
       "role": "plate",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -276,7 +282,8 @@
       "noun": "corner",
       "query": "corridor corner interior",
       "role": "plate",
-      "approved": false
+      "approved": false,
+      "rejected_because": "editorial: wrong picture for the beat (purple front door, hospital bed frames, rocks in snow, a museum, a cinnamon bun, a road arrow, a yoga pose)"
     },
     {
       "source": "openverse",
@@ -299,7 +306,8 @@
       "noun": "corner",
       "query": "corridor corner interior",
       "role": "plate",
-      "approved": false
+      "approved": false,
+      "rejected_because": "editorial: wrong picture for the beat (purple front door, hospital bed frames, rocks in snow, a museum, a cinnamon bun, a road arrow, a yoga pose)"
     },
     {
       "source": "openverse",
@@ -322,7 +330,7 @@
       "noun": "music",
       "query": "vinyl record player turntable",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -345,7 +353,7 @@
       "noun": "music",
       "query": "vinyl record player turntable",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -368,7 +376,7 @@
       "noun": "music",
       "query": "vinyl record player turntable",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -391,7 +399,7 @@
       "noun": "apple",
       "query": "apples",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -414,7 +422,7 @@
       "noun": "apple",
       "query": "apples",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -437,7 +445,7 @@
       "noun": "apple",
       "query": "apples",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -460,7 +468,7 @@
       "noun": "cinnamon",
       "query": "cinnamon",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -483,7 +491,7 @@
       "noun": "cinnamon",
       "query": "cinnamon",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -506,7 +514,8 @@
       "noun": "cinnamon",
       "query": "cinnamon",
       "role": "insert",
-      "approved": false
+      "approved": false,
+      "rejected_because": "editorial: wrong picture for the beat (purple front door, hospital bed frames, rocks in snow, a museum, a cinnamon bun, a road arrow, a yoga pose)"
     },
     {
       "source": "openverse",
@@ -529,7 +538,8 @@
       "noun": "purpose",
       "query": "signpost direction",
       "role": "insert",
-      "approved": false
+      "approved": false,
+      "rejected_because": "editorial: wrong picture for the beat (purple front door, hospital bed frames, rocks in snow, a museum, a cinnamon bun, a road arrow, a yoga pose)"
     },
     {
       "source": "openverse",
@@ -552,7 +562,7 @@
       "noun": "warn",
       "query": "warning road sign",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -575,7 +585,7 @@
       "noun": "misfortune",
       "query": "car crash wreck roadside",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -598,7 +608,7 @@
       "noun": "misfortune",
       "query": "car crash wreck roadside",
       "role": "insert",
-      "approved": false
+      "approved": true
     },
     {
       "source": "openverse",
@@ -621,7 +631,7 @@
       "noun": "misfortune",
       "query": "car crash wreck roadside",
       "role": "insert",
-      "approved": false
+      "approved": true
     }
   ],
   "rejected": [
@@ -768,5 +778,6 @@
       "best": 0.208,
       "candidates": 1
     }
-  ]
+  ],
+  "reviewed": "2026-08-16"
 }

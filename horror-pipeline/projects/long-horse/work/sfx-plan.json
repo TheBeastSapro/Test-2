@@ -1,0 +1,114 @@
+{
+ "sfx": [
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 1.16,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 5.34,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/whoosh1.wav",
+   "t": 6.76,
+   "gain": -21
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 8.81,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 12.26,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/whoosh1.wav",
+   "t": 14.64,
+   "gain": -21
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 15.76,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 19.86,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 23.033,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 26.207,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 29.38,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/whoosh1.wav",
+   "t": 31.64,
+   "gain": -21
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 38.98,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/whoosh1.wav",
+   "t": 39.13,
+   "gain": -21
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/whoosh1.wav",
+   "t": 39.2,
+   "gain": -21
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/whoosh1.wav",
+   "t": 39.2,
+   "gain": -21
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 44.67,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 46.98,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/whoosh1.wav",
+   "t": 46.98,
+   "gain": -21
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 53.24,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 56.32,
+   "gain": -18
+  },
+  {
+   "file": "/home/user/Test-2/horror-pipeline/projects/long-horse/sfx/impact1.wav",
+   "t": 58.7,
+   "gain": -18
+  }
+ ]
+}

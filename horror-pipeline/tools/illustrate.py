@@ -259,29 +259,31 @@ def classify(chunk, canon):
     # 1. CANON first. A creature noun must come from approved materials.
     words = set(text.split()) | {lemma}
     if words & canon:
-        return {"noun": lemma, "kind": "canon", "query": None, "why": "creature noun"}
+        return {"noun": lemma, "phrase": text, "kind": "canon", "query": None,
+                "why": "creature noun"}
 
     # 2. The video talking about itself. Show the roster, not a photograph.
     if lemma in ROSTER:
-        return {"noun": lemma, "kind": "roster", "query": None,
+        return {"noun": lemma, "phrase": text, "kind": "roster", "query": None,
                 "why": "refers to this video's own list"}
 
     ln = lexnames(lemma)
 
     # 3. PEOPLE never become photographs. Rule 6.
     if ln and ln[0] in PEOPLE:
-        return {"noun": lemma, "kind": "icon", "icon": "figure", "query": None,
-                "why": "person, drawn not photographed"}
+        return {"noun": lemma, "phrase": text, "kind": "icon", "icon": "figure",
+                "query": None, "why": "person, drawn not photographed"}
 
     # 4. CONCEPT stand-in, for nouns that search badly or name an idea.
     if lemma in CONCEPT:
-        return {"noun": lemma, "kind": "photo", "query": CONCEPT[lemma],
+        return {"noun": lemma, "phrase": text, "kind": "photo",
+                "query": CONCEPT[lemma],
                 "role": "plate" if lemma in SCENE_KEYS else "insert",
                 "why": "concept stand-in"}
 
     # 5. Photographable on its own terms.
     if any(x in CONCRETE for x in ln[:3]):
-        return {"noun": lemma, "kind": "photo", "query": text,
+        return {"noun": lemma, "phrase": text, "kind": "photo", "query": text,
                 "role": "plate" if ln[0] == "noun.location" else "insert",
                 "why": ln[0].replace("noun.", "")}
 
@@ -639,6 +641,51 @@ def fetch(plan_path, outdir, per=3, pool=14):
               f"of {u['candidates']}")
 
 
+# ---------------------------------------------------------------- approve
+
+def approve(indir, rejects, note):
+    """Record the editorial pass over the contact sheet.
+
+    Every automatic gate here answers "is this a picture of the thing" and none
+    of them answers "is this the right picture". A saturated green abstract and
+    a perfect dark corridor scored within 0.02 of each other; a purple front
+    door with a letterbox scored well and is unusable for a horror beat. So the
+    last gate is a person looking, and this is where that judgement is written
+    down instead of being remembered.
+
+    Nothing downstream may use an image that has not passed through here: an
+    unreviewed image is not approved, and build_scenes will not place it.
+    """
+    p = os.path.join(indir, "illustrations.json")
+    d = json.load(open(p))
+    rej = {r.strip() for r in rejects if r.strip()}
+    unknown = rej - {r["file"] for r in d["images"]}
+    if unknown:
+        print("no such file:", ", ".join(sorted(unknown)))
+        return
+    n_ok = 0
+    for r in d["images"]:
+        r["approved"] = r["file"] not in rej
+        if not r["approved"]:
+            r["rejected_because"] = note or "editorial: wrong picture for the beat"
+        else:
+            r.pop("rejected_because", None)
+            n_ok += 1
+    d["reviewed"] = time.strftime("%Y-%m-%d")
+    json.dump(d, open(p, "w"), indent=2)
+    write_credits([r for r in d["images"] if r["approved"]],
+                  os.path.join(indir, "CREDITS.md"))
+
+    left = {}
+    for r in d["images"]:
+        if r["approved"]:
+            left[r["query"]] = left.get(r["query"], 0) + 1
+    print(f"{n_ok} approved, {len(rej)} rejected")
+    for q in sorted({r['query'] for r in d['images']}):
+        n = left.get(q, 0)
+        print(f"  {'  ' if n else 'XX'} {q:36s} {n} usable")
+
+
 # ---------------------------------------------------------------- calibrate
 
 def calibrate(outdir):
@@ -755,6 +802,10 @@ if __name__ == "__main__":
     s.add_argument("--out", required=True)
     c = sub.add_parser("calibrate")
     c.add_argument("--out", required=True)
+    v = sub.add_parser("approve")
+    v.add_argument("dir")
+    v.add_argument("--reject", default="", help="comma list of filenames")
+    v.add_argument("--note", default="")
     a = ap.parse_args()
 
     if a.cmd == "plan":
@@ -773,5 +824,7 @@ if __name__ == "__main__":
         fetch(a.plan, a.out, a.per)
     elif a.cmd == "calibrate":
         calibrate(a.out)
+    elif a.cmd == "approve":
+        approve(a.dir, a.reject.split(","), a.note)
     else:
         sheet(a.dir, a.out)

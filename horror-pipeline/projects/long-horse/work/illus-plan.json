@@ -4,6 +4,7 @@
     "things": [
       {
         "noun": "horse",
+        "phrase": "long horse",
         "kind": "canon",
         "query": null,
         "why": "creature noun"
@@ -15,12 +16,14 @@
     "things": [
       {
         "noun": "creature",
+        "phrase": "creature",
         "kind": "canon",
         "query": null,
         "why": "creature noun"
       },
       {
         "noun": "list",
+        "phrase": "list",
         "kind": "roster",
         "query": null,
         "why": "refers to this video's own list"
@@ -36,6 +39,7 @@
     "things": [
       {
         "noun": "girl",
+        "phrase": "girl",
         "kind": "icon",
         "icon": "figure",
         "query": null,
@@ -43,6 +47,7 @@
       },
       {
         "noun": "dream",
+        "phrase": "dreams",
         "kind": "photo",
         "query": "empty bed dark bedroom night",
         "role": "plate",
@@ -50,6 +55,7 @@
       },
       {
         "noun": "crack",
+        "phrase": "crack",
         "kind": "photo",
         "query": "crack",
         "role": "insert",
@@ -62,6 +68,7 @@
     "things": [
       {
         "noun": "hallway",
+        "phrase": "hallway",
         "kind": "photo",
         "query": "dark corridor interior",
         "role": "plate",
@@ -74,18 +81,21 @@
     "things": [
       {
         "noun": "skull",
+        "phrase": "horse skull",
         "kind": "canon",
         "query": null,
         "why": "creature noun"
       },
       {
         "noun": "neck",
+        "phrase": "neck",
         "kind": "canon",
         "query": null,
         "why": "creature noun"
       },
       {
         "noun": "frame",
+        "phrase": "door frame",
         "kind": "photo",
         "query": "door frame interior",
         "role": "plate",
@@ -93,6 +103,7 @@
       },
       {
         "noun": "finger",
+        "phrase": "giant fingers",
         "kind": "photo",
         "query": "giant fingers",
         "role": "insert",
@@ -100,6 +111,7 @@
       },
       {
         "noun": "stair",
+        "phrase": "stairs",
         "kind": "photo",
         "query": "staircase interior dark",
         "role": "plate",
@@ -107,6 +119,7 @@
       },
       {
         "noun": "corner",
+        "phrase": "corner",
         "kind": "photo",
         "query": "corridor corner interior",
         "role": "plate",
@@ -119,18 +132,21 @@
     "things": [
       {
         "noun": "horse",
+        "phrase": "long horse",
         "kind": "canon",
         "query": null,
         "why": "creature noun"
       },
       {
         "noun": "creature",
+        "phrase": "creatures",
         "kind": "canon",
         "query": null,
         "why": "creature noun"
       },
       {
         "noun": "creator",
+        "phrase": "creator",
         "kind": "icon",
         "icon": "figure",
         "query": null,
@@ -143,6 +159,7 @@
     "things": [
       {
         "noun": "neck",
+        "phrase": "neck",
         "kind": "canon",
         "query": null,
         "why": "creature noun"
@@ -154,6 +171,7 @@
     "things": [
       {
         "noun": "dream",
+        "phrase": "dreams",
         "kind": "photo",
         "query": "empty bed dark bedroom night",
         "role": "plate",
@@ -161,6 +179,7 @@
       },
       {
         "noun": "music",
+        "phrase": "music",
         "kind": "photo",
         "query": "vinyl record player turntable",
         "role": "insert",
@@ -168,6 +187,7 @@
       },
       {
         "noun": "apple",
+        "phrase": "apples",
         "kind": "photo",
         "query": "apples",
         "role": "insert",
@@ -175,6 +195,7 @@
       },
       {
         "noun": "cinnamon",
+        "phrase": "cinnamon",
         "kind": "photo",
         "query": "cinnamon",
         "role": "insert",
@@ -187,6 +208,7 @@
     "things": [
       {
         "noun": "purpose",
+        "phrase": "purpose",
         "kind": "photo",
         "query": "signpost direction",
         "role": "insert",
@@ -206,12 +228,14 @@
     "things": [
       {
         "noun": "horse",
+        "phrase": "long horse",
         "kind": "canon",
         "query": null,
         "why": "creature noun"
       },
       {
         "noun": "misfortune",
+        "phrase": "misfortune",
         "kind": "photo",
         "query": "car crash wreck roadside",
         "role": "insert",
@@ -224,6 +248,7 @@
     "things": [
       {
         "noun": "horse",
+        "phrase": "long horse",
         "kind": "canon",
         "query": null,
         "why": "creature noun"
