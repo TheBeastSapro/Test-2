@@ -45,3 +45,15 @@ horror-pipeline/projects/*/materials/contact-sheet.html
 
 # competitor research: extracted frames and sprite tiles are a rebuildable cache
 horror-pipeline/research/*/frames/
+
+# horror-pipeline: the renderer's public/ staging directories are POPULATED BY
+# A COPY STEP before each render, from sources that are already committed:
+# cutouts rebuild from materials/<creature>.json via clean_cutouts.py, plates
+# from make_plates.py, illustrations from projects/*/illus/illustrations.json,
+# and the mix from mix_audio.py. Committing them would double several MB of
+# binaries that no one edits by hand. public/fonts and public/js are NOT here:
+# those are real source and stay tracked.
+horror-pipeline/engine/hyperframes-engine/public/assets/
+horror-pipeline/engine/hyperframes-engine/public/illus/
+horror-pipeline/engine/hyperframes-engine/public/plates/
+horror-pipeline/engine/hyperframes-engine/public/audio/

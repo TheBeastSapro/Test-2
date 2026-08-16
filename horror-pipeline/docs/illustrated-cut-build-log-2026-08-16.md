@@ -161,3 +161,47 @@ Ours are boxes and cutouts arriving.
   nothing. Worst frame in the cut.
 - The white canvas beats are empty around their box.
 - The title clips the plate on two shots.
+
+## Rebuilding this cut from a clean clone
+
+The renderer's `public/` staging directories are not committed, for the same
+reason the creature binaries are not: they are copies, and one video's worth is
+several MB that nobody edits by hand. `public/fonts` and `public/js` are real
+source and stay tracked.
+
+    # 1. cutouts from the Stage 1 approval record
+    rembg i -m birefnet-general <approved cutout_suitable images> ...
+    python3 tools/clean_cutouts.py projects/long-horse/assets/cut-*.png
+
+    # 2. creature-free plates
+    python3 tools/make_plates.py projects/demo/materials/long-horse.json \
+        --out projects/long-horse/plates
+
+    # 3. illustrations (plan -> fetch -> look at the sheet -> approve)
+    python3 tools/illustrate.py plan projects/long-horse/script.md \
+        --out projects/long-horse/work/illus-plan.json \
+        --canon "long horse,horse,skull,neck,vertebrae,jaw,creature"
+    python3 tools/illustrate.py fetch projects/long-horse/work/illus-plan.json \
+        --out projects/long-horse/illus
+    python3 tools/illustrate.py sheet projects/long-horse/illus --out /tmp/sheet.png
+    python3 tools/illustrate.py approve projects/long-horse/illus --reject "..."
+
+    # 4. audio, then the sheet, then the composition
+    python3 tools/mix_audio.py --vo <vo> --bed projects/long-horse/sfx/bed.wav \
+        --duration 62.34 --sfx-json projects/long-horse/work/sfx-plan.json \
+        --out projects/long-horse/audio/mix-final.wav --lufs -15.8 --tp -1.05
+    python3 tools/build_scenes.py projects/long-horse/work/illus-plan.json \
+        --words projects/long-horse/work/words.json \
+        --illus projects/long-horse/illus --assets projects/long-horse/assets \
+        --plates projects/long-horse/plates --creature "LONG HORSE" \
+        --vo audio/mix-final.wav --out projects/long-horse/sheets/02.scenes.json
+    python3 tools/build_composition.py projects/long-horse/sheets/02.scenes.json \
+        --out engine/hyperframes-engine/index.html
+
+    # 5. stage, render, QC against THIS sheet
+    #    (copy cut-*.png -> public/assets, plates -> public/plates,
+    #     approved illustrations -> public/illus, the mix -> public/audio)
+    HYPERFRAMES_BROWSER_PATH=<chromium_headless_shell> \
+        npx hyperframes render . -o out.mp4 --video-bitrate 14M
+    python3 engine/ffmpeg-engine/qc.py out.mp4 \
+        --sheet projects/long-horse/sheets/02.scenes.json
