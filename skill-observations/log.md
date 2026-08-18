@@ -356,3 +356,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Never read completion from the wrapper: verify the artifact exists at its expected size, or that the process is gone, before believing a job finished. For `pkill -f`, either match on something that cannot appear in the killer's own argv, or resolve the PID first and kill by number.
 
 **Principle:** A process that launches work and a process that does work have different lifetimes and different exit codes. Any status derived from the launcher answers "did I manage to start this", never "did this succeed" — and a pattern-matching kill includes the matcher in its own search space unless excluded.
+
+### Observation 24: A respelling patched into sections.json is erased by --regen
+
+**Status:** OPEN
+**Date:** 2026-08-18
+**Session context:** Sapro approved 570 characters to change "Louis" from the French "Loo-EE" to the English "LOO-iss". 384 of them bought a take identical to the one being replaced.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/generate.py` `--regen`, `scripts/regen_span.py`, `--lexicon`
+
+**Issue:** `regen_span.py` sends whatever `--sentence` says and locates the span by fuzzy-matching the take's own transcript, so a respelling can be applied by patching `send_text` in `sections.json` — that worked, twice. `generate.py --regen` does not read `sections.json`; it REBUILDS it from `narration_source.txt` and then renders. So the same patch, applied the same way, was silently discarded for the one section that needed a whole re-roll, and the original spelling was sent. Nothing in the output said so: the log printed "re-rendering sections 39 / sending 384 chars" and the run exited 0. It was caught only by measuring the new take's fricative energy (4.9% against a real /s/ at 87.2%) and finding it unchanged from 3.8%. Note also that `regen_span.py` never debits `spend.json`, so after three splices the ledger read 13,230 while the true spend was 13,501 — the ledger silently undercounts by exactly the repair path a careful operator is most likely to use.
+
+**Suggested improvement:** Give both paths the same `--lexicon` argument that `voiceover.py` already documents, so respelling is a first-class flag rather than a patch to a cache that one code path regenerates. Until then, respell in `narration_source.txt` for `--regen` and in `sections.json` for `regen_span.py`, and always confirm the change landed by measuring the new audio, never by reading the exit code. Make `regen_span.py` debit the spend log.
+
+**Principle:** When two code paths take their input from different places, an edit applied to one is not applied to the other — and the one that rebuilds its input from source will erase your edit without an error, because from its point of view nothing went wrong. Verify the effect in the artifact, not the invocation.
+
+### Observation 25: The edge that cannot be cut into silence is the edge that cannot click
+
+**Status:** OPEN
+**Date:** 2026-08-18
+**Session context:** `regen_span.py` refused to splice a section's FIRST sentence — no silence at the start edge — and its fallback costs 384 characters instead of 91.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/regen_span.py`, `scripts/generate.py` `stitch`/`SPLICE_FADE`
+
+**Issue:** The silence requirement exists because a mid-audio cut without silence steps between samples and clicks. A section's first sentence starts at 0.00s and never has silence in front of it, so the rule refuses it permanently — the refusal is structural, not situational, and re-rolling produced the same 0.00s start. But position zero of a section file is not a mid-audio cut at all: it is the section boundary, and `stitch` already ramps `SPLICE_FADE` (3 ms) onto the start of every section. The safety property the rule is protecting is supplied there by construction. The rule was written for the general case and never special-cased the one position where its own premise does not hold, so it charges 4x for the cheapest possible repair.
+
+**Suggested improvement:** Special-case offset 0 (and the end of the last sentence, symmetrically) inside `regen_span.py`: skip the start-edge silence search when the span begins the section, because the stitcher's edge fade covers it. `scripts/boundary_splice.py` in this repo does exactly this and keeps every other guarantee — same render path, same conditioning, same level report with no gain, same verify-then-keep with auto-revert. It should be folded into `regen_span.py` rather than living beside it.
+
+**Principle:** A safety rule encodes a premise as well as a requirement. Where the premise does not hold — here, "this cut is in the middle of continuous audio" — the requirement is not protecting anything, and enforcing it anyway costs real money while adding no safety.
