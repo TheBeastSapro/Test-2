@@ -42,10 +42,22 @@ OVERLAP = 2.0
 
 
 def transcribe_all(model, path, window=WINDOW):
-    """-> [normalised words] for a whole file, in overlapping windows.
+    """-> [normalised words] for a whole file, in windows, with NO duplicates.
 
     Whole-file transcription invents dropped words on long audio — documented on
     four separate deliveries — so it is done in windows and joined.
+
+    The overlap is context, not content. A first version appended each window's
+    full text, so every word inside the 2 s overlap appeared TWICE: a 2,390-word
+    script came back as 2,471 words. Those duplicates desynchronise the sequence
+    alignment, and the gate then reported eleven perfectly intact words as missing
+    — "Normandy" among them, which a windowed re-transcription put in the
+    delivered file at p=1.00. A verifier that invents defects is worse than none,
+    because every one of its findings has to be checked by hand.
+
+    So each window is transcribed WITH the overlap, for the acoustic context at
+    its edges, and only the words whose start time falls inside the window's own
+    span are kept.
     """
     import librosa
     dur = librosa.get_duration(path=path)
@@ -58,8 +70,13 @@ def transcribe_all(model, path, window=WINDOW):
                         f"{window + OVERLAP}", "-i", path, "-ar", "16000",
                         "-ac", "1", tmp, "-y"], check=True)
         segs, _ = model.transcribe(tmp, language="en", beam_size=5,
-                                   condition_on_previous_text=False)
-        out.append(" ".join(s.text for s in segs).strip())
+                                   condition_on_previous_text=False,
+                                   word_timestamps=True)
+        last = (t + window >= dur)
+        for s in segs:
+            for w in (s.words or []):
+                if last or w.start < window:
+                    out.append(w.word)
         os.unlink(tmp)
         t += window
     return rc.normalize(" ".join(out)).split()
@@ -97,7 +114,7 @@ def main():
     cpath = a.cache or (os.path.splitext(a.delivered)[0] + ".gate-cache.json")
     def key(path):
         st = os.stat(path)
-        return "%s:%d:%d" % (os.path.basename(path), st.st_size, int(st.st_mtime))
+        return "v2:%s:%d:%d" % (os.path.basename(path), st.st_size, int(st.st_mtime))
     if os.path.isfile(cpath):
         try:
             cache = json.load(open(cpath))
