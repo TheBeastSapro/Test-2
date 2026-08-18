@@ -76,10 +76,39 @@ def transcribe_all(model, path, window=WINDOW):
         for s in segs:
             for w in (s.words or []):
                 if last or w.start < window:
-                    out.append(w.word)
+                    n = rc.normalize(w.word).split()
+                    for piece in n:
+                        out.append((piece, t + float(w.start)))
         os.unlink(tmp)
         t += window
-    return rc.normalize(" ".join(out)).split()
+    return out
+
+
+def says(model, path, t0, t1, word):
+    """Is `word` actually spoken in [t0, t1] of `path`? Adjudicates one candidate.
+
+    The bulk scan cannot be trusted on its own. Raw and mastered audio do not
+    sound identical, so the transcriber spells hard words differently between
+    them by chance — "Baibars", "Carcassonne", "Trencavel", "portcullis" — and a
+    scan that asks "did the script word match in raw but not in delivered" flips
+    on that noise. Measured: ten findings on a file with one real defect, and
+    twelve on a file with none.
+
+    So every candidate is re-checked against the delivered audio directly, the
+    same way orphans.py adjudicates each burst instead of trusting its detector.
+    Only a word that is still absent when its own few seconds are transcribed on
+    their own is reported.
+    """
+    import tempfile as _tf
+    with _tf.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+        tmp = f.name
+    subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{max(0.0, t0)}", "-to",
+                    f"{t1}", "-i", path, "-ar", "16000", "-ac", "1", tmp, "-y"],
+                   check=True)
+    segs, _ = model.transcribe(tmp, language="en", beam_size=5)
+    heard = rc.normalize(" ".join(s.text for s in segs)).split()
+    os.unlink(tmp)
+    return word in heard
 
 
 def matched(script, heard):
@@ -136,8 +165,11 @@ def main():
         print(f"[gate] {label:<9} {len(w)} words")
         return w
 
-    raw = words_for(a.raw, "raw")
-    del_ = words_for(a.delivered, "delivered")
+    raw_wt = words_for(a.raw, "raw")
+    del_wt = words_for(a.delivered, "delivered")
+    raw = [w for w, _ in raw_wt]
+    del_ = [w for w, _ in del_wt]
+    del_t = [s for _, s in del_wt]
 
     in_raw = matched(script, raw)
     in_del = matched(script, del_)
@@ -163,12 +195,45 @@ def main():
             runs.append(cur)
             cur = [i]
     runs.append(cur)
-    print(f"\n[gate] FAIL — mastering changed {len(lost)} word(s) in {len(runs)} place(s).")
-    print("       The raw take has these and the delivered file does not.\n")
+    # Where does each candidate sit in the delivered audio? Take the position the
+    # diff mapped it to and read the timestamp there.
+    sm = difflib.SequenceMatcher(a=script, b=del_, autojunk=False)
+    at = {}
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        for i in range(i1, i2):
+            at[i] = del_t[min(j1, len(del_t) - 1)] if del_t else 0.0
+
+    if state["model"] is None:
+        state["model"] = rc.load_asr(a.asr_model)
+    print(f"\n[gate] {len(runs)} candidate(s) — adjudicating each against the "
+          f"delivered audio")
+    real = []
     for r in runs:
         lo, hi = r[0], r[-1]
-        print(f"  script[{lo}:{hi+1}]  ...{' '.join(script[max(0,lo-6):lo])} "
-              f">>{' '.join(script[lo:hi+1])}<< {' '.join(script[hi+1:hi+7])}...")
+        t0 = at.get(lo, 0.0) - 12.0
+        t1 = at.get(hi, at.get(lo, 0.0)) + 12.0
+        absent = [script[i] for i in r
+                  if not says(state["model"], a.delivered, t0, t1, script[i])]
+        ctx = (f"...{' '.join(script[max(0,lo-6):lo])} "
+               f">>{' '.join(script[lo:hi+1])}<< {' '.join(script[hi+1:hi+7])}...")
+        if absent:
+            real.append((lo, hi, absent, at.get(lo, 0.0), ctx))
+            print(f"  CONFIRMED  {' '.join(absent)!r} absent near "
+                  f"{int(at.get(lo,0)//60)}:{at.get(lo,0)%60:05.2f}")
+        else:
+            print(f"  cleared    {' '.join(script[lo:hi+1])!r} — present on "
+                  f"re-transcription, transcriber variance")
+
+    if not real:
+        print(f"\n[gate] PASS — {len(runs)} candidate(s) raised by the scan, all "
+              f"{len(runs)} cleared on adjudication. No word was lost.")
+        return 0
+
+    print(f"\n[gate] FAIL — mastering removed {sum(len(x[2]) for x in real)} "
+          f"word(s) in {len(real)} place(s).\n")
+    for lo, hi, absent, tsec, ctx in real:
+        print(f"  {int(tsec//60)}:{tsec%60:05.2f}  missing {' '.join(absent)!r}")
+        print(f"      {ctx}")
     print("\n  Do NOT deliver. The master is the only destructive edit in the pipeline\n"
           "  that does not verify itself; re-run it with --keep-glitches and re-gate.")
     return 1
