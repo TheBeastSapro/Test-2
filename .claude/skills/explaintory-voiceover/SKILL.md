@@ -67,6 +67,43 @@ would do before enabling it.
 
 
 
+### The delivery gate — run it before every send, it runs itself
+
+**The master is a destructive edit and it was the only one in this pipeline that
+did not verify itself.** The read-check runs on the section takes BEFORE
+mastering; the QC pass measures levels, not words. So a file could pass every
+gate here with a word cut out of the middle of a sentence — and one did. Sapro:
+*"I can't hear 'pack' in pack them tight line it must be master did that"*. He
+was right before anything was measured. The raw take said "pack" at p=1.00; the
+delivered file said "pick".
+
+`fix_glitches()` in `humanize.py` removes isolated bursts under 250 ms near a
+digital splice and has **no upper level guard**, so it took 165 ms at -8.2 dB out
+of a sentence. The four real fragments it removed that run were 10-40 ms at -36
+to -16 dB. The word was 4x longer and 8 dB louder than anything else it touched.
+
+The cause is structural: a **short word fenced by pauses** — a comma before
+"pack", its own /k/ stop closure after — is indistinguishable from a fragment on
+duration and isolation alone. Only level separates them.
+
+So `voiceover.py` now runs `scripts/delivery_gate.py` at the end of the master
+stage and **returns non-zero instead of printing "delivered"** when it fails:
+
+    python3 scripts/delivery_gate.py --raw <work>/raw_stitched.wav \
+        --delivered "Title (final).mp3" --script <work>/script_lines.txt
+
+It is **three-way — script vs raw vs delivered**. Comparing raw to delivered
+directly produces false alarms: the two files sound different, ASR segments them
+differently, and window boundaries invent disagreements ("on itself" came back as
+"stealth" at a chunk edge). A word is reported only when the RAW agrees with the
+script and the DELIVERED does not, which is the signature of mastering damage and
+nothing else.
+
+When it fires: re-master with `--keep-glitches` (now forwarded by `voiceover.py`)
+and gate again. Do not reach for a re-render — the take was fine.
+
+`--no-gate` exists for pipeline debugging and is never used for a delivery.
+
 ### Prove a destructive edit did not eat a word
 
 Any edit that silences or removes audio must be checked by TRANSCRIBING the

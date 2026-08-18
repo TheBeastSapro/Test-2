@@ -125,6 +125,42 @@ edits audio. Building it surfaced two traps, both documented in SKILL.md:
    a sentence.
 7. **Transcribe after every destructive edit** and confirm no words were lost.
 
+7c. **VERIFY THE DELIVERED FILE AGAINST THE RAW STITCH BEFORE SENDING IT.**
+   2026-08-18, his words: "I can't hear 'pack' in pack them tight line it must be
+   master did that fix it" — and then, when told what caused it: "it's your job to
+   be careful on that... check all" and "make it as rule as well it should be done
+   before the delivery."
+
+   He was right on the diagnosis before any measurement was taken. The raw take
+   said "pack" at p=1.00. The delivered file said "pick". `fix_glitches()` in
+   humanize.py removes isolated bursts under 250 ms that sit near a digital
+   splice, and it has NO UPPER LEVEL GUARD, so it cut 165 ms at -8.2 dB out of
+   the middle of a sentence. Every other fragment it removed that run was 10-40 ms
+   at -36 to -16 dB. The word was a 4x duration outlier and 8 dB louder than
+   anything else it touched.
+
+   The cause is structural, not a bad threshold: a SHORT WORD FENCED BY PAUSES —
+   here a comma pause before "pack" and its own /k/ stop closure after — is
+   indistinguishable from a fragment on duration and isolation alone. Level is
+   the only thing that separates them and it was not being checked.
+
+   Rule 7 already covered this in principle. The master was the one destructive
+   edit exempt from it in practice: the read-check runs on the section takes
+   BEFORE mastering, and the QC pass measures levels rather than words, so a file
+   could pass every gate in the pipeline with a word cut out of it — and did, four
+   times, because nobody compared the delivered file to the stitch it came from.
+
+   Enforced in code, not by memory: `scripts/delivery_gate.py` runs automatically
+   at the end of the master stage and voiceover.py RETURNS NON-ZERO instead of
+   printing "delivered" when it fails. It is three-way — script vs raw vs
+   delivered — because comparing raw to delivered directly produces false alarms
+   at window boundaries; a word is only reported when the RAW agrees with the
+   script and the DELIVERED does not, which is the signature of damage done by
+   mastering and nothing else. When it fires, re-master with `--keep-glitches`
+   (now forwarded by voiceover.py) and re-gate.
+
+   `--no-gate` exists for pipeline debugging. It is never used for a delivery.
+
 7b. **Never re-roll a whole section to fix one word.** 2026-08-14, his words:
    "you should never re roll the entire section for one word fix... re roll only
    sentence or few words to match it because you just need that word so why

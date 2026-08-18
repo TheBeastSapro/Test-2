@@ -492,6 +492,14 @@ def main():
                          "broken sentences; 250 is the human's p90 and will also slow "
                          "real punchlines. 0 (default) = off, the approved sound.")
     ap.add_argument("--no-master", action="store_true", help="stop after the read-check")
+    ap.add_argument("--keep-glitches", action="store_true",
+                    help="pass through to humanize.py: skip splice-fragment "
+                         "removal. Use when the delivery gate reports the master "
+                         "ate a word — a short word fenced by pauses looks exactly "
+                         "like a fragment to a detector with no level guard.")
+    ap.add_argument("--no-gate", action="store_true",
+                    help="skip the post-master word-loss gate. Do not use for a "
+                         "real delivery; it exists for pipeline debugging only.")
     ap.add_argument("--suggest-breaks", action="store_true",
                     help="print candidate clause breaks and exit — read them, keep the real ones")
     ap.add_argument("--plan", action="store_true",
@@ -729,6 +737,8 @@ def main():
             "--align-cache", os.path.join(work, "align.json")]
     if a.curated:
         mcmd += ["--curated", a.curated]
+    if a.keep_glitches:
+        mcmd += ["--keep-glitches"]
     if a.max_wpm:
         mcmd += ["--max-wpm", str(a.max_wpm)]
         log(f"levelling sentences above {a.max_wpm:.0f} wpm "
@@ -752,6 +762,30 @@ def main():
     # and still exits 0 turns a loud failure into a silent one — every layer above
     # (the shell, the background-task harness, CI) reads the exit code, not the log.
     dur = assert_artifact(final, "mastering", min_seconds=5.0)
+
+    # THE LAST GATE. The master is a DESTRUCTIVE edit — it declips, it removes
+    # what it judges to be splice fragments, it stretches and it inserts pauses —
+    # and it was the only destructive edit in this pipeline exempt from rule 7
+    # ("transcribe after every destructive edit and confirm no words were lost").
+    # The read-check runs on the section takes BEFORE mastering, and the QC pass
+    # measures levels rather than words, so a file could pass every gate here with
+    # a word cut out of the middle of a sentence. One was: `fix_glitches()` took
+    # 165 ms at -8.2 dB out of "pack them tight" and delivered "pick them tight".
+    # Sapro caught it by ear, which is exactly what this pipeline exists to stop.
+    # So the gate runs on every delivery, and a failure is fatal rather than a
+    # warning — a warning is a thing that gets read after the file has been sent.
+    if not a.no_gate:
+        log("verifying the master changed no words (delivery gate)")
+        rc_gate = subprocess.call([sys.executable,
+                                   os.path.join(HERE, "delivery_gate.py"),
+                                   "--raw", raw_vo, "--delivered", final,
+                                   "--script", os.path.join(work, "script_lines.txt"),
+                                   "--asr-model", a.asr_model])
+        if rc_gate != 0:
+            log("DELIVERY BLOCKED — mastering altered the read. "
+                "Re-master with --keep-glitches and run again.")
+            return rc_gate
+
     log(f"delivered {final} ({os.path.getsize(final)/1e6:.1f} MB"
         + (f", {int(dur)//60}:{int(dur)%60:02d}" if dur else "") + ")")
     return 0
