@@ -416,3 +416,20 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Done: `readTitle` is false in `voice-calibration.json`, and the false claim in `derive_title` is replaced by a description of how it survived. Structurally, an unchosen default should be harder to skip than a printed line — `--plan` should require each `(default)`-marked value to be either set in the profile or explicitly acknowledged before generation proceeds, the same way `--approval` gates spend. A warning that has been printed on every run and actioned on none is decoration.
 
 **Principle:** A detector that fires correctly and is ignored is indistinguishable, in the artifact, from one that never fired. When a check's output is a line of text rather than a refusal, it degrades into noise at exactly the rate the reader gets used to it — and a confident comment nearby is enough to convert its finding into something already explained.
+
+### Observation 28: The verifier built to catch the defect invented ten more
+
+**Status:** OPEN
+**Date:** 2026-08-18
+**Session context:** Building `delivery_gate.py` after the master destroyed the word "pack". Validated against a known-bad file and a known-good one, as this log's own Observation 18 requires.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/delivery_gate.py`
+
+**Issue:** Three separate defects in one small tool, each of which looked like working software. (1) The run-grouping was written as `runs.append(cur), cur.clear(), cur.append(i)` inside an expression: it appends a REFERENCE then empties the list it just stored, so all eleven findings printed as the same finding. Correct detection, unusable report — worse than no report, because it still looks like output. (2) `transcribe_all` windowed with 2 s of overlap and appended each window's full text, so overlap words appeared twice; a 2,390-word script came back as 2,471 words, and the duplicates desynchronised the alignment and manufactured eleven "missing" words that were all present. (3) Two gate processes run concurrently put two 4.3 GB ASR models on a 16 GB box; the kernel killed one after its first progress line, which is indistinguishable from a gate that passed — and it was read as a pass, because the exit code had been captured through a `grep` pipe and belonged to grep.
+
+Even fixed, the bulk scan alone reported ten findings on a file with one real defect and twelve on a file with none: raw and mastered audio do not transcribe identically, so "matched in raw but not in delivered" flips on ordinary transcriber variance for hard words (Baibars, Trencavel, portcullis, ward). The true positive was buried under nine false ones.
+
+**Suggested improvement:** Done: the scan is now a CANDIDATE GENERATOR and each candidate is re-checked against the delivered audio on its own, which is exactly the shape `orphans.py` already uses — propose with a cheap detector, decide with a targeted measurement. That cut 9 -> 5 and 12 -> 4, and the remaining four were confirmed by hand to be spelling variance, so the adjudicator needs to compare phonetically rather than by exact string. The stronger fix is prevention, not detection: `fix_glitches()` now refuses any candidate longer than 80 ms or louder than -14 dB and LOGS the refusal, which keeps all four genuine fragments and protects the word.
+
+**Principle:** A verifier is software and fails like software. Its output being plausible is not evidence it ran — check the artifact, the exit code of the right process, and its behaviour on a known-bad input. And prefer preventing the destructive operation over detecting its damage afterwards: the guard is four lines and exact, while the detector took three bug fixes and still needs adjudication.

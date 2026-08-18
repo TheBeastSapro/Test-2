@@ -102,6 +102,15 @@ def _runs(m):
         else: i+=1
     return o
 
+MAX_FRAG_S = 0.080      # longest genuine fragment measured: 40 ms
+MAX_FRAG_DB = -14.0     # loudest genuine fragment measured: -15.8 dB
+
+
+def pk_ok(pk, dur):
+    """Is this small and quiet enough to possibly BE a fragment rather than speech?"""
+    return dur <= MAX_FRAG_S and pk <= MAX_FRAG_DB
+
+
 def fix_glitches(x):
     """Remove orphan fragments left by segment splices.
 
@@ -118,6 +127,7 @@ def fix_glitches(x):
     edges = [e*0.005 for a, b in _runs(db < -150) for e in (a, b)]
     if not edges: return x, []
     removed = []
+    skipped = []
     for a, b in _runs(db > -50):
         dur = (b-a)*0.005
         if dur > 0.25: continue
@@ -127,12 +137,38 @@ def fix_glitches(x):
         if not (pre < -50 and post < -50 and (pk - max(pre, post)) >= 15): continue
         ts, te = a*0.005, b*0.005
         if not any(min(abs(ts-e), abs(te-e)) <= 0.05 for e in edges): continue
+
+        # LEVEL AND LENGTH GUARD -- last, so it only judges real candidates.
+        #
+        # Isolation and duration cannot tell a fragment from a WORD. A short word
+        # fenced by pauses -- a comma before it, its own stop closure after -- has
+        # exactly the shape everything above looks for. This function removed
+        # 165 ms at -8.2 dB from the middle of a sentence and "pack them tight"
+        # was delivered as "pick them tight". Sapro caught it by ear, after the
+        # file had passed every other check in the pipeline.
+        #
+        # A fragment is a DECAYED REMNANT of something already spoken, so it is
+        # short and far below speech level. Measured on that same file, the four
+        # genuine fragments were 10, 10, 25 and 40 ms at -35.9, -22.4, -17.1 and
+        # -15.8 dB. The word was 4x longer than the longest and 7.6 dB louder than
+        # the loudest. Nothing in the real population approaches these limits, and
+        # anything that does is far more likely to be speech than a remnant.
+        #
+        # Refusals are LOGGED, not silent: a guard that quietly declines is
+        # indistinguishable from one that never fired.
+        if not pk_ok(pk, dur):
+            skipped.append((ts, dur, float(pk)))
+            continue
         s0, s1 = int(ts*SR), int(te*SR)
         f = int(0.002*SR)
         x[max(0, s0-f):s0] *= np.linspace(1, 0, min(f, s0))
         x[s0:s1] = 0.0
         x[s1:s1+f] *= np.linspace(0, 1, len(x[s1:s1+f]))
         removed.append((ts, dur, pk))
+    for ts, dur, pk in skipped:
+        log(f"    KEPT {int(ts//60)}:{ts%60:06.3f}  {dur*1000:.0f} ms  {pk:.0f} dB"
+            f"  — isolated at a splice, but too long/loud to be a fragment. "
+            f"This is speech; it was not removed.")
     return x, removed
 
 # ---------------------------------------------------------------- 2c. QC pass
