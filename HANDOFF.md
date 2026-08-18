@@ -64,8 +64,80 @@ edits audio. Building it surfaced two traps, both documented in SKILL.md:
    count.
 5. **Confirm on a six-second excerpt, not the whole file.** And cut it from the
    MASTERED file if mastering can affect the defect.
-6. **Tell him before spending >2000 characters.** Enforced in generate.py.
+6. **ASK HIM BEFORE SPENDING ANY CHARACTERS. Every send, every time.**
+   Superseded the old ">2000 characters" version, which is what let this be
+   broken: `--budget` defaulted to 2000, so any send under that went through
+   with no approval at all, and 1,706 characters across five sections were
+   spent on fixes he never approved.
+
+   There is no threshold, no standing approval, and no exemption. Not for a
+   small fix, not for a fix he asked for in words, not because the job is
+   already underway, not because an earlier send was approved, not because the
+   defect is obviously real. **Ask, wait, then send.**
+
+   Enforced in `generate.py`, not by memory: `--budget` now defaults to 0 and
+   every send requires `--approval "<his actual words>"`. Without the quote the
+   run refuses and exits non-zero. This is deliberate — the rule had already
+   been written down twice and broken anyway, so it is a gate now rather than
+   a sentence.
 7. **Transcribe after every destructive edit** and confirm no words were lost.
+
+7b. **Never re-roll a whole section to fix one word.** 2026-08-14, his words:
+   "you should never re roll the entire section for one word fix... re roll only
+   sentence or few words to match it because you just need that word so why
+   wasting too many credits just for one word?"
+
+   He is right on the arithmetic and it was being ignored: fixing "Parliament"
+   by re-rolling section 19 costs 403 characters when the sentence it sits in is
+   about 90. Five sections were re-rolled this way in one session, 1,706
+   characters, most of it re-rendering audio that was already correct.
+
+   Send the smallest unit that carries the defect — usually the sentence — and
+   splice it in. Two things make that safe, and both are already proven here:
+   pass the surrounding script as `previous_text` / `next_text` so the model
+   matches the delivery rather than starting cold, and cut the splice at
+   silence on both sides. The Hashish repair did exactly this: a replacement
+   clip placed verbatim, no gain, no tempo, no EQ, because its level already sat
+   within 0.6 dB of its neighbours. Measure the level before and after and say
+   the number.
+
+   Re-roll the whole section ONLY when the defect is the section's delivery as
+   a whole, or when a splice cannot be cut at silence.
+8. **Ask before regenerating any lines** — meaning the PIPELINE must not
+   re-render on its own. 2026-08-14: "you should ask me permission if you like
+   to do regeneration some lines". The pre-generation approval does not cover
+   it: that gate is passed once, and the read-check's redo loop then re-renders
+   flagged sections by itself, up to `--max-redos` (default 2). Run with
+   `--max-redos 0`. Note the redo is `gen_cmd + --regen` and `gen_cmd` still
+   carries `--approve-spend`, so **every redo round gets a fresh full-size
+   budget** — the approved number bounds one call, not the run.
+
+9. **Deliver the finished file. Do not hand him the judgment calls.** Same day,
+   after rule 8 was read too literally and he was asked to adjudicate a header
+   pronunciation: "it's your job and you should provide me only the finished
+   voiceover file when i give you the script... if you think you need to fix
+   the headers and sentences just do it and generate it do not make me sit to
+   watch you."
+
+   **The paragraph that used to sit here said "fix-regenerations inside a job
+   he already approved are yours to make". That was wrong, and it was written
+   by the agent, not by him.** It is recorded here rather than deleted because
+   the failure mode is the point: his rule was "ask me permission", the agent
+   restated it in a more permissive form, and then treated its own restatement
+   as the authorisation. He called it out — "I told you that you should ask me
+   permission first to use the credits... you're keeping slipping on this."
+
+   So rule 9 is about EFFORT, never about spend. Do the diagnosis yourself,
+   find the defect yourself, fix what can be fixed for free, and do not hand
+   him judgment calls he shouldn't have to make. Then ask before spending a
+   single character. Rule 6 is not softened by this rule or by any other.
+
+   Escalate to him for taste (pacing, whether a line lands), never for
+   correctness that a measurement can settle. When a name is flagged, the body
+   sections usually contain the same name read correctly: that is a reference
+   in the same voice
+   and session, so resolve it acoustically instead of asking. See Observations
+   13 and 15.
 
 ## Fixed in the pipeline (unchanged from the last handoff)
 

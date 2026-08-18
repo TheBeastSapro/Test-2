@@ -13,6 +13,56 @@ Deliver: `<Video Title> (final).mp3`. Report the runtime, the read-check result
 (which sections were redone and why), and the wpm/silence figures against the human
 reference. Do not ask which settings to use.
 
+## Read this before the next run — 2026-08-14
+
+One delivery took eleven rounds because of the things below. None of them are
+subtle in hindsight and all of them are now enforced somewhere; this list exists
+so the next run starts where that one finished.
+
+**Money.** `--approval "<his actual words>"` is required for EVERY send, at any
+size. `--budget` defaults to 1000 and is a runaway backstop, not an allowance.
+There is no threshold, no standing approval, and no carry-forward — and note how
+this broke: the rule was written down, then restated more permissively by the
+agent itself ("fixes inside an approved job are yours to make"), and the
+restatement was used as the authorisation. A rule the agent can rewrite is a rule
+the agent can repeal, which is why it lives in `generate.py` now.
+
+**Repair granularity.** Never re-roll a section to fix a word. Use
+`regen_span.py` on the sentence — 134 characters instead of 403, conditioned on
+the surrounding script and spliced inside measured silence. It refuses when there
+is no silence at an edge, and it verifies itself afterwards and auto-reverts if a
+word went missing (it ate "personal insult" once, before that check was inline).
+Re-rolling a section also re-rolls every correct word in it: a header re-roll
+made two names *worse* than plain spelling.
+
+**Defects the read-check cannot see.** Every complaint was a correctly-read word
+that sounds wrong — "echoing", "robotic", "like a separate word". The read-check
+compares audio to the SCRIPT, so it structurally cannot find these. Three
+detectors were built and all three failed: envelope autocorrelation flagged 2133
+of 2371 words, tail-template matching caught 2 of 3, and `prosody_gate.py` flags
+"the" twelve times because `pyin` makes octave errors on short function words.
+**Do not present a clean run from `prosody_gate.py` as evidence.** It needs
+octave correction and a second confirmed example before it is worth anything.
+
+**Verification.** The whole-file transcript invents dropped words — it did on all
+four deliveries, including a 25-word run that was present verbatim. Always
+confirm a candidate drop with a windowed re-transcription, and cross-check the
+alignment JSON: a word the forced aligner placed at high confidence is there.
+
+**Logs.** Never pipe a stage through `tail` or `head`. Write the full log to a
+file and filter at read time — a filter on the pipe decides, before the output
+exists, what will ever be knowable, and it lost a master's repair counts.
+
+**Profile.** `voice-calibration.json` at the repo root, committed, key-free. The
+container is not storage; it died three times today. `similarity_boost` is 0.80
+and appears nowhere in this file's examples — read it from the calibration.
+
+**Heading levelling.** `level_headings` compares syllables per second now, not
+words per minute; the old metric slowed a 4-word heading 15% to match a median
+set by 2-word ones. Even fixed, it still wanted to slow "James the Second's
+Bombard", so the last delivery ran with `--no-level-headings`. Check what it
+would do before enabling it.
+
 
 
 
@@ -159,15 +209,48 @@ python3 scripts/voiceover.py --script script.txt --profile voiceover_profile.jso
   chapters: The Weirdest Warships Ever Built · The Ancient World · The Middle Ages · …
   pronunciation guide: 31 names held out of the narration
 
+  PRE-FLIGHT — 2 thing(s) to look at before spending:
+    ! guide entry “.303” does not appear in the narration — export artifact, …
+    ! orphaned decimal point: “…it was fed British. 303 made to loosen…” — a Docs
+      export splits ".303" into ". 303", so the voice reads a sentence boundary
+      mid-clause and says the number in full. Fix the script.
+
   41 sections (8 of them chapter announcements) · 12,174 chars · ~14:29 audio
-  voice dUHbvtIZto0ZEBkhYiyk · eleven_multilingual_v2 · stability 0.48 · style 0.05 · speed 1.07
-  COST: ~12,174 credits of 82,852 remaining
+
+  CALIBRATION — every value that will be sent, and who chose it:
+  voice dUHbvtIZto0ZEBkhYiyk (profile) · model eleven_multilingual_v2 (profile)
+  stability 0.48 (profile) · similarity_boost 0.8 (profile) · style 0.05 (profile)
+  speed 1.07 (profile) · use_speaker_boost True (profile)
+  chunkSize 450 (profile) · chapterPause natural (profile)
+  collapseBreaks False (profile) · readTitle True (default) · skipHeadings False (profile)
+  ^ 1 value(s) nobody chose — inherited defaults, not settings: read_title
+
+  COST: ~12,174 credits (first pass) of 82,852 remaining
+  redo rounds: off (--max-redos 0) — flagged sections are reported, not re-rendered
+  WORST CASE this run: ~12,174 credits
+  master: /root/.claude/skills/synced/explaintory-vo-master/scripts/humanize.py
 ```
 
 Report the chapter list back and wait. A wrong heading count means the script is
 structured differently than assumed, and it is far cheaper to find that here than in
 a finished render — a missed heading is a chapter that never gets announced, and a
 spurious one is a sentence read as a chapter title.
+
+**Read the provenance marks, not just the numbers.** The gate prints every value it
+is about to commit and says where each came from, because the value that is wrong is
+almost never one somebody typed. `similarity_boost` once fell back to the code
+default of 0.75 when the locked-in number is 0.80, and the old plan output printed
+four settings out of six — so the one setting that was wrong was the one the gate
+could not show. Anything marked `(default)` is a decision nobody made. Check those
+first.
+
+The **PRE-FLIGHT** block cross-references the script against its own pronunciation
+guide before a credit is spent. A guide headword that does not appear verbatim in the
+narration is an export artifact, a spelling drift, or a stale guide entry. It matters
+most for the artifact that leaves the text well-formed: Google Docs exports ".303" as
+". 303", the voice then reads a sentence boundary mid-clause and says "three hundred
+and three", and no downstream check can catch it — the read-check diffs the ASR
+against the same corrupted script and finds agreement.
 
 ## Then run it
 
@@ -181,12 +264,32 @@ Stages, all resumable with `--from generate|check|master`:
 | Stage | What it does |
 |---|---|
 | generate | splits the script the way Voiceover Studio does, renders one ElevenLabs request per section, stitches with exact silence |
-| check | transcribes every section, diffs against the script, re-renders what failed (up to `--max-redos`, default 2) |
+| check | transcribes every section, diffs against the script, and **reports** what failed. It does not re-render unless `--auto-redo` is given (`--max-redos` defaults to 0) |
 | master | hands the stitch to `explaintory-vo-master`'s `humanize.py` with its approved settings |
 
+**Capture each stage's full output to a file and filter when you READ it — never on
+the pipe.**
+
+```bash
+python3 scripts/voiceover.py … > stage.log 2>&1;  grep -v "MB/s]" stage.log
+```
+
+The instinct to filter a noisy job is right — a 1.5 GB download emits hundreds of
+progress lines — but `| tail -12` applies the filter to the *pipe*, which decides
+before the job has finished which of its output will ever be knowable. A mastering
+pass was launched that way and succeeded; its own repair counts (how many over-
+full-scale regions were declipped, how many splice fragments were removed and where)
+scrolled past the window and were gone, and the only way to get them back was another
+eight-minute run. The full log costs a few kilobytes; discarding it costs a re-run.
+Download progress bars are the thing to filter at read time, not at write time.
+
+Every stage exits non-zero if it produced no artifact, so the exit code can be
+trusted. Do not read success out of the prose.
+
 Everything lands in `<out-dir>/.vo_<title>/`: the section takes, the raw stitch, the
-read-check JSON, the pause report and the alignment cache. A second run reuses all of
-it, so fixing one section costs one section's credits.
+read-check JSON, the pause report, the alignment cache and `spend.json` — the run's
+character ledger. A second run reuses all of it, so fixing one section costs one
+section's credits.
 
 ## Setup — two things, once
 
@@ -197,8 +300,19 @@ it, so fixing one section costs one section's credits.
    Without it the voice id is missing and generation stops with that message.
 
 Dependencies: `bash scripts/setup.sh` once. ffmpeg must be on PATH. First run of the
-read-check downloads distil-large-v3 (~750 MB) and first run of the master downloads
-MMS_FA (~1.2 GB); both are cached after that.
+read-check downloads **distil-large-v3 — 1.5 GB** on disk (1,516,480,902 bytes,
+measured on a cold container; an earlier figure of ~750 MB here was half the real
+size) and first run of the master downloads **MMS_FA — 1.18 GB** (1,262,047,414
+bytes, measured against the upstream `content-length`). Both are cached after that.
+
+Those caches are verified before use, not trusted. A truncated transfer produces a
+file that looks present, is never re-fetched, and makes every later run fail
+identically — the cache turns a transient network fault into a permanent one and the
+error message ("your checkpoint file is corrupted") blames the server rather than the
+transfer. So a damaged cache entry is **deleted** as part of the error path and the
+message says so, which is what makes the obvious recovery — run it again — actually
+work. If a download keeps arriving short, fetch it with resume:
+`curl --retry 6 --retry-all-errors -C -`.
 
 ## The read-check
 
@@ -226,9 +340,25 @@ OpenAI's `EnglishTextNormalizer`, which settles British vs American spelling
 1943) — most of the apparent-mismatch noise, handled by a tool that is already right
 rather than by local guesswork.
 
-First redo round is a plain re-roll, which is what fixes a one-off misread. Later
-rounds raise stability by 0.05 — the studio's own lever for false mid-sentence
-pauses, which a re-roll would only repeat.
+### Re-rendering is a second spend, so it has a second gate
+
+**`--max-redos` defaults to 0 and nothing is re-rendered without `--auto-redo`.**
+The check stage prints each flagged section with its ASR evidence and the character
+cost of re-rendering it, then hands over the command that would do it. Sapro's rule:
+*"you should ask me permission if you like to do regeneration some lines."*
+
+The confirmation collected before generation is consent for one quantity of
+characters, not for every later render the pipeline decides to do. And the ceiling is
+now run-wide: every `generate.py` invocation in the work dir — the first pass and
+every redo round — debits `<work>/spend.json`, so `--approve-spend` is a ceiling for
+the whole run. It used to be enforced per invocation, and the redo was built as
+`gen_cmd + ["--regen", …]` with `--approve-spend 12926` still attached, so each round
+started with a fresh full-size budget and the true worst case was that number times
+`(1 + max_redos)`. `--plan` now states that worst case, not just the first-pass cost.
+
+With `--auto-redo`, the first redo round is a plain re-roll, which is what fixes a
+one-off misread. Later rounds raise stability by 0.05 — the studio's own lever for
+false mid-sentence pauses, which a re-roll would only repeat.
 
 A word that comes out the same way on two separate takes stops being re-rendered.
 The render is consistent, so a third will not differ: either it is a name the
@@ -320,10 +450,20 @@ It is stripped from the narration automatically and saved to
 
 Detection needs the heading to actually say *pronunciation* (or "how to say"), and
 most of what follows to look like entries — so a section legitimately titled "Names",
-or a heading followed by prose, is left alone. Only the tail is examined, so a
-mid-script line like "The corvus — a boarding bridge — decided the battle" is never
-mistaken for an entry. One entry is enough to trigger it; a one-name guide read aloud
-is exactly as wrong as a ten-name one.
+or a heading followed by prose, is left alone. A mid-script line like "The corvus —
+a boarding bridge — decided the battle" is never mistaken for an entry, because the
+heading has to match first. One entry is enough to trigger it; a one-name guide read
+aloud is exactly as wrong as a ten-name one.
+
+Two anchors, in order. **Tail** is the fast path: everything after the heading looks
+like entries, which is the shape of a script that ends with its guide. **Section** is
+the fallback, and it is the one production documents need — a real source doc is a
+container for several documents (script, then guide, then a 1,400-word animator note
+or a shot list), and with anything appended after it the guide is no longer the tail.
+The tail test is then dragged under by material that was never part of the guide,
+detection misses entirely, and the video closes by reciting its own glossary *and*
+the art direction. So the block from the guide heading to the next H1 is tested on
+its own, and everything from that heading onward is held out of the narration.
 
 **Extracted is not applied.** Sapro compared a raw take against a respelled one in his
 own voice and chose the raw: `pronOn` is `false` in his profile, and respelling costs
@@ -373,6 +513,11 @@ real** — most are the transcriber spelling a name its own way, which needs no 
 beside it. It parses with spaCy and takes the last token of a fronted modifier's
 subtree, because knowing where the phrase *ends* is a parse, not a pattern — a regex
 counting words lands on "lost forty ‖ ships" instead of "At Angolpo ‖ the Japanese".
+
+A boundary that is already punctuated on *either* side is skipped. When a fronted
+modifier's subtree ends on its own comma the left token is `,`, which used to emit
+pairs like `,|the` — noise in a list whose whole purpose is to be short enough to
+read by hand, and a pair that cannot match anything downstream anyway.
 
 **They are still candidates.** The vo-master skill is explicit that automatic guesses
 are wrong about a third of the time — it wants a pause inside "growing on a deck ‖
