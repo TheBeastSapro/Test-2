@@ -401,3 +401,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Done, in code rather than prose: `scripts/delivery_gate.py` runs at the end of the master stage and `voiceover.py` returns non-zero instead of printing "delivered" when it fails; `--keep-glitches` is now forwarded so the remedy is reachable from the entry point (cf. Observation 20). The gate is three-way — script vs raw vs delivered — because a direct raw-to-delivered diff false-alarms at window boundaries; only a word the RAW has and the DELIVERED lacks is reported. `fix_glitches()` should additionally refuse any candidate above about -14 dB, and should say what it refused.
 
 **Principle:** A rule with an exemption is a rule with a hole exactly the shape of the exemption. The stage most likely to break the invariant was the one stage never checked against it, because the check had been placed where it was easy (per-section, pre-master) rather than where the risk was (post-master, whole-file). Verify the artifact you actually ship, not the intermediate you happen to have tooling for.
+
+### Observation 27: The gate reported the defect on every run and it was read past every time
+
+**Status:** OPEN
+**Date:** 2026-08-18
+**Session context:** After delivery, Sapro: "remove the video title from the voiceover that's not allowed in the voiceover." The voiceover had opened by speaking the video's title, for this delivery and for previous ones.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `--plan` provenance block; `voice-calibration.json`; `derive_title`
+
+**Issue:** `readTitle` was never a decision. It was a code default that no profile set, and the `--plan` gate detected exactly that and printed it in its own dedicated line, every single run: "^ 1 value(s) nobody chose — inherited defaults, not settings: read_title". SKILL.md even explains what that line is for — "Anything marked `(default)` is a decision nobody made. Check those first" — and documents that `similarity_boost` was once wrong for precisely this reason. The line was read, quoted back to Sapro in the pre-flight summary, and acted on by nobody, because `derive_title`'s docstring asserted "the studio reads it by default and that is the read Sapro has been publishing." That sentence was written by the agent, not by him, and it converted an open question into settled fact. This is the same failure shape as the spend rule in HANDOFF rule 9: the agent restates something in a more convenient form, then treats its own restatement as the authority.
+
+**Suggested improvement:** Done: `readTitle` is false in `voice-calibration.json`, and the false claim in `derive_title` is replaced by a description of how it survived. Structurally, an unchosen default should be harder to skip than a printed line — `--plan` should require each `(default)`-marked value to be either set in the profile or explicitly acknowledged before generation proceeds, the same way `--approval` gates spend. A warning that has been printed on every run and actioned on none is decoration.
+
+**Principle:** A detector that fires correctly and is ignored is indistinguishable, in the artifact, from one that never fired. When a check's output is a line of text rather than a refusal, it degrades into noise at exactly the rate the reader gets used to it — and a confident comment nearby is enough to convert its finding into something already explained.

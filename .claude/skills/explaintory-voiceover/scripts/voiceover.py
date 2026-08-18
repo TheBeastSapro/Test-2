@@ -122,8 +122,23 @@ def derive_title(script_path, raw, explicit=None, read_title=True):
     """-> (title, script for narration).
 
     The H1 names the file either way. Whether it is also SPOKEN is the profile's
-    `readTitle`, not this tool's opinion — the studio reads it by default and that
-    is the read Sapro has been publishing.
+    `readTitle`, not this tool's opinion.
+
+    This docstring used to add "the studio reads it by default and that is the
+    read Sapro has been publishing". That was false, and it was written by the
+    agent rather than by him. 2026-08-18: "remove the video title from the
+    voiceover that's not allowed in the voiceover."
+
+    Note how it survived. `readTitle` was never chosen by anyone — it was an
+    inherited default, and the --plan gate said so on EVERY run, in its own
+    dedicated line: "1 value(s) nobody chose — inherited defaults, not settings:
+    read_title". The gate worked. It was read past, because this docstring
+    asserted the default was already correct and the assertion was taken as
+    evidence. A comment is not a measurement, and provenance marks exist to be
+    acted on, not skimmed.
+
+    `readTitle` is false in voice-calibration.json now, so the narration opens on
+    the first chapter name.
     """
     def clean(t):
         # "EVERY DRUG USED IN WAR EXPLAINED — VOICEOVER SCRIPT" names the document,

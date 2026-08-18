@@ -10,13 +10,15 @@
     "",
     "pronOn is false on purpose: Sapro compared a raw take against a respelled one",
     "and chose the raw. The pronunciation guide is the reference for CHECKING, not",
-    "an automatic substitution."
+    "an automatic substitution.",
+    "",
+    "readTitle is FALSE. 2026-08-18, Sapro: \"remove the video title from the voiceover that's not allowed in the voiceover\". It had been ON as an inherited default that nobody chose — the --plan gate flagged it every run as \"1 value(s) nobody chose\" and it was read past every time, and a comment in derive_title asserted the spoken title was \"the read Sapro has been publishing\". It was not. The narration opens on the first chapter name."
   ],
   "calibration": {
     "voice": "dUHbvtIZto0ZEBkhYiyk",
     "model": "eleven_multilingual_v2",
     "stability": 0.48,
-    "similarity_boost": 0.80,
+    "similarity_boost": 0.8,
     "style": 0.05,
     "speed": 1.07,
     "use_speaker_boost": true,
@@ -24,6 +26,7 @@
     "chapterPause": "natural",
     "skipHeadings": false,
     "pronOn": false,
-    "chunkSize": 450
+    "chunkSize": 450,
+    "readTitle": false
   }
 }
