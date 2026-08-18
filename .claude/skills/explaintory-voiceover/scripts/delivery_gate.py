@@ -33,7 +33,7 @@ produces it.
 Exits non-zero if any word was lost or altered. Delivery must not proceed on a
 non-zero exit.
 """
-import argparse, difflib, os, subprocess, sys, tempfile
+import argparse, difflib, json, os, subprocess, sys, tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import readcheck as rc
 
@@ -81,17 +81,46 @@ def main():
     ap.add_argument("--delivered", required=True, help="the mastered file")
     ap.add_argument("--script", required=True, help="<work>/script_lines.txt")
     ap.add_argument("--asr-model", default=rc.DEFAULT_ASR)
+    ap.add_argument("--cache", help="transcript cache path; defaults to sitting beside the delivered file")
     a = ap.parse_args()
 
     script = rc.normalize(
         " ".join(l.strip() for l in open(a.script, encoding="utf-8")
                  if l.strip())).split()
-    model = rc.load_asr(a.asr_model)
+    # Transcribing twelve minutes twice is the expensive part; the analysis on top
+    # of it is free. So transcripts are cached against each file's size and mtime,
+    # and a bug in the REPORT then costs a re-read rather than a re-transcription.
+    # It also keeps peak memory to one loaded model -- running two gates at once
+    # put two 4.3 GB models in memory and the kernel killed one, which looked
+    # exactly like a gate that had quietly passed.
+    cache = {}
+    cpath = a.cache or (os.path.splitext(a.delivered)[0] + ".gate-cache.json")
+    def key(path):
+        st = os.stat(path)
+        return "%s:%d:%d" % (os.path.basename(path), st.st_size, int(st.st_mtime))
+    if os.path.isfile(cpath):
+        try:
+            cache = json.load(open(cpath))
+        except Exception:
+            cache = {}
+    state = {"model": None}
     print(f"[gate] script {len(script)} words")
-    raw = transcribe_all(model, a.raw)
-    print(f"[gate] raw       {len(raw)} words")
-    del_ = transcribe_all(model, a.delivered)
-    print(f"[gate] delivered {len(del_)} words")
+
+    def words_for(path, label):
+        k = key(path)
+        if k in cache:
+            print(f"[gate] {label:<9} {len(cache[k])} words (cached)")
+            return cache[k]
+        if state["model"] is None:
+            state["model"] = rc.load_asr(a.asr_model)
+        w = transcribe_all(state["model"], path)
+        cache[k] = w
+        json.dump(cache, open(cpath, "w"))
+        print(f"[gate] {label:<9} {len(w)} words")
+        return w
+
+    raw = words_for(a.raw, "raw")
+    del_ = words_for(a.delivered, "delivered")
 
     in_raw = matched(script, raw)
     in_del = matched(script, del_)
@@ -103,9 +132,19 @@ def main():
         return 0
 
     # Group consecutive indices so one damaged phrase reports as one finding.
+    #
+    # This was written as `runs.append(cur), cur.clear(), cur.append(i)` inside an
+    # expression, which appends a REFERENCE and then empties the very list it just
+    # stored -- so every run in the report was the same object and one finding
+    # printed eleven times. The detection was correct and the report was useless,
+    # which is the worse of the two failures because it still looks like output.
     runs, cur = [], [lost[0]]
     for i in lost[1:]:
-        (cur.append(i) if i == cur[-1] + 1 else (runs.append(cur), cur.clear(), cur.append(i)))
+        if i == cur[-1] + 1:
+            cur.append(i)
+        else:
+            runs.append(cur)
+            cur = [i]
     runs.append(cur)
     print(f"\n[gate] FAIL — mastering changed {len(lost)} word(s) in {len(runs)} place(s).")
     print("       The raw take has these and the delivered file does not.\n")
