@@ -1,0 +1,126 @@
+<!-- ONE SURFACE, AND IT IS CLAUDE.
+     Four tabs for a job that only ever runs in one order was a wizard wearing
+     tabs. What replaced them is not a wizard either: the pipeline is a set of
+     tools the agent holds, so you ask for a voiceover and it loads the
+     reference, renders takes, moves the dials and runs the render itself.
+
+     The panel on the right is not another screen. It is the state of the thing
+     being discussed, repainted from the server after every turn — and the two
+     buttons that are NOT tools, because saving over a tuned profile is not
+     something to find out about afterwards. -->
+<div class="app">
+
+<aside class="side">
+  <div class="brand"><div class="logo-mark"></div><span>VO Studio</span></div>
+
+  <nav class="nav" aria-label="Main">
+    <button class="nav-item is-active" data-view="studio"><i data-i="assistant"></i>Studio</button>
+    <button class="nav-item" data-view="settings"><i data-i="settings"></i>Settings</button>
+  </nav>
+
+  <!-- Conversations live here, not in a card on the right. A transcript holds
+       the script, the takes and every note about the read — it is the work,
+       so it gets the column the work is navigated from. -->
+  <button class="btn btn-sm new-convo" id="btn-new"><i data-i="plus"></i>New conversation</button>
+  <div class="convos" id="convos" role="list" aria-label="Conversations"></div>
+
+  <div class="side-foot">
+    <span class="hw" id="hw"><span class="dot dot-idle"></span><span id="hw-text">checking…</span></span>
+  </div>
+</aside>
+
+<main class="main"><div class="shell">
+
+  <!-- ═══════════════════════════════════════════════ STUDIO -->
+  <section class="view is-active" data-view="studio">
+    <div class="tune">
+      <div class="card chat-card" id="chat-card">
+        <div class="chat" id="chat">
+          <div class="empty" id="chat-empty">Starting up…</div>
+        </div>
+
+        <div class="attached" id="attached" hidden></div>
+
+        <div class="composer">
+          <textarea id="chat-input" rows="1"
+            placeholder="ask for a voiceover, drop a reference clip, paste a script"></textarea>
+          <div class="composer-tools">
+            <button class="icon-btn" id="btn-attach" title="Attach a clip, a screenshot or a file"><i data-i="clip"></i></button>
+            <input type="file" id="attach-file" multiple hidden>
+            <span class="agent-tag">Claude agent</span>
+            <select id="model-pick" class="mini-select" title="Which model answers"></select>
+            <label class="mini-toggle" title="On: every edit asks first. Off: it edits, then tells you.">
+              <input type="checkbox" id="confirm-calls" checked><span></span>Confirm calls
+            </label>
+            <span class="grow"></span>
+            <button class="send-btn" id="btn-send" title="Send"><i data-i="up"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- State, not a step. What the conversation is currently working on. -->
+      <aside class="tune-side">
+        <div class="card">
+          <h3>Voice</h3>
+          <div class="ref" id="ref-box">
+            <div class="ref-empty" id="ref-empty">
+              No reference yet — drop an audio clip into the chat.
+            </div>
+            <div id="ref-set" hidden>
+              <p class="hint" id="ref-name"></p>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:18px">
+            <label for="prof">Profile</label>
+            <input id="prof" type="text" value="explaintory">
+          </div>
+
+          <div class="params" id="params"></div>
+
+          <!-- The last thing it rendered, always to hand rather than scrolled
+               away up the transcript. -->
+          <div id="last-take" class="last-take"></div>
+
+          <div class="tune-acts">
+            <button class="btn w-full" id="btn-take">Render a take</button>
+            <button class="btn w-full" id="btn-revert">Undo last change</button>
+            <button class="btn btn-primary w-full" id="btn-lock">Save this voice</button>
+          </div>
+        </div>
+
+        <div class="card" id="auth-card-wrap">
+          <h3>Claude</h3>
+          <p class="sub" id="auth-card" style="margin:0">Checking your sign-in…</p>
+          <div id="auth-actions" class="auth-actions" hidden>
+            <button class="btn btn-sm btn-primary" id="btn-login">Sign in</button>
+            <button class="btn btn-sm" id="btn-recheck">Check again</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ SETTINGS -->
+  <section class="view" data-view="settings">
+    <div class="page-head">
+      <h2>Settings</h2>
+      <p class="sub">Each value shows the failure that set it. These are not defaults from a docs page — change one only with a measurement.</p>
+    </div>
+
+    <div class="split">
+      <div class="split-nav" id="settings-nav"></div>
+      <div class="split-body">
+        <div id="settings-groups"></div>
+        <div class="flow-nav">
+          <button class="btn" id="btn-reset">Reset to defaults</button>
+          <button class="btn btn-primary" id="btn-save">Save settings</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div></main>
+</div>
+
+<div class="toast" id="toast"></div>
