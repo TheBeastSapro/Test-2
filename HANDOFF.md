@@ -1,6 +1,49 @@
-# Voiceover session handoff — updated 2026-08-01
+# Voiceover session handoff — updated 2026-08-18
 
-## State
+## State — latest delivery
+
+`Every Genius Medieval Castle Defense System Explained (final).mp3`.
+744.05s (12:24), 256 kbps, -14 LUFS / -1.5 dBTP. Delivered 2026-08-18.
+
+Source: Google Doc `1uFGEhJLs2X5dnA9UYMezwI1irls0CrShJsnzsfpcTQI`. That doc is a
+CONTAINER — `# Script`, then `# Animator Notes`, then `# Animation Breakout`.
+Only the first block plus its pronunciation guide is narration; the guide's
+section-anchored detection held everything from the guide heading onward out.
+The H1 was literally `# Script`, which `derive_title` correctly treats as a
+document label rather than a title, so `--title` supplied the real one.
+
+Spend: 12,846 characters, first pass, approved in advance and matched exactly.
+No redos. `--max-redos 0` throughout.
+
+Verification that came back clean:
+- orphan sweep: 124 gaps >= 40 ms, exact-zero silence, **0 candidates**
+- humanize QC on the DELIVERED file: clean
+- master repairs: 20 over-full-scale regions declipped, 5 splice fragments
+  removed (0:04.235, 0:38.580, 4:18.020, 9:03.955, 10:39.800)
+- alignment: 2,383 words, mean confidence 0.947, 1% weak
+
+Read-check flagged 16 sections, **none re-rendered**. Re-rendering them would
+have cost 18,344 characters. All but three resolved to transcriber spelling,
+confirmed against the alignment: `grille`->"grill" x5, `phishing`->"fishing",
+`over-built`->"overbuilt" (conf 0.988), `crossbowman` (0.916), `portcullis` x4,
+`crusaders'` (0.774), `knights`, `ward`, `cart`, `opened` — every one present.
+
+Left with Sapro as six-second excerpts, not re-rendered: **Seine** at 10:47
+(alignment confidence 0.415 against a 0.947 mean — the only real outlier),
+**trebuchets** at 2:28 (0.60/0.68), **Louis** at 9:17 (0.70, and English
+"Lewis" vs French "Loo-ee" is taste, not correctness).
+
+### Heading levelling was restricted on purpose
+
+Full levelling wanted to retime 7 of 9 headings and hit the +/-15% clamp twice.
+Its metric would compress `"Moat."` — one syllable, 0.55s spoken — to 0.46s.
+Shipped instead with levelling on the title and first chapter announcement ONLY
+(x0.850 each), which are the two with the documented structural cause. See
+Observation 21. Note `--no-level-headings` does NOT exist on `voiceover.py`,
+only on `generate.py` (Observation 20); this was done by restitching from the
+cached parts, which costs nothing.
+
+## State — the previous delivery
 
 `FINAL v11.mp3` is the good file. 703.392s (11:43), 320 kbps, 48 kHz mono.
 Sapro confirmed it: "now it's perfect". It lives in the session scratchpad, not
@@ -153,12 +196,15 @@ edits audio. Building it surfaced two traps, both documented in SKILL.md:
 
 ## Still broken / not built
 
-- **No pronunciation check.** "Quito" was misread and passed every automated
-  gate. Sapro caught it by ear. **Build this cold, before the next script.**
-  Note: the last handoff said the tools were installed. They were installed by
-  hand and died with the container — `allosaurus`, `phonemizer`, `panphon`,
-  `espeak-ng` and `kokoro` are **not** in `install-audio-tools.sh`. Add them to
-  the installer as step one, or the next container loses them again.
+- **Pronunciation check — tooling now survives, gate still unproven.**
+  `allosaurus`, `phonemizer`, `panphon` and `espeak-ng` ARE in the installer as
+  of 2026-08-18 and came up clean on a fresh container. `kokoro` is still
+  missing, so there is no free test-audio generator for cold-building detectors.
+  `vo-studio/vostudio/pronounce_check.py` exists and screens PHRASES against the
+  file's own distribution (never per-word — see its docstring for why). It runs
+  slowly on a 12-minute file and has not yet produced a finding on a real
+  delivery, so it is not yet evidence of anything. Run it WITH a timed script;
+  without one it falls back to ASR segmentation.
 - **ASR word timestamps are useless for gaps** — faster-whisper returns
   contiguous spans, so a 150 ms hole reads as 0.000 s. Use silencedetect, an RMS
   envelope, or silero-vad. Confirmed again this session: ASR placed "In" at

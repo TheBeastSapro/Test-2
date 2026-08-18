@@ -296,3 +296,63 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: SKILL.md documents a flag the entry point does not have
+
+**Status:** OPEN
+**Date:** 2026-08-18
+**Session context:** The castle-defenses delivery. SKILL.md says the previous delivery "ran with `--no-level-headings`". Passing that to `voiceover.py` aborted the run at argparse before a single character was sent.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/voiceover.py` argument surface vs `scripts/generate.py`
+
+**Issue:** `--no-level-headings` is defined on `generate.py` (line 519) and consumed at its stitch call, but `voiceover.py` — the documented entry point, the one every example in SKILL.md uses — neither defines it nor forwards it. So the skill's own remedy for a known misbehaviour is unreachable through the interface the skill tells you to use. It failed safe here only by luck of ordering: argparse rejects unknown arguments before the generate stage, so nothing was billed. Had the flag been accepted-and-ignored, the run would have levelled anyway and reported success.
+
+**Suggested improvement:** Forward the flag from `voiceover.py` to `generate.py` the way `--curated` is forwarded to `humanize.py`. More generally, any option named in SKILL.md should be asserted to exist on the entry point it is shown with — a one-line test that runs `--help` and greps for each documented flag would have caught this without spending anything.
+
+**Principle:** Documentation that names a flag asserts an interface. When the wrapper and the tool it wraps have different argument surfaces, the wrapper's surface is the only one users can reach, and advice written against the inner tool is advice that cannot be followed.
+
+### Observation 21: The heading leveller's metric is still not scale-free
+
+**Status:** OPEN
+**Date:** 2026-08-18
+**Session context:** With levelling on, 7 of 9 headings were retimed and the ±15% clamp bound twice. "Moat." — one syllable, 0.55 s spoken — was to be sped up x1.180 to 0.46 s.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/generate.py` — `level_headings`
+
+**Issue:** The metric was already fixed once, from words-per-minute to syllables-per-second, because wpm was set by 2-word headings and wrongly slowed a 4-word one. Syllables-per-second is better but still not scale-free at the short end: a 1-2 syllable announcement is dominated by onset and final decay, which are roughly fixed costs, so its syllables-per-second reads low for reasons that have nothing to do with delivery. Measured this run: the two lowest rates were the two shortest headings ("Moat." 1 syllable, 1.82; "Drawbridge." 2 syllables, 1.74) and the highest was the 16-syllable title (4.65). The leveller therefore pulls short names faster and long ones slower, toward a median no heading occupies — and it clamped at both ends, meaning it could not reach its own target in either direction.
+
+**Suggested improvement:** Either exempt headings below ~3 syllables from levelling (too little signal to measure), or model the fixed cost explicitly — fit duration ≈ a + b·syllables across the headings and level on `b` rather than on duration/syllables. Until then, restrict levelling to the sections with the documented structural cause: the title and the first chapter announcement, which have no conditioning behind them and genuinely rush. That is what this delivery shipped.
+
+**Principle:** A rate is only comparable across items when the fixed cost is small relative to the measured span. Normalising by size does not make short items comparable to long ones; it makes their fixed overhead look like a difference in rate.
+
+### Observation 22: Two verification traps that manufacture defects that are not there
+
+**Status:** OPEN
+**Date:** 2026-08-18
+**Session context:** Adjudicating 16 read-check REDO flags without spending the 18,344 characters a re-render would have cost. Two separate checks each produced a confident false "missing word".
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** alignment-confidence cross-checks
+
+**Issue:** (1) A word lookup that normalises with `[^a-z]` stripping finds "crusaders", but one that keeps apostrophes does not match the aligned token `crusaders'`. The word was present at 19.33 s, confidence 0.774; the naive normaliser reported it missing and appeared to confirm the ASR's "expected crusaders heard is". A false positive built on top of another false positive reads as corroboration. (2) Alignment confidence is meaningless for numerals: the eight lowest-confidence tokens in a 2,383-word file were `1215` (0.002), `1265,` (0.009), `1203,` (0.009), `1271,` (0.022), `1216,` (0.123) and similar, because the aligner is handed digits while the voice says "twelve fifteen". Read as a defect signal, the numerals dominate the bottom of the distribution and bury the one token actually worth attention.
+
+**Suggested improvement:** Normalise both sides to the same alphabet before comparing (strip possessives, or compare on a stem), and exclude tokens whose script form is numeric from any confidence-based ranking — or align them against their spoken expansion, which the generator already computes. Report the confidence percentile alongside the raw score so an outlier is visible against this file's own distribution rather than an absolute number.
+
+**Principle:** Two independent checks agreeing is only evidence when their failure modes are independent. Here both were reading the same mismatch between a script token and its spoken form, so they agreed on being wrong — and agreement was the thing that made the wrong answer persuasive.
+
+### Observation 23: "Completed, exit 0" reported the wrapper, not the job
+
+**Status:** OPEN
+**Date:** 2026-08-18
+**Session context:** Three separate times a background job was reported complete within seconds while the real work ran for minutes more; and a waiter armed to stop the pipeline before mastering killed itself instead.
+**Skill:** explaintory-voiceover
+**Type:** cross-cutting
+**Phase/Area:** running the pipeline in the background
+
+**Issue:** `nohup … &` inside a backgrounded shell returns as soon as the shell exits, so the completion notification describes the launcher and carries its exit code, not the job's. Read literally it says a 10-minute generate finished in 4 seconds and succeeded. Twice this looked like success and once it hid a download that had actually been cut off at 43%. Separately, a waiter ending in `pkill -f humanize.py` matched its OWN command line — the pattern appears in the shell's argv — and it killed itself (exit 144) before killing the target, so the master ran on without the curated breaks.
+
+**Suggested improvement:** Never read completion from the wrapper: verify the artifact exists at its expected size, or that the process is gone, before believing a job finished. For `pkill -f`, either match on something that cannot appear in the killer's own argv, or resolve the PID first and kill by number.
+
+**Principle:** A process that launches work and a process that does work have different lifetimes and different exit codes. Any status derived from the launcher answers "did I manage to start this", never "did this succeed" — and a pattern-matching kill includes the matcher in its own search space unless excluded.
