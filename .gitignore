@@ -23,3 +23,6 @@ cues.md
 voiceover_profile.json
 **/voiceover_profile.json
 lexicon.json
+
+# reference-analysis working dir (downloads, transcripts, agent scratch)
+.work/

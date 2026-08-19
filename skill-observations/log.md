@@ -341,3 +341,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a mandatory transcript-hygiene step before any quantitative pass: enumerate all bracketed tags and non-word markers in the raw transcript (grep -o '\[[^]]*\]' | sort | uniq -c), strip them, and record what was stripped in the deliverable's method note. For contractions, use POS/dependency evidence (an apostrophe-s token tagged AUX, not PART/case) rather than surface regex. State ASR-punctuation dependence as an explicit caveat whenever sentence segmentation drives the headline numbers.
 
 **Principle:** Machine-generated source text carries channel artifacts that look like content to a parser. Before measuring anything, inventory the token space and decide explicitly what is speech and what is annotation — a metric computed over uninspected input measures the pipeline as much as the subject.
+
+### Observation 23: A quoted vendor doc inside a skill goes stale invisibly
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Researching current ElevenLabs API levers and auditing the ExplainTory VO pipeline against them
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** "Pronunciation — respell, never phonemes"
+
+**Issue:** The skill block-quotes ElevenLabs' docs — "Pronunciation dictionary phoneme tags only work with `eleven_flash_v2` and `eleven_v3` models" — and builds a whole policy on it. The current docs say something different: phoneme tags are "only compatible with the `eleven_flash_v2` model", while v3 instead supports raw IPA inline (`/ˌbaɪoʊˈkemɪstri/`) with a stated 80-90% consistency, which is not a dictionary phoneme tag at all. The skill's conclusion (respell, don't phonemise, on multilingual_v2) is still correct, but the quoted justification is now wrong and there is nothing in the file that would surface that.
+
+**Suggested improvement:** Whenever a skill quotes a third-party doc as load-bearing justification, record the source URL and the date it was read next to the quote, and add a "re-verify before relying on this" marker. Better still, state the behaviour the pipeline depends on ("this model ignores phoneme rules silently") separately from the vendor sentence that evidenced it, so the conclusion survives a doc rewrite even when the quote does not.
+
+**Principle:** A verbatim external quote inside a skill is a snapshot with no expiry date attached. Cite source and read-date beside any quoted vendor claim, and separate the observed behaviour from the sentence that happened to document it.
+
+### Observation 24: Settings surfaced in an approval gate that the code never applies
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Auditing the ExplainTory VO generation pipeline's calibration handling
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** "Confirm the structure first" / the CALIBRATION block in --plan
+
+**Issue:** `collapseBreaks` is carried in `voice-calibration.json`, loaded by `generate.py:load_profile()`, and printed in the plan's CALIBRATION block as a value about to be committed — but it is referenced nowhere else in the pipeline, so it changes nothing. The plan's whole purpose is that the human can check every value that will be sent; a value listed there that has no effect trains him to read the block as decorative and dilutes the one provenance mechanism the skill has.
+
+**Suggested improvement:** Make the provenance printer assert that each value it names is actually consumed downstream (or mark it explicitly as `inert — not applied by this pipeline`), and drop dead calibration keys from the profile rather than carrying them for compatibility with a tool that is no longer in the loop.
+
+**Principle:** An approval gate is only as trustworthy as its narrowest claim. A parameter displayed as "about to be committed" but never read by the code is a false statement in the one place built to be believed.
+
+### Observation 25: A model upgrade can silently remove the mechanism a workaround depends on
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Assessing whether an ElevenLabs v3 "expressive" layer could be added to an existing multilingual_v2 pipeline
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** "Generation matches the studio exactly" / heading levelling
+
+**Issue:** Three separate behaviours in the pipeline rest on request stitching (`previous_request_ids`): cross-section prosody continuity, the deliberate DROP of conditioning after a chapter announcement, and the documented cause of the "first chapter announcement reads fast" defect that heading levelling exists to repair. The vendor states plainly that request stitching is not available for `eleven_v3`. So a model swap that looks like a one-line change silently deletes the mechanism, invalidates the stated cause of an existing repair, and leaves the repair in place doing something nobody has re-derived.
+
+**Suggested improvement:** In any skill that pins a vendor model, keep an explicit list of "capabilities this pipeline depends on" next to the model id, so a proposed model change is evaluated against that list rather than against the model's headline quality. Treat repairs whose stated cause disappears as unvalidated until re-measured, not as harmless leftovers.
+
+**Principle:** Workarounds encode assumptions about the platform, not just about the output. Record what a pipeline depends on, not only what it produces — otherwise an upgrade removes a foundation while the structure built on it keeps running.
