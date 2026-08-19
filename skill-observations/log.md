@@ -461,3 +461,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a corpus-segmentation step to the analyse skill before any style metric is computed: identify and timestamp functional segments (cold open, body, sponsor read, outro/CTA, skit/dialogue, chapter titles) and report body-only figures as the headline, with pooled figures as a secondary row. Also add a cheap verification habit — for any metric whose count is small (under ~20 instances), print the instances themselves rather than trusting the count.
 
 **Principle:** A long-form piece is not one register. Metrics pooled across functionally different segments measure the blend, not the craft — and when the rare category is the interesting one, a handful of off-register items can invert the conclusion. Segment first, and always eyeball the actual instances behind a small count.
+
+### Observation 31: Pick the verification instrument the edit can't fool
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Verifying that inserting silence into a rendered voiceover had not damaged it
+**Skill:** explaintory-voiceover (also v2-voiceover-style)
+**Type:** open-source
+**Phase/Area:** Post-edit verification
+
+**Issue:** The standing rule is "transcribe after every destructive edit and confirm no words were lost", so the first verification re-ran ASR before and after. It reported a failure — 113 words became 115 — on audio that was provably intact. The diff showed the transcriber re-segmenting the same audio differently between passes ("army" returning as "arm"+"we"), not anything the edit had done. The rule was right; the instrument was wrong for this edit class. Replacing it with a sample-level assertion — delete the inserted spans back out of the output and the input must reappear exactly, apart from the deliberate splice fades — is both stricter and deterministic, and needs no model in the loop. An insertion cannot lose a word from audio that is still, sample for sample, the original.
+
+**Suggested improvement:** Record in the skill that the verification rule names the GUARANTEE (no words lost), not the method, and that the method must be chosen per edit class: for a pure insertion, assert sample-level containment; for a replacement or deletion, ASR comparison is still the only option and its instability must be handled one-sided (words lost, never words changed). Add the failing example, since the false positive is convincing enough to send someone chasing a defect that does not exist.
+
+**Principle:** A verification rule states what must be true, not how to check it. A probabilistic instrument used on a deterministic property manufactures false failures — and a false failure costs the same investigation as a real one. Where the edit's structure permits an exact check, the exact check is the cheaper one.
+
+### Observation 32: A corrective layer must measure before it adds
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Inserting mid-phrase pauses into a rendered voiceover to hit a measured target rate
+**Skill:** v2-voiceover-style
+**Type:** open-source
+**Phase/Area:** Applying a measured target to real material
+
+**Issue:** The tool planned pauses from the script and inserted all of them, implicitly assuming the rendered audio had none of its own. It had plenty. The result overshot the target by nearly three times — one pause every 3.6 words against a target of 10.4 — and the overshoot was invisible in the tool's own output, which reported only what it had added. It surfaced solely because the same fingerprint used to derive the target was then run back over the treated file. The fix was to make the budget a deficit: measure what the material already has, subtract, insert only the shortfall, and where a planned change lands on one that already exists, add only the difference.
+
+**Suggested improvement:** For any skill that applies a measured target to existing material, require the target to be expressed as a deficit against a measurement of the input, never as an absolute quantity to add. Make the closing check mandatory: re-measure the OUTPUT with the same instrument that produced the target, and report the before and after against it. A tool that reports only its own actions cannot detect that it overshot.
+
+**Principle:** A measurement of the desired end state is not an instruction for how much to add. Anything that corrects material toward a target must first measure how far the material already is, or it applies the whole correction on top of whatever was already there — and reporting only what it did will never reveal it.
