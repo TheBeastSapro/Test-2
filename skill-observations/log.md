@@ -431,3 +431,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** The Session Start Protocol scans OPEN observations once, at session start, which cannot see entries written later by parallel agents in the same session. Add a re-scan at the existing deliverable-event flush: since the log is already being re-read there for the numbering discipline, also diff for entries added since the last scan and check whether any apply to work currently in flight. The read is already happening; only the checking is missing.
 
 **Principle:** In a session with parallel agents, the observation log is a live channel between them, not just a record for later review. Anything that re-reads a shared log for one purpose should also check what changed for its own sake — the cheapest time to catch a defect is while a peer is describing it.
+
+### Observation 29: Stylistic "devices" need a chance-level baseline before they are reported
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Measuring the "long sentence then short punch" rhythm in two YouTube narration scripts
+**Skill:** analyse
+**Type:** open-source
+**Phase/Area:** Pace / structure metrics
+
+**Issue:** The brief asked how often a very short sentence follows a long one — the "long-then-punch" rhythm, framed as a deliberate craft device. Raw counts looked like a real difference (3 in video A, 10 in video B) and would have been reported as "B uses the punch rhythm 3x more". Computing the expected count under independence (number of long sentences x the video's own base rate of short sentences) gave 3.7 and 10.3 — observed/expected of 0.82 and 0.97. Neither writer engineers the pairing at all; the apparent difference is entirely explained by B writing short sentences four times as often. Without the baseline, a chance artifact would have been sold as a technique, and the resulting "rewrite rule" would have told writers to do something the source material does not do.
+
+**Suggested improvement:** In the analyse skill's pace/structure section, require that any claimed sequential or co-occurrence pattern (X followed by Y, device clustering, "always opens with") be reported alongside its expected frequency under independence or shuffle, plus the observed/expected ratio. A ratio near 1.0 must be stated as "at chance", not presented as a finding. Only ratios materially above 1 justify a rewrite rule.
+
+**Principle:** A raw co-occurrence count is not evidence of intent. Any claim that two features are deliberately paired needs a null model built from the same text's own base rates — otherwise you are measuring the frequency of the ingredients and calling it a recipe.
+
+### Observation 30: Segment a corpus by function before computing style metrics
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Sentence-length and fragment analysis of two long-form narration scripts containing sponsor reads and outro CTAs
+**Skill:** analyse
+**Type:** open-source
+**Phase/Area:** Corpus preparation / structural analysis
+
+**Issue:** Whole-video sentence statistics reported that video A used 10 short (<=5 word) sentences. Listing them individually showed that every one sat outside the narration: three spoken chapter titles, five lines of in-character sponsor-skit dialogue, two lines of a comedy gag. The true finding — that A uses zero short sentences inside its actual storytelling, while the comparison video uses one every 5.6 sentences — only appeared after the sponsor read and outro were excluded and the metric recomputed. The pooled number was not merely imprecise, it pointed the opposite way from the truth, because sponsor and CTA copy is written in a different register from the body and was diluting the body's signal.
+
+**Suggested improvement:** Add a corpus-segmentation step to the analyse skill before any style metric is computed: identify and timestamp functional segments (cold open, body, sponsor read, outro/CTA, skit/dialogue, chapter titles) and report body-only figures as the headline, with pooled figures as a secondary row. Also add a cheap verification habit — for any metric whose count is small (under ~20 instances), print the instances themselves rather than trusting the count.
+
+**Principle:** A long-form piece is not one register. Metrics pooled across functionally different segments measure the blend, not the craft — and when the rare category is the interesting one, a handful of off-register items can invert the conclusion. Segment first, and always eyeball the actual instances behind a small count.
