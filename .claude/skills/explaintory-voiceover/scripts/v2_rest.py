@@ -93,20 +93,32 @@ def _quietest_point(y, sr, centre_s: float, search_s: float = SEARCH_S) -> float
     return (lo + int(np.argmin(energy))) / sr
 
 
-def _existing_gap(y, sr, centre_s: float, max_look: float = 0.60) -> float:
+def _envelope_db(y, sr):
+    """Frame energy of the whole file in dB, plus the silence threshold.
+
+    Computed once. The first version convolved the entire signal inside
+    _existing_gap, which was then called once per pause — on a 12-minute file
+    with 321 pauses to open, that is 321 passes over 35 million samples, and it
+    simply never finished. Anything O(length) has to live outside the loop.
+    """
+    import numpy as np
+    frame = max(int(0.020 * sr), 32)
+    rms = np.sqrt(np.convolve(y.astype("float64") ** 2,
+                              np.ones(frame) / frame, mode="same"))
+    db = 20 * np.log10(np.maximum(rms, 1e-10))
+    return db, float(np.percentile(db, 85)) - 18.0
+
+
+def _existing_gap(y, sr, centre_s: float, max_look: float = 0.60,
+                  env=None) -> float:
     """How much silence the take already has at this boundary.
 
     Measured the same way styleprint measures a pause: frames below an adaptive
     threshold set relative to the file's own speech level, so it does not need
     a fixed dBFS assumption that a quiet render would break.
     """
-    import numpy as np
     hop = max(int(0.005 * sr), 1)
-    frame = max(int(0.020 * sr), 32)
-    rms_all = np.sqrt(np.convolve(y.astype("float64") ** 2,
-                                  np.ones(frame) / frame, mode="same"))
-    db_all = 20 * np.log10(np.maximum(rms_all, 1e-10))
-    thresh = float(np.percentile(db_all, 85)) - 18.0
+    db_all, thresh = env if env is not None else _envelope_db(y, sr)
 
     c = int(centre_s * sr)
     lo, hi = c, c
@@ -118,16 +130,12 @@ def _existing_gap(y, sr, centre_s: float, max_look: float = 0.60) -> float:
     return max(0.0, (hi - lo) / sr) if db_all[c] < thresh else 0.0
 
 
-def _room_tone(y, sr, seconds: float):
-    """A stretch of the file's own quietest audio, tiled to the length needed.
-
-    Digital silence would be wrong: the surrounding material has a noise floor,
-    and a gap that drops below it is heard as a dropout rather than a pause.
-    """
+def _room_tone_template(y, sr):
+    """The file's own quietest 50 ms. Found once per file, never per pause."""
     import numpy as np
     win = max(int(0.050 * sr), 64)
     if len(y) < win * 4:
-        return np.zeros(int(seconds * sr), dtype=y.dtype)
+        return np.zeros(win, dtype=y.dtype)
     # RMS over non-overlapping windows; take the quietest that is not the very
     # start or end of the file, where a fade-in can masquerade as room tone.
     n = len(y) // win
@@ -135,12 +143,101 @@ def _room_tone(y, sr, seconds: float):
     rms = np.sqrt((trimmed.astype("float64") ** 2).mean(axis=1))
     inner = slice(1, max(2, n - 1))
     idx = int(np.argmin(rms[inner])) + 1
-    tone = trimmed[idx]
+    return trimmed[idx].copy()
+
+
+def _room_tone(template, sr, seconds: float):
+    """`seconds` of room tone, tiled from the template.
+
+    Digital silence would be wrong: the surrounding material has a noise floor,
+    and a gap that drops below it is heard as a dropout rather than a pause.
+    """
+    import numpy as np
     need = int(seconds * sr)
     if need <= 0:
-        return np.zeros(0, dtype=y.dtype)
-    reps = int(need // len(tone)) + 1
-    return np.tile(tone, reps)[:need].astype(y.dtype)
+        return np.zeros(0, dtype=template.dtype)
+    reps = int(need // len(template)) + 1
+    return np.tile(template, reps)[:need].astype(template.dtype)
+
+
+def plan_stretch(audio_path, target="serious_history", model_size="base.en",
+                 floor=0.080, slots=("sentence", "clause"), cap=3.0):
+    """Open the pauses a take already has, out to the reference proportions.
+
+    The other route in this module ADDS rests where a script says there should
+    be one. This one changes nothing about where the narrator stopped — it only
+    lets each stop last as long as the reference's does.
+
+    That distinction came from measuring a real take, and the measurement
+    overturned the assumption behind the other route. The take was not missing
+    mid-phrase pauses: it had 22.5 a minute against the reference's 23.3, at
+    0.120s against 0.138s. Practically identical. What it did not have was any
+    SPREAD. Its full stops rested 0.240s where the reference rests 0.498s, so a
+    sentence ending sounded barely different from a comma — a ratio of 1.5x
+    against the reference's 2.4x. Uniformly short pauses are what reads as
+    machine-paced, not absent ones.
+
+    So only the slots that are actually wrong are touched, and each pause is
+    SCALED rather than set. Scaling by the ratio of the medians preserves the
+    narrator's own relative dynamics — a pause they leaned on stays longer than
+    one they did not — while expanding a compressed range to the reference's.
+    Setting every pause into the reference band instead would replace one kind
+    of uniformity with another, and on the measured take it inflated the
+    runtime by 16.7% instead of the 7% the silence ratio actually calls for.
+
+    Only lengthening is done, never shortening. Removing audio to shorten a
+    pause risks clipping speech, and a take with this failure mode has nothing
+    too long in it anyway.
+    """
+    import statistics
+    import styleprint as sp
+    from v2_profile import REFERENCE
+
+    ref = REFERENCE[target]["pause_s"]
+    words, duration, silences = sp.load_audio(audio_path, model_size=model_size)
+    pauses = sp.pauses_from_silence(words, silences, floor=floor)
+
+    slot_key = {"sentence": "sentence", "clause": "clause", "none": "midphrase"}
+    factors, mine = {}, {}
+    for slot in slots:
+        durs = [p.dur for p in pauses if p.slot == slot]
+        if not durs:
+            continue
+        med = statistics.median(durs)
+        mine[slot] = round(med, 3)
+        factors[slot] = max(1.0, ref[slot_key[slot]]["median"] / med)
+
+    out = []
+    for p in pauses:
+        f = factors.get(p.slot)
+        if not f or f <= 1.0:
+            continue
+        want = min(p.dur * f, cap)
+        need = round(want - p.dur, 3)
+        if need < 0.030:
+            continue
+        out.append(Insertion(at_s=p.t + p.dur / 2, seconds=need,
+                             after_word=p.before.split()[-1] if p.before else "",
+                             before_word=p.after.split()[0] if p.after else "",
+                             site=f"stretch:{p.slot} {p.dur:.2f}->{want:.2f}"))
+    stats = {"duration_s": duration, "n_words": len(words),
+             "n_pauses": len(pauses), "n_to_stretch": len(out),
+             "added_s": round(sum(i.seconds for i in out), 2),
+             "slots": list(slots),
+             "median_before": mine,
+             "scale_factors": {k: round(v, 2) for k, v in factors.items()}}
+    return out, stats
+
+
+def _jitter_s(key: str, lo: float, hi: float) -> float:
+    """Stable pseudo-random value in [lo, hi] — same input, same output.
+
+    The references vary their pause lengths; setting every full stop to exactly
+    the median would swap one kind of uniformity for another.
+    """
+    import hashlib
+    h = int(hashlib.sha256(key.encode("utf-8")).hexdigest()[:8], 16)
+    return round(lo + (hi - lo) * (h / 0xFFFFFFFF), 3)
 
 
 def _find_boundary(seq, cursor, left, right):
@@ -238,17 +335,27 @@ def plan_insertions(words, plans) -> list[Insertion]:
 
 
 def apply_insertions(in_path, out_path, insertions, model_size="base.en",
-                     verify=True) -> dict:
+                     verify=True, increments=False) -> dict:
+    """Write the insertions into the audio.
+
+    ``increments`` says what ``Insertion.seconds`` means. The ADD route plans a
+    rest's TOTAL length from the script, knowing nothing about the audio, so
+    whatever gap the take already has there must be subtracted before writing.
+    The STRETCH route measures the take first and already carries the shortfall,
+    so subtracting again would deduct the existing gap twice — which it did, and
+    a planned 56.9s of lengthening came out as 1.7s.
+    """
     import numpy as np
     import soundfile as sf
 
     y, sr = _load(in_path)
-    tone_src = y
+    tone_src = _room_tone_template(y, sr)
+    env = _envelope_db(y, sr)
     fade = max(int(FADE_S * sr), 1)
 
-    # Build back-to-front so earlier offsets stay valid as the array grows.
     pieces = []
     last = 0
+    out_cursor = 0          # running length of `pieces`, so out_start stays O(1)
     applied = []
     skipped = []
     for ins in sorted(insertions, key=lambda x: x.at_s):
@@ -264,8 +371,12 @@ def apply_insertions(in_path, out_path, insertions, model_size="base.en",
         # target of 10.4. So the gap already present is measured and only the
         # shortfall is added. Where the take already rests long enough, nothing
         # is inserted at all.
-        have = _existing_gap(y, sr, cut)
-        need = round(max(0.0, ins.seconds - have), 3)
+        if increments:
+            have = 0.0                      # the plan is already the shortfall
+            need = round(ins.seconds, 3)
+        else:
+            have = _existing_gap(y, sr, cut, env=env)
+            need = round(max(0.0, ins.seconds - have), 3)
         if need < 0.030:
             skipped.append({"at_s": round(cut, 3), "already_rests_s": round(have, 3),
                             "planned_s": ins.seconds, "after": ins.after_word})
@@ -276,6 +387,7 @@ def apply_insertions(in_path, out_path, insertions, model_size="base.en",
             head[-fade:] *= np.linspace(1.0, 0.0, fade)
         gap = _room_tone(tone_src, sr, need)
         pieces.append(head)
+        out_cursor += len(head)
         pieces.append(gap)
         applied.append({"at_s": round(cut, 3), "seconds": need,
                         "planned_s": ins.seconds,
@@ -284,9 +396,10 @@ def apply_insertions(in_path, out_path, insertions, model_size="base.en",
                         "site": ins.site,
                         # where the inserted tone sits in the OUTPUT, which is
                         # what the sample-level check needs to skip over
-                        "out_start": int(sum(len(p) for p in pieces[:-1])),
+                        "out_start": int(out_cursor),
                         "out_len": int(len(gap)),
                         "in_at": idx})
+        out_cursor += len(gap)
         last = idx
     tail = y[last:].copy()
     if len(tail) > fade:
@@ -366,8 +479,19 @@ def _verify_insertion_only(src, out, applied, fade) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("audio", help="the rendered voiceover")
-    ap.add_argument("--plan", required=True,
-                    help="rest plan JSON from v2_style.py --emit-plan")
+    ap.add_argument("--plan",
+                    help="rest plan JSON from v2_style.py --emit-plan "
+                         "(the ADD route: new rests where a script wants them)")
+    ap.add_argument("--stretch", action="store_true",
+                    help="the STRETCH route: leave pause placement alone and "
+                         "open the pauses the take already has out to the "
+                         "reference lengths. Needs no plan and no script.")
+    ap.add_argument("--target", default="serious_history",
+                    help="which reference to stretch toward")
+    ap.add_argument("--slots", default="sentence,clause",
+                    help="which pause classes to open up. Mid-phrase is "
+                         "excluded by default because the measured take "
+                         "already matched the reference there.")
     ap.add_argument("--out", required=True)
     ap.add_argument("--asr-model", default="base.en")
     ap.add_argument("--no-deficit-budget", action="store_true",
@@ -378,6 +502,34 @@ def main(argv=None) -> int:
     ap.add_argument("--report", help="write the edit report here")
     a = ap.parse_args(argv)
 
+    if a.stretch:
+        ins, stats = plan_stretch(a.audio, target=a.target, model_size=a.asr_model,
+                                  slots=tuple(a.slots.split(",")))
+        print(f"{stats['n_words']} words, {stats['n_pauses']} pauses found")
+        for k, f in stats["scale_factors"].items():
+            print(f"  {k}: median {stats['median_before'][k]}s, scaling x{f}")
+        print(f"{stats['n_to_stretch']} pauses to lengthen")
+        print(f"would add {stats['added_s']}s "
+              f"({stats['added_s'] / stats['duration_s']:+.1%} runtime)")
+        if not ins:
+            print("every pause already reaches the reference — nothing to do")
+            return 0
+        res = apply_insertions(a.audio, a.out, ins, a.asr_model,
+                               verify=not a.no_verify, increments=True)
+        print(f"stretched {res['n_inserted']} pauses, {res['added_s']:.2f}s added, "
+              f"{res['credits_spent']} credits spent")
+        print(f"{res['duration_before_s']:.2f}s -> {res['duration_after_s']:.2f}s")
+        if "verified" in res:
+            print(f"verify: {res['reason']}")
+            if not res["verified"]:
+                print("AUDIO ALTERED BEYOND THE GAPS — do not ship", file=sys.stderr)
+                return 2
+        if a.report:
+            Path(a.report).write_text(json.dumps(res, indent=2), encoding="utf-8")
+        return 0
+
+    if not a.plan:
+        ap.error("pass --plan for the add route, or --stretch for the stretch route")
     plan_doc = json.loads(Path(a.plan).read_text(encoding="utf-8"))
     plans = plan_doc["sentences"]
     words = _align(a.audio, a.asr_model)
