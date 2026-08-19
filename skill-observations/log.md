@@ -386,3 +386,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** In any skill that pins a vendor model, keep an explicit list of "capabilities this pipeline depends on" next to the model id, so a proposed model change is evaluated against that list rather than against the model's headline quality. Treat repairs whose stated cause disappears as unvalidated until re-measured, not as harmless leftovers.
 
 **Principle:** Workarounds encode assumptions about the platform, not just about the output. Record what a pipeline depends on, not only what it produces — otherwise an upgrade removes a foundation while the structure built on it keeps running.
+
+### Observation 26: A fitted parameter needs a sweep, not a choice
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Deriving pause statistics for two reference narrations from caption word onsets, where pause length is inferred against a fitted expected-word-duration model
+**Skill:** New skill candidate: reference-style fingerprinting (also applies to analyse)
+**Type:** open-source
+**Phase/Area:** Quantitative measurement / method reporting
+
+**Issue:** Pause durations were derived by subtracting a modelled word duration from the inter-onset interval. The model has a free parameter (which quantile of observed intervals counts as "no pause"). The first run used an arbitrary value and produced an articulation rate of 265 wpm — implausibly high, which is the only reason the arbitrariness was noticed at all. Sweeping the parameter from 0.25 to 0.75 showed that absolute pause lengths moved substantially (sentence pause 0.56s to 0.42s) while the RATIOS between pause types barely moved and the mid-phrase median held at ~0.14s throughout. The invariant findings were the trustworthy ones; a single-value run would have presented the sensitive ones with identical confidence.
+
+**Suggested improvement:** Where a reported measurement depends on a fitted or chosen parameter, require a sensitivity sweep before any number is published, and split the deliverable's findings into INVARIANT (stable across the sweep) and PARAMETER-SENSITIVE (state the range and the chosen value with its justification). Ship the sweep table as evidence. Pick the operating point by an external plausibility anchor, not by whichever value was tried first.
+
+**Principle:** A number derived through a free parameter is a family of numbers. Report which conclusions survive the whole family and which depend on where in it you stood — otherwise the arbitrary choice inherits the authority of the measurement.
+
+### Observation 27: Mine a corpus for rules with lift, not counts
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Finding which syntactic positions two narrators favour for unpunctuated mid-phrase pauses, to turn "pause mid-sentence" into an applicable rule
+**Skill:** New skill candidate: reference-style fingerprinting (also applies to analyse)
+**Type:** open-source
+**Phase/Area:** Pattern extraction from a measured corpus
+
+**Issue:** The raw counts said the narrators pause most often before verbs and after nouns — which is nearly content-free, because verbs and nouns are simply the most common things to be adjacent to. Normalising each position's pause rate by that position's share of all available boundaries (lift against a base rate) produced a completely different and genuinely actionable ranking: strong preference for pausing before a coordinating conjunction and after a proper noun, strong AVOIDANCE of pausing between a determiner and its noun or after a preposition. The avoidance list turned out to matter as much as the preference list, and raw counts surfaced neither.
+
+**Suggested improvement:** In any skill that extracts behavioural rules from a measured corpus, mandate normalisation against the base rate of opportunity, and require the deliverable to report both the favoured AND the avoided positions. Add a cross-source agreement column when more than one exemplar exists, and only promote a rule when the sources agree in direction — sort candidate rules by the weaker of the two lifts so a rule strong in one source and absent in the other cannot lead the table.
+
+**Principle:** Frequency measures the corpus; lift measures the behaviour. A rule extracted from raw counts mostly rediscovers what is common, and the negative rules — where the subject reliably does NOT act — never appear at all.
+
+### Observation 28: The observation log paid off mid-session, across agents
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** A subagent logged an observation about transcript artifacts while the main agent was independently building a measurement tool over the same kind of input
+**Skill:** task-observer
+**Type:** open-source
+**Phase/Area:** Session Start Protocol / Acting on Observations
+
+**Issue:** A subagent logged that auto-caption artifacts ([music], ">>" speaker markers) silently corrupt linguistic metrics. The main agent read that entry while its own tool was mid-build, checked its own input, and found the same defect live: non-speech tokens were being counted as words and, worse, the silence around a [music] tag was being reported as the narrator's longest dramatic hold at 1.77s — a music passage misread as performance. After stripping, the true maximum was 0.80s. The fix landed before any conclusion was drawn from the bad number. This is the CLAUDE.md instruction ("check the log for OPEN observations tagged to that skill") actually working, but it worked by luck of timing: the entry happened to be read during a routine numbering pre-check, not because anything required a re-read.
+
+**Suggested improvement:** The Session Start Protocol scans OPEN observations once, at session start, which cannot see entries written later by parallel agents in the same session. Add a re-scan at the existing deliverable-event flush: since the log is already being re-read there for the numbering discipline, also diff for entries added since the last scan and check whether any apply to work currently in flight. The read is already happening; only the checking is missing.
+
+**Principle:** In a session with parallel agents, the observation log is a live channel between them, not just a record for later review. Anything that re-reads a shared log for one purpose should also check what changed for its own sake — the cheapest time to catch a defect is while a peer is describing it.
