@@ -296,3 +296,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: A metered analysis tool ran out of quota mid-plan, and the sampling order decided what got lost
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Prosody/delivery analysis of two YouTube narration channels via the NexLev `watch_youtube_video_and_ask` multimodal tool, budgeted at 6 calls (3 segments x 2 videos).
+**Skill:** analyse
+**Type:** open-source
+**Phase/Area:** Sampling plan / external-tool budgeting
+
+**Issue:** The task specified a 6-call sampling plan against an expensive metered tool. The tool's actual quota was 5 calls per 24h, and this was not discoverable before the 5th call succeeded and the 6th returned RATE LIMIT EXCEEDED. Because the calls were interleaved A1, B1, A2, B2, A3, B3, the truncation fell entirely on one subject: video A got all three segments, video B got only two, so the comparison is asymmetric on exactly the dimension (late-video / outro delivery) where the two were most likely to differ. Had the order been chosen with truncation in mind, the loss would have been an equally-weighted segment rather than a whole leg of the comparison.
+
+**Suggested improvement:** In the analyse skill's multi-video workflow, add a pre-flight step: before committing to an N-call plan against a metered tool, state the plan's call count and probe or assume the smallest plausible quota; and order calls so that any prefix of the sequence is a BALANCED sample. Concretely, for a k-subject comparison, complete round 1 across all subjects, then round 2 across all subjects, and place the least load-bearing round last — and if segments differ in value, order within each round by value. Also: when a plan is truncated, say so explicitly in the deliverable rather than presenting an asymmetric comparison as complete.
+
+**Principle:** When work depends on a metered external resource whose limit you cannot see, sequence the calls so that every prefix of the sequence is a usable, balanced result — not just the full sequence. A plan that only produces a valid answer if it runs to completion converts a quota error into a wasted budget.
+
+### Observation 21: The multimodal model was used as a measuring instrument, and it contradicted itself between segments
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Asking a multimodal video model for fine-grained acoustic measurements (pause durations in seconds, WPM, breath placement, emphasis mechanism) across separate clips of the same narration.
+**Skill:** analyse
+**Type:** open-source
+**Phase/Area:** Evidence quality / claim confidence in the per-video breakdown
+
+**Issue:** The model returned confident, precisely-numbered answers ("~1.2s dramatic hold", "~155 WPM", "inhales preserved at 30-40% of speech volume") — but two clips of the SAME narrator, same mix, produced directly contradictory findings: one segment reported audible inhales deliberately left in, another reported sentence starts that were "unnaturally clean" with breaths "likely gated or manually removed". Both were stated without hedging despite the prompt explicitly inviting "uncertain". Some cited evidence was also unverifiable at the word level (an emphasised word that does not appear to be a real word in the script). The precision of the output format concealed the instability of the underlying judgement.
+
+**Suggested improvement:** In the analyse skill, when the model is asked for QUANTITATIVE acoustic/visual measurements rather than descriptive content, require corroboration before a number is reported as fact: sample overlapping or repeated windows, and in the deliverable mark each claim as CORROBORATED (agrees across samples), SINGLE-SOURCE (one sample only), or CONTESTED (samples disagree). Never launder a single model estimate into a table cell that looks measured. Also instruct the prompt to force a confidence tag per claim, since a generic "say uncertain if unsure" instruction demonstrably does not produce hedging.
+
+**Principle:** A generative model asked for a measurement returns the FORMAT of a measurement, not a measurement. Confidence has to come from agreement across independent samples, not from the precision of the number returned — and a deliverable built on one pass must label its claims as single-source rather than presenting them in the same register as verified facts.
+
+### Observation 22: ASR transcript artifacts silently corrupt linguistic metrics
+
+**Status:** OPEN
+**Date:** 2026-08-19
+**Session context:** Quantitative script-writing analysis of two YouTube narration videos using spaCy over MCP-fetched transcripts
+**Skill:** analyse
+**Type:** open-source
+**Phase/Area:** Transcript preparation / metrics computation
+
+**Issue:** Auto-generated YouTube transcripts contain non-speech tokens ([music], [screaming], [bell]) and speaker-change markers (>>) inline with narration. Fed straight into word counts, sentence segmentation and "top sentence openers", these produced false results: "[music]" ranked 5th among sentence-opening words in one video (12 occurrences), inflating word totals and creating phantom sentence boundaries. Separately, a naive contraction regex counted possessive 's ("Cromwell's", "Germany's") as contractions, overstating the contraction rate by ~2x. Both errors are invisible unless the raw token inventory is inspected before analysis.
+
+**Suggested improvement:** Add a mandatory transcript-hygiene step before any quantitative pass: enumerate all bracketed tags and non-word markers in the raw transcript (grep -o '\[[^]]*\]' | sort | uniq -c), strip them, and record what was stripped in the deliverable's method note. For contractions, use POS/dependency evidence (an apostrophe-s token tagged AUX, not PART/case) rather than surface regex. State ASR-punctuation dependence as an explicit caveat whenever sentence segmentation drives the headline numbers.
+
+**Principle:** Machine-generated source text carries channel artifacts that look like content to a parser. Before measuring anything, inventory the token space and decide explicitly what is speech and what is annotation — a metric computed over uninspected input measures the pipeline as much as the subject.
