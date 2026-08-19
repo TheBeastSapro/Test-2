@@ -1,0 +1,330 @@
+"""Insert the V2 mid-phrase rests into rendered audio, for nothing.
+
+The measured difference between the reference narrators and a TTS read is that
+they stop about once every ten words at places the punctuation does not mark.
+The obvious way to ask for that is a ``<break>`` tag in the text — but a break
+tag is billed like any other character, and at the measured rate it inflates a
+script by 36-43%. On a 4,500-word script that is roughly 9,000 extra characters
+bought purely to describe silence.
+
+Silence does not need to be bought. A rest is a timing edit, and this pipeline
+already does timing edits after the render — which is also the standing rule
+here: repair first, generate last, because a gap is editable for free and only
+a genuinely bad reading justifies credits.
+
+So this module takes the delivered audio and opens the gaps itself:
+
+  1. align the audio to the script with word-level ASR
+  2. for each rest the planner chose, find the word boundary it belongs to
+  3. slide the cut to the quietest point within a short window, so the splice
+     lands between the words rather than inside one
+  4. insert room tone of the planned length — never digital silence, which
+     reads as a dropout in the middle of speech
+  5. prove, sample for sample, that nothing but silence was added
+
+Step 4 is the one that is easy to get wrong. A decoded MP3 has no exact zeros
+in it; its quiet passages sit around -51 dBFS of codec noise. Splicing true
+digital silence into that floor is audible as a hole. The tone inserted here is
+sampled from the file's own existing pauses, so the noise floor continues
+across the new gap.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+FADE_S = 0.003          # matches the 3 ms edge fade the section splicer uses
+SEARCH_S = 0.080        # how far either side of the ASR boundary to hunt for quiet
+
+
+@dataclass
+class Insertion:
+    at_s: float
+    seconds: float
+    after_word: str
+    before_word: str
+    site: str
+
+
+def _load(path):
+    import librosa
+    y, sr = librosa.load(str(path), sr=None, mono=True)
+    return y, sr
+
+
+def _align(path, model_size="base.en"):
+    from faster_whisper import WhisperModel
+    # float32 deliberately: at int8 the read-check hallucinated dropped words,
+    # and this module's whole safety check is "did a word disappear".
+    model = WhisperModel(model_size, device="cpu", compute_type="float32")
+    segments, _ = model.transcribe(str(path), word_timestamps=True,
+                                   vad_filter=False, beam_size=5)
+    words = []
+    for seg in segments:
+        for w in (seg.words or []):
+            words.append({"text": w.word.strip(), "start": w.start, "end": w.end})
+    return words
+
+
+def _norm(s: str) -> str:
+    return "".join(ch for ch in s.lower() if ch.isalnum())
+
+
+def _quietest_point(y, sr, centre_s: float, search_s: float = SEARCH_S) -> float:
+    """Slide the cut to the lowest-energy sample near the boundary.
+
+    ASR boundaries land inside consonants often enough that cutting at the
+    reported time alone produces clicks. The minimum of a short RMS window is a
+    far better guess at where the words actually separate.
+    """
+    import numpy as np
+    lo = max(0, int((centre_s - search_s) * sr))
+    hi = min(len(y), int((centre_s + search_s) * sr))
+    if hi - lo < 64:
+        return centre_s
+    win = max(int(0.005 * sr), 16)
+    seg = y[lo:hi].astype("float64")
+    energy = np.convolve(seg * seg, np.ones(win) / win, mode="same")
+    return (lo + int(np.argmin(energy))) / sr
+
+
+def _room_tone(y, sr, seconds: float):
+    """A stretch of the file's own quietest audio, tiled to the length needed.
+
+    Digital silence would be wrong: the surrounding material has a noise floor,
+    and a gap that drops below it is heard as a dropout rather than a pause.
+    """
+    import numpy as np
+    win = max(int(0.050 * sr), 64)
+    if len(y) < win * 4:
+        return np.zeros(int(seconds * sr), dtype=y.dtype)
+    # RMS over non-overlapping windows; take the quietest that is not the very
+    # start or end of the file, where a fade-in can masquerade as room tone.
+    n = len(y) // win
+    trimmed = y[:n * win].reshape(n, win)
+    rms = np.sqrt((trimmed.astype("float64") ** 2).mean(axis=1))
+    inner = slice(1, max(2, n - 1))
+    idx = int(np.argmin(rms[inner])) + 1
+    tone = trimmed[idx]
+    need = int(seconds * sr)
+    if need <= 0:
+        return np.zeros(0, dtype=y.dtype)
+    reps = int(need // len(tone)) + 1
+    return np.tile(tone, reps)[:need].astype(y.dtype)
+
+
+def _find_boundary(seq, cursor, left, right):
+    """Locate the word pair a rest sits between, degrading gracefully.
+
+    The script and the ASR sequence never line up exactly — numerals get
+    spelled out, and on any difficult passage the transcriber simply mishears.
+    An exact pair match is tried first because it is unambiguous; failing that
+    the left word alone still identifies the boundary; failing that a close
+    spelling does. Anything less certain than that is reported unmatched rather
+    than guessed at, because a rest dropped in the wrong place is worse than a
+    rest not dropped at all.
+    """
+    import difflib
+
+    for j in range(cursor, len(seq) - 1):
+        if seq[j] == left and (not right or seq[j + 1] == right):
+            return j
+    for j in range(cursor, len(seq) - 1):
+        if seq[j] == left:
+            return j
+    best, best_score = None, 0.0
+    for j in range(cursor, min(len(seq) - 1, cursor + 60)):
+        score = difflib.SequenceMatcher(None, seq[j], left).ratio()
+        if right and j + 1 < len(seq):
+            score = (score + difflib.SequenceMatcher(None, seq[j + 1], right).ratio()) / 2
+        if score > best_score:
+            best, best_score = j, score
+    return best if best_score >= 0.80 else None
+
+
+def plan_insertions(words, plans) -> list[Insertion]:
+    """Match each planned rest to a boundary in the delivered audio.
+
+    Matching is on the word pair either side of the rest rather than on an
+    index, because the ASR sequence and the script never line up exactly —
+    numerals get spelled out, and the odd word is misheard.
+    """
+    seq = [_norm(w["text"]) for w in words]
+    out: list[Insertion] = []
+    unmatched: list[str] = []
+    cursor = 0
+    for plan in plans:
+        toks = [t for t in plan["tokens"]]
+        for rest in plan["rests"]:
+            i = rest["index"]
+            left = _norm(toks[i]) if i < len(toks) else ""
+            right = _norm(toks[i + 1]) if i + 1 < len(toks) else ""
+            if not left:
+                continue
+            found = _find_boundary(seq, cursor, left, right)
+            if found is None:
+                unmatched.append(f"{' '.join(toks[max(0, i - 2): i + 1])} | "
+                                 f"{' '.join(toks[i + 1: i + 3])}")
+                continue
+            cursor = found + 1
+            out.append(Insertion(
+                at_s=(words[found]["end"] + words[found + 1]["start"]) / 2,
+                seconds=rest["seconds"], after_word=words[found]["text"],
+                before_word=words[found + 1]["text"], site=rest.get("site", "")))
+    plan_insertions.unmatched = unmatched
+    return out
+
+
+def apply_insertions(in_path, out_path, insertions, model_size="base.en",
+                     verify=True) -> dict:
+    import numpy as np
+    import soundfile as sf
+
+    y, sr = _load(in_path)
+    tone_src = y
+    fade = max(int(FADE_S * sr), 1)
+
+    # Build back-to-front so earlier offsets stay valid as the array grows.
+    pieces = []
+    last = 0
+    applied = []
+    for ins in sorted(insertions, key=lambda x: x.at_s):
+        cut = _quietest_point(y, sr, ins.at_s)
+        idx = int(cut * sr)
+        if idx <= last:
+            continue
+        head = y[last:idx].copy()
+        if len(head) > fade:
+            head[-fade:] *= np.linspace(1.0, 0.0, fade)
+        gap = _room_tone(tone_src, sr, ins.seconds)
+        pieces.append(head)
+        pieces.append(gap)
+        applied.append({"at_s": round(cut, 3), "seconds": ins.seconds,
+                        "after": ins.after_word, "before": ins.before_word,
+                        "site": ins.site,
+                        # where the inserted tone sits in the OUTPUT, which is
+                        # what the sample-level check needs to skip over
+                        "out_start": int(sum(len(p) for p in pieces[:-1])),
+                        "out_len": int(len(gap)),
+                        "in_at": idx})
+        last = idx
+    tail = y[last:].copy()
+    if len(tail) > fade:
+        tail[:fade] *= np.linspace(0.0, 1.0, fade)
+    pieces.append(tail)
+
+    out = np.concatenate(pieces) if pieces else y
+    sf.write(str(out_path), out, sr)
+
+    result = {
+        "input": str(in_path), "output": str(out_path),
+        "sample_rate": sr,
+        "duration_before_s": round(len(y) / sr, 3),
+        "duration_after_s": round(len(out) / sr, 3),
+        "added_s": round((len(out) - len(y)) / sr, 3),
+        "insertions": applied,
+        "n_inserted": len(applied),
+        "credits_spent": 0,
+    }
+
+    # The rule is: confirm after every destructive edit that no word was lost.
+    # Re-transcribing is the wrong instrument for THIS edit. It was tried first
+    # and reported a failure on audio that was provably intact: ASR re-segments
+    # unstable material differently between two passes, so "army" came back as
+    # "arm"+"we" and the word count rose by two. That is the transcriber moving,
+    # not the audio.
+    #
+    # An insertion can be checked far more strictly than that, and without any
+    # model in the loop: every original sample must still be present, in order.
+    # Delete the inserted spans back out of the output and the input must
+    # reappear exactly — apart from the few milliseconds at each splice where
+    # the edge fade deliberately touched it. A word cannot go missing from
+    # audio that is sample-for-sample the original.
+    if verify:
+        result.update(_verify_insertion_only(y, out, applied, fade))
+    return result
+
+
+def _verify_insertion_only(src, out, applied, fade) -> dict:
+    """Assert the output is the input with silence inserted, and nothing else."""
+    import numpy as np
+
+    expected = len(src) + sum(a["out_len"] for a in applied)
+    if len(out) != expected:
+        return {"verified": False,
+                "reason": f"length {len(out)} != input + inserted ({expected})"}
+
+    keep = np.ones(len(out), dtype=bool)
+    for a in applied:
+        keep[a["out_start"]: a["out_start"] + a["out_len"]] = False
+    recovered = out[keep]
+    if len(recovered) != len(src):
+        return {"verified": False,
+                "reason": f"recovered {len(recovered)} samples, input has {len(src)}"}
+
+    diff = np.abs(recovered.astype("float64") - src.astype("float64"))
+    # Everything must match exactly except within the edge fades, which are an
+    # intended modification of the original samples.
+    tolerated = np.zeros(len(src), dtype=bool)
+    for a in applied:
+        cut = a["in_at"]
+        tolerated[max(0, cut - fade): min(len(src), cut + fade)] = True
+    offenders = int(np.count_nonzero((diff > 1e-6) & ~tolerated))
+    return {
+        "verified": offenders == 0,
+        "samples_compared": int(len(src)),
+        "samples_altered_outside_fades": offenders,
+        "fade_samples_per_splice": int(fade),
+        "reason": ("every original sample present and unaltered outside the "
+                   "3 ms splice fades" if offenders == 0
+                   else f"{offenders} samples changed outside the fade windows"),
+    }
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("audio", help="the rendered voiceover")
+    ap.add_argument("--plan", required=True,
+                    help="rest plan JSON from v2_style.py --emit-plan")
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--asr-model", default="base.en")
+    ap.add_argument("--no-verify", action="store_true",
+                    help="skip the post-edit transcript check (not advised)")
+    ap.add_argument("--report", help="write the edit report here")
+    a = ap.parse_args(argv)
+
+    plans = json.loads(Path(a.plan).read_text(encoding="utf-8"))["sentences"]
+    words = _align(a.audio, a.asr_model)
+    ins = plan_insertions(words, plans)
+    wanted = sum(len(p["rests"]) for p in plans)
+    missed = getattr(plan_insertions, "unmatched", [])
+    print(f"plan has {wanted} rests; matched {len(ins)} in the audio")
+    for m in missed:
+        print(f"  unmatched (left as-is): {m}")
+    if not ins:
+        print("nothing to insert", file=sys.stderr)
+        return 1
+
+    res = apply_insertions(a.audio, a.out, ins, a.asr_model, verify=not a.no_verify)
+    print(f"inserted {res['n_inserted']} rests, "
+          f"{res['added_s']:.2f}s added, {res['credits_spent']} credits spent")
+    print(f"{res['duration_before_s']:.2f}s -> {res['duration_after_s']:.2f}s")
+    if "verified" in res:
+        print(f"verify: {res['reason']}")
+        if not res["verified"]:
+            print("AUDIO ALTERED BEYOND THE INSERTED GAPS — do not ship this file",
+                  file=sys.stderr)
+            if a.report:
+                Path(a.report).write_text(json.dumps(res, indent=2), encoding="utf-8")
+            return 2
+    if a.report:
+        Path(a.report).write_text(json.dumps(res, indent=2), encoding="utf-8")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
