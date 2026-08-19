@@ -48,6 +48,7 @@ class Insertion:
     after_word: str
     before_word: str
     site: str
+    score: float = 0.0       # the planner's measured lift for this site
 
 
 def _load(path):
@@ -90,6 +91,31 @@ def _quietest_point(y, sr, centre_s: float, search_s: float = SEARCH_S) -> float
     seg = y[lo:hi].astype("float64")
     energy = np.convolve(seg * seg, np.ones(win) / win, mode="same")
     return (lo + int(np.argmin(energy))) / sr
+
+
+def _existing_gap(y, sr, centre_s: float, max_look: float = 0.60) -> float:
+    """How much silence the take already has at this boundary.
+
+    Measured the same way styleprint measures a pause: frames below an adaptive
+    threshold set relative to the file's own speech level, so it does not need
+    a fixed dBFS assumption that a quiet render would break.
+    """
+    import numpy as np
+    hop = max(int(0.005 * sr), 1)
+    frame = max(int(0.020 * sr), 32)
+    rms_all = np.sqrt(np.convolve(y.astype("float64") ** 2,
+                                  np.ones(frame) / frame, mode="same"))
+    db_all = 20 * np.log10(np.maximum(rms_all, 1e-10))
+    thresh = float(np.percentile(db_all, 85)) - 18.0
+
+    c = int(centre_s * sr)
+    lo, hi = c, c
+    limit = int(max_look * sr)
+    while lo > max(0, c - limit) and db_all[lo] < thresh:
+        lo -= hop
+    while hi < min(len(y) - 1, c + limit) and db_all[hi] < thresh:
+        hi += hop
+    return max(0.0, (hi - lo) / sr) if db_all[c] < thresh else 0.0
 
 
 def _room_tone(y, sr, seconds: float):
@@ -146,6 +172,37 @@ def _find_boundary(seq, cursor, left, right):
     return best if best_score >= 0.80 else None
 
 
+def count_existing_rests(audio_path, words, model_size="base.en") -> int:
+    """How many mid-phrase rests the take already has, anywhere in it.
+
+    A render is never perfectly even — it rests a little on its own. Those
+    rests count toward the target just as much as inserted ones, and ignoring
+    them is what made the first test overshoot to one rest every 3.6 words
+    against a target of 10.4. The budget has to be a deficit, not a quota.
+    """
+    import styleprint as sp
+    y, sr = _load(audio_path)
+    _, _, silences = sp.load_audio(audio_path, model_size=model_size)
+    ends = {}
+    for w in words:
+        ends[round(w["end"], 2)] = w["text"]
+    n = 0
+    for a, b in silences:
+        if b - a < 0.080:
+            continue
+        # a rest is "mid-phrase" when the word before it does not end a
+        # sentence or clause — the same slot definition styleprint uses
+        prev = None
+        for w in words:
+            if w["end"] <= a + 0.05:
+                prev = w
+            else:
+                break
+        if prev and not prev["text"].rstrip()[-1:] in ".!?,;:":
+            n += 1
+    return n
+
+
 def plan_insertions(words, plans) -> list[Insertion]:
     """Match each planned rest to a boundary in the delivered audio.
 
@@ -174,7 +231,8 @@ def plan_insertions(words, plans) -> list[Insertion]:
             out.append(Insertion(
                 at_s=(words[found]["end"] + words[found + 1]["start"]) / 2,
                 seconds=rest["seconds"], after_word=words[found]["text"],
-                before_word=words[found + 1]["text"], site=rest.get("site", "")))
+                before_word=words[found + 1]["text"], site=rest.get("site", ""),
+                score=rest.get("score", 0.0)))
     plan_insertions.unmatched = unmatched
     return out
 
@@ -192,18 +250,36 @@ def apply_insertions(in_path, out_path, insertions, model_size="base.en",
     pieces = []
     last = 0
     applied = []
+    skipped = []
     for ins in sorted(insertions, key=lambda x: x.at_s):
         cut = _quietest_point(y, sr, ins.at_s)
         idx = int(cut * sr)
         if idx <= last:
             continue
+
+        # The planner works from the script and assumes the take rests nowhere.
+        # Real renders do rest a little on their own, and stacking a full
+        # planned gap on top of an existing one overshoots badly — on the test
+        # render this drove the rate to one rest every 3.6 words against a
+        # target of 10.4. So the gap already present is measured and only the
+        # shortfall is added. Where the take already rests long enough, nothing
+        # is inserted at all.
+        have = _existing_gap(y, sr, cut)
+        need = round(max(0.0, ins.seconds - have), 3)
+        if need < 0.030:
+            skipped.append({"at_s": round(cut, 3), "already_rests_s": round(have, 3),
+                            "planned_s": ins.seconds, "after": ins.after_word})
+            continue
+
         head = y[last:idx].copy()
         if len(head) > fade:
             head[-fade:] *= np.linspace(1.0, 0.0, fade)
-        gap = _room_tone(tone_src, sr, ins.seconds)
+        gap = _room_tone(tone_src, sr, need)
         pieces.append(head)
         pieces.append(gap)
-        applied.append({"at_s": round(cut, 3), "seconds": ins.seconds,
+        applied.append({"at_s": round(cut, 3), "seconds": need,
+                        "planned_s": ins.seconds,
+                        "already_rested_s": round(have, 3),
                         "after": ins.after_word, "before": ins.before_word,
                         "site": ins.site,
                         # where the inserted tone sits in the OUTPUT, which is
@@ -228,6 +304,8 @@ def apply_insertions(in_path, out_path, insertions, model_size="base.en",
         "added_s": round((len(out) - len(y)) / sr, 3),
         "insertions": applied,
         "n_inserted": len(applied),
+        "n_skipped_already_resting": len(skipped),
+        "skipped": skipped,
         "credits_spent": 0,
     }
 
@@ -292,12 +370,16 @@ def main(argv=None) -> int:
                     help="rest plan JSON from v2_style.py --emit-plan")
     ap.add_argument("--out", required=True)
     ap.add_argument("--asr-model", default="base.en")
+    ap.add_argument("--no-deficit-budget", action="store_true",
+                    help="insert every planned rest, ignoring the ones the take "
+                         "already has (overshoots — for diagnosis only)")
     ap.add_argument("--no-verify", action="store_true",
                     help="skip the post-edit transcript check (not advised)")
     ap.add_argument("--report", help="write the edit report here")
     a = ap.parse_args(argv)
 
-    plans = json.loads(Path(a.plan).read_text(encoding="utf-8"))["sentences"]
+    plan_doc = json.loads(Path(a.plan).read_text(encoding="utf-8"))
+    plans = plan_doc["sentences"]
     words = _align(a.audio, a.asr_model)
     ins = plan_insertions(words, plans)
     wanted = sum(len(p["rests"]) for p in plans)
@@ -309,7 +391,27 @@ def main(argv=None) -> int:
         print("nothing to insert", file=sys.stderr)
         return 1
 
+    if not a.no_deficit_budget:
+        from v2_profile import REFERENCE
+        rate = REFERENCE[plan_doc.get("target", "agent_flappy")]["words_per_midphrase_pause"]
+        have = count_existing_rests(a.audio, words, a.asr_model)
+        want = int(round(len(words) / rate))
+        budget = max(0, want - have)
+        print(f"take already rests mid-phrase {have} times; target is ~{want} "
+              f"for {len(words)} words, so the deficit is {budget}")
+        if len(ins) > budget:
+            ins = sorted(ins, key=lambda x: -x.score)[:budget]
+            ins.sort(key=lambda x: x.at_s)
+            print(f"  keeping the {len(ins)} highest-scoring sites")
+
+    if not ins:
+        print("the take already rests enough — nothing to insert")
+        return 0
+
     res = apply_insertions(a.audio, a.out, ins, a.asr_model, verify=not a.no_verify)
+    if res.get("n_skipped_already_resting"):
+        print(f"skipped {res['n_skipped_already_resting']} — the take already "
+              f"rests there")
     print(f"inserted {res['n_inserted']} rests, "
           f"{res['added_s']:.2f}s added, {res['credits_spent']} credits spent")
     print(f"{res['duration_before_s']:.2f}s -> {res['duration_after_s']:.2f}s")

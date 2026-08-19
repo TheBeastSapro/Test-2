@@ -113,6 +113,15 @@ python3 $S/v2_rest.py take.mp3 --plan plan.json --out take_v2.wav --report rest.
 python3 $S/styleprint.py take_v2.wav --md take.md
 ```
 
+**The budget is a deficit, not a quota.** A render already rests a little on its
+own, and those rests count toward the target exactly as much as inserted ones.
+`v2_rest.py` measures what the take already has, subtracts it, and inserts only
+the shortfall — keeping the highest-scoring sites when the plan asks for more
+than the deficit allows. If the take already rests enough, it inserts nothing
+and says so. Ignoring this is what made the first test overshoot to one rest
+every 3.6 words against a target of 10.4. Where a planned rest lands on a gap
+the take already has, only the difference is added, never the full length on top.
+
 `v2_rest.py` proves its own edit sample-for-sample: deleting the inserted spans
 back out must reproduce the input exactly, apart from the 3 ms splice fades. It
 does **not** re-transcribe to check for lost words — that was tried and failed on
