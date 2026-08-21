@@ -10,6 +10,8 @@ export default defineConfig({
       // without a prior build. The production build uses the emitted dist/.
       '@agentswitch/contracts': r('./packages/contracts/src/index.ts'),
       '@agentswitch/worker-core': r('./packages/worker-core/src/index.ts'),
+      '@agentswitch/crypto': r('./packages/crypto/src/index.ts'),
+      '@agentswitch/relay-core': r('./packages/relay-core/src/index.ts'),
     },
   },
   test: {

@@ -9,12 +9,13 @@
     "apps/*"
   ],
   "scripts": {
-    "build:libs": "npm run build -w @agentswitch/contracts && npm run build -w @agentswitch/worker-core",
-    "build": "npm run build:libs && npm run build -w @agentswitch/control-plane && npm run build -w @agentswitch/web",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p apps/control-plane/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json",
+    "build:libs": "npm run build -w @agentswitch/contracts && npm run build -w @agentswitch/crypto && npm run build -w @agentswitch/relay-core && npm run build -w @agentswitch/worker-core",
+    "build": "npm run build:libs && npm run build -w @agentswitch/control-plane && npm run build -w @agentswitch/worker && npm run build -w @agentswitch/web",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p apps/control-plane/tsconfig.json && tsc --noEmit -p apps/worker/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json",
     "test": "vitest run",
     "dev": "npm run dev -w @agentswitch/web",
-    "serve:control-plane": "node apps/control-plane/dist/server.js"
+    "serve:control-plane": "node apps/control-plane/dist/server.js",
+    "serve:worker": "node apps/worker/dist/worker.js"
   },
   "devDependencies": {
     "typescript": "^5.7.2",

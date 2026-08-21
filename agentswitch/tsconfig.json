@@ -2,13 +2,21 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": [],
+    "types": [
+      "node"
+    ],
     "paths": {
       "@agentswitch/contracts": [
         "./packages/contracts/src/index.ts"
       ],
       "@agentswitch/worker-core": [
         "./packages/worker-core/src/index.ts"
+      ],
+      "@agentswitch/crypto": [
+        "./packages/crypto/src/index.ts"
+      ],
+      "@agentswitch/relay-core": [
+        "./packages/relay-core/src/index.ts"
       ]
     },
     "baseUrl": "."

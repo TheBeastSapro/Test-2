@@ -199,3 +199,37 @@ body {
 .disabled-note { font-size: 12.5px; color: var(--warn); margin: 8px 0 0; }
 .notice .steps { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
 .notice .steps li { margin-bottom: 6px; }
+
+/* ---- Milestone 2A: encrypted credential delivery ---- */
+.warning-banner {
+  background: rgba(232, 184, 102, 0.1);
+  border: 1px solid rgba(232, 184, 102, 0.35);
+  color: var(--warn);
+  border-radius: 8px; padding: 10px 12px; margin: 0 0 16px;
+  font-size: 13px; font-weight: 500;
+}
+.worker-identity {
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;
+}
+.worker-status-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; font-size: 13px; margin-bottom: 8px;
+}
+.worker-status-row > span:first-child { color: var(--muted); }
+.worker-status-row code {
+  font-family: var(--mono); font-size: 12.5px; color: var(--accent-text);
+  letter-spacing: 0.02em; word-break: break-all; text-align: right;
+}
+.worker-identity .hint { margin: 10px 0; }
+.confirmed-note { font-size: 12.5px; color: var(--accent-text); margin: 8px 0 0; }
+.status-ok {
+  font-size: 13px; color: var(--accent-text); margin: 10px 0 0;
+  background: rgba(61, 220, 132, 0.08); border: 1px solid rgba(61, 220, 132, 0.3);
+  border-radius: 8px; padding: 9px 11px; word-break: break-word;
+}
+.status-error {
+  font-size: 13px; color: var(--danger); margin: 10px 0 0;
+  background: rgba(232, 138, 125, 0.08); border: 1px solid rgba(232, 138, 125, 0.3);
+  border-radius: 8px; padding: 9px 11px;
+}

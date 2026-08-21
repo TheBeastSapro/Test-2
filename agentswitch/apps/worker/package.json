@@ -1,16 +1,16 @@
 {
-  "name": "@agentswitch/control-plane",
+  "name": "@agentswitch/worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/server.js",
+  "main": "./dist/worker.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "start": "node dist/worker.js"
   },
   "dependencies": {
     "@agentswitch/contracts": "*",
-    "@agentswitch/worker-core": "*",
-    "@agentswitch/relay-core": "*"
+    "@agentswitch/crypto": "*",
+    "libsodium-wrappers": "^0.8.4"
   }
 }
