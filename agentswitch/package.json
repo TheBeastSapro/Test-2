@@ -1,0 +1,24 @@
+{
+  "name": "agentswitch",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AgentSwitch - continuity layer for coding-agent CLIs (Milestone 1: simulated adapters)",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:libs": "npm run build -w @agentswitch/contracts && npm run build -w @agentswitch/worker-core",
+    "build": "npm run build:libs && npm run build -w @agentswitch/control-plane && npm run build -w @agentswitch/web",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p apps/control-plane/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json",
+    "test": "vitest run",
+    "dev": "npm run dev -w @agentswitch/web",
+    "serve:control-plane": "node apps/control-plane/dist/server.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "@types/node": "^22.10.2"
+  }
+}
