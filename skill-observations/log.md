@@ -528,3 +528,37 @@ zero in the refusal message.
 fix is followed by a step the wrapper can only do expensively, the saving is notional — and
 the next person, reading a bill for the whole job to fix one word, will reasonably conclude
 the surgical tool does not work.
+
+### Observation 28: When the H1 is a document label, the title falls back to the agent inventing one
+
+**Status:** OPEN
+**Date:** 2026-08-23
+**Session context:** Helmets voiceover from a Google Doc. Sapro: "you should always name the
+audio as title don't come up with new names for voiceover." The file had been delivered
+twice as "The Evolution of the Helmet (final).mp3" — a name the agent made up. The document
+in Drive is called "The Most Effective Helmets in History Explained".
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** voiceover.py `derive_title` and the `--plan` gate
+
+**Issue:** `derive_title` resolves in order: script H1 -> `--title` -> filename stem. Every
+ExplainTory script pasted out of Docs opens with a structural label (`# Script`), which the
+function deliberately skips as "not the video's title". The chain then lands on `--title`,
+supplied by the agent, so the documented fallback for the most common input shape is an
+invented name. The plan prints `TITLE: "…"` with no provenance mark, unlike every value in
+the CALIBRATION block, so the one field with no legitimate source looked as settled as the
+ones read from the profile. It compounded here: the agent asked about the title, Sapro
+answered the narration half ("don't open with the video title"), and the agent treated the
+naming half as resolved by silence.
+
+**Suggested improvement:** When the input is a Google Doc, read the document's own name from
+the Drive metadata (`get_file_metadata` returns `title`) and use it — the file is named for
+the video, and it is one call that is already authenticated. Failing that, mark the title's
+provenance in `--plan` the way settings are marked, so `(invented)` is visible next to it,
+and never let an agent-chosen title pass the gate without being called out as unsourced.
+
+**Principle:** A fallback chain that ends at the agent is a fallback chain that ends at a
+guess. Where the real value exists in the source material — a document's own name, a file's
+metadata — fetch it rather than terminating the chain in invention; and if a field can only
+be guessed, label it as guessed everywhere it is displayed, because an unlabelled guess is
+indistinguishable from a decision.
