@@ -1,0 +1,756 @@
+{
+ "results": [
+  {
+   "index": 0,
+   "duration": 1.57,
+   "wpm": 115,
+   "peak_dbfs": -0.791142,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Boar's Tusk Helmet.",
+   "heard": "Boar's Tusk Helmet."
+  },
+  {
+   "index": 1,
+   "duration": 8.44,
+   "wpm": 192,
+   "peak_dbfs": -0.584113,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "In the Iliad, the poet Homer described a helmet made of teeth. Not metal. Teeth. For three thousand years, it sounded like something Homer had made up.",
+   "heard": "In the Iliad, the poet Homer described a helmet made of teeth, not metal, teeth. For 3,000 years, it sounded like something Homer had made up."
+  },
+  {
+   "index": 2,
+   "duration": 22.47,
+   "wpm": 176,
+   "peak_dbfs": -0.528836,
+   "wer": 0.0147,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "He hadn't. In Bronze Age Greece, craftsmen really did split the tusks of wild boars into curved slivers, drill each one, and sew them in overlapping rows onto a cap of leather and felt, until the whole thing gleamed like a hive of pale scales. One helmet swallowed the tusks of dozens of boars, a small forest's worth of pigs losing an argument with a spear.",
+   "heard": "He hadn't. In Bronze Age grease, craftsmen really did split the tusks of wild boars into curved slivers. Drill each one and sew them in overlapping rows onto a cap of leather and felt until the whole thing gleamed like a hive of pale scales. One helmet swallowed the tusks of dozens of boars, a small forest's worth of pigs losing an argument with a spear."
+  },
+  {
+   "index": 3,
+   "duration": 23.72,
+   "wpm": 180,
+   "peak_dbfs": -0.654999,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Then archaeologists started turning up the tusk plates in Mycenaean graves. Dozens at a time, enough to rebuild the helmet Homer described. The poem had been remembering all along.\n\nScholars still argue whether these were battlefield armor or a rich man's trophy. The honest answer is probably both. But layered tusk could turn a glancing blow, and for a warrior with no steel to his name, that was no small thing.",
+   "heard": "Then archaeologists started turning up the tusk plates in Mycenaean graves, dozens at a time enough to rebuild the helmet Homer described. The poem had been remembering all along. Scholars still argue whether these were battlefield armor or a rich man's trophy. The honest answer is probably both. But layered tusk could turn a glancing blow. And for a warrior with no steel to his name, that was no small thing."
+  },
+  {
+   "index": 4,
+   "duration": 1.07,
+   "wpm": 112,
+   "peak_dbfs": -0.972032,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Corinthian Helmet.",
+   "heard": "Corinthian Helmet"
+  },
+  {
+   "index": 5,
+   "duration": 22.0,
+   "wpm": 172,
+   "peak_dbfs": -0.483863,
+   "wer": 0.0156,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Greek hoplite battle could turn into a brutal shoving match. Around 700 BC, hundreds of men called hoplites, citizen-soldiers who bought their own armor, locked their round shields edge to edge and pushed, a bronze wall grinding into another. In that crush, the most exposed thing a man had was his face. So the smiths of Corinth built something to hide it completely.",
+   "heard": "Greek hoplight battle could turn into a brutal shoving match. Around 700 BC, hundreds of men called hoplites, citizen soldiers who bought their own armor, locked their round shields edge to edge, and pushed, a bronze wall grinding into another. In that crush, the most exposed thing a man had was his face. So the smiths of Corinth built something to hide it completely."
+  },
+  {
+   "index": 6,
+   "duration": 22.39,
+   "wpm": 193,
+   "peak_dbfs": -0.746403,
+   "wer": 0.0411,
+   "problems": [
+    "misread: after “…until only a narrow” expected “t” heard “tea”",
+    "misread: after “…world came close a” expected “spear” heard “spearpoint”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "t",
+     "tea",
+     "until only a narrow"
+    ],
+    [
+     "misread",
+     "spear",
+     "spearpoint",
+     "world came close a"
+    ]
+   ],
+   "text": "The Corinthian helmet was hammered from a single sheet of bronze, folded around the skull until only a narrow T was left for the eyes and nose. Everything else was metal. For coverage, nothing in the Greek world came close. A spear point that would have opened a man's face rang off the bronze and slid away.\n\nIt was the safest head in Greece. It was also half blind and half deaf.",
+   "heard": "The Corinthian helmet was hammered from a single sheet of bronze, folded around the skull until only a narrow tea was left for the eyes and nose. Everything else was metal. For coverage, nothing in the Greek world came close. A spearpoint that would have opened a man's face, rang off the bronze, and slid away. It was the safest head in Greece. It was also half blind and half deaf."
+  },
+  {
+   "index": 7,
+   "duration": 19.36,
+   "wpm": 201,
+   "peak_dbfs": -0.893308,
+   "wer": 0.0152,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Sealed in that shell, a hoplite saw only what lay dead ahead and could barely hear the orders shouted down the line. In a formation that lived or died by moving on command, a man who couldn't catch the call or glimpse his flank was a hole in the wall. It guarded everything except the one thing that kept him alive, his place in it.",
+   "heard": "sealed in that shell, a hoplight saw only what lay dead ahead and could barely hear the orders shouted down the line. In a formation that lived or died by moving on command, a man who couldn't catch the call or glimpse his flank was a hole in the wall. It guarded everything, except the one thing that kept him alive, his place in it."
+  },
+  {
+   "index": 8,
+   "duration": 23.59,
+   "wpm": 206,
+   "peak_dbfs": -0.737424,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Which is why, in statue after statue the Greeks left, the Corinthian isn't worn over the face. It sits shoved back on the crown, T-slot pointed at the sky, a man lifting his best protection off his face the moment the killing paused, just to see and breathe. Within a few generations they traded it for open helmets that gave the eyes and ears back. The finest guard in Greece lost to the ones that let a man hear his friends.",
+   "heard": "Which is why, in statue after statue, the Greeks left, the Corinthian isn't worn over the face. It sits shoved back on the crown. T. Slot pointed at the sky, a man lifting his best protection off his face the moment the killing paused, just to see and breathe. Within a few generations, they traded it for open helmets that gave the eyes and ears back. The finest guard in Greece lost to the ones that let a man hear his friends."
+  },
+  {
+   "index": 9,
+   "duration": 1.25,
+   "wpm": 144,
+   "peak_dbfs": -0.72591,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Viking Helmet.",
+   "heard": "The Viking helmet."
+  },
+  {
+   "index": 10,
+   "duration": 11.73,
+   "wpm": 184,
+   "peak_dbfs": -0.648747,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Everyone knows the Viking helmet. Two great horns curving up from the sides, worn by a screaming raider with an axe. It is on the cereal box and the cartoon. It is also completely made up.",
+   "heard": "Everyone knows the Viking helmet. Two great horns curving up from the sides worn by a screaming raider with an axe. It is on the cereal box and the cartoon. It is also completely made up."
+  },
+  {
+   "index": 11,
+   "duration": 19.12,
+   "wpm": 173,
+   "peak_dbfs": -0.418568,
+   "wer": 0.0351,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Not one horned helmet has ever come out of a Viking grave. The look was already creeping into 19th-century art when a costume designer named Carl Emil Doepler nailed it down in 1876, dressing the gods for Wagner's opera. He wanted them mythic, so he gave them horns, and the world filed it under history.",
+   "heard": "Not one horned helmet has ever come out of a Viking grave. The look was already creeping into 19th century art when a costume designer named Carl Emile Doppler nailed it down in 1876, dressing the gods for Wagner's opera. He wanted them mythic, so he gave them horns, and the world filed it under history."
+  },
+  {
+   "index": 12,
+   "duration": 24.66,
+   "wpm": 192,
+   "peak_dbfs": -0.146259,
+   "wer": 0.0125,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "What the Vikings actually wore, when they could afford one, was a plain rounded iron cap with a bar over the eyes and nose, light enough to fight in and simple enough to actually make. We know because archaeologists have found exactly one near-complete Viking helmet, at Gjermundbu in Norway, and there is not a horn on it. In a real fight, horns do exactly one thing. They give the other man a handle. The opera was just prettier.",
+   "heard": "What the Vikings actually wore when they could afford one was a plain rounded iron cap with a bar over the eyes and nose, light enough to fight in, and simple enough to actually make. We know because archaeologists have found exactly one near-complete Viking helmet at Germonbu in Norway, and there is not a horn on it. In a real fight, horns do exactly one thing. They give the other man a handle. The opera was just prettier."
+  },
+  {
+   "index": 13,
+   "duration": 1.15,
+   "wpm": 157,
+   "peak_dbfs": -0.834693,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Great Helm.",
+   "heard": "The Great Helm"
+  },
+  {
+   "index": 14,
+   "duration": 17.55,
+   "wpm": 195,
+   "peak_dbfs": -0.484061,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "A mounted knight had one problem above all others. Everything was trying to get at his head. In the Crusades and the castle wars of the 1200s, lances came at his face, swords swung for his skull, and arrows dropped out of the sky. So the armorers stopped half-covering it and sealed the whole thing in iron.",
+   "heard": "a mounted knight, had one problem above all others. Everything was trying to get at his head. In the Crusades and the Castle Wars of the 1200s, lances came at his face, swords swung for his skull, and arrows dropped out of the sky. So the armorers stopped half covering it and sealed the whole thing in iron."
+  },
+  {
+   "index": 15,
+   "duration": 8.91,
+   "wpm": 195,
+   "peak_dbfs": -0.700001,
+   "wer": 0.0333,
+   "problems": [
+    "misread: after “…helm was a flat” expected “topped” heard “top”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "topped",
+     "top",
+     "helm was a flat"
+    ]
+   ],
+   "text": "The great helm was a flat-topped cylinder that swallowed the entire head, with a slot barely a finger wide to see through and a few small holes to breathe.",
+   "heard": "The Great Helm was a flat-top cylinder that swallowed the entire head, with a slot barely a finger wide to see through and a few small holes to breathe."
+  },
+  {
+   "index": 16,
+   "duration": 16.38,
+   "wpm": 205,
+   "peak_dbfs": -0.86379,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "No helmet of its day covered a face better. But it was a stifling iron box with a keyhole of a view, and the knights knew it. Which is why many wore a smaller, closer-fitting helmet underneath, so they could shed the big cylinder the moment they needed to see and breathe for the close fighting.",
+   "heard": "No helmet of its day covered a face better, but it was a stifling iron box with a keyhole of a view, and the knights knew it, which is why many wore a smaller, closer-fitting helmet underneath, so they could shed the big cylinder the moment they needed to see and breathe for the close fighting."
+  },
+  {
+   "index": 17,
+   "duration": 14.71,
+   "wpm": 208,
+   "peak_dbfs": -0.545757,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "A helmet so good at its job that a knight wore a second one under it, ready for the moment he needed his eyes back. Within a century it drifted off the battlefield for good and found its real home in the one place a narrow view barely mattered, the joust.",
+   "heard": "A helmet so good at its job that a knight wore a second one under it, ready for the moment he needed his eyes back. Within a century, it drifted off the battlefield for good and found its real home in the one place, a narrow view, barely mattered. The joust."
+  },
+  {
+   "index": 18,
+   "duration": 0.97,
+   "wpm": 124,
+   "peak_dbfs": -0.709749,
+   "wer": 0.5,
+   "problems": [
+    "chapter name “The Bascinet.” transcribed as “the bassinet.” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong"
+   ],
+   "regen": false,
+   "hard": [],
+   "text": "The Bascinet.",
+   "heard": "the bassinet."
+  },
+  {
+   "index": 19,
+   "duration": 16.98,
+   "wpm": 159,
+   "peak_dbfs": -0.410902,
+   "wer": 0.0625,
+   "problems": [
+    "misread: after “…the great” expected “helm” heard “helms”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "helm",
+     "helms",
+     "the great"
+    ]
+   ],
+   "text": "The great helm's replacement was uglier and far smarter. Armorers took a close-fitting steel cap, the bascinet, and bolted on a visor shaped like a snout, a long pointed muzzle that earned it a cruel nickname, the pig-face. It looked ridiculous. It was also brilliant.",
+   "heard": "The Great Helms' replacement was uglier and far smarter. Armourers took a close-fitting steel cap, the bassinet, and bolted on a visor shaped like a snout, a long-pointed muzzle that earned it a cruel nickname, the pig face. It looked ridiculous. It was also brilliant."
+  },
+  {
+   "index": 20,
+   "duration": 18.05,
+   "wpm": 209,
+   "peak_dbfs": -0.453442,
+   "wer": 0.0312,
+   "problems": [
+    "misread: after “…mouth where the great” expected “helm” heard “helms”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "helm",
+     "helms",
+     "mouth where the great"
+    ]
+   ],
+   "text": "That point deflected a blade or a lance off to the side instead of catching it flat, and the forward muzzle pushed the air holes out near the mouth, where the great helm's had never sat. A man could see and breathe without giving up his face. Its most famous hour came on a field that should have killed the king wearing it.",
+   "heard": "That point deflected a blade or a lance off to the side instead of catching it flat, and the forward muzzle pushed the air holes out near the mouth where the great helms had never sat. A man could see and breathe without giving up his face. Its most famous hour came on a field that should have killed the king wearing it."
+  },
+  {
+   "index": 21,
+   "duration": 24.01,
+   "wpm": 202,
+   "peak_dbfs": -0.665726,
+   "wer": 0.0244,
+   "problems": [
+    "misread: after “…in northern france henry” expected “the” heard “v”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "the",
+     "v",
+     "in northern france henry"
+    ]
+   ],
+   "text": "On a muddy October day in 1415, near a village called Agincourt in northern France, Henry the Fifth's small, sick, badly outnumbered army met the flower of French chivalry in the mud. The king did not watch from a hill. He fought in the line, and by every account he was struck on the head hard enough to gouge the steel of his helmet. Some chronicles say a piece of the gold crown he wore over it was hacked clean away.",
+   "heard": "On a muddy October day in 1415, near a village called Agincourt in northern France, Henry V's small, sick, badly outnumbered army met the flower of French chivalry in the mud. The king did not watch from a hill. He fought in the line, and by every account he was struck on the head hard enough to gouge the steel of his helmet. Some chronicles say a piece of the gold crown he wore over it was hacked clean away."
+  },
+  {
+   "index": 22,
+   "duration": 20.48,
+   "wpm": 211,
+   "peak_dbfs": -0.559697,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "He got back up. By the end of that day the French had lost thousands and the English only a few hundred, one of the most lopsided victories in medieval history, and the man at the center of it walked off the field with a battered helmet and his skull intact. A good helmet is the thin line between a legendary king and a dead one face-down in the mud. Henry's held.",
+   "heard": "He got back up. By the end of that day, the French had lost thousands, and the English only a few hundred, one of the most lopsided victories in medieval history, and the man at the center of it walked off the field with a battered helmet and his skull intact. A good helmet is the thin line between a legendary king and a dead one face down in the mud. Henry's held."
+  },
+  {
+   "index": 23,
+   "duration": 1.57,
+   "wpm": 115,
+   "peak_dbfs": -0.971374,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Frogmouth Helm.",
+   "heard": "The Frogmouth Helm."
+  },
+  {
+   "index": 24,
+   "duration": 19.49,
+   "wpm": 191,
+   "peak_dbfs": -0.552135,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Here is a helmet built to blind the man wearing it, on purpose, at the worst possible moment. The frogmouth helm was made for the joust, the sporting duel where two armored riders charged with lances to score points rather than kill. Its problem was splinters. When a lance shattered on impact, it threw a spray of sharp wood at the face.",
+   "heard": "Here is a helmet built to blind the man wearing it, on purpose, at the worst possible moment. The frogmouth helm was made for the joust, the sporting duel, where two armored riders charged with lances to score points rather than kill. Its problem was splinters. When a lance shattered on impact, it threw a spray of sharp wood at the face."
+  },
+  {
+   "index": 25,
+   "duration": 8.96,
+   "wpm": 181,
+   "peak_dbfs": -0.629905,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "So German armorers shaped a heavy iron helm, bolted it straight to the breastplate so it could not shift, and cut the eye-slit in one particular place.",
+   "heard": "So German armorers shaped a heavy iron helm, bolted it straight to the breastplate so it could not shift and cut the eye slit in one particular place."
+  },
+  {
+   "index": 26,
+   "duration": 17.82,
+   "wpm": 205,
+   "peak_dbfs": -0.476288,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "A rider leaning into the charge could see his opponent through the slot. At the instant of impact he sat up, the slot lifted above his eyes, and for one second he was blind. Which meant the splinters had nothing to hit. He gave up his sight at the exact moment it could get him killed. That was the whole trick.",
+   "heard": "A rider leaning into the charge could see his opponent through the slot. At the instant of impact, he sat up. The slot lifted above his eyes, and for one second he was blind, which meant the splinters had nothing to hit. He gave up his sight at the exact moment it could get him killed. That was the whole trick."
+  },
+  {
+   "index": 27,
+   "duration": 16.67,
+   "wpm": 166,
+   "peak_dbfs": -0.442663,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "It weighed close to eighteen pounds and was useless anywhere but the tilt-yard. There it made the splinter-through-the-eye death nearly impossible. Nearly. Because not every jousting helmet was built this cleverly, and in 1559 the one worn by a French king was about to prove it.",
+   "heard": "It weighed close to 18 pounds and was useless anywhere but the tilt yard. There, it made the splinter through the eye death nearly impossible. Nearly, because not every jousting helmet was built this cleverly. And in 1559, the one worn by a French king was about to prove it."
+  },
+  {
+   "index": 28,
+   "duration": 1.44,
+   "wpm": 167,
+   "peak_dbfs": -0.817246,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Henry the Second's Helmet.",
+   "heard": "Henry the second's helmet."
+  },
+  {
+   "index": 29,
+   "duration": 25.63,
+   "wpm": 185,
+   "peak_dbfs": -0.445355,
+   "wer": 0.0253,
+   "problems": [
+    "misread: after “…war and king henry” expected “the” heard “ii”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "the",
+     "ii",
+     "war and king henry"
+    ]
+   ],
+   "text": "The tournament was a victory party. In the summer of 1559, France had just signed a peace ending decades of war, and King Henry the Second held a grand tournament in Paris to celebrate it. He was a strong rider, and he wanted to ride one more time himself, against Gabriel de Montgomery, the young captain of his guard. His wife, Catherine, and the whole court watched from the stands. It was sport. Everyone was meant to go home.",
+   "heard": "The tournament was a victory party. In the summer of 1559, France had just signed a peace-ending decades of war, and King Henry II held a grand tournament in Paris to celebrate it. He was a strong rider, and he wanted to ride one more time himself, against Gabriel de Montgomery, the young captain of his guard, his wife, Catherine, and the whole court watched from the stands. It was sport. Everyone was meant to go home."
+  },
+  {
+   "index": 30,
+   "duration": 11.83,
+   "wpm": 193,
+   "peak_dbfs": -0.567414,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The two men charged. Montgomery's lance struck the king square and shattered, the way lances were built to. But a jagged length of it rode up and went in through the gap around the visor, above the eye.",
+   "heard": "The two men charged. Montgomery's lance struck the king square and shattered, the way lances were built to, but a jagged length of it rode up and went in through the gap around the visor, above the eye."
+  },
+  {
+   "index": 31,
+   "duration": 17.68,
+   "wpm": 197,
+   "peak_dbfs": -0.261184,
+   "wer": 0.0345,
+   "problems": [
+    "misread: after “…including the great surgeon” expected “ambroise pare” heard “ambrose paray”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "ambroise pare",
+     "ambrose paray",
+     "including the great surgeon"
+    ]
+   ],
+   "text": "Henry did not die on the field. He lingered for ten days while the finest doctors in Europe, including the great surgeon Ambroise Paré, worked over him and could do nothing. Splinters of wood had lodged behind the eye, the wound turned, and the infection reached his brain. On the tenth day, the King of France was dead.",
+   "heard": "Henry did not die on the field. He lingered for 10 days while the finest doctors in Europe, including the great surgeon Ambrose Paray, worked over him and could do nothing. Splinters of wood had lodged behind the eye. The wound turned, and the infection reached his brain. On the 10th day, the King of France was dead."
+  },
+  {
+   "index": 32,
+   "duration": 13.4,
+   "wpm": 175,
+   "peak_dbfs": -0.748813,
+   "wer": 0.05,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The frogmouth existed because jousting came down to sealing that one gap. Henry's visor was raised or unsecured when the splinter found it. A few inches of open face turned a sporting accident into the death of a king.",
+   "heard": "The frog mouth existed because jousting came down to sealing that one gap. Henry's visor was raised or unsecured when the splinter found it. A few inches of open face turned a sporting accident into the death of a king."
+  },
+  {
+   "index": 33,
+   "duration": 0.97,
+   "wpm": 124,
+   "peak_dbfs": -1.047159,
+   "wer": 0.5,
+   "problems": [
+    "chapter name “The Morion.” transcribed as “The Morian.” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong"
+   ],
+   "regen": false,
+   "hard": [],
+   "text": "The Morion.",
+   "heard": "The Morian."
+  },
+  {
+   "index": 34,
+   "duration": 17.68,
+   "wpm": 190,
+   "peak_dbfs": -0.477935,
+   "wer": 0.0179,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "On the cover of nearly every book about the Spanish conquest sits the same helmet. A steel bowl with a tall crest running front to back and a brim curling up at both ends, the comb morion. It is the shape the whole world files under \"conquistador.\" And the men in those books never wore it.",
+   "heard": "On the cover of nearly every book about the Spanish conquest sits the same helmet. A steel bowl with a tall crest running front to back and a brim curling up at both ends. The comb Morian. It is the shape the whole world files under Conquistador. And the men in those books never wore it."
+  },
+  {
+   "index": 35,
+   "duration": 18.89,
+   "wpm": 168,
+   "peak_dbfs": -0.459555,
+   "wer": 0.0566,
+   "problems": [
+    "misread: after “…the 1540s by then” expected “hernan cortes” heard “ernan cortez”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "hernan cortes",
+     "ernan cortez",
+     "the 1540s by then"
+    ]
+   ],
+   "text": "The comb morion did not come into its own until the 1540s. By then Hernán Cortés had already conquered Mexico, twenty years gone, and Francisco Pizarro had already toppled the Inca in Peru. The men who actually did the conquering wore older, plainer helmets, and often fought in little more than padded cloth.",
+   "heard": "The comb Morion did not come into its own until the 1540s. By then, Ernan Cortez had already conquered Mexico, 20 years gone, and Francisco Pizaro had already toppled the Inca in Peru. The men who actually did the conquering wore older, plainer helmets and often fought in little more than padded cloth."
+  },
+  {
+   "index": 36,
+   "duration": 17.63,
+   "wpm": 174,
+   "peak_dbfs": -0.646657,
+   "wer": 0.0189,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The morion arrived after the famous deeds were done, a cheap open-faced bowl stamped out by the thousand for Europe's pikemen, who could see and breathe under it while they held the line. The most recognizable conquistador helmet in history conquered nothing. It just showed up late and took the credit.",
+   "heard": "The Morian arrived after the famous deeds were done, a cheap, open-faced bowl stamped out by the thousand for Europe's pikemen, who could see and breathe under it while they held the line. The most recognizable conquistador helmet in history conquered nothing. It just showed up late and took the credit."
+  },
+  {
+   "index": 37,
+   "duration": 0.86,
+   "wpm": 139,
+   "peak_dbfs": -1.097477,
+   "wer": 0.5,
+   "problems": [
+    "chapter name “The Kabuto.” transcribed as “The Cabuto.” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong"
+   ],
+   "regen": false,
+   "hard": [],
+   "text": "The Kabuto.",
+   "heard": "The Cabuto."
+  },
+  {
+   "index": 38,
+   "duration": 16.48,
+   "wpm": 178,
+   "peak_dbfs": -0.322274,
+   "wer": 0.0204,
+   "problems": [
+    "misread: after “…looks practical a golden” expected “sunburst” heard “sunbursts”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "sunburst",
+     "sunbursts",
+     "looks practical a golden"
+    ]
+   ],
+   "text": "Nothing about the famous samurai helmet looks practical. A golden sunburst two feet wide, antlers, a rising crescent moon, mounted on the heads of commanders in the civil wars that tore Japan apart through the 1500s. It looks like a trophy. Underneath, it was a serious piece of engineering.",
+   "heard": "Nothing about the famous samurai helmet looks practical. A golden sunbursts two feet wide, antlers, a rising crescent moon, mounted on the heads of commanders in the civil wars that tore Japan apart through the 1500s. It looks like a trophy. Underneath, it was a serious piece of engineering."
+  },
+  {
+   "index": 39,
+   "duration": 12.07,
+   "wpm": 179,
+   "peak_dbfs": -0.552684,
+   "wer": 0.0833,
+   "problems": [
+    "misread: after “…100 with a flared” expected “neck” heard “neckguard”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "neck",
+     "neckguard",
+     "100 with a flared"
+    ]
+   ],
+   "text": "The bowl of the kabuto was built from dozens of iron plates riveted together, sometimes more than a hundred, with a flared neck guard of laminated strips that turned aside arrows and sword cuts. It worked.",
+   "heard": "The bowl of the cabuto was built from dozens of iron plates riveted together, sometimes more than a hundred with a flared neckguard of laminated strips that turned aside arrows and sword cuts. It worked."
+  },
+  {
+   "index": 40,
+   "duration": 16.8,
+   "wpm": 189,
+   "peak_dbfs": -0.327131,
+   "wer": 0.0185,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The decoration went wild at a telling moment, as guns spread through Japan and armies swelled into the tens of thousands. The armorers doubled down on protection, building helmets and breastplates meant to turn a musket ball, some of them dented on purpose to prove it. What shifted was the crest's other job.",
+   "heard": "The decoration went wild at a telling moment, as guns spread through Japan and army swelled into the tens of thousands. The armorers doubled down on protection, building helmets and breastplates meant to turn a musket ball. Some of them dented on purpose to prove it. What shifted was the crest's other job."
+  },
+  {
+   "index": 41,
+   "duration": 19.25,
+   "wpm": 196,
+   "peak_dbfs": -0.697567,
+   "wer": 0.0159,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "On a field vanishing into gun smoke, with thousands of men in dark lacquer, a commander had to be found at a glance, so his crest became a signal flag. Date Masamune wore the crescent moon, Honda Tadakatsu the antlers. The armor kept its old job and took on a new one, turning what it could and marking the man who wore it.",
+   "heard": "On a field vanishing into gun smoke, with thousands of men in dark lacquer, a commander had to be found at a glance, so his crest became a signal flag. Date Masamun wore the crescent moon, Honda Tadakatsu the antlers. The armor kept its old job and took on a new one, turning what it could and marking the man who wore it."
+  },
+  {
+   "index": 42,
+   "duration": 2.17,
+   "wpm": 194,
+   "peak_dbfs": -0.722474,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Steel Helmet of the Great War.",
+   "heard": "the steel helmet of the Great War."
+  },
+  {
+   "index": 43,
+   "duration": 20.66,
+   "wpm": 195,
+   "peak_dbfs": -0.280514,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The armies of the First World War learned one lesson the hard way, and paid for it in their own dead. In the trenches, the head was the one part of a man that had to come up, over the parapet, into a sky full of flying steel. Shell bursts rained jagged splinters down, and men who ducked everything else were dying of wounds to the skull.",
+   "heard": "The armies of the First World War learned one lesson the hard way and paid for it in their own dead. In the trenches, the head was the one part of a man that had to come up over the parapet into a sky full of flying steel. Shell bursts rained jagged splinters down, and men who ducked everything else were dying of wounds to the skull."
+  },
+  {
+   "index": 44,
+   "duration": 21.03,
+   "wpm": 180,
+   "peak_dbfs": -0.509037,
+   "wer": 0.0317,
+   "problems": [
+    "misread: after “…bowl designed by john” expected “brodie” heard “brody”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "brodie",
+     "brody",
+     "bowl designed by john"
+    ]
+   ],
+   "text": "So in 1915, for the first time in generations, after armies had dismissed armor as pointless against guns, they put steel back on the head. France issued the light, crested Adrian, and Britain the shallow steel bowl designed by John Brodie. A year later Germany forged the deep, flared Stahlhelm, a shape so right it would be copied for the next hundred years.",
+   "heard": "So in 1915, for the first time in generations, after armies had dismissed armor as pointless against guns, they put steel back on the head. France issued the light, crested Adrian and Britain the shallow steel bowl designed by John Brody. A year later, Germany forged the deep-flared stalelhelm, a shape so right it would be copied for the next hundred years."
+  },
+  {
+   "index": 45,
+   "duration": 7.6,
+   "wpm": 205,
+   "peak_dbfs": -0.885079,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Then the reports came back, and they made no sense. After the helmets went out, the number of men reaching hospital with head wounds went up.",
+   "heard": "Then the reports came back, and they made no sense. After the helmets went out, the number of men reaching hospital with head wounds went up."
+  },
+  {
+   "index": 46,
+   "duration": 23.41,
+   "wpm": 200,
+   "peak_dbfs": 0.097331,
+   "wer": 0.0,
+   "problems": [
+    "peaks at +0.10 dBFS — against the ceiling (1 full-scale samples)"
+   ],
+   "regen": false,
+   "hard": [],
+   "text": "For a moment it looked like the helmets were making things worse. The truth was the exact opposite, and far heavier. The men now filling those wards were men who, a year earlier, would never have reached a hospital at all. They would have been buried where they fell. A splinter that used to kill now knocked a helmeted man down alive. The rise in the wounded was the fall in the dead, counted from the other side.",
+   "heard": "For a moment, it looked like the helmets were making things worse. The truth was the exact opposite and far heavier. The men now filling those wards were men who, a year earlier, would never have reached a hospital at all. They would have been buried where they fell. A splinter that used to kill now knocked a helmeted man down alive. The rise in the wounded was the fall in the dead, counted from the other side."
+  },
+  {
+   "index": 47,
+   "duration": 11.7,
+   "wpm": 195,
+   "peak_dbfs": -0.709794,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "In French hospitals, a head wound had killed roughly one man in four. After the helmets, at best, it was closer to one in seven. Every extra man in that ward was a grave nobody had to dig.",
+   "heard": "In French hospitals, a head wound had killed roughly one man in four. After the helmets, at best, it was closer to one in seven. Every extra man in that ward was a grave nobody had to dig."
+  },
+  {
+   "index": 48,
+   "duration": 1.91,
+   "wpm": 126,
+   "peak_dbfs": -0.853083,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Modern Combat Helmet.",
+   "heard": "The Modern Combat Helmet"
+  },
+  {
+   "index": 49,
+   "duration": 24.66,
+   "wpm": 180,
+   "peak_dbfs": -0.551314,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The most useful helmet America ever made was also a cooking pot. The M1 steel pot, first issued in 1941, came in two parts, a hard outer shell over a light inner liner, and more than twenty million were stamped out. A soldier wore it into battle, then used it to wash in, cook in, dig with, and sit on. It was built for shell fragments, not rifle fire, and it never pretended otherwise.",
+   "heard": "The most useful helmet America ever made was also a cooking pot. The M1 steel pot, first issued in 1941, came in two parts. A hard outer shell, over a light inner liner, and more than 20 million were stamped out. A soldier wore it into battle, then used it to wash in, cook in, dig with, and sit on. It was built for shell fragments, not rifle fire, and it never pretended otherwise."
+  },
+  {
+   "index": 50,
+   "duration": 22.88,
+   "wpm": 178,
+   "peak_dbfs": -0.549015,
+   "wer": 0.029,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "That honesty is the whole story of the helmet, right up to now. The steel gave way to Kevlar, then to fibers stronger than steel by weight. And the helmet that replaced the steel pot had a deep curve so like the old German Stahlhelm that American troops nicknamed it the Fritz. The shapes kept changing after that, lighter and higher-cut, but the job underneath stayed the same.",
+   "heard": "That honesty is the whole story of the helmet, right up to now. The steel gave way to Kevlar, then to fibers stronger than steel by weight, and the helmet that replaced the steel pot had a deep curve so like the old German stall helm that American troops nicknamed it the Fritz. The shapes kept changing after that, lighter and higher cut, but the job underneath stayed the same."
+  },
+  {
+   "index": 51,
+   "duration": 24.14,
+   "wpm": 194,
+   "peak_dbfs": -0.638315,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Here is the quiet truth after three thousand years of trying. No standard combat helmet is a sure shield against a rifle round fired straight at it. The newest ones can defeat some small-arms fire, but what a helmet still stops best is fragments, the flying steel that has done most of the killing since the trenches. From a cap of boar's teeth to a shell of woven fiber, the helmet never promised to make a man invincible.",
+   "heard": "Here is the quiet truth after 3,000 years of trying. No standard combat helmet is a sure shield against a rifle round fired straight at it. The newest ones can defeat some small arms fire, but what a helmet still stops best is fragments, the flying steel that has done most of the killing since the trenches. From a cap of boar's teeth to a shell of woven fiber, the helmet never promised to make a man invincible."
+  },
+  {
+   "index": 52,
+   "duration": 5.98,
+   "wpm": 191,
+   "peak_dbfs": -0.613735,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "It promised something smaller and far greater. To turn a death into a wound he might walk away from.",
+   "heard": "It promised something smaller and far greater. To turn a death into a wound he might walk away from."
+  }
+ ],
+ "asr_model": "distil-large-v3",
+ "round": 0
+}
