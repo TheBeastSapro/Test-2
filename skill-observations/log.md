@@ -467,3 +467,64 @@ the reviewer's attention on noise, and the cost is not neutral: a long list of f
 trains the reader to skim exactly the list that also holds the real ones. Where a reference
 answer already exists — here, the script's own pronunciation guide — check against it
 before escalating to a human.
+
+### Observation 26: "Check what it would do before enabling it" is advice, not a gate — so it was skipped
+
+**Status:** OPEN
+**Date:** 2026-08-23
+**Session context:** Helmets voiceover. Heading levelling ran at its default. 8 of 11
+chapter announcements were retimed and 7 landed exactly on the ±15% clamp rail
+(x1.180 / x0.850). The first master was delivered before anyone looked at those numbers.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** "The first chapter announcement reads fast" — heading levelling
+
+**Issue:** The skill says heading levelling "still wanted to slow 'James the Second's
+Bombard', so the last delivery ran with `--no-level-headings`. Check what it would do
+before enabling it." That instruction has no mechanism behind it: the levelling decisions
+are printed by the stitch stage, which runs *after* the irreversible generate step and
+whose output nobody is required to read, and `--plan` — the one gate that is read before
+committing — says nothing about headings at all. The skill also states the clamp "says so
+and asks for an ear" when it binds; the stitch log prints the factors but does not mark
+which are at the rail, so seven pinned corrections read as seven ordinary lines.
+
+**Suggested improvement:** Report predicted heading retimes in `--plan` where they can
+change the decision, or at minimum have the stitch stage label a clamped correction as
+clamped and print a one-line summary ("7 of 8 corrections hit the ±15% limit — listen
+before publishing"). A number sitting silently at its own boundary is the one number a
+reader will not notice.
+
+**Principle:** An instruction to check something before acting needs to live where the
+action is authorised, not in prose describing a later stage. If the only place a decision
+surfaces is a log emitted after the money is spent, the check will be skipped — not through
+carelessness, but because nothing in the workflow requires it.
+
+### Observation 27: The wrapper cannot re-stitch, so fixing one word proposed re-sending all 53 sections
+
+**Status:** OPEN
+**Date:** 2026-08-23
+**Session context:** After `regen_span.py` repaired one sentence in place, the section file
+needed re-stitching before mastering. `voiceover.py --from generate` planned to re-send
+every section: "This step would send 12,958 characters."
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** voiceover.py stage plumbing vs generate.py's `--stitch-only`
+
+**Issue:** `regen_span.py` ends with "NEXT: re-stitch and re-master", but the wrapper has no
+re-stitch entry point: `--from generate` regenerates, `--from check` and `--from master`
+both consume a stitch that is now stale. `generate.py` has `--stitch-only`, which does
+exactly the right thing for free — the wrapper simply does not expose it. The skill's claim
+that "a second run reuses all of it, so fixing one section costs one section's credits" did
+not hold: the run wanted the full 12,958 again. What prevented the spend was `--approve-spend 0`,
+and the resulting message quoted a ceiling of 1,000 rather than the 0 passed, so the guard
+worked while reporting a number nobody had set.
+
+**Suggested improvement:** Add `--from stitch` to voiceover.py, forwarding to
+`generate.py --stitch-only`, and name it in `regen_span.py`'s closing "NEXT" line so the
+repair path ends with a runnable command. Separately, honour `--approve-spend 0` as a real
+zero in the refusal message.
+
+**Principle:** A repair path is only as cheap as its cheapest complete route. If the surgical
+fix is followed by a step the wrapper can only do expensively, the saving is notional — and
+the next person, reading a bill for the whole job to fix one word, will reasonably conclude
+the surgical tool does not work.
