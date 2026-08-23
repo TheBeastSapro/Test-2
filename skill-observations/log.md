@@ -353,3 +353,83 @@ document, count for count — not a summary to glance at on the way to the credi
 claims to falsify. The values worth checking hardest are the ones nobody typed — an
 inherited default is a decision no one made, and a silently-parsed structure is a claim no
 one verified.
+
+### Observation 22: The plan gate reports quota remaining, but not whether the account can render at all
+
+**Status:** OPEN
+**Date:** 2026-08-23
+**Session context:** Helmets voiceover. The plan printed `COST: ~12,958 credits of 38,388
+remaining` and was approved on that basis. The first TTS request returned 401
+`payment_issue` — the subscription was `past_due`.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** "Confirm the structure first" — the `--plan` pre-flight
+
+**Issue:** The credit figure comes from `/v1/user/subscription`, which answers
+normally on a past-due account: `character_count 83453` of `character_limit 121841`
+gives a healthy-looking 38,388 remaining. The same response carries
+`status: "past_due"`, which the plan does not read. So the gate whose entire job is to
+be certain before spending presented a green number for an account that could not render
+a single character, and the failure surfaced only after approval had been given.
+
+**Suggested improvement:** Read `status` from the same response the quota already comes
+from and fail the plan loudly on anything other than `active`. It is one field in a call
+already being made, and it converts a post-approval error into a pre-flight refusal.
+
+**Principle:** Headroom and permission are different questions. A quota check answers
+"how much is left", never "may I", and a gate that only asks the first will wave through
+every account that is suspended, past due, or rate-limited with budget to spare.
+
+### Observation 23: Every 401 is reported as a bad API key, including the ones that aren't
+
+**Status:** OPEN
+**Date:** 2026-08-23
+**Session context:** Same failure. The ElevenLabs response body said, verbatim,
+`{'type': 'payment_required', 'code': 'payment_issue', 'message': 'Your subscription has
+a failed or incomplete payment.'}`. generate.py:181 raised
+`RuntimeError("Invalid or expired ElevenLabs API key.")`.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** generate.py — `tts()` error handling
+
+**Issue:** The handler keys off the 401 status alone and discards a body that had already
+named the real cause precisely. The stated diagnosis sends the reader to rotate a
+credential that is working fine; the actual fix is a billing action nobody would infer
+from the message. The only reason the true cause was found here is that the raw
+`ApiError` traceback happened to print above the `RuntimeError` that replaced it.
+
+**Suggested improvement:** Branch on `body['detail']['code']` before composing the
+message — `payment_issue` reports the billing state and says the key is valid; an
+authentication failure keeps the current wording. Always include the upstream
+`message` verbatim.
+
+**Principle:** An error handler that translates an upstream diagnosis into a guess makes
+things worse than one that says nothing, because a confident wrong cause is acted on.
+Where the service has already named the fault, quote it.
+
+### Observation 24: Appending a status echo to a backgrounded command destroys the exit code
+
+**Status:** OPEN
+**Date:** 2026-08-23
+**Session context:** The pipeline was launched as
+`python3 voiceover.py … > run.log 2>&1; echo "PIPELINE_EXIT=$?"`. generate.py exited 1;
+the trailing echo exited 0, so the harness reported the run as
+"completed (exit code 0)" for a job that rendered nothing.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** "Then run it" — the logging convention
+
+**Issue:** The skill is explicit that "every stage exits non-zero if it produced no
+artifact, so the exit code can be trusted. Do not read success out of the prose." The
+echo was added to make the exit code visible and instead overwrote it with the echo's own,
+turning the one trustworthy signal into a constant 0. This is the same failure the skill
+already documents for `| tail` — a wrapper added for convenience deciding what will ever
+be knowable about the job — in a different disguise, so the existing rule did not catch it.
+
+**Suggested improvement:** State the safe form next to the logging rule: capture the code
+first (`… > run.log 2>&1; rc=$?; echo "exit=$rc"; exit $rc`), and never let the last
+command in a backgrounded chain be anything but the job itself.
+
+**Principle:** Anything appended after a command becomes the command as far as its caller
+is concerned. Observing a result must not replace it — capture first, then report, then
+exit with what you captured.
