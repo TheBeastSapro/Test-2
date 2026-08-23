@@ -433,3 +433,37 @@ command in a backgrounded chain be anything but the job itself.
 **Principle:** Anything appended after a command becomes the command as far as its caller
 is concerned. Observing a result must not replace it — capture first, then report, then
 exit with what you captured.
+
+### Observation 25: Two thirds of the read-check flags were ASR orthography, not misreads
+
+**Status:** OPEN
+**Date:** 2026-08-23
+**Session context:** Helmets voiceover, 53 sections, 15 flagged by the read-check. Ten of
+the fifteen were the transcriber spelling correct audio its own way.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** The read-check — normalisation before the WER diff
+
+**Issue:** The skill already routes the diff through OpenAI's `EnglishTextNormalizer`
+specifically to settle "British vs American spelling (harbour/harbor, programme/program)
+and spoken numbers (nineteen forty three -> 1943)". Those exact classes still came through
+as flags: `armorers`/`armourers`, `ten`/`10`, `tenth`/`10th`, `twenty`/`20`, and
+`the fifth's`/`v's` and `the second`/`ii` where the voice read the words and the ASR wrote
+Roman numerals. Alongside them: apostrophe placement (`helm's`/`helms'`), compound-word
+boundaries the skill claims to drop (`spear point`/`spearpoint`, `neck guard`/`neckguard`),
+and the letter T transcribed as "tea". Every one is correct audio. Worse, three of the
+flags fired on names the voice read exactly as the script's own pronunciation guide
+specifies — `bascinet` -> "bassinet" is BASS-uh-net, `Hernán Cortés` -> "ernan cortez" is
+er-NAHN kor-TEZ — so the check flagged the reads that were provably right.
+
+**Suggested improvement:** Run the normaliser over ordinals and regnal numbers as well as
+cardinals, strip apostrophes before the diff, and — the cheap high-value one — resolve each
+flagged name against `pronunciation_guide.json` before reporting it. A heard form matching
+the guide's respelling is evidence the read was correct and should suppress the flag, not
+raise one.
+
+**Principle:** A checker that reports its own transcription conventions as defects spends
+the reviewer's attention on noise, and the cost is not neutral: a long list of false flags
+trains the reader to skim exactly the list that also holds the real ones. Where a reference
+answer already exists — here, the script's own pronunciation guide — check against it
+before escalating to a human.
