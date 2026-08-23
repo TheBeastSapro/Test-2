@@ -296,3 +296,60 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: Bold-only headings from a Google Doc collapse the whole chapter structure
+
+**Status:** OPEN
+**Date:** 2026-08-23
+**Session context:** Voiceover of a helmets script pasted from a Google Doc, where every
+chapter title was a bold paragraph (`**Corinthian Helmet**`) rather than a styled heading.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** script_prep.py — `_classify` / `detect_structure`; the `--plan` gate
+
+**Issue:** `strip_markdown` is only called at send time (script_prep.py:572, :608), never
+before `detect_structure`. So a line reading `**Corinthian Helmet**` fails
+`is_title_case_heading` on its very first test (`^[A-Z0-9]` sees an asterisk) and is
+classified as body text. The first plan reported **1 chapter** for a script with **11**,
+and the one chapter it found was the document label "Script". Every chapter announcement
+and every inserted chapter pause would have been silently absent from a 15-minute render.
+The skill text already knows Docs exports carry bold ("Google Docs exports headings as
+'## **Coca**'"), but only handles the case where a `#` marker survives alongside it.
+
+**Suggested improvement:** Apply `strip_markdown` to the line before `_classify` tests it
+(keep the raw line for output), so a bold-only line is judged on its text. Failing that,
+add a `--plan` pre-flight warning when a script has many standalone `**…**` lines and
+fewer than two detected chapters — the two facts together are conclusive.
+
+**Principle:** A formatting-stripper that runs only at output time cannot help the
+structure detector that runs before it. Normalise the text once, before anything
+classifies it — otherwise the classifier is reading a different document than the one
+that gets sent.
+
+### Observation 21: The plan gate caught both structural faults; nothing downstream would have
+
+**Status:** OPEN
+**Date:** 2026-08-23
+**Session context:** Same run. The first `--plan` also showed `voice MISSING (unset)` and
+six settings marked `(default)`, because the profile had been written as a bare settings
+dict instead of the `{"calibration": {…}}` shape `generate.py` reads.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** "Confirm the structure first" — the `--plan` gate and its provenance marks
+
+**Issue:** Two independent faults — a mis-shaped profile and undetected chapters — were both
+invisible in the source material and both fatal. Neither would have raised an error: the
+run would have generated 15 minutes of audio in the wrong voice with no chapter breaks, and
+the read-check would have passed it, because the read-check diffs ASR against the same
+mis-parsed script. Only the plan's chapter list and its `(profile)`/`(default)` provenance
+marks made either visible, and only because they were read rather than skimmed for the
+cost line.
+
+**Suggested improvement:** Keep the plan output's provenance marks, and state explicitly in
+the skill that the chapter list is a structural assertion to be checked against the source
+document, count for count — not a summary to glance at on the way to the credit figure.
+
+**Principle:** A pre-flight gate is only worth its cost if its output is read as a set of
+claims to falsify. The values worth checking hardest are the ones nobody typed — an
+inherited default is a decision no one made, and a silently-parsed structure is a claim no
+one verified.
