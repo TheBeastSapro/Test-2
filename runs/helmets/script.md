@@ -96,6 +96,10 @@ That honesty is the whole story of the helmet, right up to now. The steel gave w
 
 Here is the quiet truth after three thousand years of trying. No standard combat helmet is a sure shield against a rifle round fired straight at it. The newest ones can defeat some small-arms fire, but what a helmet still stops best is fragments, the flying steel that has done most of the killing since the trenches. From a cap of boar's teeth to a shell of woven fiber, the helmet never promised to make a man invincible. It promised something smaller and far greater. To turn a death into a wound he might walk away from.
 
+Thanks for watching. I love making these, and if there's a piece of history you want taken apart next, drop it in the comments. I actually read them.
+
+But before you go, check out this next video. Every Genius Medieval Castle Defense System Explained. A helmet had to save one man. A castle had to do it for everyone inside. Click on screen now, and I'll see you over there.
+
 ## Pronunciation guide (in order of appearance)
 
   - Iliad — ILL-ee-ad
