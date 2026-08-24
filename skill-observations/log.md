@@ -562,3 +562,35 @@ guess. Where the real value exists in the source material — a document's own n
 metadata — fetch it rather than terminating the chain in invention; and if a field can only
 be guessed, label it as guessed everywhere it is displayed, because an unlabelled guess is
 indistinguishable from a decision.
+
+### Observation 29: Heading levelling at full clamp was inaudible to the listener — a simplification candidate
+
+**Status:** OPEN
+**Date:** 2026-08-24
+**Session context:** Helmets voiceover. Two masters were built from identical takes, one with
+heading levelling on (8 of 11 chapter announcements retimed, 7 pinned at the ±15% rail) and
+one with `--no-level-headings`. Sapro chose the unlevelled version and said: "i don't see
+big difference."
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** "The first chapter announcement reads fast" — heading levelling
+
+**Issue:** This is the strongest single test the feature has had: maximum-strength corrections
+on most headings, A/B'd against no corrections at all, judged by the person the channel
+belongs to — and the difference did not register. Set against what the feature costs, that is
+a poor trade. It has needed two fixes already (words-per-minute replaced by syllables per
+second after it slowed a 4-word heading 15% to match a median set by 2-word ones), the last
+delivery disabled it, this one disabled it, and it consumed a full extra stitch-and-master
+cycle plus a round of clip-cutting to settle. Its stated purpose is narrow — the FIRST
+announcement rushes because nothing conditions it — but it acts on every heading, and here it
+applied the maximum stretch to the video's opening line to fix a problem no one could hear.
+
+**Suggested improvement:** Default it off. If the first-announcement rush is real, correct only
+that heading, where the cause is known and structural, rather than levelling all of them
+against each other. Keep `--level-headings` available as an opt-in, and treat two consecutive
+deliveries that disable a default as the signal to flip it.
+
+**Principle:** A correction nobody can hear is not a safe correction, it is an unjustified one —
+it carries all of the risk of changing the audio and none of the benefit. When a default gets
+switched off by hand on delivery after delivery, the working practice has already voted; the
+skill should follow it rather than making each run re-derive the same decision.
