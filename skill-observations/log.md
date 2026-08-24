@@ -594,3 +594,31 @@ deliveries that disable a default as the signal to flip it.
 it carries all of the risk of changing the audio and none of the benefit. When a default gets
 switched off by hand on delivery after delivery, the working practice has already voted; the
 skill should follow it rather than making each run re-derive the same decision.
+
+### Observation 30: Sound design was offered as the next step after the voiceover; it belongs after the edit
+
+**Status:** OPEN
+**Date:** 2026-08-24
+**Session context:** On delivering the helmets voiceover, the agent offered sound design as
+the immediate next step, three separate times. Sapro: "sound design should be done after the
+video completed."
+**Skill:** explaintory-voiceover (and sound-designer)
+**Type:** open-source
+**Phase/Area:** what the delivery message proposes next
+
+**Issue:** The real pipeline is script -> voiceover -> animation/edit -> sound design ->
+publish. Sound design produces a cue sheet timestamped against the finished cut, so it cannot
+begin until the edit exists — the sound-designer skill even opens with "watch a video," which
+says so plainly. The agent still proposed it straight off the back of the VO, because
+explaintory-voiceover ends at "deliver the MP3" and says nothing about what receives that MP3.
+Nothing contradicted the wrong order, so it was repeated as if settled.
+
+**Suggested improvement:** Add one line to explaintory-voiceover's delivery section naming the
+next stage — the voiceover goes to the edit, and sound design happens on the assembled
+video, not on the VO. Worth noting the source doc usually carries the storyboard for that
+middle stage in the same file the script came from.
+
+**Principle:** Knowing where a deliverable goes next is part of delivering it. A skill that
+ends at its own artifact will keep proposing whatever adjacent skill exists, and an adjacent
+skill is not the same thing as the next step — the gap between them is where someone else's
+work happens.
