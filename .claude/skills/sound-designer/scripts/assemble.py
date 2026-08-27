@@ -179,10 +179,22 @@ def render_sfx_seg(asset, at, gain_db, work, idx, vary: float = 0.0) -> str:
     return out
 
 
-def render_sfx_short(asset, gain_db, work, idx, vary: float = 0.0) -> str:
-    """One SFX at its own length — no delay padding. See build_sfx_bus."""
+def render_sfx_short(asset, gain_db, work, idx, vary: float = 0.0,
+                     max_len: float | None = None) -> str:
+    """One SFX at its own length — no delay padding. See build_sfx_bus.
+
+    `max_len` caps how long the cue is allowed to keep sounding. A cue that is
+    still audible after the picture has cut to something else reads as a sound
+    that will not stop — reported on this channel as "unnecessary sfx, it's keep
+    continuing and not stopping where necessary". A card boom and a collapse are
+    meant to ring across the cut, so this is set per cue and never globally.
+    """
     out = os.path.join(work, f"sh_{idx}.wav")
     chain = f"aformat=sample_rates={SR}:channel_layouts={CH},"
+    if max_len:
+        fade = min(0.12, max_len * 0.25)
+        chain += (f"atrim=0:{max_len:.3f},asetpts=PTS-STARTPTS,"
+                  f"afade=t=out:st={max(0.0, max_len - fade):.3f}:d={fade:.3f},")
     if vary:
         # rubberband shifts pitch and leaves the duration alone; asetrate was a
         # varispeed, which also moved the transient and broke the alignment.
@@ -539,7 +551,7 @@ def main():
             continue
         vary = float(s.get("vary", 0.0))
         seg = render_sfx_short(asset, s.get("gain_db", -8.0) + args.sfx_db,
-                               work, s["id"], vary)
+                               work, s["id"], vary, s.get("max_len"))
         # A palette prepared by palette.py already starts on its attack, so the
         # transient search must NOT run again -- doing both compensates twice
         # and throws slow-blooming files (whooshes especially) hundreds of ms

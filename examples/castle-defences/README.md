@@ -20,6 +20,8 @@ we already had. Eight castle features, each with one siege story: Murder Holes
 | `multihit.py` | finds takes masquerading as samples |
 | `preflight.py` | flags hero cues cast from a file that sustains instead of decaying |
 | `fire.py` | scores drawn flame area per frame, so a fire bed can be cut to the shot |
+| `onscreen.py` | scores water and figures per frame, to audit every bed against its shot |
+| `overrun.py` | finds cues still sounding after the picture has cut |
 | `scan.py` | one decode pass: era-card score, banner-strip fingerprint, ink centroid |
 | `shots.py` / `sheets4.py` / `fine.py` | contact sheets at the cuts, then at 0.5–1.8 s over eight action windows |
 | `titles.py` | replays the searches to recover every file's Epidemic title |
@@ -84,6 +86,39 @@ Fixed: `ignite` = the one short decaying file, the sustaining four parked in
 `firetail` where nothing auto-casts them, the doubled flare at 402.583 dropped.
 Measured after: the 3–8 kHz crackle band is at the noise floor from 391–396 s and
 from 410 s on, where it used to run continuously.
+
+### The full sweep: audit every bed and every tail, not just the reported one
+
+*Then:* "check full and don't make unnecessary sfx like that." The same two
+measurements over the whole 12:19 found worse than the fire.
+
+**Beds.** `onscreen.py` scores water (a flat blue region in the *lower* frame —
+sky is the same hue) and figures per frame. It found `Water, Turbulent, River,
+Fast Flow` running **57.7 s** under Château Gaillard with water on screen **15%**
+of it: a map, a plan on white, a castle under lightning, a target diagram, arrows
+on white. Replaced with neutral air. A second fast river ran 35 s under the
+drawbridge's ditch — the water is genuinely there (86.5%) but a moat is standing
+water, so it became gentle lapping. Both were the fire fault, one of them bigger.
+
+Two beds were left alone on purpose. The Kenilworth lake laps sit at 39% and 28%
+presence, but a gentle lap under a section whose premise is a castle in a lake is
+*location*, not an event. And the figure proxy is not calibrated — it reports 29%
+on a 7 s crowd bed whose frames plainly show men pouring through a breach, so
+those were checked on a contact sheet and kept.
+
+**Tails.** `overrun.py` compares each cue's audible tail (to −30 dB below its own
+peak, not its full length) with the time to the next scene cut. 17 cues were
+still sounding more than 1.5 s after the picture moved on. **Ten of them were
+right** — four section-card booms, the corner collapse, the gate thrown open —
+because a card boom is *supposed* to ring across its transition. So the fix is
+per-cue, never global: a beat now takes an optional `max_len` (8th field in the
+tuple), `place.py` carries it through and `assemble.py` trims there with a short
+fade. Seven caps applied, plus one 4.6 s stone scrape droning at hero level under
+a diagram.
+
+Both scripts belong in the pre-render checklist. Between them they catch the two
+halves of a sound that will not stop: a file that never decays, and a file that
+decays fine but is longer than its shot.
 
 ### The section transition is not always a card
 

@@ -1938,6 +1938,7 @@
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.1219,
+   "max_len": 1.2,
    "asset": "/home/user/Test-2/jobs/video-01/pal/armor_01.wav"
   },
   {
@@ -2450,6 +2451,7 @@
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.1083,
+   "max_len": 2.2,
    "asset": "/home/user/Test-2/jobs/video-01/pal/creak_02.wav"
   },
   {
@@ -7031,6 +7033,7 @@
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.4714,
+   "max_len": 2.2,
    "asset": "/home/user/Test-2/jobs/video-01/pal/creak_04.wav"
   },
   {
@@ -8358,6 +8361,7 @@
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.0579,
+   "max_len": 2.0,
    "asset": "/home/user/Test-2/jobs/video-01/pal/stone_04.wav"
   },
   {
@@ -8915,7 +8919,7 @@
    "kind": "wrapped in ring after ring of wall (anticipation)",
    "tier": "swish",
    "cat": "swish",
-   "gain_db": -16.0,
+   "gain_db": -17.0,
    "vary": 0.3,
    "layer": "anticipation",
    "pre_trimmed": true,
@@ -8928,10 +8932,11 @@
    "kind": "wrapped in ring after ring of wall",
    "tier": "hero_hit",
    "cat": "scrape",
-   "gain_db": -9.0,
+   "gain_db": -10.0,
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.2487,
+   "max_len": 3.0,
    "asset": "/home/user/Test-2/jobs/video-01/pal/scrape_01.wav"
   },
   {
@@ -8940,7 +8945,7 @@
    "kind": "wrapped in ring after ring of wall (weight)",
    "tier": "swish",
    "cat": "stone",
-   "gain_db": -14.0,
+   "gain_db": -15.0,
    "vary": 0.2,
    "layer": "weight",
    "pre_trimmed": true,
@@ -9083,6 +9088,7 @@
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.5034,
+   "max_len": 2.5,
    "asset": "/home/user/Test-2/jobs/video-01/pal/thunder_02.wav"
   },
   {
@@ -9809,6 +9815,7 @@
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.3223,
+   "max_len": 3.4,
    "asset": "/home/user/Test-2/jobs/video-01/pal/creak_03.wav"
   },
   {
@@ -9884,6 +9891,7 @@
    "vary": 0.0,
    "pre_trimmed": true,
    "anchor": 0.324,
+   "max_len": 1.8,
    "asset": "/home/user/Test-2/jobs/video-01/pal/wgate_04.wav"
   },
   {
@@ -10299,11 +10307,11 @@
    "hand": true,
    "at": 455.74,
    "dur": 34.98,
-   "gain_db": -24.12,
+   "gain_db": 0.7,
    "fade": 2.5,
-   "why": "the ditch under the bridge",
-   "rms_target_dbfs": -41,
-   "asset": "/home/user/Test-2/jobs/video-01/pal/river_01.wav"
+   "why": "the ditch under the bridge -- standing water, not a rapid",
+   "rms_target_dbfs": -42,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/lake_02.wav"
   },
   {
    "id": "b18",
@@ -10365,11 +10373,11 @@
    "hand": true,
    "at": 628.53,
    "dur": 57.71,
-   "gain_db": -25.77,
+   "gain_db": -10.76,
    "fade": 2.5,
-   "why": "the Seine under the cliff",
-   "rms_target_dbfs": -41,
-   "asset": "/home/user/Test-2/jobs/video-01/pal/river_02.wav"
+   "why": "the cliff above the Seine; the river is never heard from up there",
+   "rms_target_dbfs": -43,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/air_01.wav"
   },
   {
    "id": "b24",

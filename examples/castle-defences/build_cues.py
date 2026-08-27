@@ -89,13 +89,13 @@ BEDS = [
  # down, over a diagram of a square tower. Reported as fire that "keeps
  # continuing and not stopping where necessary", and it was.
  (399.300, 404.200, "fire_01", -40, "the props alight under the corner: 2.9 s of flame on screen", 0.9),
- (455.740, 490.720, "river_01",-41, "the ditch under the bridge"),
+ (455.740, 490.720, "lake_02", -42, "the ditch under the bridge -- standing water, not a rapid"),
  (490.720, 535.330, "amb_01",  -43, "a gate doing the least heroic job imaginable"),
  (535.330, 575.167, "amb_02",  -41, "Dover, and the French on the outer defences"),
  (575.167, 606.560, "amb_03",  -40, "the breach"),
  (588.583, 597.500, "crowd_08",-38, "hand to hand in the gap"),
  (606.560, 628.530, "amb_04",  -43, "the new passage, bent and dark"),
- (628.530, 686.240, "river_02",-41, "the Seine under the cliff"),
+ (628.530, 686.240, "air_01",  -43, "the cliff above the Seine; the river is never heard from up there"),
  (677.160, 684.500, "crowd_04",-38, "trapped in the yard between the rings"),
  (686.240, 714.120, "wind_04", -40, "winter, and a siege that grinds on"),
  (714.120, 739.167, "wind_02", -44, "empty walls"),
@@ -141,7 +141,7 @@ B = [
  (107.000, "Simon de Montfort killed",                             "body",   "hero_hit",  -8.0, ["vox_cry"], True),
  (109.830, "the survivors fall back to Kenilworth",                "wgate",  "impact",   -10.0, None, True),
  (112.990, "every demand to surrender, refused",                   "parch",  "impact",   -12.0, ["lock"], True),
- (117.490, "the king comes, and stays",                            "armor",  "impact",   -11.0, None, True),
+ (117.490, "the king comes, and stays",                            "armor",  "impact",   -11.0, None, True, 1.2),   # cap: a 0.7 s shot
  (118.990, "\"6 Months Later\"",                                   "pop",    "pop",      -16.0, None, True),
  (124.220, "its builders had dammed the local streams",            "scrape", "whoosh",   -12.0, None, True),
  (129.110, "into a great artificial mirror",                       "splash", "impact",   -10.0, ["pour"], True),
@@ -150,7 +150,7 @@ B = [
  (144.333, "the largest trebuchets in the kingdom",                "treb",   "hero_hit",  -8.0, ["rope"], True),
  (147.458, "the stone goes out over the lake",                     "whoosh", "whoosh",   -10.0, None, False),
  (149.750, "and mostly into it",                                   "splash", "hero_hit",  -8.0, ["stone"], True),
- (153.292, "barges dragged overland from Chester, at night",       "creak",  "impact",   -10.0, ["splash"], False),
+ (153.292, "barges dragged overland from Chester, at night",       "creak",  "impact",   -10.0, ["splash"], False, 2.2),   # cap: the night barges, a 2.0 s shot
  (155.333, "and the garrison drove them back",                     "arrow",  "hero_hit",  -8.0, ["arrowhit"], False),
  (158.000, "a cardinal excommunicates the rebels from a safe hill","parch",  "impact",   -12.0, None, True),
  (160.840, "so they dressed one of their own men in white",        "pop",    "impact",   -12.0, None, True),
@@ -240,7 +240,7 @@ B = [
  (479.900, "hauled up on chains, and the crossing vanishes",       "chain",  "hero_hit",  -8.0, ["winch"], True),
  (486.280, "no army was destroyed because a bridge went up at the right second", "boom", "hero_hit", -10.0, None, True),
  (490.720, "the least heroic job imaginable",                      "boom",   "hero_boom", -6.0, None, True),
- (494.370, "down in the morning, to let the millers' carts in",    "creak",  "impact",   -10.0, ["wgate"], True),
+ (494.370, "down in the morning, to let the millers' carts in",    "creak",  "impact",   -10.0, ["wgate"], True, 2.2),   # cap: the carts cross, then it cuts to night 2.0 s later
  (496.370, "up at night, to keep everyone out",                    "winch",  "impact",   -10.0, ["chain"], True),
  (498.200, "raised, it swings flush against the gate and becomes the wall", "wgate", "hero_boom", -6.0, ["lock", "scrape"], True),
  (508.460, "no footing left below to bring a ram up at all",       "rammer", "hero_hit",  -8.0, ["wbreak"], True),
@@ -269,7 +269,7 @@ B = [
  (589.958, "and fights them back out by hand",                     "stab",   "hero_hit",  -8.0, ["body"], False),
  (591.292, "they jam the gap shut with timber torn from their own castle", "wbreak", "hero_hit", -8.0, ["rammer"], False),
  (593.458, "he had broken the gate of Dover, and still could not get through it", "boom", "hero_boom", -6.0, None, False),
- (595.458, "the breach, sealed",                                   "stone",  "impact",   -10.0, ["rubble"], False),
+ (595.458, "the breach, sealed",                                   "stone",  "impact",   -10.0, ["rubble"], False, 2.0),   # cap: the breach sealed, a 1.8 s shot
  (597.292, "the near-miss terrified the English",                  "armor",  "impact",   -11.0, None, False),
  (606.560, "they bricked the North Gate into a solid block of stone", "stone","hero_boom", -6.0, ["scrape"], True),
  (609.910, "a passage that bent so no ram could charge it",         "scrape", "whoosh",   -12.0, None, True),
@@ -282,9 +282,9 @@ B = [
  (629.300, "CONCENTRIC WALLS",                                     "boom",   "hero_boom", -5.0, ["stone"], False),
  (638.280, "Normandy -- England's lands in France",                "parch",  "impact",   -12.0, None, True),
  (645.660, "a cliff above the river Seine",                        "whoosh", "whoosh",   -12.0, None, True),
- (648.160, "wrapped in ring after ring of wall",                   "scrape", "hero_hit",  -9.0, ["stone"], True),
+ (648.160, "wrapped in ring after ring of wall",                   "scrape", "hero_hit", -10.0, ["stone"], True, 3.0),   # cap: the rings draw over ~3 s; the file droned for 4.6
  (653.440, "his fair one-year-old daughter",                       "pop",    "impact",   -13.0, None, True),
- (656.120, "he was certain no one could ever take it",             "thunder","hero_boom", -8.0, None, True),
+ (656.120, "he was certain no one could ever take it",             "thunder","hero_boom", -8.0, None, True, 2.5),   # cap: the lightning shot is 1.3 s; the roll ran 4.5 s
  (665.330, "break through the outer wall",                         "rubble", "hero_hit",  -7.0, ["stone"], True),
  (670.790, "and an attacker did not find the castle",              "armor",  "impact",   -11.0, None, True),
  (677.160, "he found a narrow yard, with defenders firing down from both sides", "arrow", "hero_hit", -7.0, ["arrowhit"], True),
@@ -296,10 +296,10 @@ B = [
  (696.620, "then a handful of them found the one thing the design had not accounted for", "pop", "impact", -12.0, None, True),
  (701.250, "a toilet shaft, from a chapel down to the outside of the wall", "scrape", "hero_hit", -9.0, None, False),
  (703.125, "outside, and inside the castle",                       "pop",    "pop",      -16.0, None, False),
- (706.833, "they climbed up it",                                   "creak",  "hero_hit",  -9.0, ["scrape"], False),
+ (706.833, "they climbed up it",                                   "creak",  "hero_hit",  -9.0, ["scrape"], False, 3.4),   # cap: the climb shot is 3.2 s; the creak ran 5.8 s
  (708.292, "came out inside, and threw the way open",              "wgate",  "hero_boom", -6.0, ["lock"], False),
  (710.042, "the winter camp, waiting",                             "armor",  "swish",    -14.0, None, False),
- (714.120, "the garrison surrendered",                             "wgate",  "hero_hit",  -9.0, ["chain"], True),
+ (714.120, "the garrison surrendered",                             "wgate",  "hero_hit",  -9.0, ["chain"], True, 1.8),   # cap: the surrender, a 1.4 s shot
  (715.490, "the castle Richard swore could never fall",            "boom",   "hero_boom", -5.0, None, True),
  (719.830, "within months he had taken Rouen and the rest of it",  "parch",  "impact",   -12.0, None, True),
  (722.830, "rings of wall no army could break, and every one of them held", "stone", "impact", -11.0, None, True),
@@ -346,10 +346,12 @@ for i, (mid, a, b, en, why, track) in enumerate(SECTIONS):
 
 sfx = []
 for j, t in enumerate(sorted(B), 1):
-    at0, label, cat, tier, gain, stack, do_snap = t
+    at0, label, cat, tier, gain, stack, do_snap = t[:7]
+    cap = t[7] if len(t) > 7 else None      # how long this cue may keep sounding
     at = snap(at0) if do_snap else at0
     sfx.append({"id": f"h{j}", "at": round(at, 3), "kind": label, "cat": cat,
                 "tier": tier, "gain_db": gain, "stack": stack, "solo_ok": True,
+                **({"max_len": cap} if cap else {}),
                 "moved_ms": round((at - at0) * 1000)})
 
 beds = []

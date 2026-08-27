@@ -160,6 +160,7 @@ def main():
                      "t": s["at"], "cat": cat, "label": s["kind"],
                      "files": s.get("files"), "gain_db": s.get("gain_db"),
                      "stack": s.get("stack"), "hand": True,
+                     "max_len": s.get("max_len"),
                      "solo_ok": s.get("solo_ok", False)})
     heroes = len(cand)
 
@@ -341,6 +342,9 @@ def main():
                     "tier": tier, "cat": cat, "gain_db": gain,
                     "vary": VARY.get(cat, 0.0), "pre_trimmed": True,
                     "anchor": anchors.get(f, 0.0),
+                    # a hand beat may cap how long its cue keeps sounding, so a
+                    # sound cannot run on over a picture that has moved
+                    **({"max_len": c["max_len"]} if c.get("max_len") else {}),
                     "asset": os.path.join(apath, f"{f}.wav")})
         # A strike gets a short swish just before contact. One sound is a
         # sample; two is a designed hit.

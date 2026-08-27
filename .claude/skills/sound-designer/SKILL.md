@@ -931,6 +931,42 @@ area, the same trick as the warships job) and set the bed to what it finds, plus
 beat either side. A bed at section length is the default and the default is wrong for
 anything that starts and stops on camera.
 
+**Audit every bed the same way, not just the one that got reported.** Asked to check the
+whole mix after the fire note, the same measurement found worse:
+`Water, Turbulent, River, Fast Flow` running for **57.7 s** under the Château Gaillard
+section with water on screen **15%** of that — a map, a plan on white, a castle under
+lightning, a target diagram, arrows on white. And a second fast-flowing river under a
+drawbridge's **standing** ditch, where the object is wrong even though the water is
+genuinely there. `examples/castle-defences/onscreen.py` scores water (a flat blue region
+in the *lower* frame — sky is the same hue) and figures per frame; run it against the
+bed list and anything under ~45% presence is either mis-timed or mis-cast.
+
+Two cautions on that audit. **Room tone is exempt**: a gentle lake lap under a section
+whose whole premise is a castle sitting in a lake is location, not an event, and 39%
+presence is fine for it. And **the figure proxy is unreliable** — ink density flags
+7-second crowd beds on light-grey wall shots at 29% when the frames plainly show men in
+a breach. Check those on a contact sheet before cutting them; do not cut a bed on a
+proxy you have not calibrated.
+
+## A cue may not outlast its shot: `max_len`
+
+The general form of the same note, for cues rather than beds. `examples/castle-defences/overrun.py`
+compares each cue's *audible* tail (to −30 dB below its own peak, not its full length)
+against the time to the next scene cut. On this video 17 cues were still sounding more
+than 1.5 s after the picture had moved on — a 6.9 s door creak that spanned two cuts,
+a 4.5 s thunder roll over a 1.3 s lightning shot, a 5.8 s creak over a 3.2 s climb.
+
+Ten of the seventeen were **right**, and that is the point: a section-card boom is
+*supposed* to ring across its transition, and a collapse's debris is supposed to ring
+out over the next shot. So this is never a global cap. A cue sheet beat now takes an
+optional `max_len` (an 8th field in the `BEATS` tuple), `place.py` carries it through,
+and `assemble.py` trims the cue there with a short fade. Seven caps fixed this video;
+the ten that remain are all cues that earn their tail.
+
+Run `overrun.py` and `preflight.py` on every finished sheet before rendering. Between
+them they catch both halves of "unnecessary sfx that keeps continuing": a file that
+never decays, and a file that decays fine but is longer than the shot it is in.
+
 And a short bed needs a short fade: `BEDS` entries carry their own `fade` now, because
 the 2.5 s default cannot fit inside a 5 s bed.
 

@@ -896,6 +896,7 @@
    "gain_db": -11.0,
    "stack": null,
    "solo_ok": true,
+   "max_len": 1.2,
    "moved_ms": 385
   },
   {
@@ -1005,6 +1006,7 @@
     "splash"
    ],
    "solo_ok": true,
+   "max_len": 2.2,
    "moved_ms": 0
   },
   {
@@ -2027,6 +2029,7 @@
     "wgate"
    ],
    "solo_ok": true,
+   "max_len": 2.2,
    "moved_ms": -453
   },
   {
@@ -2368,6 +2371,7 @@
     "rubble"
    ],
    "solo_ok": true,
+   "max_len": 2.0,
    "moved_ms": 0
   },
   {
@@ -2505,11 +2509,12 @@
    "kind": "wrapped in ring after ring of wall",
    "cat": "scrape",
    "tier": "hero_hit",
-   "gain_db": -9.0,
+   "gain_db": -10.0,
    "stack": [
     "stone"
    ],
    "solo_ok": true,
+   "max_len": 3.0,
    "moved_ms": -452
   },
   {
@@ -2532,6 +2537,7 @@
    "gain_db": -8.0,
    "stack": null,
    "solo_ok": true,
+   "max_len": 2.5,
    "moved_ms": -453
   },
   {
@@ -2674,6 +2680,7 @@
     "scrape"
    ],
    "solo_ok": true,
+   "max_len": 3.4,
    "moved_ms": 0
   },
   {
@@ -2711,6 +2718,7 @@
     "chain"
    ],
    "solo_ok": true,
+   "max_len": 1.8,
    "moved_ms": -453
   },
   {
@@ -2957,11 +2965,11 @@
    "hand": true,
    "at": 455.74,
    "dur": 34.98,
-   "gain_db": -24.12,
+   "gain_db": 0.7,
    "fade": 2.5,
-   "why": "the ditch under the bridge",
-   "rms_target_dbfs": -41,
-   "asset": "/home/user/Test-2/jobs/video-01/pal/river_01.wav"
+   "why": "the ditch under the bridge -- standing water, not a rapid",
+   "rms_target_dbfs": -42,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/lake_02.wav"
   },
   {
    "id": "b18",
@@ -3023,11 +3031,11 @@
    "hand": true,
    "at": 628.53,
    "dur": 57.71,
-   "gain_db": -25.77,
+   "gain_db": -10.76,
    "fade": 2.5,
-   "why": "the Seine under the cliff",
-   "rms_target_dbfs": -41,
-   "asset": "/home/user/Test-2/jobs/video-01/pal/river_02.wav"
+   "why": "the cliff above the Seine; the river is never heard from up there",
+   "rms_target_dbfs": -43,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/air_01.wav"
   },
   {
    "id": "b24",

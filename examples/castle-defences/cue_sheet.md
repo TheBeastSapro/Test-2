@@ -50,13 +50,13 @@ Hand-assigned, never rotated: a bed does not duck, so a wrong one runs under the
 | 5:34.840 | 22s | Vegetation, Grass, Wheat In Wind 04 | -43 dBFS | weeks of it, and then he rides away |
 | 5:56.950 | 99s | amb_08 | -42 dBFS | England, and Rochester: forty pigs and a keep that will not fall |
 | 6:39.300 | 5s | Fire, Torch, Torch, Burning, Rather Intense, Crackling | -40 dBFS | the props alight under the corner: 2.9 s of flame on screen |
-| 7:35.740 | 35s | Water, Turbulent, River, Fast Flow 02 | -41 dBFS | the ditch under the bridge |
+| 7:35.740 | 35s | Water, Lap, Water Laps | -42 dBFS | the ditch under the bridge -- standing water, not a rapid |
 | 8:10.720 | 45s | amb_01 | -43 dBFS | a gate doing the least heroic job imaginable |
 | 8:55.330 | 40s | amb_02 | -41 dBFS | Dover, and the French on the outer defences |
 | 9:35.167 | 31s | amb_03 | -40 dBFS | the breach |
 | 9:48.583 | 9s | Crowds, Battle, Designed, Battle Screams, Medieval, Short Uniform Shout 03 | -38 dBFS | hand to hand in the gap |
 | 10:06.560 | 22s | amb_04 | -43 dBFS | the new passage, bent and dark |
-| 10:28.530 | 58s | Water, Turbulent, River, Fast Flow 01 | -41 dBFS | the Seine under the cliff |
+| 10:28.530 | 58s | Wind, Designed, Chaotic, Flutter, Deep, Muffled, Constant | -43 dBFS | the cliff above the Seine; the river is never heard from up there |
 | 11:17.160 | 7s | Crowds, Battle, Medieval, 2nd Battle Charge, Voices Layer 03 | -38 dBFS | trapped in the yard between the rings |
 | 11:26.240 | 28s | Wind, Gust, Designed, Polar, Snow Storm 04 | -40 dBFS | winter, and a siege that grinds on |
 | 11:54.120 | 25s | Wind, Tonal, Heavy Storm, Whistling, Cold | -44 dBFS | empty walls |
