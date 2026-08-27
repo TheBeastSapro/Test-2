@@ -55,6 +55,8 @@ HERO_CAT = {"boom": "boom", "clash": "impact", "hit": "impact", "impact": "impac
             "shatter": "impact", "ring": "draw", "draw": "draw", "forge": "forge",
             "whoosh": "whoosh", "swoosh": "whoosh", "armor": "armor"}
 
+DEFAULT_WEIGHT = ["body"]
+
 GENERIC = {"caption / small element", "shot change", "strong on-screen action",
            "element moves in"}
 
@@ -103,6 +105,8 @@ def main():
 
     rng = random.Random(args.seed)
     cue = json.load(open(args.cues))
+    global DEFAULT_WEIGHT
+    DEFAULT_WEIGHT = cue.get("default_weight_cats") or ["body"]
     ev = json.load(open(args.events))
     pal = json.load(open(os.path.join(args.palette, "palette_manifest.json")))
     anchors = pal.pop("_anchors", {})     # per-file rise time; see palette.py
@@ -362,7 +366,14 @@ def main():
         # ask for anything in the palette (a shield drag, a spear clatter).
         stack = c.get("stack")
         if stack is None and tier in ("impact", "hero_hit"):
-            stack = ["body"]
+            # The default weight pool is per-video, because "body" names an
+            # object. Four flesh punches under every generic strike is right for
+            # a video about men hitting each other and wrong for one about
+            # stone, timber and iron -- and with only four files they played 31
+            # times each on a 12-minute castle video, twice over the reuse rule.
+            # Set "default_weight_cats" in the cue sheet to say what a strike in
+            # THIS video weighs; "body" stays the fallback.
+            stack = DEFAULT_WEIGHT
         for k, scat in enumerate(stack or []):
             if scat not in rot:
                 # Loud, because silent was expensive: rebuilding a palette once

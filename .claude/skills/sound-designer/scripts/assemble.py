@@ -402,8 +402,17 @@ def final_master(music, sfx, vo, out, lufs, tp, is_mp3):
     # at -0.2 once the SFX were levelled as foreground. An explicit limiter after
     # loudnorm holds the ceiling the cue sheet actually specifies.
     ceiling = 10 ** (tp / 20.0)
+    # ANCHOR THE MASTER TO THE VOICE. loudness_target_lufs: null means "sum at
+    # unity, limit for safety, ship" -- the VO arrives already mastered and ANY
+    # programme target moves it, because the voice is most of the programme.
+    # (Asked to hit -21.5 LUFS once, loudnorm applied a flat -7.6 dB to
+    # everything and delivered the voice 7.6 dB below the file supplied.)
+    # Without this branch a null target was interpolated as the literal string
+    # "None" and ffmpeg refused the filter, so the documented setting could not
+    # actually be rendered.
+    norm = f"loudnorm=I={lufs}:TP={tp}:LRA=11," if lufs is not None else ""
     fc = (f"{mixin}amix=inputs={len(labels)}:normalize=0:dropout_transition=0[mx];"
-          f"[mx]loudnorm=I={lufs}:TP={tp}:LRA=11,"
+          f"[mx]{norm}"
           f"alimiter=limit={ceiling:.4f}:attack=5:release=50:level=disabled[o]")
     cmd = [FFMPEG, "-hide_banner", "-v", "error", "-y", *inputs,
            "-filter_complex", fc, "-map", "[o]"]

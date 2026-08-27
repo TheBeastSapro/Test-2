@@ -37,6 +37,15 @@ ffmpeg -i music.wav -i sfx.wav -i vo.wav -filter_complex \
   -map "[a]" out.mp3          # the VO comes out exactly as it went in
 ```
 
+In a cue sheet that is `"loudness_target_lufs": null`, and until the castle job that
+setting **could not actually be rendered**: `final_master` interpolated the value
+straight into the filter string, handed ffmpeg `loudnorm=I=None`, and died at the last
+stage of a nine-minute render. Fixed — a null target now skips loudnorm entirely. If
+you are reading this because a render just failed there, the fix is already in
+`assemble.py`; the lesson is that the documented setting and the code path that
+implements it are two different things, so render a 30-second `--preview` before
+committing to a full pass.
+
 ## The two halves
 
 1. **Brain** (`analyze.py`) — no API needed. Watches the video (scene cuts) and listens
@@ -70,8 +79,21 @@ Script: <doc link>
 
 That is everything Sapro should ever have to type. The VO must be separate because both
 the ducking and the bed level are calibrated against the VO stem — a mix-down cannot be
-used. Links are Drive because YouTube downloads are blocked from the container. If the
-script is missing, ask only for that; everything else below is your job to do unasked.
+used. Links are Drive because YouTube downloads are blocked from the container.
+
+**If only the video arrives, check its audio before asking for anything.** An
+ExplainTory cut carries the mastered VO and nothing else, and it measures like one:
+−14.5 LUFS, LRA 1.6–1.7, zero silences ≥0.6 s. `ffmpeg -i in.mp4 -vn -ac 1 -ar 48000
+vo.wav` then gives a usable VO stem, so the separate file is not needed — it is needed
+when the supplied cut already has music on it, which those numbers will tell you.
+
+**And if the script is missing, transcribe it rather than asking.**
+`pip install faster-whisper`, `base.en`, a couple of minutes on CPU, and the whole
+script is available. Proper nouns come out mangled — Krak des Chevaliers as "Crackday
+Chevelier", portcullis as "Port Colus", Château Gaillard as "Guy Lard" — but every
+story beat and its timing is there, which is all the casting needs, and the picture
+decides the casting anyway. Ask only if that fails; everything else below is your job
+to do unasked.
 
 Then, in this order — **all of it is default behaviour, not something to be told:**
 
@@ -585,6 +607,18 @@ recordings have the same shape, so anything cast from them was landing as a clus
 not a description. When discussing a choice, quote the real Epidemic title — otherwise a
 "clink" gets attributed to a recording that is nothing of the kind.
 
+**Split what the TITLE says is several takes, not what an envelope test flags.** A
+strict multi-attack test — two peaks each reaching 55% of the file's own peak, ≥150 ms
+apart, with a real trough between them — still flags 65 of 240 files, and most of those
+are one continuous gesture: a catapult creaking then releasing, a door latching then
+thudding, a pour, a thunder roll. Splitting those destroys them. The reliable signal is
+the Epidemic title: `x2`, `Variations`, `Impacts` (plural). On the castle video that
+picked out 8 files and turned them into 54 front-loaded one-shots with 0–15 ms anchors.
+The *loose* version of the test (any crossing of 30% of peak) flagged **108** files
+including six sword-palette whooshes the previous job had already validated — a
+slow-blooming whoosh has a long anchor and one attack, which is not the shape of a
+four-blow take.
+
 ## Casting: the category is not the question, the OBJECT is
 
 Getting the timing right and the tier right still produces a wrong mix if the sound
@@ -788,6 +822,84 @@ check them on a contact sheet rather than widening the threshold.
 **The white presenter shot is a free transition marker.** Every era card on this
 channel is preceded by a ~2 s shot of the narrator character on plain white. If the
 card scan misses one, the presenter shot is a second way in.
+
+**But the transition device is per-video, so find it before scanning for it.** The
+castle video has no white-and-red card at all: its sections are marked by a **grid
+of all eight topics** that scrolls to the next one, plus a persistent banner naming
+the current topic. `cards.py` returns nothing but false positives on grey stone, and
+the grey-card variant of it finds castle walls. What works there is the **banner-strip
+fingerprint** — downsample the top 12% of the frame, diff consecutive frames, and the
+8 section changes fall out — cross-checked against the grid on a contact sheet.
+`banner.py`'s documented failure (firing on the old text leaving *or* the new text
+arriving) is real but harmless when the grid card gives you the true boundary.
+Full-screen **red** cards can still exist and still be the biggest beats in the
+section: two on that video, found with `red = ((r>110)&(r-g>45)&(r-b>45)).mean() > 0.55`.
+Spend two minutes reading a coarse contact sheet for what the transition actually
+looks like before running any detector.
+
+## The default weight layer names an object, so set it per video
+
+`place.py` puts a layer under every generic strike 35 ms late, because metal alone is
+thin. That layer defaulted to `["body"]` — four flesh punches — which is right for a
+video about men hitting each other and wrong for one about stone, timber and iron.
+It is also only four files: on a 12-minute castle video with 125 generic strikes they
+played **31 times each**, three times over the reuse rule, in a mix whose next-busiest
+file was ×9. Nothing warned, because the reuse check people run looks at the primary
+cues and these are layers.
+
+Set `"default_weight_cats"` in the cue sheet to say what a strike in *this* video
+weighs; `["body"]` stays the fallback. On the castle video it was a 24-file pool of
+masonry, rock, ram timber and the flesh punches (men do still get hit), which took the
+busiest weight file to ×5. **Count the layers, not just the events**, when checking
+reuse:
+
+```python
+collections.Counter(os.path.basename(s["asset"]) for s in cues["sfx_cues"])
+```
+
+## Measure a track's drive; never read its title
+
+"Floaty is a casting error" is only actionable if you can tell before rendering. You
+can: score onset density, pulse regularity (the autocorrelation peak of the onset
+envelope) and percussive fraction over ~45 s from the middle of each candidate.
+`examples/castle-defences/mus_measure.py` is that scan, and the `lqmp3Url` in every
+search result means candidates cost one small download each rather than a WAV pull.
+
+On a castle video, *Arrival at Caelmere Keep* and *The King's Return* are the obvious
+picks by name. Measured, they score **2.25** and **2.10** against 3.4–3.8 for what
+shipped — they are exactly the ambient wash that gets reported as "float music, bit
+annoying". 116 candidates measured, 19 cast, no floaty note came back.
+
+## Test an unnamed bed for voices; do not trust the filename
+
+`amb_05` says nothing about what is in `amb_05`, and the sword palette's Epidemic
+titles are not recoverable — that job stored CDN ULIDs, which are a different id space
+from what `SearchSoundEffects` returns, so there is nothing to look them up by. The one
+thing that must not be in a bed is a second voice. So measure it: `pyin` over the
+harmonic component, counting frames carrying a confident pitch in the human F0 range
+(85–350 Hz), calibrated against the two files known to be "Voices, Yells".
+
+| | mean pitch confidence |
+|---|---|
+| the two known crowd recordings | **0.14, 0.25** |
+| every other bed | **≤ 0.04** |
+| `amb_05` | **0.16** — dropped |
+
+Band-energy and modulation-depth tests do **not** work: water and wind land in
+300–3400 Hz and modulate at 2–8 Hz just as hard as people do, so both flagged lake,
+river and wind files alongside the real crowds. Pitch confidence separates them
+cleanly. Also resolve the titles of anything you fetched yourself — replaying the
+searches that chose the files maps every internal name back to its real title
+(`examples/castle-defences/titles.py`), and the cue sheet should quote those.
+
+## Cold air is an object too
+
+Every obvious search for a wind bed returns "Polar" and "Heavy Storm, Cold" — that is
+what the library has most of. Running one under a Crusader castle in Syria, a hilltop
+in Languedoc and an English keep in November is the same class of error as marching
+over corpses: the bed contradicts the picture for a minute at a time and never ducks.
+Search `vegetation grass wheat in wind` and `wind designed constant` for neutral and
+dry air, and keep the polar ones for the shots that actually have snow in them.
 
 ## SFX must follow the scene, not the cut
 

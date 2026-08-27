@@ -1,0 +1,3139 @@
+{
+ "schema": "sound-designer/cue-sheet@1",
+ "video": "video.mp4",
+ "vo": "vo.mp3",
+ "duration": 739.167,
+ "loudness_target_lufs": null,
+ "true_peak_ceiling_dbtp": -1.0,
+ "measured": {
+  "scene_cuts": [
+   1.5,
+   9.042,
+   13.5,
+   17.917,
+   20.5,
+   28.25,
+   38.125,
+   45.167,
+   46.292,
+   58.917,
+   83.583,
+   95.708,
+   96.708,
+   100.0,
+   101.208,
+   102.667,
+   109.375,
+   112.542,
+   117.042,
+   118.542,
+   119.333,
+   134.0,
+   137.917,
+   153.292,
+   155.333,
+   177.375,
+   184.958,
+   186.083,
+   188.625,
+   213.167,
+   216.958,
+   218.833,
+   220.208,
+   228.083,
+   232.208,
+   235.917,
+   238.625,
+   240.958,
+   248.583,
+   249.917,
+   252.917,
+   254.458,
+   257.333,
+   265.042,
+   270.458,
+   276.75,
+   284.625,
+   287.708,
+   295.5,
+   297.083,
+   301.042,
+   305.083,
+   316.375,
+   325.458,
+   328.875,
+   337.5,
+   338.917,
+   355.208,
+   356.5,
+   358.0,
+   369.667,
+   381.458,
+   391.667,
+   400.917,
+   402.583,
+   403.458,
+   406.875,
+   418.333,
+   424.25,
+   434.417,
+   447.375,
+   455.292,
+   456.958,
+   461.542,
+   463.625,
+   473.958,
+   495.917,
+   497.75,
+   513.583,
+   520.333,
+   532.5,
+   534.875,
+   536.125,
+   542.458,
+   552.542,
+   557.958,
+   563.0,
+   568.792,
+   575.167,
+   581.375,
+   583.958,
+   587.542,
+   588.583,
+   593.458,
+   597.292,
+   601.0,
+   606.417,
+   609.458,
+   612.125,
+   617.875,
+   621.375,
+   623.583,
+   628.083,
+   630.083,
+   637.833,
+   647.708,
+   664.875,
+   683.542,
+   688.292,
+   689.333,
+   690.667,
+   710.042,
+   715.042,
+   716.458,
+   719.375,
+   722.375,
+   734.958
+  ],
+  "voiced_regions": [
+   [
+    0.0,
+    456.505
+   ],
+   [
+    457.062,
+    534.66
+   ],
+   [
+    535.204,
+    738.171
+   ]
+  ],
+  "silence": [
+   [
+    456.505,
+    457.062
+   ],
+   [
+    534.66,
+    535.204
+   ],
+   [
+    738.171,
+    739.179
+   ]
+  ]
+ },
+ "music_sections": [
+  {
+   "id": "m1",
+   "role": "intro",
+   "start": 0.0,
+   "end": 45.167,
+   "dur": 45.167,
+   "energy": 0.5,
+   "energy_label": "Krak has never fallen; Baybars arrives; the corridor built to kill",
+   "track": "Merlin's Curse",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 0.4,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m1.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m2",
+   "role": "body",
+   "start": 45.167,
+   "end": 65.0,
+   "dur": 19.833,
+   "energy": 0.72,
+   "energy_label": "he will not use the front door: siege engines, and a hole of his own",
+   "track": "In Front of the Fort",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m2.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m3",
+   "role": "body",
+   "start": 65.0,
+   "end": 95.708,
+   "dur": 30.708,
+   "energy": 0.44,
+   "energy_label": "it fell to a con -- a forged letter and bad paperwork",
+   "track": "Bug-A-Boo",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m3.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m4",
+   "role": "body",
+   "start": 95.708,
+   "end": 137.9,
+   "dur": 42.192,
+   "energy": 0.52,
+   "energy_label": "Kenilworth: Evesham lost, the survivors behind a lake",
+   "track": "Time Is Running Fast",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m4.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m5",
+   "role": "body",
+   "start": 137.9,
+   "end": 172.16,
+   "dur": 34.26,
+   "energy": 0.62,
+   "energy_label": "the king tries everything: trebuchets into water, barges, a flame war",
+   "track": "Half-Time Break",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m5.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m6",
+   "role": "body",
+   "start": 172.16,
+   "end": 185.417,
+   "dur": 13.257,
+   "energy": 0.3,
+   "energy_label": "six months, and an empty larder",
+   "track": "Coldfront",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m6.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m7",
+   "role": "body",
+   "start": 185.417,
+   "end": 219.0,
+   "dur": 33.583,
+   "energy": 0.66,
+   "energy_label": "the portcullis of the movies, and why it is a lie",
+   "track": "Close Call",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m7.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m8",
+   "role": "body",
+   "start": 219.0,
+   "end": 253.4,
+   "dur": 34.4,
+   "energy": 0.48,
+   "energy_label": "what it really was: a grill, a fire door, a very good door",
+   "track": "A Path Well Trodden",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m8.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m9",
+   "role": "body",
+   "start": 253.4,
+   "end": 305.32,
+   "dur": 51.92,
+   "energy": 0.56,
+   "energy_label": "Carcassonne: he owns the city and cannot reach the walls",
+   "track": "Leviathan",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m9.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m10",
+   "role": "body",
+   "start": 305.32,
+   "end": 356.95,
+   "dur": 51.63,
+   "energy": 0.68,
+   "energy_label": "a storm of bolts out of slits the width of a hand",
+   "track": "Don't Come Closer",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m10.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m11",
+   "role": "body",
+   "start": 356.95,
+   "end": 386.4,
+   "dur": 29.45,
+   "energy": 0.46,
+   "energy_label": "King John needs forty of the fattest pigs",
+   "track": "Be Honest",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m11.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m12",
+   "role": "body",
+   "start": 386.4,
+   "end": 418.333,
+   "dur": 31.933,
+   "energy": 0.7,
+   "energy_label": "the mine, the props, the fire, and the corner of the keep",
+   "track": "Controlled Collision",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m12.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m13",
+   "role": "body",
+   "start": 418.333,
+   "end": 455.74,
+   "dur": 37.407,
+   "energy": 0.58,
+   "energy_label": "a corner is a weakness; Rochester is rebuilt round",
+   "track": "Rise to the Power",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m13.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m14",
+   "role": "body",
+   "start": 455.74,
+   "end": 490.72,
+   "dur": 34.98,
+   "energy": 0.64,
+   "energy_label": "the bridge rises, the hero leaps -- and it is almost pure invention",
+   "track": "On the Brink of Glory",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m14.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m15",
+   "role": "body",
+   "start": 490.72,
+   "end": 535.33,
+   "dur": 44.61,
+   "energy": 0.44,
+   "energy_label": "a very large garage door whose finest hour was doing nothing",
+   "track": "Alter Hero",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m15.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m16",
+   "role": "body",
+   "start": 535.33,
+   "end": 575.167,
+   "dur": 39.837,
+   "energy": 0.66,
+   "energy_label": "Dover: Louis lands and goes straight for the strongest point",
+   "track": "Incendiary Treasures",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m16.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m17",
+   "role": "body",
+   "start": 575.167,
+   "end": 628.53,
+   "dur": 53.363,
+   "energy": 0.78,
+   "energy_label": "the tower comes down, and Hubert holds the breach by hand",
+   "track": "Call to Arms",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m17.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m18",
+   "role": "body",
+   "start": 628.53,
+   "end": 686.24,
+   "dur": 57.71,
+   "energy": 0.6,
+   "energy_label": "Chateau Gaillard: ring inside ring, and a breach that kills you",
+   "track": "Unite and Fight",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m18.wav",
+   "gain_db": 0.0
+  },
+  {
+   "id": "m19",
+   "role": "outro",
+   "start": 686.24,
+   "end": 739.167,
+   "dur": 52.927,
+   "energy": 0.42,
+   "energy_label": "a winter siege, a toilet shaft, and an empire",
+   "track": "Ghosting",
+   "under_voiceover": true,
+   "duck_db": -9,
+   "fade_in": 1.2,
+   "fade_out": 1.2,
+   "asset": "/home/user/Test-2/jobs/video-01/assets/m19.wav",
+   "gain_db": 0.0
+  }
+ ],
+ "sfx_cues": [
+  {
+   "id": "h1",
+   "at": 0.17,
+   "kind": "the grid of eight defences",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h2",
+   "at": 1.5,
+   "kind": "KRAK DES CHEVALIERS -- never fallen, not to anyone",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "whoosh"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h3",
+   "at": 9.042,
+   "kind": "\"Then, in 1271\"",
+   "cat": "pop",
+   "tier": "pop",
+   "gain_db": -17.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 2
+  },
+  {
+   "id": "h4",
+   "at": 13.5,
+   "kind": "Baybars works through the crusader castles like a list",
+   "cat": "parch",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": [
+    "scrape"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h5",
+   "at": 20.5,
+   "kind": "Krak's interior: a stone corridor bent back on itself",
+   "cat": "scrape",
+   "tier": "whoosh",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h6",
+   "at": 28.25,
+   "kind": "the floor of the gallery is open, on purpose",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "clatter"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h7",
+   "at": 33.125,
+   "kind": "packed tight, with men above them",
+   "cat": "draw",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -65
+  },
+  {
+   "id": "h8",
+   "at": 38.125,
+   "kind": "not the boiling oil of the movies",
+   "cat": "sizzle",
+   "tier": "impact",
+   "gain_db": -13.0,
+   "stack": [
+    "pop"
+   ],
+   "solo_ok": true,
+   "moved_ms": 5
+  },
+  {
+   "id": "h9",
+   "at": 40.208,
+   "kind": "but rock",
+   "cat": "stone",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -292
+  },
+  {
+   "id": "h10",
+   "at": 41.458,
+   "kind": "boiling water",
+   "cat": "pour",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": [
+    "sizzle"
+   ],
+   "solo_ok": true,
+   "moved_ms": -142
+  },
+  {
+   "id": "h11",
+   "at": 43.625,
+   "kind": "and heated sand",
+   "cat": "sand",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h12",
+   "at": 45.167,
+   "kind": "MURDER HOLES -- the card",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "firewh"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h13",
+   "at": 46.292,
+   "kind": "the card clears; Baybars at the gate",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h14",
+   "at": 48.958,
+   "kind": "so he did not bother with the front door",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h15",
+   "at": 52.38,
+   "kind": "weeks of siege engines against the wall",
+   "cat": "bigrock",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "stone"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h16",
+   "at": 53.708,
+   "kind": "a fresh hole knocked through a tower",
+   "cat": "rubble",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "wbreak",
+    "bigrock"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h17",
+   "at": 55.083,
+   "kind": "and he sent his men in through that instead",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "clatter"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h18",
+   "at": 58.917,
+   "kind": "the garrison falls back into the inner castle",
+   "cat": "wgate",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "chain"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h19",
+   "at": 60.917,
+   "kind": "he could not get them out of that either",
+   "cat": "impact",
+   "tier": "impact",
+   "gain_db": -8.0,
+   "stack": [
+    "shield"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h20",
+   "at": 62.792,
+   "kind": "the inner gate, shut",
+   "cat": "wgate",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "lock"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h21",
+   "at": 64.833,
+   "kind": "the castle he could not storm fell to a con",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -167
+  },
+  {
+   "id": "h22",
+   "at": 71.0,
+   "kind": "a letter forged, dressed as an order from their own commander",
+   "cat": "quill",
+   "tier": "swish",
+   "gain_db": -14.0,
+   "stack": [
+    "parch"
+   ],
+   "solo_ok": true,
+   "moved_ms": -250
+  },
+  {
+   "id": "h23",
+   "at": 75.0,
+   "kind": "the fake memo, sealed",
+   "cat": "parch",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": [
+    "lock"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h24",
+   "at": 83.583,
+   "kind": "they read it, believed it, and opened the gates",
+   "cat": "wgate",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "chain",
+    "creak"
+   ],
+   "solo_ok": true,
+   "moved_ms": 83
+  },
+  {
+   "id": "h25",
+   "at": 84.792,
+   "kind": "they had held off Saladin",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -13.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -448
+  },
+  {
+   "id": "h26",
+   "at": 90.583,
+   "kind": "they could not hold off bad paperwork",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 333
+  },
+  {
+   "id": "h27",
+   "at": 92.333,
+   "kind": "nobody wanted to walk under them, not even Bybars",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -667
+  },
+  {
+   "id": "h28",
+   "at": 95.708,
+   "kind": "the grid scrolls on",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h29",
+   "at": 96.4,
+   "kind": "MOAT",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "splash"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h30",
+   "at": 100.0,
+   "kind": "Kenilworth, in the middle of its lake",
+   "cat": "splash",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -450
+  },
+  {
+   "id": "h31",
+   "at": 101.208,
+   "kind": "\"In 1265\"",
+   "cat": "pop",
+   "tier": "pop",
+   "gain_db": -17.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h32",
+   "at": 102.667,
+   "kind": "the Battle of Evesham",
+   "cat": "impact",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "armor",
+    "body"
+   ],
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h33",
+   "at": 107.333,
+   "kind": "Simon de Montfort killed",
+   "cat": "body",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "vox_cry"
+   ],
+   "solo_ok": true,
+   "moved_ms": 333
+  },
+  {
+   "id": "h34",
+   "at": 109.375,
+   "kind": "the survivors fall back to Kenilworth",
+   "cat": "wgate",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -455
+  },
+  {
+   "id": "h35",
+   "at": 112.542,
+   "kind": "every demand to surrender, refused",
+   "cat": "parch",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": [
+    "lock"
+   ],
+   "solo_ok": true,
+   "moved_ms": -448
+  },
+  {
+   "id": "h36",
+   "at": 117.875,
+   "kind": "the king comes, and stays",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 385
+  },
+  {
+   "id": "h37",
+   "at": 119.333,
+   "kind": "\"6 Months Later\"",
+   "cat": "pop",
+   "tier": "pop",
+   "gain_db": -16.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 343
+  },
+  {
+   "id": "h38",
+   "at": 123.167,
+   "kind": "its builders had dammed the local streams",
+   "cat": "scrape",
+   "tier": "whoosh",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -1053
+  },
+  {
+   "id": "h39",
+   "at": 129.11,
+   "kind": "into a great artificial mirror",
+   "cat": "splash",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "pour"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h40",
+   "at": 134.0,
+   "kind": "no one could tunnel: everything underground was water",
+   "cat": "dig",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": [
+    "splash"
+   ],
+   "solo_ok": true,
+   "moved_ms": -450
+  },
+  {
+   "id": "h41",
+   "at": 137.917,
+   "kind": "the most powerful army in England, attacking a pond",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 17
+  },
+  {
+   "id": "h42",
+   "at": 144.333,
+   "kind": "the largest trebuchets in the kingdom",
+   "cat": "treb",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "rope"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h43",
+   "at": 147.458,
+   "kind": "the stone goes out over the lake",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h44",
+   "at": 149.75,
+   "kind": "and mostly into it",
+   "cat": "splash",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "stone"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h45",
+   "at": 153.292,
+   "kind": "barges dragged overland from Chester, at night",
+   "cat": "creak",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "splash"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h46",
+   "at": 155.333,
+   "kind": "and the garrison drove them back",
+   "cat": "arrow",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "arrowhit"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h47",
+   "at": 158.333,
+   "kind": "a cardinal excommunicates the rebels from a safe hill",
+   "cat": "parch",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 333
+  },
+  {
+   "id": "h48",
+   "at": 159.958,
+   "kind": "so they dressed one of their own men in white",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -882
+  },
+  {
+   "id": "h49",
+   "at": 166.375,
+   "kind": "and excommunicated the king right back",
+   "cat": "parch",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": [
+    "pop"
+   ],
+   "solo_ok": true,
+   "moved_ms": 25
+  },
+  {
+   "id": "h50",
+   "at": 172.0,
+   "kind": "what finally took Kenilworth was an empty larder",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -160
+  },
+  {
+   "id": "h51",
+   "at": 177.667,
+   "kind": "hunger and disease did what the trebuchets could not",
+   "cat": "creak",
+   "tier": "swish",
+   "gain_db": -15.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -153
+  },
+  {
+   "id": "h52",
+   "at": 180.542,
+   "kind": "the lake had held the whole time",
+   "cat": "splash",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -458
+  },
+  {
+   "id": "h53",
+   "at": 185.417,
+   "kind": "the grid scrolls on",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h54",
+   "at": 186.1,
+   "kind": "PORTCULLIS",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "portc"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h55",
+   "at": 188.625,
+   "kind": "the heroes sprint through the gate",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "clatter"
+   ],
+   "solo_ok": true,
+   "moved_ms": -435
+  },
+  {
+   "id": "h56",
+   "at": 190.417,
+   "kind": "THE IRON GRILL COMES CRASHING DOWN",
+   "cat": "portc",
+   "tier": "hero_boom",
+   "gain_db": -4.0,
+   "stack": [
+    "chain",
+    "scrape"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h57",
+   "at": 190.9,
+   "kind": "and some slower soldier gets caught underneath",
+   "cat": "body",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "vox_cry"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h58",
+   "at": 195.458,
+   "kind": "the most dramatic door in history, on a red carpet",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": [
+    "whoosh"
+   ],
+   "solo_ok": true,
+   "moved_ms": -602
+  },
+  {
+   "id": "h59",
+   "at": 200.083,
+   "kind": "\"Reality\" -- it just sits there",
+   "cat": "clatter",
+   "tier": "pop",
+   "gain_db": -17.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -817
+  },
+  {
+   "id": "h60",
+   "at": 207.375,
+   "kind": "no great massacre in the gatehouse anyone can name",
+   "cat": "boom",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 345
+  },
+  {
+   "id": "h61",
+   "at": 213.667,
+   "kind": "most of the time it was lowered, being a really good door",
+   "cat": "wgate",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 47
+  },
+  {
+   "id": "h62",
+   "at": 216.958,
+   "kind": "\"PORTCULLIS MASSACRES! In Cinema Now\"",
+   "cat": "parch",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": [
+    "pop"
+   ],
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h63",
+   "at": 218.833,
+   "kind": "and that was the genius",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -167
+  },
+  {
+   "id": "h64",
+   "at": 220.208,
+   "kind": "a grill, not a slab: defenders shoot out through the gaps",
+   "cat": "bowrel",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "arrow"
+   ],
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h65",
+   "at": 222.208,
+   "kind": "while nothing gets in",
+   "cat": "arrowhit",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 308
+  },
+  {
+   "id": "h66",
+   "at": 225.583,
+   "kind": "it dropped faster than any hinged gate could swing",
+   "cat": "portc",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "scrape"
+   ],
+   "solo_ok": true,
+   "moved_ms": -447
+  },
+  {
+   "id": "h67",
+   "at": 228.083,
+   "kind": "and it did not burn",
+   "cat": "firewh",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -447
+  },
+  {
+   "id": "h68",
+   "at": 232.208,
+   "kind": "the fire door of the medieval castle",
+   "cat": "arrow",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "arrowhit"
+   ],
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h69",
+   "at": 238.625,
+   "kind": "the famous killing version waited its whole career",
+   "cat": "chain",
+   "tier": "swish",
+   "gain_db": -14.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -445
+  },
+  {
+   "id": "h70",
+   "at": 240.958,
+   "kind": "most attackers went off to dig at the walls instead",
+   "cat": "pick",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "dig"
+   ],
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h71",
+   "at": 248.583,
+   "kind": "the trap was real",
+   "cat": "portc",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "chain"
+   ],
+   "solo_ok": true,
+   "moved_ms": -447
+  },
+  {
+   "id": "h72",
+   "at": 249.917,
+   "kind": "it just never got the memo it was supposed to be scary",
+   "cat": "pop",
+   "tier": "pop",
+   "gain_db": -17.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h73",
+   "at": 253.4,
+   "kind": "the grid scrolls on",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h74",
+   "at": 254.1,
+   "kind": "ARROW LOOPS",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "arrow"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h75",
+   "at": 254.91,
+   "kind": "Carcassonne, and an army that never reached the walls",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h76",
+   "at": 257.333,
+   "kind": "it should have been easy",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "clatter"
+   ],
+   "solo_ok": true,
+   "moved_ms": -447
+  },
+  {
+   "id": "h77",
+   "at": 265.042,
+   "kind": "the city his family had held for a century",
+   "cat": "wgate",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -448
+  },
+  {
+   "id": "h78",
+   "at": 270.458,
+   "kind": "\"In 1240\"",
+   "cat": "pop",
+   "tier": "pop",
+   "gain_db": -17.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h79",
+   "at": 276.75,
+   "kind": "he came back to claim it, with soldiers at his back",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -450
+  },
+  {
+   "id": "h80",
+   "at": 284.625,
+   "kind": "walls pierced top to bottom with narrow vertical slits",
+   "cat": "scrape",
+   "tier": "whoosh",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -445
+  },
+  {
+   "id": "h81",
+   "at": 287.708,
+   "kind": "inside, a wide alcove where a crossbowman stands in cover",
+   "cat": "cbowtick",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": [
+    "bowtick"
+   ],
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h82",
+   "at": 291.25,
+   "kind": "and sweeps the ground below",
+   "cat": "bowrel",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "arrow"
+   ],
+   "solo_ok": true,
+   "moved_ms": 650
+  },
+  {
+   "id": "h83",
+   "at": 297.083,
+   "kind": "a one-way window with a crossbow behind it",
+   "cat": "arrowhit",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -447
+  },
+  {
+   "id": "h84",
+   "at": 301.042,
+   "kind": "Attacker's POV / Defender's POV",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -13.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -448
+  },
+  {
+   "id": "h85",
+   "at": 305.083,
+   "kind": "a wall full of slots, any one of which might be aimed at him",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -237
+  },
+  {
+   "id": "h86",
+   "at": 310.167,
+   "kind": "Trencavel had crossbowmen by the hundred",
+   "cat": "cbowtick",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h87",
+   "at": 316.375,
+   "kind": "des Ormes writes to the queen of France",
+   "cat": "quill",
+   "tier": "swish",
+   "gain_db": -14.0,
+   "stack": [
+    "parch"
+   ],
+   "solo_ok": true,
+   "moved_ms": -445
+  },
+  {
+   "id": "h88",
+   "at": 321.375,
+   "kind": "nobody could step outside the walls without being hit",
+   "cat": "arrow",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "arrowhit"
+   ],
+   "solo_ok": true,
+   "moved_ms": 455
+  },
+  {
+   "id": "h89",
+   "at": 325.458,
+   "kind": "they shot from the slits while the attackers stood exposed",
+   "cat": "bowrel",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "arrowhit",
+    "body"
+   ],
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h90",
+   "at": 328.875,
+   "kind": "a handful of men behind arrow loops could hold a wall",
+   "cat": "cbowtick",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -445
+  },
+  {
+   "id": "h91",
+   "at": 334.542,
+   "kind": "he besieged his own city for weeks",
+   "cat": "armor",
+   "tier": "swish",
+   "gain_db": -14.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -448
+  },
+  {
+   "id": "h92",
+   "at": 337.5,
+   "kind": "and never broke in",
+   "cat": "whoosh",
+   "tier": "swish",
+   "gain_db": -15.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -450
+  },
+  {
+   "id": "h93",
+   "at": 344.35,
+   "kind": "a hundred years of inheritance",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h94",
+   "at": 350.583,
+   "kind": "and a slit the width of his hand",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 803
+  },
+  {
+   "id": "h95",
+   "at": 355.208,
+   "kind": "it was enough",
+   "cat": "boom",
+   "tier": "hero_hit",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h96",
+   "at": 356.95,
+   "kind": "the grid scrolls on",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h97",
+   "at": 357.7,
+   "kind": "ROUND TOWERS",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "pig"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h98",
+   "at": 359.5,
+   "kind": "not to eat",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": [
+    "pig"
+   ],
+   "solo_ok": true,
+   "moved_ms": -450
+  },
+  {
+   "id": "h99",
+   "at": 364.58,
+   "kind": "forty of the fattest pigs, day and night, with all speed",
+   "cat": "pig",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h100",
+   "at": 370.333,
+   "kind": "the order goes out to Rochester",
+   "cat": "parch",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 213
+  },
+  {
+   "id": "h101",
+   "at": 372.208,
+   "kind": "forty of them",
+   "cat": "pig",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h102",
+   "at": 381.458,
+   "kind": "the keep, one of the tallest in England",
+   "cat": "boom",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h103",
+   "at": 386.458,
+   "kind": "weeks of stone throwers, with nothing to show",
+   "cat": "bigrock",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "stone"
+   ],
+   "solo_ok": true,
+   "moved_ms": 58
+  },
+  {
+   "id": "h104",
+   "at": 388.292,
+   "kind": "the stone hits, and the tower does not care",
+   "cat": "bigrock",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 92
+  },
+  {
+   "id": "h105",
+   "at": 391.667,
+   "kind": "so he stopped throwing stones and started digging under it",
+   "cat": "dig",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "pick"
+   ],
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h106",
+   "at": 396.458,
+   "kind": "propping the tunnel with timber as they went",
+   "cat": "wbreak",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "dig"
+   ],
+   "solo_ok": true,
+   "moved_ms": 168
+  },
+  {
+   "id": "h107",
+   "at": 400.0,
+   "kind": "they pack the props with the fattest of the forty, and set it alight",
+   "cat": "firewh",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "pig"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h108",
+   "at": 402.583,
+   "kind": "the fire eats through the wood",
+   "cat": "wbreak",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "firewh"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h109",
+   "at": 405.833,
+   "kind": "THE ENTIRE CORNER OF THE GREAT KEEP COMES DOWN",
+   "cat": "rubble",
+   "tier": "hero_boom",
+   "gain_db": -4.0,
+   "stack": [
+    "bigrock",
+    "stone"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h110",
+   "at": 410.708,
+   "kind": "a square tower has corners",
+   "cat": "pop",
+   "tier": "pop",
+   "gain_db": -17.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h111",
+   "at": 411.5,
+   "kind": "and a corner is a weakness",
+   "cat": "pop",
+   "tier": "pop",
+   "gain_db": -14.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h112",
+   "at": 415.375,
+   "kind": "the one place a miner can dig out from two sides at once",
+   "cat": "pick",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h113",
+   "at": 418.333,
+   "kind": "so it was not rebuilt square",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h114",
+   "at": 424.625,
+   "kind": "it was rebuilt round",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -11.0,
+   "stack": [
+    "scrape"
+   ],
+   "solo_ok": true,
+   "moved_ms": -75
+  },
+  {
+   "id": "h115",
+   "at": 430.0,
+   "kind": "a round tower shrugs off blows that would shatter an angle",
+   "cat": "bigrock",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "stone"
+   ],
+   "solo_ok": true,
+   "moved_ms": 670
+  },
+  {
+   "id": "h116",
+   "at": 434.417,
+   "kind": "the shape of the serious castle",
+   "cat": "rubble",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h117",
+   "at": 440.9,
+   "kind": "they pulled back behind a wall inside the keep",
+   "cat": "wgate",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "lock"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h118",
+   "at": 447.375,
+   "kind": "what a few dozen pigs had done once",
+   "cat": "pig",
+   "tier": "swish",
+   "gain_db": -14.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -445
+  },
+  {
+   "id": "h119",
+   "at": 455.74,
+   "kind": "the grid scrolls on",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h120",
+   "at": 456.5,
+   "kind": "DRAWBRIDGE",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "chain"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h121",
+   "at": 457.41,
+   "kind": "the bridge is rising",
+   "cat": "chain",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "creak",
+    "rope"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h122",
+   "at": 458.333,
+   "kind": "the hero makes the leap",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h123",
+   "at": 459.75,
+   "kind": "the men chasing him do not",
+   "cat": "vox_cry",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h124",
+   "at": 461.542,
+   "kind": "and drop into the moat below",
+   "cat": "splash",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "body"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h125",
+   "at": 463.625,
+   "kind": "the best three seconds in any castle film",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h126",
+   "at": 466.583,
+   "kind": "\"HERO MOVIE\"",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": [
+    "whoosh"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h127",
+   "at": 473.958,
+   "kind": "what it actually was: a wooden bridge over a ditch",
+   "cat": "wgate",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h128",
+   "at": 479.542,
+   "kind": "hauled up on chains, and the crossing vanishes",
+   "cat": "chain",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "winch"
+   ],
+   "solo_ok": true,
+   "moved_ms": -358
+  },
+  {
+   "id": "h129",
+   "at": 486.417,
+   "kind": "no army was destroyed because a bridge went up at the right second",
+   "cat": "boom",
+   "tier": "hero_hit",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 137
+  },
+  {
+   "id": "h130",
+   "at": 490.333,
+   "kind": "the least heroic job imaginable",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -387
+  },
+  {
+   "id": "h131",
+   "at": 493.917,
+   "kind": "down in the morning, to let the millers' carts in",
+   "cat": "creak",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "wgate"
+   ],
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h132",
+   "at": 495.917,
+   "kind": "up at night, to keep everyone out",
+   "cat": "winch",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "chain"
+   ],
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h133",
+   "at": 497.75,
+   "kind": "raised, it swings flush against the gate and becomes the wall",
+   "cat": "wgate",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "lock",
+    "scrape"
+   ],
+   "solo_ok": true,
+   "moved_ms": -450
+  },
+  {
+   "id": "h134",
+   "at": 508.25,
+   "kind": "no footing left below to bring a ram up at all",
+   "cat": "rammer",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "wbreak"
+   ],
+   "solo_ok": true,
+   "moved_ms": -210
+  },
+  {
+   "id": "h135",
+   "at": 514.292,
+   "kind": "the man in the moat, still there",
+   "cat": "splash",
+   "tier": "swish",
+   "gain_db": -14.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 262
+  },
+  {
+   "id": "h136",
+   "at": 517.083,
+   "kind": "it could make the way in simply stop existing",
+   "cat": "boom",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -447
+  },
+  {
+   "id": "h137",
+   "at": 526.583,
+   "kind": "the real drawbridge spent its career letting the groceries through",
+   "cat": "creak",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -447
+  },
+  {
+   "id": "h138",
+   "at": 532.5,
+   "kind": "its finest hour was doing nothing at all",
+   "cat": "chain",
+   "tier": "swish",
+   "gain_db": -15.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -450
+  },
+  {
+   "id": "h139",
+   "at": 535.33,
+   "kind": "the grid scrolls on",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h140",
+   "at": 536.1,
+   "kind": "GATEHOUSE",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "wgate"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h141",
+   "at": 536.75,
+   "kind": "the shortest crossing from the continent",
+   "cat": "parch",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 170
+  },
+  {
+   "id": "h142",
+   "at": 542.458,
+   "kind": "whoever held it held the door to the entire country",
+   "cat": "boom",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h143",
+   "at": 547.583,
+   "kind": "\"In 1216\"",
+   "cat": "pop",
+   "tier": "pop",
+   "gain_db": -17.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 83
+  },
+  {
+   "id": "h144",
+   "at": 553.167,
+   "kind": "Louis lands and marches straight for it",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -9.0,
+   "stack": [
+    "clatter"
+   ],
+   "solo_ok": true,
+   "moved_ms": 177
+  },
+  {
+   "id": "h145",
+   "at": 557.958,
+   "kind": "the Great North Gatehouse -- the strongest point in the castle",
+   "cat": "boom",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "wgate"
+   ],
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h146",
+   "at": 563.0,
+   "kind": "that sounds backwards",
+   "cat": "pop",
+   "tier": "pop",
+   "gain_db": -17.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -450
+  },
+  {
+   "id": "h147",
+   "at": 569.24,
+   "kind": "his miners tunnel under a gate tower",
+   "cat": "dig",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "pick"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h148",
+   "at": 572.667,
+   "kind": "and burn away the props holding it up",
+   "cat": "firewh",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "wbreak"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h149",
+   "at": 575.167,
+   "kind": "THE TOWER CRACKS AND COMES DOWN",
+   "cat": "rubble",
+   "tier": "hero_boom",
+   "gain_db": -4.0,
+   "stack": [
+    "bigrock",
+    "stone"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h150",
+   "at": 578.12,
+   "kind": "a hole opens straight into Dover",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h151",
+   "at": 579.333,
+   "kind": "French soldiers pour through the gap",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -8.0,
+   "stack": [
+    "shield"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h152",
+   "at": 581.375,
+   "kind": "\"This is the moment Dover should have fallen\"",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "firewh"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h153",
+   "at": 583.958,
+   "kind": "the card clears",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h154",
+   "at": 585.1,
+   "kind": "a knight named Hubert de Burgh",
+   "cat": "draw",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h155",
+   "at": 588.583,
+   "kind": "the garrison meets them in the breach",
+   "cat": "impact",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "shield",
+    "armor"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h156",
+   "at": 589.958,
+   "kind": "and fights them back out by hand",
+   "cat": "stab",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "body"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h157",
+   "at": 591.292,
+   "kind": "they jam the gap shut with timber torn from their own castle",
+   "cat": "wbreak",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "rammer"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h158",
+   "at": 593.458,
+   "kind": "he had broken the gate of Dover, and still could not get through it",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h159",
+   "at": 595.458,
+   "kind": "the breach, sealed",
+   "cat": "stone",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": [
+    "rubble"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h160",
+   "at": 597.292,
+   "kind": "the near-miss terrified the English",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h161",
+   "at": 606.417,
+   "kind": "they bricked the North Gate into a solid block of stone",
+   "cat": "stone",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "scrape"
+   ],
+   "solo_ok": true,
+   "moved_ms": -143
+  },
+  {
+   "id": "h162",
+   "at": 609.458,
+   "kind": "a passage that bent so no ram could charge it",
+   "cat": "scrape",
+   "tier": "whoosh",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h163",
+   "at": 612.58,
+   "kind": "running beneath holes for dropping things on whoever stood below",
+   "cat": "stone",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "pour"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h164",
+   "at": 617.875,
+   "kind": "and sealed with grill after grill",
+   "cat": "portc",
+   "tier": "impact",
+   "gain_db": -8.0,
+   "stack": [
+    "chain"
+   ],
+   "solo_ok": true,
+   "moved_ms": -455
+  },
+  {
+   "id": "h165",
+   "at": 621.375,
+   "kind": "the most overbuilt door in the building",
+   "cat": "boom",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -455
+  },
+  {
+   "id": "h166",
+   "at": 623.583,
+   "kind": "somewhere, once, someone had almost lost a kingdom through a simple one",
+   "cat": "wgate",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -447
+  },
+  {
+   "id": "h167",
+   "at": 628.53,
+   "kind": "the grid scrolls on",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h168",
+   "at": 629.3,
+   "kind": "CONCENTRIC WALLS",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "stone"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h169",
+   "at": 637.833,
+   "kind": "Normandy -- England's lands in France",
+   "cat": "parch",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -447
+  },
+  {
+   "id": "h170",
+   "at": 645.208,
+   "kind": "a cliff above the river Seine",
+   "cat": "whoosh",
+   "tier": "whoosh",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h171",
+   "at": 647.708,
+   "kind": "wrapped in ring after ring of wall",
+   "cat": "scrape",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": [
+    "stone"
+   ],
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h172",
+   "at": 653.292,
+   "kind": "his fair one-year-old daughter",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -13.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -148
+  },
+  {
+   "id": "h173",
+   "at": 655.667,
+   "kind": "he was certain no one could ever take it",
+   "cat": "thunder",
+   "tier": "hero_boom",
+   "gain_db": -8.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h174",
+   "at": 664.875,
+   "kind": "break through the outer wall",
+   "cat": "rubble",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "stone"
+   ],
+   "solo_ok": true,
+   "moved_ms": -455
+  },
+  {
+   "id": "h175",
+   "at": 670.417,
+   "kind": "and an attacker did not find the castle",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -373
+  },
+  {
+   "id": "h176",
+   "at": 676.708,
+   "kind": "he found a narrow yard, with defenders firing down from both sides",
+   "cat": "arrow",
+   "tier": "hero_hit",
+   "gain_db": -7.0,
+   "stack": [
+    "arrowhit"
+   ],
+   "solo_ok": true,
+   "moved_ms": -452
+  },
+  {
+   "id": "h177",
+   "at": 683.542,
+   "kind": "a breach did not get him in -- it got him killed",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": [
+    "body"
+   ],
+   "solo_ok": true,
+   "moved_ms": -448
+  },
+  {
+   "id": "h178",
+   "at": 685.833,
+   "kind": "so Philip did not try to smash straight through",
+   "cat": "armor",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -407
+  },
+  {
+   "id": "h179",
+   "at": 688.292,
+   "kind": "a siege that ground on through the winter",
+   "cat": "creak",
+   "tier": "swish",
+   "gain_db": -14.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -448
+  },
+  {
+   "id": "h180",
+   "at": 689.78,
+   "kind": "his miners brought down part of the outer wall",
+   "cat": "pick",
+   "tier": "hero_hit",
+   "gain_db": -8.0,
+   "stack": [
+    "rubble"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h181",
+   "at": 690.667,
+   "kind": "and the inner rings held exactly as Richard had built them",
+   "cat": "stone",
+   "tier": "impact",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h182",
+   "at": 696.167,
+   "kind": "then a handful of them found the one thing the design had not accounted for",
+   "cat": "pop",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h183",
+   "at": 701.25,
+   "kind": "a toilet shaft, from a chapel down to the outside of the wall",
+   "cat": "scrape",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h184",
+   "at": 703.125,
+   "kind": "outside, and inside the castle",
+   "cat": "pop",
+   "tier": "pop",
+   "gain_db": -16.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h185",
+   "at": 706.833,
+   "kind": "they climbed up it",
+   "cat": "creak",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": [
+    "scrape"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h186",
+   "at": 708.292,
+   "kind": "came out inside, and threw the way open",
+   "cat": "wgate",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "lock"
+   ],
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h187",
+   "at": 710.042,
+   "kind": "the winter camp, waiting",
+   "cat": "armor",
+   "tier": "swish",
+   "gain_db": -14.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  },
+  {
+   "id": "h188",
+   "at": 713.667,
+   "kind": "the garrison surrendered",
+   "cat": "wgate",
+   "tier": "hero_hit",
+   "gain_db": -9.0,
+   "stack": [
+    "chain"
+   ],
+   "solo_ok": true,
+   "moved_ms": -453
+  },
+  {
+   "id": "h189",
+   "at": 715.042,
+   "kind": "the castle Richard swore could never fall",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -5.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -448
+  },
+  {
+   "id": "h190",
+   "at": 719.375,
+   "kind": "within months he had taken Rouen and the rest of it",
+   "cat": "parch",
+   "tier": "impact",
+   "gain_db": -12.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -455
+  },
+  {
+   "id": "h191",
+   "at": 722.375,
+   "kind": "rings of wall no army could break, and every one of them held",
+   "cat": "stone",
+   "tier": "impact",
+   "gain_db": -11.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": -455
+  },
+  {
+   "id": "h192",
+   "at": 728.792,
+   "kind": "it made no difference",
+   "cat": "boom",
+   "tier": "hero_boom",
+   "gain_db": -6.0,
+   "stack": [
+    "scrape"
+   ],
+   "solo_ok": true,
+   "moved_ms": 122
+  },
+  {
+   "id": "h193",
+   "at": 735.41,
+   "kind": "lost through a hole built for going to the toilet",
+   "cat": "stone",
+   "tier": "hero_hit",
+   "gain_db": -10.0,
+   "stack": null,
+   "solo_ok": true,
+   "moved_ms": 0
+  }
+ ],
+ "notes": [
+  "Timing is measured; mood/bpm are seeds for Epidemic Soundmatch to refine.",
+  "Fill each cue's 'asset' with a local file (from the Epidemic MCP or a manual download), then run assemble.py."
+ ],
+ "amb_beds": [
+  {
+   "id": "b1",
+   "hand": true,
+   "at": 0.0,
+   "dur": 45.167,
+   "gain_db": -10.76,
+   "fade": 2.5,
+   "why": "dry air over the corridor and the gallery",
+   "rms_target_dbfs": -43,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/air_01.wav"
+  },
+  {
+   "id": "b2",
+   "hand": true,
+   "at": 45.167,
+   "dur": 19.833,
+   "gain_db": -11.55,
+   "fade": 2.5,
+   "why": "Baybars' engines, and the assault through the breach",
+   "rms_target_dbfs": -41,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_01.wav"
+  },
+  {
+   "id": "b3",
+   "hand": true,
+   "at": 53.708,
+   "dur": 7.292,
+   "gain_db": -10.6,
+   "fade": 2.5,
+   "why": "his men going in through the hole they made",
+   "rms_target_dbfs": -38,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/crowd_03.wav"
+  },
+  {
+   "id": "b4",
+   "hand": true,
+   "at": 65.0,
+   "dur": 30.708,
+   "gain_db": -8.15,
+   "fade": 2.5,
+   "why": "the inner ward, waiting on a letter",
+   "rms_target_dbfs": -43,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_02.wav"
+  },
+  {
+   "id": "b5",
+   "hand": true,
+   "at": 95.708,
+   "dur": 42.192,
+   "gain_db": -2.47,
+   "fade": 2.5,
+   "why": "Kenilworth's water, all the way around the walls",
+   "rms_target_dbfs": -41,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/lake_01.wav"
+  },
+  {
+   "id": "b6",
+   "hand": true,
+   "at": 103.12,
+   "dur": 6.28,
+   "gain_db": -10.9,
+   "fade": 2.5,
+   "why": "Evesham",
+   "rms_target_dbfs": -38,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/crowd_07.wav"
+  },
+  {
+   "id": "b7",
+   "hand": true,
+   "at": 128.4,
+   "dur": 9.5,
+   "gain_db": -23.12,
+   "fade": 2.5,
+   "why": "the streams dammed; the water coming up",
+   "rms_target_dbfs": -40,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/river_01.wav"
+  },
+  {
+   "id": "b8",
+   "hand": true,
+   "at": 137.9,
+   "dur": 34.26,
+   "gain_db": 1.7,
+   "fade": 2.5,
+   "why": "open water, and the army stuck on the shore",
+   "rms_target_dbfs": -41,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/lake_02.wav"
+  },
+  {
+   "id": "b9",
+   "hand": true,
+   "at": 172.16,
+   "dur": 13.257,
+   "gain_db": -23.51,
+   "fade": 2.5,
+   "why": "six months; nothing left to eat",
+   "rms_target_dbfs": -44,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/wind_02.wav"
+  },
+  {
+   "id": "b10",
+   "hand": true,
+   "at": 185.417,
+   "dur": 33.583,
+   "gain_db": -14.69,
+   "fade": 2.5,
+   "why": "the gatehouse in daylight",
+   "rms_target_dbfs": -42,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_03.wav"
+  },
+  {
+   "id": "b11",
+   "hand": true,
+   "at": 219.0,
+   "dur": 34.4,
+   "gain_db": -7.75,
+   "fade": 2.5,
+   "why": "the gate passage",
+   "rms_target_dbfs": -43,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_04.wav"
+  },
+  {
+   "id": "b12",
+   "hand": true,
+   "at": 253.4,
+   "dur": 51.92,
+   "gain_db": -12.92,
+   "fade": 2.5,
+   "why": "Carcassonne on its hill",
+   "rms_target_dbfs": -42,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/air_02.wav"
+  },
+  {
+   "id": "b13",
+   "hand": true,
+   "at": 305.32,
+   "dur": 29.52,
+   "gain_db": -23.22,
+   "fade": 2.5,
+   "why": "the open ground below a wall full of slots",
+   "rms_target_dbfs": -41,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/air_04.wav"
+  },
+  {
+   "id": "b14",
+   "hand": true,
+   "at": 334.84,
+   "dur": 22.11,
+   "gain_db": -13.7,
+   "fade": 2.5,
+   "why": "weeks of it, and then he rides away",
+   "rms_target_dbfs": -43,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/air_03.wav"
+  },
+  {
+   "id": "b15",
+   "hand": true,
+   "at": 356.95,
+   "dur": 29.45,
+   "gain_db": -10.94,
+   "fade": 2.5,
+   "why": "England, and forty pigs",
+   "rms_target_dbfs": -42,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_08.wav"
+  },
+  {
+   "id": "b16",
+   "hand": true,
+   "at": 386.4,
+   "dur": 31.933,
+   "gain_db": -0.17,
+   "fade": 2.5,
+   "why": "timber props, and fire under the corner",
+   "rms_target_dbfs": -37,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/fire_01.wav"
+  },
+  {
+   "id": "b17",
+   "hand": true,
+   "at": 418.333,
+   "dur": 37.407,
+   "gain_db": -10.94,
+   "fade": 2.5,
+   "why": "Rochester, rebuilt",
+   "rms_target_dbfs": -42,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_08.wav"
+  },
+  {
+   "id": "b18",
+   "hand": true,
+   "at": 455.74,
+   "dur": 34.98,
+   "gain_db": -24.12,
+   "fade": 2.5,
+   "why": "the ditch under the bridge",
+   "rms_target_dbfs": -41,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/river_01.wav"
+  },
+  {
+   "id": "b19",
+   "hand": true,
+   "at": 490.72,
+   "dur": 44.61,
+   "gain_db": -13.55,
+   "fade": 2.5,
+   "why": "a gate doing the least heroic job imaginable",
+   "rms_target_dbfs": -43,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_01.wav"
+  },
+  {
+   "id": "b20",
+   "hand": true,
+   "at": 535.33,
+   "dur": 39.837,
+   "gain_db": -6.15,
+   "fade": 2.5,
+   "why": "Dover, and the French on the outer defences",
+   "rms_target_dbfs": -41,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_02.wav"
+  },
+  {
+   "id": "b21",
+   "hand": true,
+   "at": 575.167,
+   "dur": 31.393,
+   "gain_db": -12.69,
+   "fade": 2.5,
+   "why": "the breach",
+   "rms_target_dbfs": -40,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_03.wav"
+  },
+  {
+   "id": "b22",
+   "hand": true,
+   "at": 588.583,
+   "dur": 8.917,
+   "gain_db": -5.16,
+   "fade": 2.5,
+   "why": "hand to hand in the gap",
+   "rms_target_dbfs": -38,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/crowd_08.wav"
+  },
+  {
+   "id": "b23",
+   "hand": true,
+   "at": 606.56,
+   "dur": 21.97,
+   "gain_db": -7.75,
+   "fade": 2.5,
+   "why": "the new passage, bent and dark",
+   "rms_target_dbfs": -43,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_04.wav"
+  },
+  {
+   "id": "b24",
+   "hand": true,
+   "at": 628.53,
+   "dur": 57.71,
+   "gain_db": -25.77,
+   "fade": 2.5,
+   "why": "the Seine under the cliff",
+   "rms_target_dbfs": -41,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/river_02.wav"
+  },
+  {
+   "id": "b25",
+   "hand": true,
+   "at": 677.16,
+   "dur": 7.34,
+   "gain_db": -11.24,
+   "fade": 2.5,
+   "why": "trapped in the yard between the rings",
+   "rms_target_dbfs": -38,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/crowd_04.wav"
+  },
+  {
+   "id": "b26",
+   "hand": true,
+   "at": 686.24,
+   "dur": 27.88,
+   "gain_db": -7.09,
+   "fade": 2.5,
+   "why": "winter, and a siege that grinds on",
+   "rms_target_dbfs": -40,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/wind_04.wav"
+  },
+  {
+   "id": "b27",
+   "hand": true,
+   "at": 714.12,
+   "dur": 25.047,
+   "gain_db": -23.51,
+   "fade": 2.5,
+   "why": "empty walls",
+   "rms_target_dbfs": -44,
+   "asset": "/home/user/Test-2/jobs/video-01/pal/wind_02.wav"
+  }
+ ],
+ "mute_windows": [
+  [
+   254.4,
+   257.0,
+   "the Carcassonne plate -- an illustration sliding in"
+  ],
+  [
+   263.6,
+   266.2,
+   "Raymond Roger Trencavel -- a photograph of a statue"
+  ],
+  [
+   294.9,
+   297.4,
+   "the arrow-loop photographs, outside and inside"
+  ],
+  [
+   313.0,
+   316.2,
+   "Guillaume des Ormes -- a painting"
+  ],
+  [
+   354.8,
+   356.4,
+   "the Carcassonne plate again"
+  ],
+  [
+   357.85,
+   360.1,
+   "King John -- a tomb effigy"
+  ],
+  [
+   536.2,
+   538.6,
+   "the English Channel -- a map"
+  ],
+  [
+   585.9,
+   588.3,
+   "Hubert de Burgh -- stained glass"
+  ],
+  [
+   629.9,
+   632.6,
+   "Richard the Lionheart -- a painting"
+  ],
+  [
+   637.8,
+   640.2,
+   "Normandy -- a map"
+  ],
+  [
+   719.3,
+   721.6,
+   "Rouen and Chateau Gaillard -- a map"
+  ]
+ ],
+ "default_weight_cats": [
+  "weight"
+ ]
+}
