@@ -892,6 +892,48 @@ cleanly. Also resolve the titles of anything you fetched yourself — replaying 
 searches that chose the files maps every internal name back to its real title
 (`examples/castle-defences/titles.py`), and the cue sheet should quote those.
 
+## A file that SUSTAINS is a bed, whatever its pitch — and a bed is cut to the shot
+
+The tonal-tail rule ("a bell rings for seconds, so it is a bed, not a hit") is a
+special case. The general one is about the **envelope**, not the pitch: a file whose
+level does not decay after its attack keeps sounding after the beat, and that reads as
+a sound that will not stop. Measure it — median level over the second half of the file,
+relative to its peak:
+
+| | length | sustain | verdict |
+|---|---|---|---|
+| *Rocks, Crash & Debris, Heavy, Big Hit, Stone Debris* | 6.19 s | **−38.4 dB** | fine as a hit — long, but it decays |
+| *Rocks, Impact, Single Rock, Ground, Heavy Thud* | 4.62 s | **−36.5 dB** | fine |
+| *Fire, Ignite, Fast Flame Up, Large Flame* | 1.27 s | **−21.8 dB** | fine |
+| *Weapons, Siege, Catapult, Fire, Flame Ball* | 5.58 s | **−20.7 dB** | a bed |
+| *Fire, Torch, Circular Swooshes, Some Crackling* | 6.17 s | **−22.9 dB** | a bed |
+| *Fire, Burst, Cinematic, Large Roaring Flame* | 3.03 s | **−9.5 dB** | a bed |
+
+So **length alone does not condemn a hit** — a 7 s debris fall is right on a collapse
+and a 3 s roaring flame is wrong on anything. `examples/castle-defences/preflight.py`
+runs this over a finished sheet and names every hero cue cast from a sustaining file;
+run it before rendering. On the castle video four of the six candidates in `firewh` and
+one of six in `treb` were beds in a hit's clothes, and the one sustaining catapult was
+the *flame ball* recording — cast onto a trebuchet with no flame anywhere near it.
+
+**Then cut every bed to the shot, not to the section.** This was the note that came
+back: *"unnecessary fire sfx, it's keep continuing and not stopping where necessary."*
+The fire bed under Rochester's mine ran the whole music section — **31.9 s at −37 dBFS**,
+a *featured texture* level — while `fire.py` measures drawn flame on screen for
+**2.92 s**. So torch crackle played for 13.6 s before anything was alight and 15.4 s
+after the corner had already fallen, over a diagram of a square tower. Retimed to
+399.3–404.2 at −40 dBFS with 0.9 s fades.
+
+Weather, water and room tone are genuinely continuous and belong to the section. **Fire,
+machinery, crowds and anything else that is an *event with a duration* belong to the
+shot**, and their window is measurable: score the thing on screen (`fire.py` for flame
+area, the same trick as the warships job) and set the bed to what it finds, plus a
+beat either side. A bed at section length is the default and the default is wrong for
+anything that starts and stops on camera.
+
+And a short bed needs a short fade: `BEDS` entries carry their own `fade` now, because
+the 2.5 s default cannot fit inside a 5 s bed.
+
 ## Cold air is an object too
 
 Every obvious search for a wind bed returns "Polar" and "Heavy Storm, Cold" — that is

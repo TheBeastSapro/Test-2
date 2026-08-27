@@ -81,9 +81,14 @@ BEDS = [
  (253.400, 305.320, "air_02",  -42, "Carcassonne on its hill"),
  (305.320, 334.840, "air_04",  -41, "the open ground below a wall full of slots"),
  (334.840, 356.950, "air_03",  -43, "weeks of it, and then he rides away"),
- (356.950, 386.400, "amb_08",  -42, "England, and forty pigs"),
- (386.400, 418.333, "fire_01", -37, "timber props, and fire under the corner"),
- (418.333, 455.740, "amb_08",  -42, "Rochester, rebuilt"),
+ (356.950, 455.740, "amb_08",  -42, "England, and Rochester: forty pigs and a keep that will not fall"),
+ # `fire.py` scores drawn flame area per frame: there is fire on screen from
+ # 400.000 to 402.917, 2.92 s. This bed used to run 386.400-418.333 -- 31.9 s at
+ # -37 dBFS, a FEATURED texture level -- so torch crackle played for 13.6 s
+ # before anything was alight, and for 15.4 s after the corner had already come
+ # down, over a diagram of a square tower. Reported as fire that "keeps
+ # continuing and not stopping where necessary", and it was.
+ (399.300, 404.200, "fire_01", -40, "the props alight under the corner: 2.9 s of flame on screen", 0.9),
  (455.740, 490.720, "river_01",-41, "the ditch under the bridge"),
  (490.720, 535.330, "amb_01",  -43, "a gate doing the least heroic job imaginable"),
  (535.330, 575.167, "amb_02",  -41, "Dover, and the French on the outer defences"),
@@ -210,8 +215,8 @@ B = [
  (388.200, "the stone hits, and the tower does not care",          "bigrock","hero_hit",  -8.0, None, True),
  (392.120, "so he stopped throwing stones and started digging under it", "dig", "hero_hit", -8.0, ["pick"], True),
  (396.290, "propping the tunnel with timber as they went",         "wbreak", "impact",   -10.0, ["dig"], True),
- (400.000, "they pack the props with the fattest of the forty, and set it alight", "firewh", "hero_boom", -6.0, ["pig"], False),
- (402.583, "the fire eats through the wood",                       "wbreak", "hero_hit",  -7.0, ["firewh"], False),
+ (400.000, "they pack the props with the fattest of the forty, and set it alight", "ignite", "hero_boom", -6.0, ["pig"], False),
+ (402.583, "the fire eats through the wood",                       "wbreak", "hero_hit",  -7.0, None, False),
  (405.833, "THE ENTIRE CORNER OF THE GREAT KEEP COMES DOWN",       "rubble", "hero_boom", -4.0, ["bigrock", "stone"], False),
  (410.708, "a square tower has corners",                           "pop",    "pop",      -17.0, None, True),
  (411.500, "and a corner is a weakness",                           "pop",    "pop",      -14.0, None, False),
@@ -348,9 +353,11 @@ for j, t in enumerate(sorted(B), 1):
                 "moved_ms": round((at - at0) * 1000)})
 
 beds = []
-for k, (a, b, src, target, why) in enumerate(BEDS, 1):
+for k, bed in enumerate(BEDS, 1):
+    a, b, src, target, why = bed[:5]
+    fade = bed[5] if len(bed) > 5 else 2.5   # a 5 s bed cannot carry a 2.5 s fade
     beds.append({"id": f"b{k}", "hand": True, "at": round(a, 3), "dur": round(b - a, 3),
-                 "gain_db": round(target - RMS[src], 2), "fade": 2.5, "why": why,
+                 "gain_db": round(target - RMS[src], 2), "fade": fade, "why": why,
                  "rms_target_dbfs": target, "asset": os.path.abspath(f"pal/{src}.wav")})
 
 cue["music_sections"] = ms

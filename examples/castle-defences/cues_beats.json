@@ -1734,7 +1734,7 @@
    "id": "h107",
    "at": 400.0,
    "kind": "they pack the props with the fattest of the forty, and set it alight",
-   "cat": "firewh",
+   "cat": "ignite",
    "tier": "hero_boom",
    "gain_db": -6.0,
    "stack": [
@@ -1750,9 +1750,7 @@
    "cat": "wbreak",
    "tier": "hero_hit",
    "gain_db": -7.0,
-   "stack": [
-    "firewh"
-   ],
+   "stack": null,
    "solo_ok": true,
    "moved_ms": 0
   },
@@ -2936,37 +2934,26 @@
    "id": "b15",
    "hand": true,
    "at": 356.95,
-   "dur": 29.45,
+   "dur": 98.79,
    "gain_db": -10.94,
    "fade": 2.5,
-   "why": "England, and forty pigs",
+   "why": "England, and Rochester: forty pigs and a keep that will not fall",
    "rms_target_dbfs": -42,
    "asset": "/home/user/Test-2/jobs/video-01/pal/amb_08.wav"
   },
   {
    "id": "b16",
    "hand": true,
-   "at": 386.4,
-   "dur": 31.933,
-   "gain_db": -0.17,
-   "fade": 2.5,
-   "why": "timber props, and fire under the corner",
-   "rms_target_dbfs": -37,
+   "at": 399.3,
+   "dur": 4.9,
+   "gain_db": -3.17,
+   "fade": 0.9,
+   "why": "the props alight under the corner: 2.9 s of flame on screen",
+   "rms_target_dbfs": -40,
    "asset": "/home/user/Test-2/jobs/video-01/pal/fire_01.wav"
   },
   {
    "id": "b17",
-   "hand": true,
-   "at": 418.333,
-   "dur": 37.407,
-   "gain_db": -10.94,
-   "fade": 2.5,
-   "why": "Rochester, rebuilt",
-   "rms_target_dbfs": -42,
-   "asset": "/home/user/Test-2/jobs/video-01/pal/amb_08.wav"
-  },
-  {
-   "id": "b18",
    "hand": true,
    "at": 455.74,
    "dur": 34.98,
@@ -2977,7 +2964,7 @@
    "asset": "/home/user/Test-2/jobs/video-01/pal/river_01.wav"
   },
   {
-   "id": "b19",
+   "id": "b18",
    "hand": true,
    "at": 490.72,
    "dur": 44.61,
@@ -2988,7 +2975,7 @@
    "asset": "/home/user/Test-2/jobs/video-01/pal/amb_01.wav"
   },
   {
-   "id": "b20",
+   "id": "b19",
    "hand": true,
    "at": 535.33,
    "dur": 39.837,
@@ -2999,7 +2986,7 @@
    "asset": "/home/user/Test-2/jobs/video-01/pal/amb_02.wav"
   },
   {
-   "id": "b21",
+   "id": "b20",
    "hand": true,
    "at": 575.167,
    "dur": 31.393,
@@ -3010,7 +2997,7 @@
    "asset": "/home/user/Test-2/jobs/video-01/pal/amb_03.wav"
   },
   {
-   "id": "b22",
+   "id": "b21",
    "hand": true,
    "at": 588.583,
    "dur": 8.917,
@@ -3021,7 +3008,7 @@
    "asset": "/home/user/Test-2/jobs/video-01/pal/crowd_08.wav"
   },
   {
-   "id": "b23",
+   "id": "b22",
    "hand": true,
    "at": 606.56,
    "dur": 21.97,
@@ -3032,7 +3019,7 @@
    "asset": "/home/user/Test-2/jobs/video-01/pal/amb_04.wav"
   },
   {
-   "id": "b24",
+   "id": "b23",
    "hand": true,
    "at": 628.53,
    "dur": 57.71,
@@ -3043,7 +3030,7 @@
    "asset": "/home/user/Test-2/jobs/video-01/pal/river_02.wav"
   },
   {
-   "id": "b25",
+   "id": "b24",
    "hand": true,
    "at": 677.16,
    "dur": 7.34,
@@ -3054,7 +3041,7 @@
    "asset": "/home/user/Test-2/jobs/video-01/pal/crowd_04.wav"
   },
   {
-   "id": "b26",
+   "id": "b25",
    "hand": true,
    "at": 686.24,
    "dur": 27.88,
@@ -3065,7 +3052,7 @@
    "asset": "/home/user/Test-2/jobs/video-01/pal/wind_04.wav"
   },
   {
-   "id": "b27",
+   "id": "b26",
    "hand": true,
    "at": 714.12,
    "dur": 25.047,

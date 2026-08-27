@@ -1,6 +1,6 @@
 # Castle Defences — sound design cue sheet
 
-Runtime 12:19.17 · 19 music sections · 372 SFX events (771 cues with layers) · 27 ambience beds
+Runtime 12:19.17 · 19 music sections · 372 SFX events (771 cues with layers) · 26 ambience beds
 
 ## Music
 
@@ -48,9 +48,8 @@ Hand-assigned, never rotated: a bed does not duck, so a wrong one runs under the
 | 4:13.400 | 52s | Vegetation, Grass, Wheat In Wind 01 | -42 dBFS | Carcassonne on its hill |
 | 5:05.320 | 30s | Wind, General, Strong, Trees 01 | -41 dBFS | the open ground below a wall full of slots |
 | 5:34.840 | 22s | Vegetation, Grass, Wheat In Wind 04 | -43 dBFS | weeks of it, and then he rides away |
-| 5:56.950 | 29s | amb_08 | -42 dBFS | England, and forty pigs |
-| 6:26.400 | 32s | Fire, Torch, Torch, Burning, Rather Intense, Crackling | -37 dBFS | timber props, and fire under the corner |
-| 6:58.333 | 37s | amb_08 | -42 dBFS | Rochester, rebuilt |
+| 5:56.950 | 99s | amb_08 | -42 dBFS | England, and Rochester: forty pigs and a keep that will not fall |
+| 6:39.300 | 5s | Fire, Torch, Torch, Burning, Rather Intense, Crackling | -40 dBFS | the props alight under the corner: 2.9 s of flame on screen |
 | 7:35.740 | 35s | Water, Turbulent, River, Fast Flow 02 | -41 dBFS | the ditch under the bridge |
 | 8:10.720 | 45s | amb_01 | -43 dBFS | a gate doing the least heroic job imaginable |
 | 8:55.330 | 40s | amb_02 | -41 dBFS | Dover, and the French on the outer defences |
@@ -87,7 +86,7 @@ A photograph is not an event, and neither is a map. The redraw detector cannot t
 
 ## Density
 
-206 distinct files, busiest ×9, 372 events over 739 s = one per 1.99 s.
+203 distinct files, busiest ×9, 372 events over 739 s = one per 1.99 s.
 
 | tier | count |
 |---|---|

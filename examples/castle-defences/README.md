@@ -8,7 +8,7 @@ we already had. Eight castle features, each with one siege story: Murder Holes
 
 | file | what it is |
 |---|---|
-| `cues.json` | the finished sheet — 372 events, 771 cues with layers, 27 beds |
+| `cues.json` | the finished sheet — 372 events, 771 cues with layers, 26 beds |
 | `cues_beats.json` | the source sheet: 19 music sections + 193 hand-timed beats + 11 mute windows |
 | `build_cues.py` | writes `cues_beats.json`; every time in it was read off a contact sheet |
 | `redraw.json` | `visual_redraw.py` output — 141 cuts, 217 actions, 165 elements |
@@ -18,6 +18,8 @@ we already had. Eight castle features, each with one siege story: Murder Holes
 | `sfx_titles.json` | every internal filename mapped to its real Epidemic title |
 | `mus_probe.py` / `mus_measure.py` | collect music candidates, then measure them for rhythmic drive |
 | `multihit.py` | finds takes masquerading as samples |
+| `preflight.py` | flags hero cues cast from a file that sustains instead of decaying |
+| `fire.py` | scores drawn flame area per frame, so a fire bed can be cut to the shot |
 | `scan.py` | one decode pass: era-card score, banner-strip fingerprint, ink centroid |
 | `shots.py` / `sheets4.py` / `fine.py` | contact sheets at the cuts, then at 0.5–1.8 s over eight action windows |
 | `titles.py` | replays the searches to recover every file's Epidemic title |
@@ -52,9 +54,36 @@ python3 <skill>/scripts/assemble.py --cues cues.json --vo vo.wav \
         --assets ./assets --out "mix.mp3" --stems stems
 ```
 
-`--no-beds` again: all 27 beds are hand-assigned, because a bed never ducks.
+`--no-beds` again: all 26 beds are hand-assigned, because a bed never ducks.
 
 ## What this job added to SKILL.md
+
+### A sustaining file is a bed, and a bed is cut to the shot
+
+*Reported after the first pass:* "unnecessary fire sfx, it's keep continuing and
+not stopping where necessary." Both halves of that were true and both were
+measurable.
+
+The fire bed under Rochester's mine ran the whole music section — **31.9 s at
+−37 dBFS**, a *featured texture* level — while `fire.py` measures drawn flame on
+screen for **2.92 s** (400.000–402.917). Torch crackle therefore played for 13.6 s
+before anything was alight and 15.4 s after the corner had already come down, over
+a diagram of a square tower. Retimed to 399.3–404.2 at −40 dBFS with 0.9 s fades;
+`amb_08` now spans the section underneath.
+
+The second half was the hero cue on top: the ignition at 400.000 was cast from
+*Fire, Torch, Circular Swooshes* — 6.17 s, and it does not decay. `preflight.py`
+measures the median level over a file's second half relative to its peak, which
+separates the two cases that length alone cannot: a 6.19 s debris fall sits at
+−38.4 dB (a hit that rings out) and a 3.03 s roaring flame sits at −9.5 dB (a
+bed). Four of six `firewh` files and one of six `treb` files were beds in a hit's
+clothes — and the sustaining catapult was the **flame ball** recording, cast onto
+a trebuchet at 144.33 with no flame anywhere near it.
+
+Fixed: `ignite` = the one short decaying file, the sustaining four parked in
+`firetail` where nothing auto-casts them, the doubled flare at 402.583 dropped.
+Measured after: the 3–8 kHz crackle band is at the noise floor from 391–396 s and
+from 410 s on, where it used to run continuously.
 
 ### The section transition is not always a card
 

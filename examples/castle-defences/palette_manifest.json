@@ -989,10 +989,7 @@
   "fire_03"
  ],
  "firewh": [
-  "firewh_01",
-  "firewh_02",
-  "firewh_03",
-  "firewh_04"
+  "firewh_01"
  ],
  "foot": [
   "foot_01",
@@ -1116,8 +1113,7 @@
   "treb_02",
   "treb_03",
   "treb_04",
-  "treb_05",
-  "treb_06"
+  "treb_05"
  ],
  "wbreak": [
   "wbreak_01",
@@ -1242,5 +1238,14 @@
   "air_02",
   "air_03",
   "air_04"
+ ],
+ "firetail": [
+  "firewh_04",
+  "treb_06",
+  "firewh_02",
+  "firewh_03"
+ ],
+ "ignite": [
+  "firewh_01"
  ]
 }
