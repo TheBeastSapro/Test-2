@@ -1,0 +1,503 @@
+<title>The YouTube Creators Tip Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#e9edee;
+    --surface:#ffffff;
+    --ink:#131a1d;
+    --ink-2:#2f3b40;
+    --muted:#61727a;
+    --faint:#8b9aa1;
+    --line:#d2dadd;
+    --line-soft:#e2e8ea;
+    --accent:#c2411d;
+    --accent-wash:#f6e2da;
+    --shadow:0 1px 0 rgba(19,26,29,.05), 0 12px 32px -22px rgba(19,26,29,.45);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0e1315;
+      --surface:#151c1f;
+      --ink:#e8eef0;
+      --ink-2:#c3ced2;
+      --muted:#8fa1a8;
+      --faint:#6d7f86;
+      --line:#273337;
+      --line-soft:#1f2a2d;
+      --accent:#ff7048;
+      --accent-wash:#3a2015;
+      --shadow:0 1px 0 rgba(0,0,0,.3), 0 18px 40px -26px rgba(0,0,0,.9);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e1315;
+    --surface:#151c1f;
+    --ink:#e8eef0;
+    --ink-2:#c3ced2;
+    --muted:#8fa1a8;
+    --faint:#6d7f86;
+    --line:#273337;
+    --line-soft:#1f2a2d;
+    --accent:#ff7048;
+    --accent-wash:#3a2015;
+    --shadow:0 1px 0 rgba(0,0,0,.3), 0 18px 40px -26px rgba(0,0,0,.9);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,40px) 96px}
+
+  header.masthead{padding:clamp(40px,7vw,84px) 0 clamp(26px,4vw,38px);border-bottom:1px solid var(--line)}
+  .eyebrow{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:.72rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0;
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+  h1{
+    font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif;
+    font-weight:800;font-size:clamp(2.4rem,6.2vw,4.4rem);line-height:.98;
+    letter-spacing:-.03em;text-wrap:balance;margin:.32em 0 0;max-width:16ch;
+  }
+  .standfirst{margin:22px 0 0;max-width:64ch;font-size:1.06rem;color:var(--ink-2)}
+
+  .meta{
+    margin:30px 0 0;display:flex;flex-wrap:wrap;
+    border:1px solid var(--line);border-radius:2px;background:var(--surface);
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .meta div{flex:1 1 150px;padding:14px 18px;border-right:1px solid var(--line-soft)}
+  .meta div:last-child{border-right:0}
+  .meta dt{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);margin:0 0 4px;
+  }
+  .meta dd{margin:0;font-size:1.02rem;font-weight:500;font-variant-numeric:tabular-nums}
+
+  .cols{display:block}
+  @media (min-width:960px){.cols{display:grid;grid-template-columns:236px minmax(0,1fr);gap:56px;align-items:start}}
+
+  nav.rail{position:sticky;top:0;padding:28px 0 24px;max-height:100vh;overflow-y:auto;display:none}
+  @media (min-width:960px){nav.rail{display:block}}
+  .rail-title{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);
+    padding-bottom:10px;border-bottom:1px solid var(--line);margin:0 0 6px;
+  }
+  .rail a{
+    display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:6px 0;
+    color:var(--muted);text-decoration:none;font-size:.92rem;border-bottom:1px solid var(--line-soft);
+  }
+  .rail a:hover,.rail a:focus-visible{color:var(--accent)}
+  .rail a .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.74rem;color:var(--faint);font-variant-numeric:tabular-nums}
+
+  .toolbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:22px 0 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .search{
+    flex:1 1 280px;display:flex;align-items:center;gap:10px;background:var(--surface);
+    border:1px solid var(--line);border-radius:2px;padding:9px 13px;box-shadow:var(--shadow);
+  }
+  .search svg{flex:none;color:var(--faint)}
+  .search input{border:0;background:transparent;color:var(--ink);font:inherit;font-size:.95rem;width:100%;outline:none}
+  .search input::placeholder{color:var(--faint)}
+  .count{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  section.chapter{padding:34px 0 8px;scroll-margin-top:76px}
+  section.chapter + section.chapter{border-top:1px solid var(--line)}
+  h2{
+    font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif;
+    font-weight:700;font-size:clamp(1.35rem,2.6vw,1.72rem);letter-spacing:-.02em;margin:0 0 6px;text-wrap:balance;
+  }
+  .chapter-note{color:var(--muted);font-size:.97rem;margin:0 0 18px;max-width:62ch}
+
+  ul.tips{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+  li.tip{display:grid;grid-template-columns:1fr;gap:4px;padding:14px 0;border-top:1px solid var(--line-soft)}
+  li.tip:first-child{border-top:1px solid var(--line)}
+  @media (min-width:640px){li.tip{grid-template-columns:96px minmax(0,1fr);gap:0 22px;align-items:baseline}}
+  .stamp{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.74rem;font-weight:500;
+    color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:.28em;
+  }
+  .text{font-size:1.04rem;color:var(--ink);margin:0}
+  .text b{font-weight:600;background:linear-gradient(transparent 62%,var(--accent-wash) 62%)}
+  .sub{display:block;margin-top:5px;font-size:.88rem;color:var(--muted)}
+  li.tip.hide{display:none}
+  section.chapter.hide{display:none}
+
+  footer{margin-top:52px;padding-top:26px;border-top:1px solid var(--line);color:var(--muted);font-size:.92rem;max-width:72ch}
+  footer h3{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--faint);margin:0 0 10px;font-weight:500;
+  }
+  footer h3 + h3{margin-top:24px}
+  footer p{margin:0 0 12px}
+  footer code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.86em;color:var(--ink-2)}
+  .empty{display:none;padding:40px 0;color:var(--muted);font-size:1rem}
+  .empty.show{display:block}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow"><span class="dot"></span> @YouTubeCreators · through 28 Aug 2026</p>
+    <h1>The YouTube Creators Tip Log</h1>
+    <p class="standfirst">Every piece of practical, do-this-to-your-channel advice pulled out of YouTube's own creator account, sorted by what it helps you do. The wording is theirs, verbatim; the grouping is mine. Motivational posts, memes, milestone shoutouts and pure product news are left out — what's left is the advice. Newest first inside each chapter, so you can watch a piece of guidance hold for six years.</p>
+    <dl class="meta">
+      <div><dt>Tips</dt><dd id="total">—</dd></div>
+      <div><dt>Chapters</dt><dd id="chapcount">—</dd></div>
+      <div><dt>Span</dt><dd>2020 – 2026</dd></div>
+      <div><dt>Posts read</dt><dd>18,440</dd></div>
+    </dl>
+  </header>
+
+  <div class="cols">
+    <nav class="rail" aria-label="Chapters">
+      <p class="rail-title">Chapters</p>
+      <div id="railLinks"></div>
+    </nav>
+
+    <main>
+      <div class="toolbar">
+        <label class="search">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"></circle><path d="M11 11l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+          <input id="q" type="search" placeholder="Filter — try thumbnail, hook, retention, audio…" aria-label="Filter tips">
+        </label>
+        <span class="count" id="count"></span>
+      </div>
+
+      <p class="empty" id="empty">Nothing matches that. Try a broader word — <em>title</em>, <em>Shorts</em>, <em>comment</em>.</p>
+
+      <section class="chapter" id="hooks">
+        <h2>Openings &amp; hooks</h2>
+        <p class="chapter-note">The most-repeated theme on the account, and the window keeps shrinking: five seconds in 2026, three seconds in the Shorts posts, one to two seconds back in 2021 when they first measured the feed.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-08-06</span><p class="text">the first five seconds are the door to your content. <b>jump straight into the action</b> 🎬</p></li>
+          <li class="tip"><span class="stamp">2026-06-16</span><p class="text"><b>hook viewers in the first 3 seconds</b> — skip the long intro and dive straight into the video 😌</p></li>
+          <li class="tip"><span class="stamp">2026-05-29</span><p class="text">tip to help maximize your Shorts views: hook your audience in the first three seconds with <b>dynamic visuals and a compelling intro</b>.</p></li>
+          <li class="tip"><span class="stamp">2026-05-13</span><p class="text">the first three seconds to hook the viewer are everything, so make them count ✨</p></li>
+          <li class="tip"><span class="stamp">2025-01-07</span><p class="text">want to hook new viewers? <b>make a channel trailer!</b> give them a sneak peek of your awesome content and watch your subs grow 📈</p></li>
+          <li class="tip"><span class="stamp">2021-08-11</span><p class="text">we only have about <b>1–2 seconds</b> to grab the attention of viewers scrolling the Shorts feed. to stop the scroll: <b>use bold visuals</b> · <b>try disruptive editing</b> · <b>explore trendy audio</b></p></li>
+          <li class="tip"><span class="stamp">2021-08-06</span><p class="text">tips for a compelling channel trailer: <b>assume the viewer is seeing your channel for the first time</b> · <b>keep it short</b> · <b>ask viewers to subscribe in your video</b></p></li>
+          <li class="tip"><span class="stamp">2021-04-30</span><p class="text">wanna make a great first impression? make sure your <b>channel trailer pops</b> — trailers help captivate viewers and win new subscribers</p></li>
+          <li class="tip"><span class="stamp">2022-10-13</span><p class="text">3 tips for Shorts from @realasantem: <b>just go for it, put yourself out there</b> · <b>focus on the first 5 seconds to hook viewers</b> · <b>find new ways to add to the YouTube community</b></p></li>
+          <li class="tip"><span class="stamp">2022-09-05</span><p class="text">@hannahwarling's #1 tip for keeping an audience through a Short: <b>pose a question at the beginning and wait until the last 2 seconds to reveal the solution</b></p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="thumbnails">
+        <h2>Thumbnails</h2>
+        <p class="chapter-note">Two instructions carry the whole chapter: make them loud, and stop guessing — test them. The one constraint they've never dropped is accuracy.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-08-28</span><p class="text">make your thumbnails <b>bold and eye catching</b>, don't otherthink them!</p></li>
+          <li class="tip"><span class="stamp">2026-07-17</span><p class="text">expressive faces in thumbnails convey the exact energy of your video. <b>match your expression to your title</b> to set the right vibe</p></li>
+          <li class="tip"><span class="stamp">2026-06-15</span><p class="text">making your thumbnails instantly recognizable is a game changer 🎨 <b>a signature font, layout, or color palette</b> helps your community spot your new video the second it drops!</p></li>
+          <li class="tip"><span class="stamp">2026-06-14</span><p class="text">test up to <b>3 different thumbnails or titles</b> on your next upload with test and compare 🔝</p></li>
+          <li class="tip"><span class="stamp">2026-05-09</span><p class="text">testing your thumbnails? try this A/B testing tip! <b>start with big changes like layout</b>, then dive into granular details like clothing color or facial expressions.</p></li>
+          <li class="tip"><span class="stamp">2026-03-16</span><p class="text">the thumbnail size limit for VOD and Live videos is increasing to a <b>50MB limit</b> on web<span class="sub">A product change, but it moves a real constraint — higher-resolution thumbnails now clear the cap.</span></p></li>
+          <li class="tip"><span class="stamp">2025-07-25</span><p class="text">if you're unsure what thumbnail to use, try Test &amp; Compare! this lets you pick 3 thumbnails to test <b>which is most clickable</b></p></li>
+          <li class="tip"><span class="stamp">2025-02-23</span><p class="text">never underestimate the power of a good thumbnail 😉</p></li>
+          <li class="tip"><span class="stamp">2022-03-17</span><p class="text">3 reasons accurate thumbnails, titles &amp; descriptions matter: <b>they make your videos easier to find</b> · <b>your videos are more enticing for viewers</b> · <b>they help YouTube's systems recommend your videos</b></p></li>
+          <li class="tip"><span class="stamp">2020-12-08</span><p class="text">your thumbnail and title will probably be the first thing viewers see, and that <b>sets their expectations</b> for what they're about to watch. make sure they're not only inviting, but <b>accurate</b></p></li>
+          <li class="tip"><span class="stamp">2023-03-01</span><p class="text">accurate thumbnails with honest titles go a long way 🌟 <b>creators who don't use misleading or clickbait-y thumbnails and titles tend to build better relationships with their subscribers</b></p></li>
+          <li class="tip"><span class="stamp">2022-04-27</span><p class="text">managing your channel gets easier when you <b>set your upload defaults</b>, <b>design a thumbnail template</b>, and <b>create an end card template</b></p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="titles">
+        <h2>Titles, keywords &amp; getting found</h2>
+        <p class="chapter-note">Consistent line across six years: the title carries as much weight as the thumbnail, and the front of it is the part that survives a small screen.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-07-21</span><p class="text">put your <b>most important keywords at the start of your title</b> so viewers immediately get the vibe on small screens</p></li>
+          <li class="tip"><span class="stamp">2026-07-07</span><p class="text">titles matter just as much as thumbnails. keep them <b>succinct, intriguing, and factual!</b></p></li>
+          <li class="tip"><span class="stamp">2026-06-08</span><p class="text">before you hit upload, <b>do a quick keyword check</b> 👀 relevant and trending keywords in your titles and descriptions help more people discover your videos 📈</p></li>
+          <li class="tip"><span class="stamp">2026-06-02</span><p class="text">should you make a separate channel for videos in another language? <b>not necessarily</b> — Multi-Language Audio lets you add multiple language tracks to a single video, and if the content appeals to the same core community, keeping it on one channel is better</p></li>
+          <li class="tip"><span class="stamp">2025-02-25</span><p class="text">reach a wider audience with <b>auto dubbing</b> — check YouTube Studio &gt; "Advanced Settings" to see if you have access</p></li>
+          <li class="tip"><span class="stamp">2021-12-01</span><p class="text">tools that make your channel more accessible — and more findable: <b>closed captions</b> · <b>subtitles</b> · <b>translated titles and descriptions</b></p></li>
+          <li class="tip"><span class="stamp">2021-06-04</span><p class="text">what makes a good channel description? <b>action words</b> · <b>a memorable catchphrase</b> · <b>specific keywords describing your videos</b> — these help search engines point viewers your way</p></li>
+          <li class="tip"><span class="stamp">2021-01-29</span><p class="text">one of the easiest ways to expand your channel's global reach is to use <b>YouTube's built-in translation tools</b></p></li>
+          <li class="tip"><span class="stamp">2022-12-06</span><p class="text">you can <b>add subtitles to videos you've already uploaded</b> — via the "Subtitles" page in YouTube Studio, or a specific video's "Details" page</p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="shorts">
+        <h2>Shorts</h2>
+        <p class="chapter-note">Their standing position: Shorts are a discovery funnel for the long-form you already have, not a second content business. The craft notes below are unusually specific for this account.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-08-24</span><p class="text">turn your livestreams into content by <b>clipping the best moments straight into Shorts</b></p></li>
+          <li class="tip"><span class="stamp">2026-07-29</span><p class="text">keep text on your Shorts <b>within the safe zone</b>. placing captions in the center ensures they won't get obstructed by buttons</p></li>
+          <li class="tip"><span class="stamp">2026-07-19</span><p class="text">short form content is a massive discovery tool. <b>remix the best moments from your long form videos into Shorts</b> to reach new viewers</p></li>
+          <li class="tip"><span class="stamp">2026-05-31</span><p class="text">three things to try in your next Shorts video: <b>be authentic</b> — let your personality shine through · <b>stay on trend</b> — keep up with current trends and challenges · <b>experiment and have fun</b> — don't be afraid to try new things</p></li>
+          <li class="tip"><span class="stamp">2026-05-25</span><p class="text">make your Shorts content pop by using <b>on-screen text and captions</b>. it boosts accessibility and engagement.</p></li>
+          <li class="tip"><span class="stamp">2025-06-24</span><p class="text">how to transition from long-form to Shorts: <b>identify key moments</b> · <b>repurpose what you have</b> · <b>experiment &amp; analyze</b></p></li>
+          <li class="tip"><span class="stamp">2025-04-22</span><p class="text">get the perfect dimensions with the <b>Shorts cheat sheet</b> — bookmark it, besties</p></li>
+          <li class="tip"><span class="stamp">2024-06-24</span><p class="text">when you come across a Short you want to collab with, <b>tap the Remix button, then tap Collab</b> — use a pre-filmed clip or film one on the spot</p></li>
+          <li class="tip"><span class="stamp">2021-12-16</span><p class="text">your audio can make or break your Shorts: <b>find it in-feed</b> — a moment to jump on a trend · <b>check the volume</b> so the music doesn't overpower your voice · <b>set the scene</b> — think about how you want your audience to feel</p></li>
+          <li class="tip"><span class="stamp">2021-10-21</span><p class="text">stop people scrolling past by keeping Shorts quick and snappy: <b>make the 1st frame count</b> · <b>use bold visuals</b> · <b>incorporate fun tracks</b> · <b>try disruptive editing</b></p></li>
+          <li class="tip"><span class="stamp">2021-10-05</span><p class="text"><b>don't stress about Shorts thumbnails</b> — they show up on desktop, but they aren't displayed in the Shorts feed</p></li>
+          <li class="tip"><span class="stamp">2021-08-25</span><p class="text">Shorts best practices: <b>focus on making the first few seconds captivating</b> · <b>think of ways to encourage replayability</b> · <b>keep it relevant</b></p></li>
+          <li class="tip"><span class="stamp">2021-08-12</span><p class="text">you don't need fancy equipment for fierce visuals on Shorts — it can be as simple as <b>wearing colors that match the vibe of your video</b></p></li>
+          <li class="tip"><span class="stamp">2021-08-10</span><p class="text">tips for quick and snappy Shorts: <b>try unique editing</b> · <b>use fun audio cues</b> · <b>incorporate text to move the story along</b></p></li>
+          <li class="tip"><span class="stamp">2023-04-21</span><p class="text">best practices for filming Shorts on mobile: <b>clean your lens before filming</b> · <b>turn off your notifications</b> · <b>shoot vertically</b> · <b>record in a space with minimum echo and background noise</b></p></li>
+          <li class="tip"><span class="stamp">2023-04-17</span><p class="text">use Shorts to make <b>trailers for your long form content</b> — select the video, hit "Create" and "Edit into a Short". make it eye-catching so viewers want the extended cut</p></li>
+          <li class="tip"><span class="stamp">2023-03-15</span><p class="text"><b>reply to your top comments with a Short</b> — select a comment, hit "Reply", then the Create Shorts icon. the commenter gets a notification when you respond</p></li>
+          <li class="tip"><span class="stamp">2023-02-24</span><p class="text">if you're trying to post more Shorts, try a <b>content schedule</b> — e.g. mon: day in my life · tues: GRWM · weds: cooking · thurs: trick shots · fri: reacting to old videos · weekend: freestyle</p></li>
+          <li class="tip"><span class="stamp">2023-01-19</span><p class="text">you can <b>create Shorts from existing videos</b> on your channel: select the video, hit "Create" and "Edit into a Short" — these link back to your original video, so it doubles as promo</p></li>
+          <li class="tip"><span class="stamp">2022-11-10</span><p class="text">when creating Shorts, it's all about <b>quality over quantity</b></p></li>
+          <li class="tip"><span class="stamp">2022-05-05</span><p class="text">ideas for using <b>text on screen</b> in your next Short: recipe steps · outfit details · travel tips</p></li>
+          <li class="tip"><span class="stamp">2022-04-21</span><p class="text">how often should you post Shorts? <b>it's up to you</b> — post based on trends or set a regular schedule. starting out is all about experimenting, <b>as long as it feels sustainable</b></p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="structure">
+        <h2>Structure, chapters &amp; end screens</h2>
+        <p class="chapter-note">Everything that makes a video — and a channel — navigable. Mostly the part creators skip at the upload screen.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-08-26</span><p class="text">use end screens in the <b>final 10 seconds</b> of your video to promote other videos, encourage viewers to subscribe, and more!</p></li>
+          <li class="tip"><span class="stamp">2026-07-27</span><p class="text">video chapters help viewers navigate longer tutorials. <b>add timestamps from the beginning</b> so they can find the exact info they need</p></li>
+          <li class="tip"><span class="stamp">2026-07-25</span><p class="text"><b>frame your shot with end screens in mind.</b> place them strategically so they don't cover your face or important visuals</p></li>
+          <li class="tip"><span class="stamp">2026-06-24</span><p class="text">organize your long form videos into <b>playlists</b> so your community can easily find exactly what they want to watch 📺</p></li>
+          <li class="tip"><span class="stamp">2026-06-18</span><p class="text">adding timestamps to your long form videos makes it effortless for viewers to <b>jump to their fave chapters</b> ⏳</p></li>
+          <li class="tip"><span class="stamp">2026-05-23</span><p class="text">tip: <b>optimize your channel homepage</b>, and prominently feature your best long form and Shorts content.</p></li>
+          <li class="tip"><span class="stamp">2026-05-17</span><p class="text">your pre-upload checklist: <b>double check your title, description, and thumbnail are accurate</b> · <b>review your first 5 seconds to ensure there's a clear hook</b> · <b>add cards and end screens to guide viewers to the next video</b></p></li>
+          <li class="tip"><span class="stamp">2026-04-19</span><p class="text">a <b>clear CTA</b> is the ultimate wingman for your video</p></li>
+          <li class="tip"><span class="stamp">2024-11-15</span><p class="text">a first impression is important! make sure your channel <b>looks tidy and approachable</b> for new viewers — have you tried using playlists to keep your content organized?</p></li>
+          <li class="tip"><span class="stamp">2024-09-09</span><p class="text">this is your reminder to <b>organize your playlists</b> on your channel 📂</p></li>
+          <li class="tip"><span class="stamp">2024-08-08</span><p class="text">when you get to the <b>"video elements" step of the upload flow</b>, make sure you add your end screens — they encourage viewers to subscribe as well as promote your other content</p></li>
+          <li class="tip"><span class="stamp">2022-03-18</span><p class="text">tools to keep your viewers watching: <b>cards</b> · <b>end screens</b> · <b>playlists</b> · <b>channel sections</b></p></li>
+          <li class="tip"><span class="stamp">2020-12-10</span><p class="text">end screens and cards are a great way to keep viewers on your channel, but they're <b>most effective when they direct viewers to something relevant</b></p></li>
+          <li class="tip"><span class="stamp">2023-09-08</span><p class="text">how to keep viewers watching: <b>add cards &amp; end screens during the uploading process</b> so viewers can go straight to more of your content</p></li>
+          <li class="tip"><span class="stamp">2023-02-21</span><p class="text">organizing your videos into playlists encourages viewers to watch more. playlist ideas: <b>vlogs</b> · <b>collabs</b> · <b>Q&amp;As</b> — or go more niche, like cooking videos, moving vlogs, reviews</p></li>
+          <li class="tip"><span class="stamp">2023-01-04</span><p class="text"><b>add featured sections to your channel</b> — they let you customize what viewers see when they land on your homepage</p></li>
+          <li class="tip"><span class="stamp">2022-06-28</span><p class="text">have you tried <b>breaking a video up into multiple parts?</b> it's an easy way to keep viewers coming back — and <b>put them in a playlist</b> so the story is easy to follow</p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="filming">
+        <h2>Filming: audio, light &amp; delivery</h2>
+        <p class="chapter-note">Their position on gear hasn't moved since 2020, and it's cheap: a window and clean sound beat a studio budget.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-08-22</span><p class="text">instead of a long script, <b>use bullet points</b> to keep your delivery feeling natural, authentic, and real 📝</p></li>
+          <li class="tip"><span class="stamp">2026-08-08</span><p class="text">clear audio makes every video feel more polished. <b>don't overlook your mic setup</b> 🎙️</p></li>
+          <li class="tip"><span class="stamp">2026-06-20</span><p class="text">expensive studio lighting isn't required! <b>filming right in front of a window</b> gives you perfect natural light ☀️</p></li>
+          <li class="tip"><span class="stamp">2026-06-06</span><p class="text">you don't necessarily need new cameras, mics, or a studio to improve your upload quality. <b>natural lighting and clear audio are your best friends.</b></p></li>
+          <li class="tip"><span class="stamp">2025-03-28</span><p class="text">creator pro-tip: <b>always have backup batteries (and chargers!)</b> 🔋</p></li>
+          <li class="tip"><span class="stamp">2021-12-10</span><p class="text">vlogging is a tricky format, so start here: <b>frame your shot</b> · <b>get comfortable</b> · <b>edit for pacing</b></p></li>
+          <li class="tip"><span class="stamp">2020-12-08</span><p class="text">to look your best with a simple home setup, try <b>three-point lighting</b></p></li>
+          <li class="tip"><span class="stamp">2020-09-16</span><p class="text"><b>you don't need an external microphone to get good sound from your phone</b> — the right technique cuts down your frustration and your post-production time</p></li>
+          <li class="tip"><span class="stamp">2022-09-28</span><p class="text">the best mic is <b>the one you already have</b>. after that it comes down to what you think sounds best — if all you have right now is your phone mic, that is 100% fine</p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="editing">
+        <h2>Editing &amp; sound design</h2>
+        <p class="chapter-note">The retention graph shows up here as an editing instrument rather than an analytics one — it tells you what to cut next time.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-07-31</span><p class="text">background music should <b>match the energy of your edit</b>. drop audio levels when you're speaking and raise them during transitions for a cinematic vibe</p></li>
+          <li class="tip"><span class="stamp">2026-07-15</span><p class="text">your audience retention graph is literally a cheat sheet. <b>look for where viewers drop off and trim those lulls</b> in your next edit</p></li>
+          <li class="tip"><span class="stamp">2026-07-03</span><p class="text">editing your next video is a breeze with the YouTube Create app — start with the <b>audio cleanup tool</b> to remove background noise or distractions from your clips</p></li>
+          <li class="tip"><span class="stamp">2026-05-15</span><p class="text">tools in the YouTube Create app to refine your next video: <b>remove background noise</b> · <b>add automatic captions</b> · <b>select copyright safe music</b> · <b>adjust aspect ratio</b> to vertical, horizontal, or square</p></li>
+          <li class="tip"><span class="stamp">2026-04-21</span><p class="text">editing tip: <b>less is usually more</b></p></li>
+          <li class="tip"><span class="stamp">2025-10-27</span><p class="text"><b>post it before you overproduce it</b></p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="live">
+        <h2>Live streams &amp; premieres</h2>
+        <p class="chapter-note">Prep beforehand, mine it afterwards. The stream is raw material for the next month of Shorts.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-07-13</span><p class="text">level up your live streams by <b>planning your talking points in advance</b>. keep a bulleted list nearby to stay on track! 📝</p></li>
+          <li class="tip"><span class="stamp">2026-06-26</span><p class="text">build anticipation for a big upload by <b>using a premiere</b>. it lets your community watch and chat together in real time when the video goes live ⏱️</p></li>
+          <li class="tip"><span class="stamp">2026-05-05</span><p class="text">4 tips to prep for your next live stream: <b>promote your live stream in advance</b> · <b>tap into trending topics</b> · <b>review your past streams by analyzing your comments and reactions</b> · <b>stay active by answering questions and shouting out viewers</b></p></li>
+          <li class="tip"><span class="stamp">2024-09-13</span><p class="text">live streaming is a great way to <b>connect with your viewers in real time</b> 👥</p></li>
+          <li class="tip"><span class="stamp">2020-04-22</span><p class="text">a good way to make sure your live stream is successful is to <b>plan your content ahead of time</b>. what are you hoping to accomplish? what makes streaming the best format for this content?</p></li>
+          <li class="tip"><span class="stamp">2023-03-24</span><p class="text">planning a livestream? <b>try an unlisted stream first</b> to make sure everything runs smoothly — check <b>framing the shot</b>, <b>audio quality</b>, <b>content planned in advance</b>, and <b>network signal strength</b></p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="podcasts">
+        <h2>Podcasts</h2>
+        <p class="chapter-note">A short, unusually concrete run of advice from late 2022 and spring 2023, when they were pushing podcasters onto the platform.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2023-03-30</span><p class="text">podcast playlist best practices: <b>make sure the playlist has full episodes in their correct order</b> · <b>have your playlist title be your podcast's name</b> · <b>add a description to your playlist so new listeners can find it</b></p></li>
+          <li class="tip"><span class="stamp">2023-03-28</span><p class="text">got a podcast? <b>it can live on your channel as a playlist</b>, with episodes as the playlist's videos</p></li>
+          <li class="tip"><span class="stamp">2022-09-29</span><p class="text"><b>start recording before the interview begins</b> (and let the person know you're recording). let it roll the whole time so you don't miss a moment</p></li>
+          <li class="tip"><span class="stamp">2022-09-28</span><p class="text">the best mic is <b>the one you already have</b> — after that it's whatever you think sounds best</p></li>
+          <li class="tip"><span class="stamp">2022-09-27</span><p class="text">figure out your <b>format</b> (solo host, chatcast, interview?), <b>length</b> (under or over 30 min?) and <b>frequency</b> (how often can you consistently drop new episodes?)</p></li>
+          <li class="tip"><span class="stamp">2025-02-04</span><p class="text">podcast discovery: <b>describe your podcast in the description for new listeners</b> · <b>use your podcast name in video titles</b></p></li>
+        </ul>
+      </section>
+      <section class="chapter" id="community">
+        <h2>Comments &amp; community</h2>
+        <p class="chapter-note">Pinning a comment is the tip they repeat most after the hook. The mechanism they keep pointing at is the same one every time: give people something specific to reply to.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-08-10</span><p class="text">find a comment that you love and <b>pin it to your video!</b> get the community chatting together!</p></li>
+          <li class="tip"><span class="stamp">2026-07-23</span><p class="text">use <b>Community posts</b> to deepen your connection with your existing audience and communities outside of your usual uploads through polls, text, images, and more!</p></li>
+          <li class="tip"><span class="stamp">2026-07-11</span><p class="text">tip: pin a comment to the top of your comment section to spark conversation. <b>share a fun fact about the video</b> to encourage your community to get talking 📌</p></li>
+          <li class="tip"><span class="stamp">2025-07-30</span><p class="text">one tip for getting started on Communities: <b>create a "welcome post"</b> to let your subscribers know about your Community 🤝</p></li>
+          <li class="tip"><span class="stamp">2024-08-22</span><p class="text"><b>heart your fave comments</b> · <b>pin comments to the top</b> · <b>reply to comments</b> — a few of @ColinandSamir's tips for building community through comments</p></li>
+          <li class="tip"><span class="stamp">2024-07-16</span><p class="text">build engagement and excitement around your new videos with Community posts: <b>shout out a viewer</b> · <b>give a quick update</b> · <b>start a convo with your community</b></p></li>
+          <li class="tip"><span class="stamp">2022-02-10</span><p class="text">building community in the comment section, per @ColinandSamir: <b>use screenshots from the comment section within your videos</b> · <b>create situations &amp; give your audience prompts to talk to each other</b> · <b>be an active member in other communities</b></p></li>
+          <li class="tip"><span class="stamp">2022-02-07</span><p class="text">encouraging the conversation you actually want: <b>respond to positive comments with the heart icon</b> · <b>pin your own comment or a viewer's that stood out</b> · <b>when you feel comfortable, respond to comments that made you feel good</b></p></li>
+          <li class="tip"><span class="stamp">2021-05-12</span><p class="text">how to keep your audience happy and engaged: <b>use fan clips in your videos</b> · <b>offer polls via community posts</b> · <b>ask for video ideas — and give someone a shoutout</b></p></li>
+          <li class="tip"><span class="stamp">2021-02-04</span><p class="text">surefire way to get your fans to check your Community tab? <b>use it to tease upcoming announcements and projects</b> 👀</p></li>
+          <li class="tip"><span class="stamp">2021-02-03</span><p class="text">you can <b>tag fans and fellow creators in Community posts</b> — use it to shout out someone you appreciate</p></li>
+          <li class="tip"><span class="stamp">2020-08-28</span><p class="text">the Community tab is a valuable way to build a relationship with your audience: <b>polls to decide on new videos</b>, <b>GIFs to generate excitement</b>, <b>exclusive content to keep them coming back</b></p></li>
+          <li class="tip"><span class="stamp">2022-05-30</span><p class="text">ways to use the <b>pinned comment</b>: <b>clarify something from your video</b> · <b>ask a question</b> · <b>drop an easter egg</b> · <b>thank your viewers for watching</b></p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="analytics">
+        <h2>Analytics</h2>
+        <p class="chapter-note">One instrument, three uses: retention for pacing, the audience report for what to make next, and the reminder that the numbers and the comments say different things.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-06-22</span><p class="text">checking your <b>audience retention graph</b> is the easiest way to see exactly where your pacing hits 📈</p></li>
+          <li class="tip"><span class="stamp">2026-05-27</span><p class="text">to understand your audience better, <b>analyze your YouTube analytics</b>. it reveals what your community loves 🫶</p></li>
+          <li class="tip"><span class="stamp">2026-05-03</span><p class="text"><b>analytics tell a story your comments don't</b></p></li>
+          <li class="tip"><span class="stamp">2025-08-18</span><p class="text">to explore your channel and content data in detail, use <b>Advanced Mode</b> in YouTube Studio analytics, then use the <b>Breakdown tab</b> to customize how you view those metrics</p></li>
+          <li class="tip"><span class="stamp">2024-11-20</span><p class="text">check up on your engagement in YouTube Analytics — here you'll find <b>watch time, card clicks, clicks per end screen</b>, and more</p></li>
+          <li class="tip"><span class="stamp">2024-07-25</span><p class="text">when was the last time you dove into your analytics? learn more about your <b>audience, top videos, watch time, key metrics</b></p></li>
+          <li class="tip"><span class="stamp">2020-11-21</span><p class="text">the <b>Audience Retention report</b> is one of the best tools in your toolbox. the points where retention drops off or rises tell you a lot about what appeals to your viewers — and help you revise your creative approach</p></li>
+          <li class="tip"><span class="stamp">2020-11-17</span><p class="text">to build a strong fanbase you need to know who's watching. analytics help you <b>tailor your videos to your fans — from the topics you choose to how you title them</b></p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="collabs">
+        <h2>Collabs &amp; reaching new audiences</h2>
+        <p class="chapter-note">Their recommended shape for a collab is specific: similar audience, two-part series, and a plan for what happens to the new viewers afterwards.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-08-04</span><p class="text">collab with creators <b>in your niche</b> to share fresh takes and level up your communities together 🚀</p></li>
+          <li class="tip"><span class="stamp">2026-06-28</span><p class="text">collab with other creators to tap into new communities — <b>find channels with a similar vibe and plan a two-part video series</b> to connect audiences</p></li>
+          <li class="tip"><span class="stamp">2026-06-10</span><p class="text">switch up the vibe: <b>test some different content formats for your niche</b> and see what your audience is going to vibe with 💡</p></li>
+          <li class="tip"><span class="stamp">2021-06-11</span><p class="text">when collabing, make sure your cross-promotion plan is on point: <b>upload videos on both channels</b> · <b>add cards and description links to drive to each other's channels</b> · <b>include their channel info in your title and description</b></p></li>
+          <li class="tip"><span class="stamp">2021-06-07</span><p class="text">keeping new viewers after a great collab: <b>ask viewers to subscribe at the end of the video</b> · <b>set up your channel to highlight videos new audiences may like best</b> · <b>don't stop uploading</b></p></li>
+          <li class="tip"><span class="stamp">2023-04-13</span><p class="text">want to collab but don't know where to start? <b>pick a topic, then research a creator who could help you bring that topic to life</b> — reach out, start planning, then hit record</p></li>
+          <li class="tip"><span class="stamp">2023-04-12</span><p class="text">choosing the right collab: <b>will their audience want to check out your channel?</b> · <b>do you share similar values and vision?</b> · <b>do you connect with their work?</b></p></li>
+          <li class="tip"><span class="stamp">2022-06-21</span><p class="text">if you land a collab at an event, <b>agree on a day to publish your videos before you leave</b>. communication is key</p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="setup">
+        <h2>Setting up the channel</h2>
+        <p class="chapter-note">The foundation posts, mostly from the account's 2020–2022 era, when it ran as a teaching feed rather than a tip-a-day feed.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2024-06-05</span><p class="text">make sure your <b>basic info — about, links, &amp; channel details — is up to date</b>. there might be brands wanting to get a hold of you 👀</p></li>
+          <li class="tip"><span class="stamp">2022-03-15</span><p class="text">looking to create a channel? <b>pick a name that represents what you want to be known for</b> · <b>your channel banner is a great place for your upload schedule</b> · <b>a channel trailer helps viewers understand what to expect</b></p></li>
+          <li class="tip"><span class="stamp">2021-11-08</span><p class="text">the end of the year is the perfect time to <b>evaluate your channel</b> — start from a few key questions rather than from the numbers</p></li>
+          <li class="tip"><span class="stamp">2021-09-29</span><p class="text">steps toward a distinctive brand identity: <b>develop a channel strategy</b> · <b>plan a calendar with marketing opportunities, collabs &amp; social integrations</b> · <b>ask for help to take your vision forward</b></p></li>
+          <li class="tip"><span class="stamp">2020-09-30</span><p class="text">before you start your channel, make sure you have a good foundation: <b>learn the basics</b> · <b>develop a unique brand</b> · <b>understand YouTube's rules</b></p></li>
+          <li class="tip"><span class="stamp">2020-08-19</span><p class="text">a <b>consistent format</b> is part of establishing your identity when making educational videos</p></li>
+          <li class="tip"><span class="stamp">2023-06-01</span><p class="text">how to keep your content fresh: <b>collaborations</b> · <b>live streams</b> · <b>start a second channel</b> · <b>pivot your content</b> · <b>keep it fun</b></p></li>
+          <li class="tip"><span class="stamp">2023-05-29</span><p class="text">don't underestimate the basics: <b>get to know your data &amp; analytics</b> · <b>keep your content fresh</b> · <b>know how you're already reaching your audience</b></p></li>
+          <li class="tip"><span class="stamp">2023-01-06</span><p class="text">build your brand with the basics: <b>channel name</b> · <b>description</b> · <b>translations of both into other languages</b> · <b>links to sites you want to share</b> · <b>contact information</b></p></li>
+          <li class="tip"><span class="stamp">2022-10-15</span><p class="text">if something isn't working on your channel, try new things: <b>new formats</b> · <b>new topics</b> · <b>new thumbnails</b></p></li>
+          <li class="tip"><span class="stamp">2022-05-25</span><p class="text">creating videos for a specific niche helps you <b>build a connection with fans based on common interests</b>, <b>gain more views from a specific community</b>, and <b>decide how to structure your videos</b></p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="workflow">
+        <h2>Workflow, ideas &amp; not burning out</h2>
+        <p class="chapter-note">The theme they've held longest without changing a word of the substance: consistency is a scheduling problem, and burnout is what actually ends channels.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-06-30</span><p class="text">stay consistent without burning out by <b>batch filming your content</b>. try recording a few videos in one sitting to free up your schedule!</p></li>
+          <li class="tip"><span class="stamp">2026-04-17</span><p class="text">reminder to <b>take a break</b>. for the plot (and the art)</p></li>
+          <li class="tip"><span class="stamp">2025-10-26</span><p class="text">batching content = self-care</p></li>
+          <li class="tip"><span class="stamp">2025-06-30</span><p class="text">time to <b>write down that content idea</b> that you swear you aren't going to forget !!</p></li>
+          <li class="tip"><span class="stamp">2024-10-09</span><p class="text">ways to maintain digital wellness: <b>schedule your time</b> · <b>recognize your burnout</b> · <b>try to unplug from devices</b></p></li>
+          <li class="tip"><span class="stamp">2024-06-16</span><p class="text">looking for inspiration? <b>go for a walk, take a look around, grab a meal!</b> inspo is all around us</p></li>
+          <li class="tip"><span class="stamp">2024-05-30</span><p class="text"><b>jot down that content idea before you forget it</b> 📝 it could become your next most viewed vid!</p></li>
+          <li class="tip"><span class="stamp">2024-05-28</span><p class="text">some external factors affect how you grow — <b>topic interest, channel competition, &amp; seasonality</b>. use these to your advantage when making new content</p></li>
+          <li class="tip"><span class="stamp">2024-05-06</span><p class="text">burnout happens — to prevent it: <b>set a content schedule, make a to-do list, and work on consistently sticking to it</b></p></li>
+          <li class="tip"><span class="stamp">2021-05-12</span><p class="text">taking time to rest is important, because <b>you're better equipped to manage stress</b>, <b>relaxing helps you find new ideas</b>, and <b>rest restores your energy</b></p></li>
+          <li class="tip"><span class="stamp">2020-10-13</span><p class="text">four ways consistency establishes a fanbase: <b>maintain a regular upload schedule</b> · <b>use a similar intro and outro</b> · <b>use fun or unique language</b> · <b>ask your audience for feedback</b></p></li>
+          <li class="tip"><span class="stamp">2023-05-10</span><p class="text">your bed should be your <b>sleep sanctuary, not your editing bay</b> — use it as a space to completely rest</p></li>
+          <li class="tip"><span class="stamp">2023-04-28</span><p class="text">columns to keep track of all your content in a spreadsheet: <b>video title</b> · <b>status of production</b> · <b>description copy</b> · <b>upload date and time</b></p></li>
+          <li class="tip"><span class="stamp">2023-04-27</span><p class="text"><b>identify repetitive steps and streamline them</b> — if you always color correct, get a preset in your editing software. it saves time and stress in the long run</p></li>
+          <li class="tip"><span class="stamp">2023-04-25</span><p class="text">the <b>rule of threes</b>: instead of writing, recording, editing and uploading one video at a time — <b>write 3 scripts, record 3 videos, edit all 3, upload all 3</b></p></li>
+          <li class="tip"><span class="stamp">2022-04-26</span><p class="text">how to optimize your creativity: <b>batch your production steps</b> · <b>create a spreadsheet for notes</b> · <b>try to get ahead of schedule</b> · <b>note repetitive steps you can streamline</b></p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="money">
+        <h2>Making money</h2>
+        <p class="chapter-note">Thin by design — most monetization posts on the account are announcements. These are the ones that tell you how to do something.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-02-12</span><p class="text">your content is being watched on TV 📺 — they published <b>10 tips for making the most of the living-room screen</b></p></li>
+          <li class="tip"><span class="stamp">2025-05-26</span><p class="text"><b>strategic ad placement</b> enhances earnings and viewer experience — worth reading up on mid-roll ads</p></li>
+          <li class="tip"><span class="stamp">2025-04-29</span><p class="text">best practices for selling through YouTube Shopping: <b>demonstrate how to use the product</b> · <b>show it off in good lighting</b> · <b>feature items you believe in</b></p></li>
+          <li class="tip"><span class="stamp">2022-12-12</span><p class="text">tips for working with top brands, from Taf of @thewallofcomedy: <b>define yourself</b> · <b>define your values</b> · <b>define your community</b></p></li>
+          <li class="tip"><span class="stamp">2022-10-18</span><p class="text">setting up Channel Memberships levels and perks — things to consider: <b>exclusive videos and live streams</b> · <b>members-only community posts</b> · <b>milestone chats</b> · <b>shout-outs</b></p></li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="safety">
+        <h2>Safety &amp; boundaries</h2>
+        <p class="chapter-note">The chapter creators reach for after the channel starts working, not before.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2022-10-28</span><p class="text"><b>set boundaries with your audience</b> — deciding how much of your life you want to share should help prevent unwanted interactions</p></li>
+          <li class="tip"><span class="stamp">2022-10-25</span><p class="text">you can create <b>blocked word lists</b> in Studio so specific words never show up in your comments. worth adding: <b>your real name</b> · <b>home address</b> · <b>hurtful words</b> · <b>personal info</b></p></li>
+          <li class="tip"><span class="stamp">2021-05-28</span><p class="text">if comments are hurting your mental health: <b>set upload defaults</b> · <b>create a blocked words list</b> · <b>add comment moderators</b> · <b>turn off comments completely</b></p></li>
+        </ul>
+      </section>
+
+      <footer>
+        <h3>How this was collected</h3>
+        <p>The account only serves its ~20 most recent posts to anyone who isn't logged in, so the back catalogue came from the Wayback Machine: every archived permalink under <code>/YouTubeCreators/status/</code> was harvested for post IDs, then each ID was fetched fresh from X's public per-post endpoint. 18,440 posts by the account were read in full and filtered down to the advice above.</p>
+        <h3>What's missing</h3>
+        <p>Archive coverage is dense but not total. A handful of 2026 dates have no snapshot, so a few recent tips aren't here. The mid-2023 to mid-2025 stretch is genuinely thin on advice rather than under-collected — the account ran on memes, milestone shoutouts and product news through that period, then returned to a tip-a-day rhythm in 2026. 2011–2017 is barely archived at all, and what survives from it is product announcements.</p>
+        <p>The account has posted 47,245 times since 2011. This is its advice, not its complete archive.</p>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.chapter'));
+  var tips = Array.prototype.slice.call(document.querySelectorAll('li.tip'));
+  var rail = document.getElementById('railLinks');
+  var q = document.getElementById('q');
+  var countEl = document.getElementById('count');
+  var empty = document.getElementById('empty');
+
+  sections.forEach(function(s){
+    var a = document.createElement('a');
+    a.href = '#' + s.id;
+    var label = document.createElement('span');
+    label.textContent = s.querySelector('h2').textContent;
+    var n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = s.querySelectorAll('li.tip').length;
+    a.appendChild(label); a.appendChild(n);
+    rail.appendChild(a);
+  });
+
+  document.getElementById('total').textContent = tips.length;
+  document.getElementById('chapcount').textContent = sections.length;
+
+  function render(term){
+    var t = term.trim().toLowerCase();
+    var shown = 0;
+    tips.forEach(function(li){
+      var hit = !t || li.textContent.toLowerCase().indexOf(t) !== -1;
+      li.classList.toggle('hide', !hit);
+      if (hit) shown++;
+    });
+    sections.forEach(function(s){
+      s.classList.toggle('hide', !s.querySelector('li.tip:not(.hide)'));
+    });
+    empty.classList.toggle('show', shown === 0);
+    countEl.textContent = t ? shown + ' of ' + tips.length + ' tips' : tips.length + ' tips';
+  }
+
+  q.addEventListener('input', function(){ render(q.value); });
+  render('');
+})();
+</script>

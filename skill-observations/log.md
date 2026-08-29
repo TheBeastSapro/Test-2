@@ -320,3 +320,15 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add this as a documented pattern wherever web/social reading is covered: separate the enumeration problem from the retrieval problem, and solve enumeration from a third-party index rather than the source's own paginated API. Include the CDX call shape (`https://web.archive.org/cdx/search/cdx?url=<host>/<path>/*&output=text&fl=original&collapse=urlkey`), the note that the `limit` parameter truncates rather than paginates so a `from=` date filter is needed for recent captures, and the caveat that coverage is whatever the archiver happened to capture — dense for some periods, thin for others — so gaps must be stated, never smoothed over.
 
 **Principle:** When a source caps how much of its own index it will hand you, get the index from somewhere else. Enumeration and retrieval are separate problems, and third-party archives routinely solve the first for sources that refuse to.
+
+### Observation 22: A keyword classifier's recall must be measured against a read sample before it defines a deliverable
+
+**Status:** OPEN
+**Date:** 2026-08-29
+**Session context:** Sorting ~3,200 social posts into "practical advice" vs "everything else" to build a reference document. A regex classifier keyed on imperative-verb openings and advice words returned 133 candidates out of 1,172 posts for the first window — a plausible-looking yield. Reading the rejected pile by hand turned up a large number of real tips the filter had never had a chance to match, because they open on a noun ("clear audio makes every video feel more polished", "the first five seconds are the door to your content"). The classifier's precision was fine; its recall was poor, and precision is the half you can see from the output alone.
+
+**Issue:** A filter that returns a believable number of believable-looking hits reads as working. Nothing in its output reveals what it dropped, so the natural move — ship the filtered set as the deliverable — silently ships a fraction of the answer while looking complete. The correction cost roughly 35k tokens of reading the rejects in bulk, which was still cheap relative to shipping a list missing a third of its content.
+
+**Suggested improvement:** Wherever a skill or workflow narrows a corpus with keyword or pattern matching before producing a deliverable, require one calibration step: hand-read a contiguous slice of the REJECTED set (not a sample of the accepted set) and count what the filter missed. If misses are material, either widen the filter or read the whole corpus. Use the classifier to order and prioritize reading, not to define the boundary of the output.
+
+**Principle:** You can inspect a filter's precision from its output; you can only learn its recall from what it threw away. When a filter's rejects are never examined, its false-negative rate is not low — it is unmeasured, and unmeasured recall silently sets the ceiling on the deliverable's completeness.
