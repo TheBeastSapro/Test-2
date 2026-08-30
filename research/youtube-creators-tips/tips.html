@@ -14,6 +14,7 @@
     --line-soft:#e2e8ea;
     --accent:#c2411d;
     --accent-wash:#f6e2da;
+    --accent-ink:#ffffff;
     --shadow:0 1px 0 rgba(19,26,29,.05), 0 12px 32px -22px rgba(19,26,29,.45);
   }
   @media (prefers-color-scheme: dark){
@@ -28,6 +29,8 @@
       --line-soft:#1f2a2d;
       --accent:#ff7048;
       --accent-wash:#3a2015;
+    --accent-ink:#170a05;
+      --accent-ink:#170a05;
       --shadow:0 1px 0 rgba(0,0,0,.3), 0 18px 40px -26px rgba(0,0,0,.9);
     }
   }
@@ -54,7 +57,7 @@
     line-height:1.55;
     -webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,40px) 96px}
+  .wrap{max-width:900px;margin:0 auto;padding:0 clamp(16px,4vw,40px) 96px}
 
   header.masthead{padding:clamp(40px,7vw,84px) 0 clamp(26px,4vw,38px);border-bottom:1px solid var(--line)}
   .eyebrow{
@@ -83,24 +86,33 @@
   }
   .meta dd{margin:0;font-size:1.02rem;font-weight:500;font-variant-numeric:tabular-nums}
 
-  .cols{display:block}
-  @media (min-width:960px){.cols{display:grid;grid-template-columns:236px minmax(0,1fr);gap:56px;align-items:start}}
-
-  nav.rail{position:sticky;top:0;padding:28px 0 24px;max-height:100vh;overflow-y:auto;display:none}
-  @media (min-width:960px){nav.rail{display:block}}
-  .rail-title{
-    font-family:"IBM Plex Mono",ui-monospace,monospace;
-    font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);
-    padding-bottom:10px;border-bottom:1px solid var(--line);margin:0 0 6px;
+  .toolbar{
+    position:sticky;top:0;z-index:5;background:var(--bg);
+    padding:16px 0 12px;margin-bottom:4px;
+    border-bottom:1px solid var(--line);
   }
-  .rail a{
-    display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:6px 0;
-    color:var(--muted);text-decoration:none;font-size:.92rem;border-bottom:1px solid var(--line-soft);
+  .chips{
+    display:flex;gap:7px;overflow-x:auto;padding-bottom:11px;
+    scrollbar-width:none;-ms-overflow-style:none;
   }
-  .rail a:hover,.rail a:focus-visible{color:var(--accent)}
-  .rail a .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.74rem;color:var(--faint);font-variant-numeric:tabular-nums}
-
-  .toolbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:22px 0 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex:none;display:inline-flex;align-items:baseline;gap:6px;
+    padding:7px 13px;border-radius:999px;cursor:pointer;
+    border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
+    font:inherit;font-size:.9rem;font-weight:500;white-space:nowrap;
+  }
+  .chip .n{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;
+    color:var(--faint);font-variant-numeric:tabular-nums;
+  }
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+  .chip[aria-pressed="true"]{
+    background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
+  }
+  .chip[aria-pressed="true"]:hover{color:var(--accent-ink)}
+  .chip[aria-pressed="true"] .n{color:var(--accent-ink);opacity:.7}
+  .searchrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding-top:2px}
   .search{
     flex:1 1 280px;display:flex;align-items:center;gap:10px;background:var(--surface);
     border:1px solid var(--line);border-radius:2px;padding:9px 13px;box-shadow:var(--shadow);
@@ -149,7 +161,7 @@
   <header class="masthead">
     <p class="eyebrow"><span class="dot"></span> @YouTubeCreators · through 28 Aug 2026</p>
     <h1>The YouTube Creators Tip Log</h1>
-    <p class="standfirst">Every piece of practical, do-this-to-your-channel advice pulled out of YouTube's own creator account, sorted by what it helps you do. The wording is theirs, verbatim; the grouping is mine. Motivational posts, memes, milestone shoutouts and pure product news are left out — what's left is the advice. Newest first inside each chapter, so you can watch a piece of guidance hold for six years.</p>
+    <p class="standfirst">Every piece of practical, do-this-to-your-channel advice pulled out of YouTube's own creator account, sorted by what it helps you do. The wording is theirs, verbatim; the grouping is mine. Motivational posts, memes, milestone shoutouts and pure product news are left out — what's left is the advice. Tap a category to see only those tips; newest first inside each one, so you can watch a piece of guidance hold for six years.</p>
     <dl class="meta">
       <div><dt>Tips</dt><dd id="total">—</dd></div>
       <div><dt>Chapters</dt><dd id="chapcount">—</dd></div>
@@ -158,24 +170,21 @@
     </dl>
   </header>
 
-  <div class="cols">
-    <nav class="rail" aria-label="Chapters">
-      <p class="rail-title">Chapters</p>
-      <div id="railLinks"></div>
-    </nav>
-
-    <main>
+  <main>
       <div class="toolbar">
+        <div class="chips" id="chips" role="group" aria-label="Filter by category"></div>
+        <div class="searchrow">
         <label class="search">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"></circle><path d="M11 11l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
           <input id="q" type="search" placeholder="Filter — try thumbnail, hook, retention, audio…" aria-label="Filter tips">
         </label>
         <span class="count" id="count"></span>
+        </div>
       </div>
 
-      <p class="empty" id="empty">Nothing matches that. Try a broader word — <em>title</em>, <em>Shorts</em>, <em>comment</em>.</p>
+      <p class="empty" id="empty">Nothing matches that. Clear the search, or tap <em>All</em> to come back to the full list.</p>
 
-      <section class="chapter" id="hooks">
+      <section class="chapter" id="hooks" data-chip="Hooks">
         <h2>Openings &amp; hooks</h2>
         <p class="chapter-note">The most-repeated theme on the account, and the window keeps shrinking: five seconds in 2026, three seconds in the Shorts posts, one to two seconds back in 2021 when they first measured the feed.</p>
         <ul class="tips">
@@ -188,11 +197,23 @@
           <li class="tip"><span class="stamp">2021-08-06</span><p class="text">tips for a compelling channel trailer: <b>assume the viewer is seeing your channel for the first time</b> · <b>keep it short</b> · <b>ask viewers to subscribe in your video</b></p></li>
           <li class="tip"><span class="stamp">2021-04-30</span><p class="text">wanna make a great first impression? make sure your <b>channel trailer pops</b> — trailers help captivate viewers and win new subscribers</p></li>
           <li class="tip"><span class="stamp">2022-10-13</span><p class="text">3 tips for Shorts from @realasantem: <b>just go for it, put yourself out there</b> · <b>focus on the first 5 seconds to hook viewers</b> · <b>find new ways to add to the YouTube community</b></p></li>
-          <li class="tip"><span class="stamp">2022-09-05</span><p class="text">@hannahwarling's #1 tip for keeping an audience through a Short: <b>pose a question at the beginning and wait until the last 2 seconds to reveal the solution</b></p></li>
         </ul>
       </section>
 
-      <section class="chapter" id="thumbnails">
+      <section class="chapter" id="retention" data-chip="Retention">
+        <h2>Retention &amp; watch time</h2>
+        <p class="chapter-note">Keeping the viewer once the thumbnail has done its job. The retention graph is the instrument they point at most — and they treat it as an editing tool, not a reporting one.</p>
+        <ul class="tips">
+          <li class="tip"><span class="stamp">2026-07-15</span><p class="text">your audience retention graph is literally a cheat sheet. <b>look for where viewers drop off and trim those lulls</b> in your next edit</p></li>
+          <li class="tip"><span class="stamp">2026-06-22</span><p class="text">checking your <b>audience retention graph</b> is the easiest way to see exactly where your pacing hits 📈</p></li>
+          <li class="tip"><span class="stamp">2023-09-08</span><p class="text">how to keep viewers watching: <b>add cards &amp; end screens during the uploading process</b> so viewers can go straight to more of your content</p></li>
+          <li class="tip"><span class="stamp">2022-09-05</span><p class="text">@hannahwarling's #1 tip for keeping an audience through a Short: <b>pose a question at the beginning and wait until the last 2 seconds to reveal the solution</b></p></li>
+          <li class="tip"><span class="stamp">2022-06-28</span><p class="text">have you tried <b>breaking a video up into multiple parts?</b> it's an easy way to keep viewers coming back — and <b>put them in a playlist</b> so the story is easy to follow</p></li>
+          <li class="tip"><span class="stamp">2022-03-18</span><p class="text">tools to keep your viewers watching: <b>cards</b> · <b>end screens</b> · <b>playlists</b> · <b>channel sections</b></p></li>
+          <li class="tip"><span class="stamp">2020-11-21</span><p class="text">the <b>Audience Retention report</b> is one of the best tools in your toolbox. the points where retention drops off or rises tell you a lot about what appeals to your viewers — and help you revise your creative approach</p></li>
+        </ul>
+      </section>
+      <section class="chapter" id="thumbnails" data-chip="Thumbnails">
         <h2>Thumbnails</h2>
         <p class="chapter-note">Two instructions carry the whole chapter: make them loud, and stop guessing — test them. The one constraint they've never dropped is accuracy.</p>
         <ul class="tips">
@@ -211,7 +232,7 @@
         </ul>
       </section>
 
-      <section class="chapter" id="titles">
+      <section class="chapter" id="titles" data-chip="Titles &amp; keywords">
         <h2>Titles, keywords &amp; getting found</h2>
         <p class="chapter-note">Consistent line across six years: the title carries as much weight as the thumbnail, and the front of it is the part that survives a small screen.</p>
         <ul class="tips">
@@ -227,7 +248,7 @@
         </ul>
       </section>
 
-      <section class="chapter" id="shorts">
+      <section class="chapter" id="shorts" data-chip="Shorts">
         <h2>Shorts</h2>
         <p class="chapter-note">Their standing position: Shorts are a discovery funnel for the long-form you already have, not a second content business. The craft notes below are unusually specific for this account.</p>
         <ul class="tips">
@@ -256,7 +277,7 @@
         </ul>
       </section>
 
-      <section class="chapter" id="structure">
+      <section class="chapter" id="structure" data-chip="Structure">
         <h2>Structure, chapters &amp; end screens</h2>
         <p class="chapter-note">Everything that makes a video — and a channel — navigable. Mostly the part creators skip at the upload screen.</p>
         <ul class="tips">
@@ -271,16 +292,13 @@
           <li class="tip"><span class="stamp">2024-11-15</span><p class="text">a first impression is important! make sure your channel <b>looks tidy and approachable</b> for new viewers — have you tried using playlists to keep your content organized?</p></li>
           <li class="tip"><span class="stamp">2024-09-09</span><p class="text">this is your reminder to <b>organize your playlists</b> on your channel 📂</p></li>
           <li class="tip"><span class="stamp">2024-08-08</span><p class="text">when you get to the <b>"video elements" step of the upload flow</b>, make sure you add your end screens — they encourage viewers to subscribe as well as promote your other content</p></li>
-          <li class="tip"><span class="stamp">2022-03-18</span><p class="text">tools to keep your viewers watching: <b>cards</b> · <b>end screens</b> · <b>playlists</b> · <b>channel sections</b></p></li>
           <li class="tip"><span class="stamp">2020-12-10</span><p class="text">end screens and cards are a great way to keep viewers on your channel, but they're <b>most effective when they direct viewers to something relevant</b></p></li>
-          <li class="tip"><span class="stamp">2023-09-08</span><p class="text">how to keep viewers watching: <b>add cards &amp; end screens during the uploading process</b> so viewers can go straight to more of your content</p></li>
           <li class="tip"><span class="stamp">2023-02-21</span><p class="text">organizing your videos into playlists encourages viewers to watch more. playlist ideas: <b>vlogs</b> · <b>collabs</b> · <b>Q&amp;As</b> — or go more niche, like cooking videos, moving vlogs, reviews</p></li>
           <li class="tip"><span class="stamp">2023-01-04</span><p class="text"><b>add featured sections to your channel</b> — they let you customize what viewers see when they land on your homepage</p></li>
-          <li class="tip"><span class="stamp">2022-06-28</span><p class="text">have you tried <b>breaking a video up into multiple parts?</b> it's an easy way to keep viewers coming back — and <b>put them in a playlist</b> so the story is easy to follow</p></li>
         </ul>
       </section>
 
-      <section class="chapter" id="filming">
+      <section class="chapter" id="filming" data-chip="Filming">
         <h2>Filming: audio, light &amp; delivery</h2>
         <p class="chapter-note">Their position on gear hasn't moved since 2020, and it's cheap: a window and clean sound beat a studio budget.</p>
         <ul class="tips">
@@ -296,12 +314,11 @@
         </ul>
       </section>
 
-      <section class="chapter" id="editing">
+      <section class="chapter" id="editing" data-chip="Editing">
         <h2>Editing &amp; sound design</h2>
-        <p class="chapter-note">The retention graph shows up here as an editing instrument rather than an analytics one — it tells you what to cut next time.</p>
+        <p class="chapter-note">Cutting, pacing and the sound under it. Their standing advice is to stop polishing sooner than feels comfortable.</p>
         <ul class="tips">
           <li class="tip"><span class="stamp">2026-07-31</span><p class="text">background music should <b>match the energy of your edit</b>. drop audio levels when you're speaking and raise them during transitions for a cinematic vibe</p></li>
-          <li class="tip"><span class="stamp">2026-07-15</span><p class="text">your audience retention graph is literally a cheat sheet. <b>look for where viewers drop off and trim those lulls</b> in your next edit</p></li>
           <li class="tip"><span class="stamp">2026-07-03</span><p class="text">editing your next video is a breeze with the YouTube Create app — start with the <b>audio cleanup tool</b> to remove background noise or distractions from your clips</p></li>
           <li class="tip"><span class="stamp">2026-05-15</span><p class="text">tools in the YouTube Create app to refine your next video: <b>remove background noise</b> · <b>add automatic captions</b> · <b>select copyright safe music</b> · <b>adjust aspect ratio</b> to vertical, horizontal, or square</p></li>
           <li class="tip"><span class="stamp">2026-04-21</span><p class="text">editing tip: <b>less is usually more</b></p></li>
@@ -309,7 +326,7 @@
         </ul>
       </section>
 
-      <section class="chapter" id="live">
+      <section class="chapter" id="live" data-chip="Live">
         <h2>Live streams &amp; premieres</h2>
         <p class="chapter-note">Prep beforehand, mine it afterwards. The stream is raw material for the next month of Shorts.</p>
         <ul class="tips">
@@ -322,7 +339,7 @@
         </ul>
       </section>
 
-      <section class="chapter" id="podcasts">
+      <section class="chapter" id="podcasts" data-chip="Podcasts">
         <h2>Podcasts</h2>
         <p class="chapter-note">A short, unusually concrete run of advice from late 2022 and spring 2023, when they were pushing podcasters onto the platform.</p>
         <ul class="tips">
@@ -334,7 +351,7 @@
           <li class="tip"><span class="stamp">2025-02-04</span><p class="text">podcast discovery: <b>describe your podcast in the description for new listeners</b> · <b>use your podcast name in video titles</b></p></li>
         </ul>
       </section>
-      <section class="chapter" id="community">
+      <section class="chapter" id="community" data-chip="Community">
         <h2>Comments &amp; community</h2>
         <p class="chapter-note">Pinning a comment is the tip they repeat most after the hook. The mechanism they keep pointing at is the same one every time: give people something specific to reply to.</p>
         <ul class="tips">
@@ -354,22 +371,20 @@
         </ul>
       </section>
 
-      <section class="chapter" id="analytics">
+      <section class="chapter" id="analytics" data-chip="Analytics">
         <h2>Analytics</h2>
-        <p class="chapter-note">One instrument, three uses: retention for pacing, the audience report for what to make next, and the reminder that the numbers and the comments say different things.</p>
+        <p class="chapter-note">What to look at once a video is live, and the reminder that the numbers and the comments tell you different things. Retention has its own chapter above.</p>
         <ul class="tips">
-          <li class="tip"><span class="stamp">2026-06-22</span><p class="text">checking your <b>audience retention graph</b> is the easiest way to see exactly where your pacing hits 📈</p></li>
           <li class="tip"><span class="stamp">2026-05-27</span><p class="text">to understand your audience better, <b>analyze your YouTube analytics</b>. it reveals what your community loves 🫶</p></li>
           <li class="tip"><span class="stamp">2026-05-03</span><p class="text"><b>analytics tell a story your comments don't</b></p></li>
           <li class="tip"><span class="stamp">2025-08-18</span><p class="text">to explore your channel and content data in detail, use <b>Advanced Mode</b> in YouTube Studio analytics, then use the <b>Breakdown tab</b> to customize how you view those metrics</p></li>
           <li class="tip"><span class="stamp">2024-11-20</span><p class="text">check up on your engagement in YouTube Analytics — here you'll find <b>watch time, card clicks, clicks per end screen</b>, and more</p></li>
           <li class="tip"><span class="stamp">2024-07-25</span><p class="text">when was the last time you dove into your analytics? learn more about your <b>audience, top videos, watch time, key metrics</b></p></li>
-          <li class="tip"><span class="stamp">2020-11-21</span><p class="text">the <b>Audience Retention report</b> is one of the best tools in your toolbox. the points where retention drops off or rises tell you a lot about what appeals to your viewers — and help you revise your creative approach</p></li>
           <li class="tip"><span class="stamp">2020-11-17</span><p class="text">to build a strong fanbase you need to know who's watching. analytics help you <b>tailor your videos to your fans — from the topics you choose to how you title them</b></p></li>
         </ul>
       </section>
 
-      <section class="chapter" id="collabs">
+      <section class="chapter" id="collabs" data-chip="Collabs">
         <h2>Collabs &amp; reaching new audiences</h2>
         <p class="chapter-note">Their recommended shape for a collab is specific: similar audience, two-part series, and a plan for what happens to the new viewers afterwards.</p>
         <ul class="tips">
@@ -384,7 +399,7 @@
         </ul>
       </section>
 
-      <section class="chapter" id="setup">
+      <section class="chapter" id="setup" data-chip="Channel setup">
         <h2>Setting up the channel</h2>
         <p class="chapter-note">The foundation posts, mostly from the account's 2020–2022 era, when it ran as a teaching feed rather than a tip-a-day feed.</p>
         <ul class="tips">
@@ -402,7 +417,7 @@
         </ul>
       </section>
 
-      <section class="chapter" id="workflow">
+      <section class="chapter" id="workflow" data-chip="Workflow">
         <h2>Workflow, ideas &amp; not burning out</h2>
         <p class="chapter-note">The theme they've held longest without changing a word of the substance: consistency is a scheduling problem, and burnout is what actually ends channels.</p>
         <ul class="tips">
@@ -425,7 +440,7 @@
         </ul>
       </section>
 
-      <section class="chapter" id="money">
+      <section class="chapter" id="money" data-chip="Money">
         <h2>Making money</h2>
         <p class="chapter-note">Thin by design — most monetization posts on the account are announcements. These are the ones that tell you how to do something.</p>
         <ul class="tips">
@@ -437,7 +452,7 @@
         </ul>
       </section>
 
-      <section class="chapter" id="safety">
+      <section class="chapter" id="safety" data-chip="Safety">
         <h2>Safety &amp; boundaries</h2>
         <p class="chapter-note">The chapter creators reach for after the channel starts working, not before.</p>
         <ul class="tips">
@@ -454,50 +469,65 @@
         <p>Archive coverage is dense but not total. A handful of 2026 dates have no snapshot, so a few recent tips aren't here. The mid-2023 to mid-2025 stretch is genuinely thin on advice rather than under-collected — the account ran on memes, milestone shoutouts and product news through that period, then returned to a tip-a-day rhythm in 2026. 2011–2017 is barely archived at all, and what survives from it is product announcements.</p>
         <p>The account has posted 47,245 times since 2011. This is its advice, not its complete archive.</p>
       </footer>
-    </main>
-  </div>
+  </main>
 </div>
 
 <script>
 (function(){
   var sections = Array.prototype.slice.call(document.querySelectorAll('section.chapter'));
   var tips = Array.prototype.slice.call(document.querySelectorAll('li.tip'));
-  var rail = document.getElementById('railLinks');
+  var chipBar = document.getElementById('chips');
   var q = document.getElementById('q');
   var countEl = document.getElementById('count');
   var empty = document.getElementById('empty');
+  var active = 'all';
 
+  function chip(id, label, n){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.dataset.target = id;
+    b.setAttribute('aria-pressed', id === 'all' ? 'true' : 'false');
+    b.innerHTML = label + ' <span class="n">' + n + '</span>';
+    b.addEventListener('click', function(){
+      active = (active === id) ? 'all' : id;
+      Array.prototype.forEach.call(chipBar.children, function(c){
+        c.setAttribute('aria-pressed', c.dataset.target === active ? 'true' : 'false');
+      });
+      render();
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+    chipBar.appendChild(b);
+  }
+
+  chip('all', 'All', tips.length);
   sections.forEach(function(s){
-    var a = document.createElement('a');
-    a.href = '#' + s.id;
-    var label = document.createElement('span');
-    label.textContent = s.querySelector('h2').textContent;
-    var n = document.createElement('span');
-    n.className = 'n';
-    n.textContent = s.querySelectorAll('li.tip').length;
-    a.appendChild(label); a.appendChild(n);
-    rail.appendChild(a);
+    chip(s.id, s.dataset.chip || s.querySelector('h2').textContent, s.querySelectorAll('li.tip').length);
   });
 
   document.getElementById('total').textContent = tips.length;
   document.getElementById('chapcount').textContent = sections.length;
 
-  function render(term){
-    var t = term.trim().toLowerCase();
+  function render(){
+    var t = q.value.trim().toLowerCase();
     var shown = 0;
-    tips.forEach(function(li){
-      var hit = !t || li.textContent.toLowerCase().indexOf(t) !== -1;
-      li.classList.toggle('hide', !hit);
-      if (hit) shown++;
-    });
     sections.forEach(function(s){
-      s.classList.toggle('hide', !s.querySelector('li.tip:not(.hide)'));
+      var inCat = (active === 'all' || active === s.id);
+      var any = false;
+      Array.prototype.forEach.call(s.querySelectorAll('li.tip'), function(li){
+        var hit = inCat && (!t || li.textContent.toLowerCase().indexOf(t) !== -1);
+        li.classList.toggle('hide', !hit);
+        if (hit){ any = true; shown++; }
+      });
+      s.classList.toggle('hide', !any);
     });
     empty.classList.toggle('show', shown === 0);
-    countEl.textContent = t ? shown + ' of ' + tips.length + ' tips' : tips.length + ' tips';
+    countEl.textContent = (t || active !== 'all')
+      ? shown + ' of ' + tips.length + ' tips'
+      : tips.length + ' tips';
   }
 
-  q.addEventListener('input', function(){ render(q.value); });
-  render('');
+  q.addEventListener('input', render);
+  render();
 })();
 </script>
