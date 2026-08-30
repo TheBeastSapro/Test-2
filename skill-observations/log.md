@@ -332,3 +332,15 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Wherever a skill or workflow narrows a corpus with keyword or pattern matching before producing a deliverable, require one calibration step: hand-read a contiguous slice of the REJECTED set (not a sample of the accepted set) and count what the filter missed. If misses are material, either widen the filter or read the whole corpus. Use the classifier to order and prioritize reading, not to define the boundary of the output.
 
 **Principle:** You can inspect a filter's precision from its output; you can only learn its recall from what it threw away. When a filter's rejects are never examined, its false-negative rate is not low — it is unmeasured, and unmeasured recall silently sets the ceiling on the deliverable's completeness.
+
+### Observation 23: Navigation hidden behind a desktop breakpoint is navigation that does not exist
+
+**Status:** OPEN
+**Date:** 2026-08-29
+**Session context:** Built a 161-item reference page as an Artifact with a sticky chapter rail listing all 16 categories and their counts. The rail was `display:none` below 960px — a routine responsive pattern. The user, who had opened the page on a phone (the request that started the session was a phone screenshot), came back asking for exactly the feature the page already had: "make a category like retention, hook etc so I can see what I need instead of searching." From their device the page was a long scroll with a search box and no visible categories at all.
+
+**Issue:** The responsive rule that hides a sidebar on narrow screens is usually correct for *supplementary* chrome and wrong for the page's *only* means of navigation. Nothing in the build flags the difference: the desktop preview looks complete, and the mobile view degrades silently into something that still works but no longer answers "where is the thing I need". The failure is invisible from the authoring side because the author is never the one on the phone. It also wasted a round trip on a page that was otherwise finished.
+
+**Suggested improvement:** Add a rule to `artifact-design` under the layout fundamentals: before hiding any element at a breakpoint, ask whether it is the only path to a piece of content. If it is, it must be replaced at that breakpoint, not removed — a horizontally scrolling chip row, a select, or a disclosure. A useful check to state plainly: render the page mentally at 390px wide and ask "can I reach every section from here without scrolling the whole document?" Worth pairing with a preference for filter-in-place controls over anchor links on long reference pages, since a filter answers "show me only X" while an anchor only answers "jump near X".
+
+**Principle:** A responsive breakpoint that hides an element is a decision about whether that element's *function* survives, not just its pixels. Supplementary chrome can disappear; the sole route to content has to be replaced with something narrower, never dropped — and the author, always on the wide screen, is the last person who will notice.
