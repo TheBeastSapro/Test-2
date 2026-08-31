@@ -1,8 +1,30 @@
 #!/usr/bin/env python3
 """Build the faceless-YouTube playbook page from the harvested corpus."""
-import json, re, html
+import base64, hashlib, json, os, re, html
 
-THREADS = json.load(open('threads_clean.json'))
+THREADS = json.load(open('threads_clean2.json'))
+TIPS_DATA = json.load(open('tips_final.json'))
+
+_B64 = {}
+def datauri(url):
+    """Inline a cached, downscaled image. External hosts are blocked by the
+    artifact CSP, so every picture has to travel with the page."""
+    if url not in _B64:
+        f = 'imgcache/%s.jpg' % hashlib.sha1(url.encode()).hexdigest()[:16]
+        if not os.path.exists(f):
+            _B64[url] = None
+        else:
+            _B64[url] = 'data:image/jpeg;base64,' + base64.b64encode(open(f,'rb').read()).decode()
+    return _B64[url]
+
+def shots(urls, cls='shots', who=''):
+    out = []
+    for u in urls:
+        d = datauri(u)
+        if d:
+            alt = html.escape('Screenshot shared by %s' % who, quote=True) if who else ''
+            out.append('<img loading="lazy" alt="%s" src="%s">' % (alt, d))
+    return ('<div class="%s">%s</div>' % (cls, ''.join(out))) if out else ''
 
 AUTHORS = {
     'noahmorris':    ('Noah Morris', 'noah'),
@@ -104,42 +126,6 @@ THREAD_MAP = {
     62: ('ops',     'Being live 24/7 without being live'),
 }
 
-# author, date, topic, verbatim text
-TIPS = [
- ('noahmorris','2025-10-10','niches',"If you can't find a good recent niche, just look at niches that were exploding 1-2 years ago and everyone forgot about. Then revive them with a new format."),
- ('noahmorris','2024-12-31','niches',"2025 niche strategy: find audiences that already are used to watching extremely long form content, and make recaps, explainers, in depth lore videos."),
- ('noahmorris','2024-12-03','niches',"One of the underrated faceless niche markets is female-oriented niches. They are the biggest consumers — if you ever go to a mall you would know a good 80% of the shops are woman oriented."),
- ('noahmorris','2024-11-04','niches',"The 4 niches I have earned most my money with, in order: TV shows · celebrity · politics · sports."),
- ('noahmorris','2025-05-03','niches',"I recommend everyone looking for niches in 2025 to go for something extremely safe. YouTube is super fragile these days."),
- ('noahmorris','2024-06-01','niches',"The biggest mistake people make researching niches: they ask why they SHOULD jump into a niche instead of why they SHOULDN'T. They fall for confirmation and survivorship bias."),
- ('noahmorris','2022-10-07','niches',"The most underrated piece of advice for YouTube is high school economics — demand and supply. I find niches that have high demand and low supply, then build a channel around it."),
- ('noahmorris','2023-09-10','ideas',"The secret to YouTube growth is to find low quality content that a lot of people already are watching, and then 10X the quality. This is true for all creators."),
- ('noahmorris','2024-02-27','ideas',"Copying other channels earns you your first $10,000. Remixing them, finding what works for you, sticking to that format, then upping the quality and stakes of every video is what earns you your first $1 million."),
- ('noahmorris','2023-10-08','titles',"3 title formats that have been getting me 1/10s: When [X character] realizes [X thing] · He [did X thing] then [did X thing] · How [insignificant character] [verb] [significant thing]."),
- ('noahmorris','2023-10-03','rpm',"Best practices to increase RPM: 16-20 min videos for best ROI · aim for US, German or Scandinavian viewers · mid-rolls on cliffhangers · duplicate profitable content, not just high-view content."),
- ('noahmorris','2023-11-17','rpm',"These 1 hour+ videos are my new favourite YouTube meta. If you find a simple format you can get 30-100k views on, with a low cost per video and simple editing, even 30-60k views makes good money."),
- ('noahmorris','2024-01-16','rpm',"Faceless channel 2023 breakdown: $150k revenue in 365 days. $70 a video, 5 videos a week, 260 videos. Total cost $19,500. Total profit $130,500."),
- ('noahmorris','2023-09-15','start',"If you're starting today you have a huge advantage. YouTube is pushing new channels like crazy to compete with TikTok on discoverability. Don't think the algorithm is against small creators — the opposite is true."),
- ('noahmorris','2024-04-21','start',"The number 1 YouTube growth hack: patience. Patience doesn't mean complacency. It means the discipline to push through while keeping a long-term perspective."),
- ('noahmorris','2025-08-20','start',"So many people claim they want to do YouTube for the next decade, but 90% operate like it's a hobby — giving up or panicking when the first 100 videos don't work out."),
- ('noahmorris','2025-01-25','start',"Being good at faceless YouTube = great at pattern recognition · great at creative problem solving · great at human psychology · great at human resources."),
- ('noahmorris','2025-04-28','ideas',"Creators should start studying Veritasium more than MrBeast. Not just packaging, storytelling and pacing — their production structure is genius, letting different people own parts of the process."),
- ('noahmorris','2025-06-27','ops',"The faceless strategies actually working in 2025: cheap, extremely long-form, semi-evergreen videos posted once a day across 3-5 channels at the same time."),
- ('noahmorris','2024-11-04','ideas',"Niche and ideation technique: create an alt Google account, subscribe to channels and watch videos in broad niches like sports or politics, then use YouTube's filters and your homepage as a research feed."),
- ('noahmorris','2025-04-20','algo',"We entered the YouTube SEO era with this new trust score system. Bunch of hacks and tricks. Really not a fan."),
- ('wannercashcow','2025-11-08','rpm',"Focus on premium countries (US/UK/CA/AUS) · older viewers (45+ with money) · audiences with buying intent · longer videos (2 hours+) · \"to fall asleep to\" content · videos that work well on TV · evergreen topics."),
- ('wannercashcow','2025-10-05','rpm',"Focus on longer videos. Focus on stuff people can fall asleep to. Focus on videos that do well on TV. Doing all 3 is literally the cheat code to high RPMs."),
- ('wannercashcow','2025-10-20','rpm',"Make longer videos. Make longer videos. Make longer videos. Make longer videos. Make longer videos."),
- ('wannercashcow','2025-03-14','niches',"The most profitable niches right now: bedtime stories · sleep meditation · relaxation sounds · study music. Why? People watch them for 20+ minutes. More watch time = more ad revenue."),
- ('wannercashcow','2025-02-04','niches',"Two faceless channels both got 6M views. One made $10,000, the other made $45,000. The only difference was their niche."),
- ('wannercashcow','2025-10-28','scripts',"Grab attention in the first 5 seconds · promise a clear benefit right away · structure like a story (hook → setup → payoff) · use open loops so people have to keep watching · use casual language."),
- ('wannercashcow','2025-07-15','ideas',"YouTube is literally just pattern recognition. You don't need new ideas — you need to notice what formats, titles and styles are repeating across niches, then move them."),
- ('PhedEU','2023-12-17','rpm',"I recently started posting 1 hour+ videos frequently. The results have been astonishing."),
- ('PhedEU','2024-10-22','rpm',"$27 RPM. You really only need 370,000 views a month to make $10K."),
- ('PhedEU','2025-06-14','niches',"Your video didn't flop because the niche is oversaturated. It flopped because your format is."),
- ('PhedEU','2024-08-02','start',"Less overthinking. More experimenting."),
- ('PhedEU','2025-09-25','niches',"Sometimes it's okay to just change the niche."),
-]
 
 def esc(s):
     return html.escape(s, quote=False)
@@ -162,14 +148,17 @@ counts_author = {}
 for idx, (topic, title) in sorted(THREAD_MAP.items()):
     t = THREADS[idx]
     name, slug = AUTHORS[t['author']]
-    parts = [clean_part(p) for p in t['parts']]
-    parts = [parts[0]] + [p for p in parts[1:] if len(p) > 3 and not (STEP_DROP.search(p) and len(p) < 320)]
+    parts = [{'text': clean_part(p['text']), 'imgs': p.get('imgs', [])} for p in t['parts']]
+    parts = [parts[0]] + [p for p in parts[1:]
+             if (len(p['text']) > 3 or p['imgs'])
+             and not (STEP_DROP.search(p['text']) and len(p['text']) < 320 and not p['imgs'])]
     items[topic]['plays'].append({'title': title, 'author': name, 'slug': slug, 'parts': parts})
     counts_author[slug] = counts_author.get(slug, 0) + 1
 
-for author, date, topic, text in TIPS:
-    name, slug = AUTHORS[author]
-    items[topic]['tips'].append({'date': date, 'author': name, 'slug': slug, 'text': text})
+for r in TIPS_DATA:
+    name, slug = AUTHORS.get(r['author'], (r['author'], 'other'))
+    items[r['topic']]['tips'].append({'date': r['date'], 'author': name, 'slug': slug,
+                                      'text': r['text'], 'imgs': r['imgs']})
     counts_author[slug] = counts_author.get(slug, 0) + 1
 
 out = []
@@ -232,7 +221,7 @@ w('''<style>
   .chiprow::-webkit-scrollbar{display:none}
   .chiprow .lbl{flex:none;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.63rem;
     letter-spacing:.13em;text-transform:uppercase;color:var(--faint);padding-right:3px}
-  .chip{flex:none;display:inline-flex;align-items:baseline;gap:6px;padding:6px 12px;
+  .chip{flex:none;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;
     border-radius:999px;cursor:pointer;border:1px solid var(--line);background:var(--surface);
     color:var(--ink-2);font:inherit;font-size:.88rem;font-weight:500;white-space:nowrap}
   .chip .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.7rem;
@@ -268,7 +257,9 @@ w('''<style>
   .play summary:hover .ptitle{color:var(--accent)}
   .ptitle{font-weight:600;font-size:1.03rem;flex:1 1 auto;min-width:12ch}
   .byline{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.7rem;
-    letter-spacing:.06em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+    letter-spacing:.06em;text-transform:uppercase;color:var(--faint);white-space:nowrap;
+    display:inline-flex;align-items:center;gap:6px}
+  .stamp b{display:flex;align-items:center;gap:5px}
   .play ol{margin:0;padding:2px 20px 18px 40px;display:flex;flex-direction:column;gap:11px}
   .play ol li{color:var(--ink-2);font-size:.98rem}
   .play ol li::marker{color:var(--accent);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem}
@@ -291,6 +282,51 @@ w('''<style>
     letter-spacing:.13em;text-transform:uppercase;color:var(--faint);margin:0 0 10px;font-weight:500}
   footer h3 + h3{margin-top:22px}
   footer p{margin:0 0 12px}
+  /* --- pictures: the operators' own artifacts, so they get real space --- */
+  .shots{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 2px}
+  .shots img{
+    height:132px;width:auto;max-width:100%;object-fit:cover;display:block;
+    border:1px solid var(--line);border-radius:2px;background:var(--surface);
+    cursor:zoom-in;
+  }
+  .lede-shots{padding:0 16px}
+  .lede-shots img{height:150px}
+  li.tip .shots img{height:118px}
+  ol.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:14px 10px;padding:6px 16px 22px;list-style:none;counter-reset:frame}
+  ol.grid li{counter-increment:frame;display:flex;flex-direction:column;gap:6px;
+    align-content:start}
+  ol.grid .shots{margin:0;display:block;position:relative}
+  ol.grid .shots img{height:auto;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top}
+  ol.grid .cap{font-size:.79rem;line-height:1.4;color:var(--muted)}
+  ol.grid .cap::before{content:counter(frame) "  ";
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;color:var(--faint)}
+  ol.grid li:not(:has(.cap))::after{content:counter(frame);
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;color:var(--faint)}
+
+  /* --- who is talking, encoded once and reused in the filter row --- */
+  .who-dot{width:7px;height:7px;border-radius:50%;flex:none;display:inline-block;
+    background:var(--who, var(--faint))}
+  [data-who="noah"]{--who:#c9922b}
+  [data-who="wanner"]{--who:#3e7f73}
+  [data-who="phed"]{--who:#a9552c}
+  [data-who="oneoften"]{--who:#6d5a91}
+  :root[data-theme="dark"] [data-who="wanner"]{--who:#59a495}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) [data-who="wanner"]{--who:#59a495}}
+
+  /* --- lightbox --- */
+  #lb{position:fixed;inset:0;background:rgba(8,10,7,.92);display:none;
+    align-items:center;justify-content:center;z-index:50;padding:24px;cursor:zoom-out}
+  #lb.on{display:flex}
+  #lb img{max-width:100%;max-height:100%;border-radius:2px;box-shadow:0 24px 60px -20px rgba(0,0,0,.8)}
+  #lb .hint{position:absolute;bottom:18px;left:0;right:0;text-align:center;
+    font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.7rem;
+    letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+
+  @media (prefers-reduced-motion: no-preference){
+    .play summary::after{transition:transform .15s ease}
+    .play[open] summary::after{transform:rotate(45deg)}
+  }
   .empty{display:none;padding:38px 0;color:var(--muted)}
   .empty.show{display:block}
   :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
@@ -337,22 +373,42 @@ for tid, tname in TOPICS:
         nplays += 1
         lede, steps = p['parts'][0], p['parts'][1:]
         total_steps += len(steps)
+        nshots = sum(len(x['imgs']) for x in p['parts'])
         w(f'      <details class="play" data-who="{p["slug"]}">')
+        shotlabel = (f' · {nshots} shot' + ('s' if nshots != 1 else '')) if nshots else ''
         w(f'        <summary><span class="ptitle">{esc(p["title"])}</span>'
-          f'<span class="byline">{esc(p["author"])} · {len(steps)} steps</span></summary>')
-        w(f'        <p class="lede">{esc(lede)}</p>')
-        w('        <ol>')
-        for s in steps:
-            w(f'          <li>{esc(s)}</li>')
+          f'<span class="byline"><span class="who-dot"></span>{esc(p["author"])} · '
+          f'{len(steps)} steps{shotlabel}</span></summary>')
+        w(f'        <p class="lede">{esc(lede["text"])}</p>')
+        if lede['imgs']:
+            w('        ' + shots(lede['imgs'], 'shots lede-shots', p['author']))
+        grid = nshots >= 12
+        w(f'        <ol class="{"grid" if grid else ""}">')
+        for st in steps:
+            if grid:
+                if not st['imgs']:
+                    continue      # a contact sheet with empty frames reads as broken
+                # their own "(4 of 50)" numbering duplicates the frame counter
+                cap = re.sub(r'\s*\(\d+\s+of\s+\d+\)\s*$', '', st['text']).strip()
+                cap = f'<span class="cap">{esc(cap)}</span>' if cap else ''
+                w(f'          <li>{shots(st["imgs"], "shots", p["author"])}{cap}</li>')
+            else:
+                body = esc(st['text'])
+                if st['imgs']:
+                    body += shots(st['imgs'], 'shots', p['author'])
+                w(f'          <li>{body}</li>')
         w('        </ol>')
         w('      </details>')
     if blk['tips']:
         w('      <ul class="tips">')
         for t in blk['tips']:
             ntips += 1
+            body = f'<p class="ttext">{esc(t["text"])}</p>'
+            if t['imgs']:
+                body += shots(t['imgs'], 'shots', t['author'])
             w(f'        <li class="tip" data-who="{t["slug"]}">'
-              f'<span class="stamp">{t["date"]}<b>{esc(t["author"])}</b></span>'
-              f'<p class="ttext">{esc(t["text"])}</p></li>')
+              f'<span class="stamp">{t["date"]}<b><span class="who-dot"></span>{esc(t["author"])}</b></span>'
+              f'<div>{body}</div></li>')
         w('      </ul>')
     w('    </section>')
 
@@ -366,6 +422,7 @@ w('      <p>Posts credited to 1 of 10 come from the brand account and from Richa
 w('    </footer>')
 w('  </main>')
 w('</div>')
+w('<div id="lb" role="dialog" aria-modal="true" aria-label="Enlarged image" hidden><img alt=""><span class="hint">Tap anywhere to close</span></div>')
 
 w('''<script>
 (function(){
@@ -384,7 +441,9 @@ w('''<script>
     var b = document.createElement('button');
     b.type='button'; b.className='chip'; b.dataset.target=id;
     b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    b.innerHTML = label + (n!=null ? ' <span class="n">'+n+'</span>' : '');
+    b.innerHTML = (bar.id==='whoChips' && id!=='all' ? '<span class="who-dot"></span>' : '')
+                + label + (n!=null ? ' <span class="n">'+n+'</span>' : '');
+    if (bar.id==='whoChips' && id!=='all') b.dataset.who = id;
     b.addEventListener('click', function(){ onpick(id); });
     bar.appendChild(b);
     return b;
@@ -436,6 +495,19 @@ w('''<script>
 
   q.addEventListener('input', render);
   render();
+
+  // Pictures are the evidence here, so let people actually look at one.
+  var lb = document.getElementById('lb'), lbImg = lb.querySelector('img');
+  document.addEventListener('click', function(e){
+    var img = e.target.closest('.shots img');
+    if (img){ lbImg.src = img.src; lb.hidden = false; lb.classList.add('on'); return; }
+    if (lb.classList.contains('on')){ lb.classList.remove('on'); lb.hidden = true; lbImg.src=''; }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('on')){
+      lb.classList.remove('on'); lb.hidden = true; lbImg.src='';
+    }
+  });
 })();
 </script>''')
 

@@ -4,12 +4,17 @@ Source material and published page for four faceless-YouTube operators on X:
 Noah Morris (@noahmorris), Wanner Aarts (@wannercashcow / @wanneracademy),
 phed (@PhedEU) and 1 of 10 (@1of10media, plus co-founder @Richard_YTS).
 
-- `playbook.html` — the published page. 60 unrolled threads (675 steps) and
-  33 standalone tips, filterable by operator and by topic. Built by `build.py`.
+- `playbook.html` — the published page. 60 unrolled threads (671 steps), 72
+  standalone tips and 506 embedded screenshots, filterable by operator and by
+  topic. Built by `build.py`. ~9 MB, almost all of it pictures.
 - `build.py` — the generator. Holds the curation: which thread maps to which
-  topic and title, the hand-picked standalone tips, and the promo-stripping
-  rules. Edit this, re-run it, republish.
-- `threads_clean.json` — the 63 de-duplicated threads with their parts.
+  topic and title, the promo-stripping rules, and all the page's CSS and JS.
+  Edit this, re-run it, republish.
+- `fetch_imgs.py` — downloads every referenced image, downscales it to 380px
+  wide JPEG, and caches it in `imgcache/` (not committed). Run before `build.py`.
+- `threads_clean2.json` — the 63 de-duplicated threads, each part carrying its
+  text and its image URLs.
+- `tips_final.json` — the 72 curated standalone posts with their images.
 - `posts.txt` — every original timeline post recovered, `handle<TAB>date<TAB>text`.
 
 ## How the corpus was collected
@@ -31,6 +36,23 @@ accounts have a single archived post. Two sources instead:
 Tweet IDs harvested from either source were rehydrated with the `tweet` CLI
 (the public per-tweet endpoint), which stays available even while the
 timeline endpoint is rate-limited — they are separate limits on the same host.
+
+## Images
+
+The artifact viewer's CSP blocks external image hosts, so nothing can be
+hotlinked from `pbs.twimg.com` — every picture has to travel inside the page as
+a data URI. `fetch_imgs.py` downscales them to 380px/q68 first, which puts 506
+screenshots in about 6.5 MB of JPEG.
+
+Attributing an image to the right thread step took two attempts. Thread Reader
+lazy-loads images (`src="/images/1px.png"`, real URL in `data-src`) and places
+them in markup that does not nest inside the tweet they belong to, so splitting
+the page on tweet boundaries loses most of them. The working approach is to walk
+the whole document linearly, recording tweet markers and image markers in
+document order, and attach each image to the most recent preceding tweet.
+
+Threads where images outnumber prose (phed's 50-thumbnail sheet) render as a
+contact-sheet grid rather than a list; every image opens in a lightbox.
 
 ## Not yet included
 
