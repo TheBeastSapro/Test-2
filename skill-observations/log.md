@@ -368,3 +368,15 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** In research-task guidance, make identity resolution an explicit first phase with three ordered moves before any question to the user: probe candidate handles against an endpoint that returns identifying metadata; mine already-retrieved content from confirmed entities for mentions of the unresolved ones; then search. Ask only about what survives all three — and when asking, say what was already resolved, so the user answers a narrow question rather than re-specifying everything. Match on the bio's substance, never on the name alone.
 
 **Principle:** Ambiguity in a request is not automatically a question for the user. Where identity can be checked against a source that echoes back enough to confirm or refute a guess, spend the cheap lookups first — then ask one precise question about the genuine remainder, rather than a broad one about the whole set.
+
+### Observation 26: Deciding what counts as "the content" is a judgement call, and it was made twice too narrowly in one session
+
+**Status:** OPEN
+**Date:** 2026-08-31
+**Session context:** Built a reference page from four social accounts. Two separate corrections came back from the user, both the same shape. First: "you didn't add images that they share?" — the pipeline had extracted text and silently discarded every picture, including a 50-part thread whose every part IS a thumbnail and whose text is just "(4 of 50)". Second: "a lot of tips from them quite missing as well" — 33 tips had been hand-picked from ~309 posts, on a private standard of what was worth including. Both were defensible narrowings that nobody had asked for.
+
+**Issue:** Extraction pipelines quietly define scope by what they happen to parse. Text is the easy modality, so text becomes "the content" and everything else becomes invisible — not decided against, just never considered. The same happens with curation: an unstated quality bar gets applied to a corpus the user asked for in full, and the output looks complete because the discarded material is not in it to be missed. In this case the discarded material was the most valuable part: the subject was YouTube packaging, and packaging IS images.
+
+**Suggested improvement:** Add a scoping step to research/extraction guidance: before building, enumerate what modalities the source actually carries (text, images, video, numbers, links, engagement) and state explicitly which are in and which are out, and why. Then, if the deliverable is a curation of a corpus the user asked for, state the inclusion bar in one line and say roughly how much was cut — an explicit "I kept 33 of 309 because X" invites the correction before the deliverable is built, rather than after. When the subject is visual (design, packaging, thumbnails, charts), treat images as primary content, not enrichment.
+
+**Principle:** What a pipeline can parse silently becomes what the deliverable is about. Enumerate the source's modalities and state the inclusion bar out loud before building, because everything you leave out is invisible in the result — most of all to you.
