@@ -344,3 +344,27 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a rule to `artifact-design` under the layout fundamentals: before hiding any element at a breakpoint, ask whether it is the only path to a piece of content. If it is, it must be replaced at that breakpoint, not removed — a horizontally scrolling chip row, a select, or a disclosure. A useful check to state plainly: render the page mentally at 390px wide and ask "can I reach every section from here without scrolling the whole document?" Worth pairing with a preference for filter-in-place controls over anchor links on long reference pages, since a filter answers "show me only X" while an anchor only answers "jump near X".
 
 **Principle:** A responsive breakpoint that hides an element is a decision about whether that element's *function* survives, not just its pixels. Supplementary chrome can disappear; the sole route to content has to be replaced with something narrower, never dropped — and the author, always on the wide screen, is the last person who will notice.
+
+### Observation 24: When an API traverses a structure in only one direction, look for a third party that already materialized the other
+
+**Status:** OPEN
+**Date:** 2026-08-31
+**Session context:** Asked to collect the tips and threads of four X accounts. The open per-tweet endpoint walks a reply chain UP (a tweet knows its parent) but never DOWN, so from a thread's first post — which is what a profile timeline shows — parts 2 through 20 are unreachable without cookies. The threads were the most valuable content in the whole request. They were recovered in full from threadreaderapp.com, which stores every thread anyone has ever asked it to unroll, exposes them at /user/<handle>, and marks each part with a data-tweet attribute: 63 threads and 777 steps, cleanly parseable.
+
+**Issue:** The natural conclusion from the API's shape — "threads need login" — is what the platform's own documentation implies and what the local tooling's help text says outright. It is true of the platform and false of the web. Any structure valuable enough that people want to read it linearly tends to have an unroller, a mirror, a reader-mode service or an archive that has already flattened it, and that service is not bound by the direction the origin API happens to traverse.
+
+**Suggested improvement:** Add to the web/social reading guidance a step between "the API can't do this" and "this needs credentials": ask what shape the missing data has, and who else would have wanted it in that shape. One-directional link chains (threads, comment trees, paginated series) are the strongest signal — an unroller almost certainly exists. Note the specific finding that Thread Reader covers X threads logged-out and is parseable, and pair it with the caveat that coverage is only what someone asked to unroll, so absence there is not absence of threads.
+
+**Principle:** An API's traversal direction is a property of that API, not of the data. Before concluding a structure is unreachable, ask who else needed it flattened — the reason a one-way chain is annoying to you is the reason someone already built the tool that undoes it.
+
+### Observation 25: Resolve informally-named people before asking the user who they mean
+
+**Status:** OPEN
+**Date:** 2026-08-31
+**Session context:** The user named five people to research as "Noah Morris, Julian, Wannercashcow, Gold, Phed" — nicknames and first names, no links. The obvious response is to ask for handles. Instead: candidate handles were probed against a public user-info endpoint that returns name, bio and follower count for any handle (so a single call confirms or kills a guess), and when guessing ran out, the already-fetched timelines of the confirmed accounts were mined for @mentions. That found "Phed" as @phedeu — a spelling no amount of guessing would have produced. Four of five resolved before a single question was asked; the one remaining question was then specific and easy to answer.
+
+**Issue:** Asking "who do you mean?" for every under-specified name is technically correct and quietly expensive: it costs a round trip, it hands the user work they expected the agent to do, and it usually produces an answer the agent could have derived. But the opposite failure is worse — guessing an identity and researching the wrong person silently. The resolution is that identity is verifiable cheaply when a public endpoint echoes back a bio, and the bio is what confirms the match ("runs 18 faceless channels" makes @noahmorris obviously the right Noah Morris; "Investing in early stage hardware startups" makes @julian obviously the wrong Julian).
+
+**Suggested improvement:** In research-task guidance, make identity resolution an explicit first phase with three ordered moves before any question to the user: probe candidate handles against an endpoint that returns identifying metadata; mine already-retrieved content from confirmed entities for mentions of the unresolved ones; then search. Ask only about what survives all three — and when asking, say what was already resolved, so the user answers a narrow question rather than re-specifying everything. Match on the bio's substance, never on the name alone.
+
+**Principle:** Ambiguity in a request is not automatically a question for the user. Where identity can be checked against a source that echoes back enough to confirm or refute a guess, spend the cheap lookups first — then ask one precise question about the genuine remainder, rather than a broad one about the whole set.
