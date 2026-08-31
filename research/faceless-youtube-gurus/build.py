@@ -5,25 +5,28 @@ import base64, hashlib, json, os, re, html
 THREADS = json.load(open('threads_clean2.json'))
 TIPS_DATA = json.load(open('tips_final.json'))
 
-_B64 = {}
+# Every picture travels with the page: the artifact CSP blocks external image
+# hosts. Blobs are pooled and referenced by index so a picture used in two
+# threads is only carried once, and the document parses before any of it loads.
+POOL = []
+_IDX = {}
 def datauri(url):
-    """Inline a cached, downscaled image. External hosts are blocked by the
-    artifact CSP, so every picture has to travel with the page."""
-    if url not in _B64:
+    if url not in _IDX:
         f = 'imgcache/%s.jpg' % hashlib.sha1(url.encode()).hexdigest()[:16]
         if not os.path.exists(f):
-            _B64[url] = None
+            _IDX[url] = None
         else:
-            _B64[url] = 'data:image/jpeg;base64,' + base64.b64encode(open(f,'rb').read()).decode()
-    return _B64[url]
+            POOL.append(base64.b64encode(open(f,'rb').read()).decode())
+            _IDX[url] = len(POOL) - 1
+    return _IDX[url]
 
 def shots(urls, cls='shots', who=''):
     out = []
     for u in urls:
         d = datauri(u)
-        if d:
+        if d is not None:
             alt = html.escape('Screenshot shared by %s' % who, quote=True) if who else ''
-            out.append('<img loading="lazy" alt="%s" src="%s">' % (alt, d))
+            out.append('<img loading="lazy" alt="%s" data-i="%d">' % (alt, d))
     return ('<div class="%s">%s</div>' % (cls, ''.join(out))) if out else ''
 
 AUTHORS = {
@@ -124,6 +127,21 @@ THREAD_MAP = {
     60: ('ideas',   'The whole ideation process'),
     61: ('scripts', 'Scripts that keep people watching'),
     62: ('ops',     'Being live 24/7 without being live'),
+    63: ('ai',      '5 AI tools I actually use'),
+    64: ('ops',     'The fair-use mistake that cost $63,000'),
+    65: ('ideas',   'Treat YouTube like a trader, not a YouTuber'),
+    66: ('ai',      '$10,000 a month on YouTube using AI'),
+    67: ('ai',      'Viral Shorts with AI'),
+    68: ('ops',     "Why I'm selling most of my channels"),
+    69: ('thumbs',  'Thumbnail trends worth stealing'),
+    70: ('start',   'What a faceless channel actually is'),
+    71: ('rpm',     "How to get extremely high RPMs"),
+    72: ('niches',  'Finding a niche in under 10 minutes'),
+    73: ('cases',   'An AI channel making $10K a month, broken down'),
+    74: ('niches',  'Two channels, 6M views, $35,000 apart'),
+    75: ('scripts', '6 psychological triggers for watch time'),
+    76: ('niches',  'The shift to branded channels'),
+    77: ('cases',   '25 faceless channels blowing up'),
 }
 
 
@@ -414,7 +432,9 @@ for tid, tname in TOPICS:
 
 w('    <footer>')
 w('      <h3>Where this came from</h3>')
-w('      <p>None of these accounts are archived by the Wayback Machine, so the deep-history method used for YouTube\'s own account does not work on them. Instead: their logged-out timelines were read through the syndication endpoint (about 100 posts each), and every thread either of them has had unrolled on Thread Reader was fetched and cleaned — 63 threads, 777 steps after de-duplication and stripping the sales pitches from the tails.</p>')
+w('      <p>None of these accounts are archived by the Wayback Machine, so the deep-history method used for YouTube\'s own account does not work on them. Instead: their logged-out timelines were read through the syndication endpoint (about 100 posts each), and every thread that has ever been unrolled on Thread Reader was fetched and cleaned. Thread Reader\'s per-account index turns out to be incomplete — a second pass, asking it directly for the ID of every thread-opening post in the timelines, found 18 more threads it had never listed, including all of Noah\'s.</p>')
+w('      <h3>What is still missing</h3>')
+w('      <p>Thirty thread-opening posts in these timelines have bodies that exist nowhere a logged-out reader can reach: nobody ever unrolled them, and the open per-tweet endpoint walks a reply chain up, never down. Among them: Noah on his A-to-Z workflow across 20 channels, and on six rules for hiring freelancers after $500,000 spent; phed on treating YouTube as digital real estate, and his 30-day roadmap; Wanner on user profiling and on 20 niches. Those need a logged-in session to recover. The timelines themselves also stop at roughly 100 posts each — that is everything the logged-out endpoint serves.</p>')
 w('      <h3>Who is missing</h3>')
 w('      <p>Julian (@julianfaceless) has no unrolled threads and his timeline endpoint was rate-limited every time it was tried; Gold has not been identified yet. Both slot straight into this page once there is a handle and the endpoint lets go — the filters are built to take more operators.</p>')
 w('      <h3>1 of 10</h3>')
@@ -423,6 +443,7 @@ w('    </footer>')
 w('  </main>')
 w('</div>')
 w('<div id="lb" role="dialog" aria-modal="true" aria-label="Enlarged image" hidden><img alt=""><span class="hint">Tap anywhere to close</span></div>')
+w('<script id="pool" type="application/json">' + json.dumps(POOL).replace('</', '<\\/') + '</script>')
 
 w('''<script>
 (function(){
@@ -495,6 +516,12 @@ w('''<script>
 
   q.addEventListener('input', render);
   render();
+
+  // Pictures are pooled by index, so one shared twice is carried once.
+  var pool = JSON.parse(document.getElementById('pool').textContent);
+  [].forEach.call(document.querySelectorAll('img[data-i]'), function(img){
+    img.src = 'data:image/jpeg;base64,' + pool[+img.dataset.i];
+  });
 
   // Pictures are the evidence here, so let people actually look at one.
   var lb = document.getElementById('lb'), lbImg = lb.querySelector('img');

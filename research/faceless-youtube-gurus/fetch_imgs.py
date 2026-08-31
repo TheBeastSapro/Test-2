@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
 
 urls = [u.strip() for u in open('img_urls.txt') if u.strip()]
-MAXW = 380
+MAXW = 340
 def key(u): return hashlib.sha1(u.encode()).hexdigest()[:16]
 
 def grab(u):
@@ -15,7 +15,7 @@ def grab(u):
         raw = urllib.request.urlopen(req, timeout=25).read()
         im = Image.open(io.BytesIO(raw)).convert('RGB')
         im.thumbnail((MAXW, MAXW*3))
-        im.save(out, 'JPEG', quality=68, optimize=True, progressive=True)
+        im.save(out, 'JPEG', quality=64, optimize=True, progressive=True)
         return ('ok', u)
     except Exception as e:
         return ('fail:%s' % type(e).__name__, u)

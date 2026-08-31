@@ -4,8 +4,8 @@ Source material and published page for four faceless-YouTube operators on X:
 Noah Morris (@noahmorris), Wanner Aarts (@wannercashcow / @wanneracademy),
 phed (@PhedEU) and 1 of 10 (@1of10media, plus co-founder @Richard_YTS).
 
-- `playbook.html` — the published page. 60 unrolled threads (671 steps), 72
-  standalone tips and 506 embedded screenshots, filterable by operator and by
+- `playbook.html` — the published page. 75 unrolled threads (877 steps), 72
+  standalone tips and 754 embedded screenshots, filterable by operator and by
   topic. Built by `build.py`. ~9 MB, almost all of it pictures.
 - `build.py` — the generator. Holds the curation: which thread maps to which
   topic and title, the promo-stripping rules, and all the page's CSS and JS.
@@ -27,11 +27,17 @@ accounts have a single archived post. Two sources instead:
    a `__NEXT_DATA__` blob. The endpoint rate-limits hard by IP; routing through
    Jina Reader (`https://r.jina.ai/<url>`, header `x-respond-with: html`) got
    past it, until Jina's own pool hit the same limit.
-2. **Threads** — `threadreaderapp.com/user/<handle>` lists every thread anyone
-   has had unrolled for that account, and each `/thread/<id>.html` page carries
-   the full text with `data-tweet="<id>"` markers per part. This is the only
-   logged-out route to multi-tweet threads; the open per-tweet endpoint walks
-   up a reply chain, never down.
+2. **Threads** — each `threadreaderapp.com/thread/<id>.html` page carries a
+   thread's full text with `data-tweet="<id>"` markers per part. This is the
+   only logged-out route to multi-tweet threads; the open per-tweet endpoint
+   walks up a reply chain, never down.
+
+   Do not trust `threadreaderapp.com/user/<handle>` as the index. It 404s for
+   accounts that definitely have unrolled threads (Noah's did) and lists only a
+   subset for the rest. The reliable method is to find every thread-opening post
+   in the timelines — anything with 🧵, "a thread", "here's how" — resolve its
+   tweet ID, and request `/thread/<id>.html` directly. That second pass found 18
+   threads the index had never listed, six of them Noah's.
 
 Tweet IDs harvested from either source were rehydrated with the `tweet` CLI
 (the public per-tweet endpoint), which stays available even while the
@@ -53,6 +59,16 @@ document order, and attach each image to the most recent preceding tweet.
 
 Threads where images outnumber prose (phed's 50-thumbnail sheet) render as a
 contact-sheet grid rather than a list; every image opens in a lightbox.
+
+## Threads that could not be recovered
+
+`unrecovered-threads.tsv` lists the 30 thread-opening posts whose bodies exist
+nowhere a logged-out reader can reach — never unrolled, and unreachable through
+the open endpoint because a reply chain only walks upward. Recovering them needs
+a logged-in session (`agent-reach configure twitter-cookies`). Notable ones:
+Noah's A-to-Z workflow across 20 channels and his six rules for hiring
+freelancers; phed's digital-real-estate thread and 30-day roadmap; Wanner on
+user profiling and on 20 niches.
 
 ## Not yet included
 
