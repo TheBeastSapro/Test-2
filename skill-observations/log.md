@@ -380,3 +380,15 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a scoping step to research/extraction guidance: before building, enumerate what modalities the source actually carries (text, images, video, numbers, links, engagement) and state explicitly which are in and which are out, and why. Then, if the deliverable is a curation of a corpus the user asked for, state the inclusion bar in one line and say roughly how much was cut — an explicit "I kept 33 of 309 because X" invites the correction before the deliverable is built, rather than after. When the subject is visual (design, packaging, thumbnails, charts), treat images as primary content, not enrichment.
 
 **Principle:** What a pipeline can parse silently becomes what the deliverable is about. Enumerate the source's modalities and state the inclusion bar out loud before building, because everything you leave out is invisible in the result — most of all to you.
+
+### Observation 27: A third party's index is not its inventory — probe it by identifier
+
+**Status:** OPEN
+**Date:** 2026-08-31
+**Session context:** Follow-up to Observation 24. Threads were recovered from Thread Reader via its per-account listing at /user/<handle>. That listing 404'd for one of the four accounts, so that operator was reported as having "no unrolled threads" and shipped with zero playbooks. When the user asked whether coverage was complete, the check was redone from the other direction: every thread-opening post in the timelines was identified, its tweet ID resolved, and /thread/<id>.html requested directly. Eighteen threads came back that the index had never listed — six of them belonging to the account whose index page 404s.
+
+**Issue:** A listing endpoint and a content endpoint are different systems with different completeness, and the listing is the one built for humans browsing — it can be partial, stale, or missing entirely while the content sits there addressable by ID. Reading "404" on the index as "this account has nothing" produced a confident, wrong statement in a delivered summary, and it survived because nothing tested it. The correction only happened because the user asked a direct completeness question.
+
+**Suggested improvement:** Whenever a third-party service is used to recover content, enumerate candidate identifiers from the primary source and request the service's per-item endpoint for each, rather than trusting its own index of what it holds. State coverage as "N of M known items recovered" against that enumerated denominator, not as "everything the index listed" — the denominator has to come from the primary source. And treat any absolute absence reported by an index ("this account has none") as a claim to verify, not a fact.
+
+**Principle:** An index is a convenience, not an inventory. When the primary source can tell you what should exist, use it to build the denominator and probe the secondary source item by item — otherwise your coverage claim silently inherits the gaps in someone else's listing.
