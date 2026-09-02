@@ -214,7 +214,50 @@ def suggest_breaks(script_lines):
                 if re.fullmatch(r"\d+|BCE?|AD", last.text, re.I):
                     continue                        # post-date beats are automatic already
                 out.append((last.text, nxt.text, sent.text.strip()))
+
+            # SECOND CLASS: the reduced relative clause.
+            #
+            # "each one a walking weakness ‖ the other had to babysit" — a noun
+            # followed straight by a clause with its own subject and verb, the
+            # "that" dropped. The writer hears the join and leaves the comma out;
+            # the voice then runs noun and subject together and the line has to be
+            # re-parsed on the fly. Sapro reported exactly this one, and the pass
+            # above could never have found it: a reduced relative is not a fronted
+            # modifier, so scanning only for fronted modifiers meant this whole
+            # class was invisible no matter how many scripts went through.
+            #
+            # Idioms of the "the second he got close" / "the instant it did" shape
+            # are the same parse and must NOT get a beat, so heads on a small stop
+            # list are skipped. Infinitives ("a heartbeat to choose") are not
+            # clauses and are skipped by requiring a finite verb in the subtree.
+            for tok in sent:
+                if tok.dep_ != "relcl":
+                    continue
+                sub = sorted(tok.subtree, key=lambda t: t.i)
+                first = sub[0]
+                if first.lower_ in _REL_PRON:
+                    continue                        # "that he could take" — marked already
+                if first.i - 1 < sent.start:
+                    continue
+                head = doc[first.i - 1]
+                if head.is_punct or first.is_punct:
+                    continue                        # already punctuated
+                if head.lower_ in _RELCL_IDIOM_HEADS:
+                    continue                        # "the second he…", "the instant it…"
+                if not any(t.tag_.startswith("VB") and t.tag_ not in ("VB", "VBG")
+                           for t in sub):
+                    continue                        # infinitive or participle, not a clause
+                if len(sub) < 3:
+                    continue                        # too short to need re-parsing
+                out.append((head.text, first.text, sent.text.strip()))
     return out
+
+
+# Heads where a bare following clause is idiomatic and reads as one unit. A beat
+# after "the second" turns "as soon as he got close" into two half-thoughts.
+_RELCL_IDIOM_HEADS = {"second", "instant", "moment", "minute", "day", "night",
+                      "time", "way", "year", "morning"}
+_REL_PRON = {"that", "which", "who", "whom", "whose", "where", "when", "why"}
 
 
 def mark_title_section(sections, title):

@@ -67,6 +67,42 @@ would do before enabling it.
 
 
 
+## Read this before the next run — 2026-09-02
+
+Three defects reached a delivered file and Sapro found all three by ear. Each one
+had a check that was supposed to catch it, and each check reported nothing.
+
+**A heuristic measurement is a silent decision.** `_syllables` had `y` inside
+`[aeiouy]+`, so "bayonet" counted 2 syllables instead of 3. "The Bayonet." then
+measured 3.59 syl/s when it reads at 4.79 — the fastest announcement in the file —
+and 3.59 sits inside the 12% levelling tolerance. The one heading `level_headings`
+exists to catch was the one it examined and passed. The undercount is
+**one-directional**: it always makes a heading look slower, so it can only ever
+suppress a correction, never trigger a wrong one. Same class of word: loyal, royal,
+crayon, player, layer, mayonnaise. Fixed, but the lesson generalises — nothing
+downstream can tell a wrong rate from a right one, so a heuristic that gates a
+correction needs test cases on the inputs it is worst at.
+
+**A detector that only knows one class looks identical to a clean sweep.**
+`--suggest-breaks` scanned for fronted modifiers only. Reduced relatives were
+invisible, and the tool's short candidate list read as "this script has few missing
+breaks" rather than "half the classes were never checked". See the clause-break
+section; the fix took the list from 4 candidates to 14.
+
+**Pace is not the only way a read goes wrong.** Sapro said an announcement was "not
+good"; the measurable outlier was pace, so pace got fixed — and the real defect was
+the take dying away at the end (level −22.26 dB start-to-end against a −19.57..−5.39
+band across the other seven, pitch falling 17 semitones). Retiming it 15% slower
+made the dying tail *longer*. Before retiming a heading, measure its level and pitch
+trajectory against the other headings, not just its rate. A take that trails off is a
+bad take and wants a re-render; a take that rushes wants retiming. They are different
+defects and the fix for one worsens the other.
+
+**Render candidates, don't bet on one roll.** A chapter announcement is 10-20
+characters. Three takes cost 36 and let the choice be made by measurement — the best
+of three had a −10.67 dB drop against the delivered take's −22.26. Rolling once and
+hoping is the expensive option.
+
 ### Prove a destructive edit did not eat a word
 
 Any edit that silences or removes audio must be checked by TRANSCRIBING the
@@ -416,10 +452,26 @@ is for missing or wrong *words*. Three distinct cases, three different answers:
 | A whole section off-rate, transcript matches | it is merely fast | timing — never re-rendered |
 | The first chapter announcement rushes | no conditioning behind it | retimed at stitch, automatic |
 | An individual sentence unusually fast | one sentence, not the read | `--max-wpm` in the master |
+| A heading that **trails off** — "starts good, ends like murmuring" | the take dies away: level and pitch fall off the end | **re-render** — retiming makes it worse |
 
 The read-check makes that distinction itself: an odd rate only forces a re-render when
 it arrives *with* a transcript mismatch. A section where every word is present is
 reported as pace and left for the master.
+
+That last row is the trap, because it presents as "the announcement sounds wrong" —
+the same words Sapro uses for a rushed one — and pace is the property that is easy to
+measure, so pace is what gets found and fixed. Measure the trajectory before deciding:
+
+```python
+y = librosa.load(part)[0]                      # trimmed to the spoken span
+r = librosa.feature.rms(y=y)[0]                # first third vs last third, in dB
+f0 = librosa.pyin(y, fmin=60, fmax=300)[0]     # same, in semitones
+```
+
+Run it on **every** heading, not just the reported one — the other headings are the
+only baseline that makes the number mean anything. A drop well outside their range is
+a bad take. Trust the level figure over the pitch figure: RMS cannot make an octave
+error and `pyin` can.
 
 ### Choosing --max-wpm
 
@@ -510,9 +562,28 @@ real** — most are the transcriber spelling a name its own way, which needs no 
 `wordA|wordB` pair per line. This is script-specific and needed every time.
 
 `--suggest-breaks` prints candidates, one `wordA|wordB` per line with the sentence
-beside it. It parses with spaCy and takes the last token of a fronted modifier's
-subtree, because knowing where the phrase *ends* is a parse, not a pattern — a regex
-counting words lands on "lost forty ‖ ships" instead of "At Angolpo ‖ the Japanese".
+beside it. It parses with spaCy, because knowing where a phrase *ends* is a parse,
+not a pattern — a regex counting words lands on "lost forty ‖ ships" instead of
+"At Angolpo ‖ the Japanese". It looks for **two** classes:
+
+1. **Fronted modifiers** — "At Angolpo ‖ the Japanese lost…", "For 25 hours ‖ the
+   British pounded…". The last token of the modifier's subtree.
+2. **Reduced relative clauses** — a noun followed straight by a clause with its own
+   subject and verb, the "that" dropped: "each one a walking weakness ‖ the other
+   had to babysit", "the tool ‖ the legions dug their latrines with", "a fort ‖ he
+   could take with him". The writer hears the join and leaves the comma out; the
+   voice then runs the noun into the subject and the listener has to re-parse the
+   line mid-sentence.
+
+Class 2 was added on 2026-09-02 because Sapro reported "weakness" by hand. Only
+class 1 existed, and a reduced relative is not a fronted modifier, so **this entire
+class was invisible no matter how many scripts went through** — the tool reported
+its usual two or three candidates and looked like it had swept the script. On the
+script that prompted this, adding class 2 took the candidate list from 4 to 14.
+
+Idiomatic heads — "the second he got close", "the instant it did" — parse as
+reduced relatives and must NOT get a beat; they are skipped by a stop list.
+Infinitives ("a heartbeat to choose") are skipped by requiring a finite verb.
 
 A boundary that is already punctuated on *either* side is skipped. When a fronted
 modifier's subtree ends on its own comma the left token is `,`, which used to emit
@@ -524,6 +595,18 @@ are wrong about a third of the time — it wants a pause inside "growing on a de
 that also mounted a catapult". Read them, keep the real ones, pass the file with
 `--curated`. Post-date beats are automatic inside `humanize.py` and are filtered out
 here so they are not doubled.
+
+**Reject a class-2 candidate only for length or idiom, never because it "is not a
+fronted modifier."** That reasoning dropped `fort|he` — "a fort ‖ he could take with
+him" — from a delivered file, and it is the same construction as the "weakness" line
+Sapro then had to report by hand. The classes are different shapes; both want a beat.
+
+**A curated pair is a bigram, not a location.** `humanize.py` matches `wordA|wordB`
+against every adjacent pair in the script, so a pair occurring twice fires at both.
+Count occurrences before adding one: `men|it` wanted a beat in "The men ‖ it cut
+down in the grass were never asked" but the same pair would have fired inside "Not
+for the men it killed", a punchline that has to stay tight, so it could not be used
+at all. Say so rather than adding it and hoping.
 
 ## Do not
 

@@ -419,3 +419,35 @@ A second effect showed up on the fix. Each heading's target is the median of the
 **Suggested improvement:** Split the vowel group where a `y` sits between two vowels before counting — `re.sub(r"([aeiou])y([aeiou]\w)", r"\1 y\2", tok)` — with the trailing `\w` so "eye" (one syllable, nothing after the final vowel) is left alone. Applied here; verified against bayonet/loyal/royal/crayon/player/layer/mayonnaise/eye and every heading in this script. Worth adding a handful of these as assertions next to `_syllables`, since it is a measurement nothing downstream can sanity-check: a wrong rate produces a plausible-looking decision, and the only detector is Sapro's ear.
 
 **Principle:** When a heuristic measurement gates a correction, its errors are not noise — they are silent decisions. Bias matters more than accuracy: an approximation that errs in one direction will systematically suppress the corrections it exists to trigger, and it will look like the correction was considered and declined. Pin such a heuristic with test cases covering the class of input it is worst at, because nothing downstream can tell a wrong measurement from a right one.
+
+### Observation 28: A detector that covers one class of a defect looks exactly like a clean sweep
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** Sapro marked up a screenshot of the script, circling "weakness" in "each one a walking weakness the other had to babysit", and wrote "there should have a gap after 'weakness' … I told you to install necessary tools to look for these mistakes."
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/voiceover.py` — `suggest_breaks`; SKILL.md "Before mastering — the curated clause breaks"
+
+**Issue:** `suggest_breaks` scanned for exactly one construction: the fronted modifier. "A walking weakness ‖ the other had to babysit" is a reduced relative clause — a noun followed straight by a clause whose "that" has been dropped — and no amount of running the tool would ever surface it. The tool did not fail visibly. It printed four candidates, which reads as "this script only needs a few breaks", when the truth was "one of at least two classes was checked". Adding reduced-relative detection took the same script from 4 candidates to 14, seven of which were real. The user's framing — "I told you to install the tools" — is worth recording precisely because the tools *were* installed and running: spaCy was parsing every sentence, the pass completed, and it reported a plausible-looking result. A partial detector is more dangerous than a missing one, because a missing one is noticed.
+
+Compounding it: of the four candidates the old pass did produce, one was `fort|he` — "a fort ‖ he could take with him" — which is the *same* reduced-relative construction Sapro was about to report. I rejected it by hand with the reasoning "restrictive relative clause, not a fronted modifier", using the detector's own narrow definition as the standard for what deserves a beat. So the one true positive of the invisible class got filtered out by a human applying the tool's blind spot as a rule.
+
+**Suggested improvement:** Implemented: a second pass over `dep_ == "relcl"` subtrees whose first token is not a relative pronoun, skipping idiomatic heads ("the second he got close", "the instant it did") and infinitives. Beyond the fix, `--suggest-breaks` should state which classes it searched — "fronted modifiers: 3 · reduced relatives: 11" — so a short list reads as a result rather than as an absence. And SKILL.md should say that a candidate may be rejected for length or idiom but never for belonging to a different construction than the one the reader has in mind.
+
+**Principle:** A detector's output silently asserts coverage it may not have. When a check finds few problems, that is only good news if the check can enumerate what it looked for — so a partial detector must report its classes, not just its hits, and a human reviewing its candidates must not adopt its blind spot as a criterion.
+
+### Observation 29: The reported symptom named the defect; the measurable outlier named a different one
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** Sapro: "The Bayonet chapter read aloud is not good I recommend you to redo this only." I measured the announcement, found a genuine syllable-counting bug that had hidden a 33% pace outlier, fixed it, retimed the heading 15% slower and sent an A/B. He replied: "starts good but ends like murmering... like high to low voice."
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** SKILL.md — "When a read is fast — retime, do not re-render"; heading diagnosis generally
+
+**Issue:** "Not good" is not a diagnosis, and the pipeline can only measure a few properties of a heading — rate is the one with a ready metric and a ready fix, so rate is what got found. It was a real defect and the syllable bug behind it was real, but it was not *his* defect. The take was dying away at the end: level fell 22.26 dB start-to-end against a −19.57..−5.39 dB band across the other seven announcements, and pitch fell 17 semitones. Retiming stretched that fading tail by 15% and made it more audible, not less — the two defects have opposite fixes, and I applied the wrong one to a file I then asked him to approve. The skill's decision table lists four heading symptoms and all four are timing; there is no row for a take that trails off, so the table silently routes every "sounds wrong" report toward retiming.
+
+**Suggested improvement:** Add the trailing-off row to the decision table with its measurement (RMS and f0, first third vs last third, against the other headings as the baseline) and the note that retiming worsens it — done. More generally: when a report is qualitative, measure **several** properties of the named section against the same section in its peers before choosing a fix, and say which ones were normal. Reporting "rate is 33% high" without also reporting "level decay is the worst of the eight" is what made a partial diagnosis look complete.
+
+**Principle:** The property you can measure is not necessarily the property that is wrong. When a user reports a defect qualitatively, the first move is to measure the reported thing across every dimension the peers can baseline, not to fix the first outlier found — an unexamined dimension does not show up as a gap in the analysis, it shows up as a confident wrong answer.
