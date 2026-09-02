@@ -169,7 +169,21 @@ def main():
         raise SystemExit(
             "\nREFUSED: could not locate the sentence in the take's own transcript, "
             "so the cut points would be a guess. Re-roll the whole section instead.")
-    p0, p1 = heard[hit[0]][1], heard[hit[1]][2]
+    # The match window is len(want) tokens wide, so a misread INSIDE the sentence
+    # that changes the token count slides the window's end off the sentence's real
+    # last word. "246,712" heard as "246 7 7 12" is four tokens where the script has
+    # one, which put the end anchor three tokens early — in the middle of the number,
+    # where there is no silence — and the splice was refused with advice to re-roll
+    # the whole section. The start anchor is safe because the window is anchored on
+    # its left, so only the end needs re-finding: look for the sentence's own last
+    # word near the window end and use that. If it is not there, nothing changes.
+    p0 = heard[hit[0]][1]
+    end_i = hit[1]
+    cand = [j for j in range(max(hit[0], hit[1] - 4), min(len(heard), hit[1] + 5))
+            if heard[j][0] == want[-1]]
+    if cand:
+        end_i = max(cand)
+    p1 = heard[end_i][2]
     sil_a = find_silence(part, max(0, p0 - 0.25), p0 + 0.10)
     sil_b = find_silence(part, max(0, p1 - 0.10), min(dur, p1 + 0.25))
     print(f"take duration     : {dur:.2f}s   sentence approx {p0:.2f}-{p1:.2f}s")

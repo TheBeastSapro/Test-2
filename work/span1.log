@@ -1,0 +1,16 @@
+section 6: 342 chars
+sentence          : 74 chars   (268 saved vs re-rolling the section)
+conditioning      : previous_text 29 chars, next_text 237 chars
+[readcheck] loading ASR (distil-large-v3, cpu float32) — first run downloads the model (distil-large-v3 is 1.5 GB on disk, measured)
+take duration     : 22.20s   sentence approx 2.04-8.18s
+cut points        : 1.870s and 8.310s (inside 160 ms and 40 ms of silence)
+approved by Sapro: “yes the number is not good... I recommend you re roll the sentence only instead of the sec”
+level             : replaced -11.84 dB, new -13.53 dB, difference -1.69 dB
+  (no gain is applied — if this is beyond about 1 dB, say so rather than correcting it silently)
+
+verifying the splice (destructive edit — must be proved harmless)
+  script 65 words, heard 65 words, ratio 1.0000
+  dropped runs: NONE — every script word still present
+
+spliced into out/.vo_Weapons_That_Succeeded_for_the_Wrong_Reasons_Explained/parts/sec_005.mp3   (backup at out/.vo_Weapons_That_Succeeded_for_the_Wrong_Reasons_Explained/parts/sec_005.mp3.pre-splice)
+NEXT: re-stitch and re-master; the section file is updated in place.

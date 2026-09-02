@@ -356,3 +356,34 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Put the resumable command *in the error message*, pre-filled with the real URL and destination path, so recovery is a copy-paste rather than a re-run of the mechanism that just failed — and verify the re-fetch by size before handing it back to torch. Better still, have the error path do the resumable fetch itself and continue, since it already knows the URL, the destination and the expected size.
 
 **Principle:** An error path that has diagnosed a transport failure should not prescribe the same transport as the fix. Recovery advice must name a mechanism that differs from the one that failed, in the message where the failure is reported — a correct remedy documented elsewhere is not part of the error path.
+
+### Observation 24: "A second run reuses all of it" is false for --from generate, and only the approval gate stopped a full re-send
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** After splicing one re-rolled sentence into section 6, the next step is to re-stitch. `regen_span.py`'s own closing line says `NEXT: re-stitch and re-master`, and SKILL.md says a second run reuses the work directory. I ran `voiceover.py --from generate` with no `--approval`, expecting a stitch.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** SKILL.md — "Everything lands in `<out-dir>/.vo_<title>/`"; `scripts/voiceover.py` — the `--from generate` path
+
+**Issue:** It did not reuse the 49 cached section takes. It assembled the full manifest and tried to send all 12,580 characters again — every one of which was already sitting rendered in `parts/`. The only thing that stopped it was the missing `--approval`, which printed `STOPPED. Sapro has not approved this send.` and listed all 49 items. Had I passed `--approval` — which is the natural thing to do when you have just been given approval for a re-roll and are continuing the same job — it would have silently re-rendered the entire script at full cost, including the sentence I had just paid to fix, overwriting the spliced take. SKILL.md states the opposite in plain terms: "A second run reuses all of it, so fixing one section costs one section's credits." The flag that actually re-stitches without sending is `generate.py --stitch-only`, which is documented nowhere in SKILL.md and is not reachable through `voiceover.py` at all. So the sentence in the skill that tells you re-running is cheap is the sentence that would cost 12,580 credits, and the money gate — which exists for runaway *redo rounds* — turned out to be the only thing standing between a routine re-stitch and a full re-bill.
+**Reference file:** `work/rerun.log` (the STOPPED output), `work/stitch.log` (the `--stitch-only` run that produced an identical stitch for zero credits).
+
+**Suggested improvement:** (1) Make `--from generate` skip any section whose take already exists in `parts/` and whose `send_text` hash is unchanged, re-rendering only what is missing or altered — which is the behaviour SKILL.md already promises. (2) Until then, correct the SKILL.md sentence, and document the actual re-stitch command (`generate.py --stitch-only`) next to `regen_span.py`'s `NEXT: re-stitch and re-master`, since that instruction currently has no safe command behind it. (3) Have `--plan`/the send gate say how many of the listed sections are already rendered — "49 items, 49 already in parts/" is a sentence that stops the mistake even when approval is being passed.
+
+**Principle:** When a tool's spend gate is the only thing preventing a documented-as-free operation from billing in full, the gate is doing a job it was not designed for and will not always be there. Idempotence has to be a property of the operation, not a consequence of a confirmation prompt someone might legitimately answer yes to.
+
+### Observation 25: The splice locator's end anchor is positional, so a misread inside the sentence pushes it off the end
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** Re-rolling one sentence — "In the American Civil War, army surgeons wrote down 246,712 battle wounds." — whose number the voice had misread. `regen_span.py --dry-run` refused: "no silence found at the end edge of the sentence".
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/regen_span.py` — sentence location in the take's transcript
+
+**Issue:** The locator slides a window of `len(want)` tokens over the ASR word stream and takes the match's *first* and *last* positions as the sentence's time bounds. The window is anchored on its left, so the start is sound — but the end is purely positional, and any misread that changes the token count *inside* the sentence shifts it. Here the script's one token `246,712` was heard as four (`246`, `-7`, `-7`, `-12`), so the window ended three tokens early, in the middle of the number. There is no silence mid-number, so the tool refused and advised re-rolling the whole section — the one thing the skill is most emphatic about never doing, recommended in response to a defect that was itself the reason for the sentence-level repair. The failure is safe (it refuses rather than cutting blind, which is right, and is the lesson from the "personal insult" incident already in the file) but it is also self-defeating: the likelier a sentence is to need repair, the likelier its misread is to defeat the locator.
+
+**Suggested improvement:** Anchor the end on the sentence's own last word rather than on window position — search a few tokens either side of the window end for `want[-1]` and use its measured end time, falling back to current behaviour when it is not found. Applied here as a contained patch; the refused splice then located 2.04–8.18 s instead of 2.04–6.80 s and cut inside 160 ms and 40 ms of silence. Worth considering the same treatment for a misread on the *first* word, which would shift the start anchor the same way.
+
+**Principle:** When a match is found by position within a fuzzy window, only the anchored edge is trustworthy. Re-derive the other edge from content, or a defect inside the span will move the boundary that was supposed to enclose it — and the tool will fail hardest on exactly the inputs it exists to repair.

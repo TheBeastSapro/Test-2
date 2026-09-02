@@ -1,0 +1,13 @@
+[voiceover] “Weapons That Succeeded for the Wrong Reasons Explained” · 49 sections · 12580 chars
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py --audio ./out/.vo_Weapons_That_Succeeded_for_the_Wrong_Reasons_Explained/raw_stitched.wav --script ./out/.vo_Weapons_That_Succeeded_for_the_Wrong_Reasons_Explained/script_lines.txt --out ./out/Weapons That Succeeded for the Wrong Reasons Explained (final).mp3 --report ./out/.vo_Weapons_That_Succeeded_for_the_Wrong_Reasons_Explained/pauses.csv --align-cache ./out/.vo_Weapons_That_Succeeded_for_the_Wrong_Reasons_Explained/align.json --curated curated.txt
+[humanize] decoding
+[humanize]   735.8s, peak -0.24 dBFS
+[humanize] QC (source): 1 finding(s)
+[humanize]     HOT     sample peak -0.24 dBFS (over -1 dBFS)
+[humanize] declipped 15 over-full-scale region(s)
+[humanize] removed 1 splice fragment(s)
+[humanize]     11:49.800  195 ms  -4 dB
+[humanize] script: 47 lines, 2311 words
+[humanize] forced alignment (this is the slow part)
+[humanize]   aligning 40s / 736s
+[humanize]   aligning 80s / 736s
