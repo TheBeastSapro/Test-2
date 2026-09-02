@@ -1,0 +1,31 @@
+[voiceover] “Weapons That Succeeded for the Wrong Reasons Explained” · 49 sections · 12580 chars
+
+  TITLE: “Weapons That Succeeded for the Wrong Reasons Explained”  (not narrated)
+  detected 8 chapters — chapter names read aloud as intros
+    1. The Bayonet
+    2. The Pilum
+    3. The Hussite War Wagon
+    4. The Gatling Gun
+    5. The Dolabra
+    6. The Congreve Rocket
+    7. The War Scythe
+    8. The Tank
+
+  49 sections (8 chapter announcements) · 12,580 chars · ~14:58 audio
+
+  CALIBRATION — every value that will be sent, and who chose it:
+  voice dUHbvtIZto0ZEBkhYiyk (profile)
+  model eleven_multilingual_v2 (profile)
+  stability 0.48 (profile) · similarity_boost 0.8 (profile)
+  style 0.05 (profile) · speed 1.07 (profile)
+  use_speaker_boost True (profile)
+  chunkSize 450 (profile) · chapterPause natural (profile)
+  collapseBreaks False (profile) · readTitle True (default)
+  skipHeadings False (profile)
+  ^ 1 value(s) nobody chose — inherited defaults, not settings: read_title
+
+  COST: ~12,580 credits (first pass) of 151,971 remaining
+  redo rounds: off (--max-redos 0) — flagged sections are reported, not re-rendered
+  WORST CASE this run: ~12,580 credits
+  master: /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py
+
