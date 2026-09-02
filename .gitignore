@@ -28,6 +28,6 @@ lexicon.json
 # stitch, ASR caches, spend ledger). Regenerable from script.txt; the audio in
 # it is already covered by *.mp3 / *.wav above.
 work/out/
-work/run.log
-work/ckpt.log
-work/master.log
+# transient stage logs — rewritten on every run; the findings that matter
+# are carried in commit messages and the observation log instead.
+work/*.log
