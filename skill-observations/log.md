@@ -387,3 +387,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Anchor the end on the sentence's own last word rather than on window position — search a few tokens either side of the window end for `want[-1]` and use its measured end time, falling back to current behaviour when it is not found. Applied here as a contained patch; the refused splice then located 2.04–8.18 s instead of 2.04–6.80 s and cut inside 160 ms and 40 ms of silence. Worth considering the same treatment for a misread on the *first* word, which would shift the start anchor the same way.
 
 **Principle:** When a match is found by position within a fuzzy window, only the anchored edge is trustworthy. Re-derive the other edge from content, or a defect inside the span will move the boundary that was supposed to enclose it — and the tool will fail hardest on exactly the inputs it exists to repair.
+
+### Observation 26: regen_span.py sends characters without debiting the run ledger, so spend.json under-reports the bill
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** End of the run. The first pass sent 12,580 characters and one sentence was re-rolled through `regen_span.py` for 74 more. `spend.json` reports `spent: 12580`.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/regen_span.py` — the send path; `spend.json` ledger
+
+**Issue:** Observation 7 established the run-wide ledger precisely so that "a number presented at the gate as the run's cost" is the run's cost, with every `generate.py` invocation debiting `<work>/spend.json` rather than receiving a fresh copy of the budget. `regen_span.py` calls `gen.tts()` directly and never touches the ledger, so its sends are invisible to it. The gap is small in absolute terms here — 74 characters against 12,580 — but the ledger is the artifact you consult to answer "what did this run cost", and it is now wrong by construction for any run that used the repair path the skill most recommends. It also means `--approve-spend` cannot bound a run that repairs itself through `regen_span.py`: a ceiling that a spending path does not consult is not a ceiling on that path. The number is small today only because the repair granularity rule works.
+
+**Suggested improvement:** Give `regen_span.py` the same `--spend-log` argument and have it debit the ledger before sending, refusing when the remaining approval would be exceeded — the same check `generate.py` already performs. Then have the end-of-run summary read the total from the ledger rather than from the first pass, so the delivered figure includes repairs.
+
+**Principle:** A ledger only means what it claims if every path that spends writes to it. One spending path added later without the debit turns an authoritative total into an underestimate — and the number is trusted precisely because nobody expects it to have exceptions.
