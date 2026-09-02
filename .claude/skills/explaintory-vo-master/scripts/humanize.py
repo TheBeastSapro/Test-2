@@ -360,7 +360,15 @@ def build(x, words, lines, tgt, curated, tempo, max_wpm=None, min_factor=0.87,
               and not _is_range(seq, p, nw)):
             kind = "comma"                                    # post-date
         elif (ow.strip(".,;:"), nw.strip(".,;:")) in curated:
-            kind = "comma"                                    # missing-comma break
+            # NOT "comma". A curated pair marks a boundary the script never
+            # punctuated, so the voice has no reason to pause there and leaves
+            # near-zero silence by construction — which is exactly what the
+            # RUNTHROUGH guard below treats as "read through on purpose, leave
+            # it alone". Tagged "comma", every curated break was therefore
+            # suppressed by the rule, and the feature silently did nothing:
+            # 6 of 10 on the script that found this, including the one Sapro
+            # reported twice. Same target as a comma, exempt from the guard.
+            kind = "curated"                                  # missing-comma break
         if not kind: continue
         nb = next_aligned(p)
         if nb is None or nb == 0 or nb >= len(words): continue
@@ -624,6 +632,7 @@ def main():
         log(f"curated clause breaks: {len(curated)}")
 
     tgt = dict(comma=a.comma, sentence=a.sentence, paragraph=a.paragraph, tail=a.tail)
+    tgt["curated"] = a.comma          # a missing comma wants a comma's beat
     y, rep, added, leveled, nst = build(x, words, lines, tgt, curated, a.tempo,
                                         a.max_wpm, a.min_factor, a.level_skip_start,
                                         a.adaptive_tempo, a.ceiling)
