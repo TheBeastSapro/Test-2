@@ -211,6 +211,21 @@ background while he listens, so a yes delivers immediately.
 
     ffmpeg -ss <chapter_start - 2.5> -t <len + 5> -i raw_stitched.wav clip.mp3
 
+**Find the offset by ASR, never from a report's timestamp.** `pauses.csv`'s `time`
+column is the word's position in the forced alignment — the RAW STITCH — and the
+master then inserts twenty-odd seconds of pauses and time-stretches sentences, so
+the delivered file has a different timeline that drifts non-uniformly (one master
+here ran 731.6 s against a 735.8 s stitch: shorter overall, despite adding 21.2 s).
+Two excerpts cut with those numbers landed 5 s and 7 s late and Sapro had to say
+"you given different areas". Locate the words in the file you are actually cutting:
+
+    segs, _ = model.transcribe(delivered_mp3, word_timestamps=True)   # find the word
+
+**Then transcribe the finished clip and confirm it contains the boundary before
+sending it.** A clip from the wrong place is six seconds of perfectly good narration
+and sounds exactly like a clip from the right place — nothing about it looks wrong,
+which is why this reached him rather than being caught here.
+
 Applies to every fix — a trimmed fricative, a removed beat, a repaired click.
 The one exception is a change that only exists after mastering, like loudness
 or a pause the master itself inserts; those have to be judged on the master.

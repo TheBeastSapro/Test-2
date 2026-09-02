@@ -487,3 +487,20 @@ Shape cannot fix it either: 922, 400 and 300 are year-shaped and are not years h
 **Suggested improvement:** Implemented: `_is_date()` replaces the bare `NUMY` test in the post-date branch, which then gets its own kind and the same RUNTHROUGH exemption as curated. Verified on 12 cases including all ten from this script. More generally, SKILL.md should say that before applying a fix by analogy to one just made, check WHICH items the change affects, not how many — a matching count is the evidence that feels most like confirmation and carries the least information.
 
 **Principle:** When a defect has been latent for a long time in code that sounds right, suspect a second defect compensating for it. Fixing one half of a cancelling pair is worse than fixing neither, and the danger peaks exactly when a fix is being applied by analogy to one that just succeeded — the analogy supplies the confidence and skips the inspection. Verify by enumerating the affected items, never by matching their count.
+
+### Observation 32: pauses.csv timestamps are on the pre-insertion timeline, and I cut excerpts from the delivered file with them
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** Sending Sapro an A/B excerpt of two changed pause boundaries. I took the `time` column from `pauses.csv` and used it as the seek offset into the delivered MP3. He replied "you given different areas" — both clips missed, one by ~5 s and one by ~7 s.
+**Skill:** explaintory-vo-master (the report) / explaintory-voiceover (the excerpt workflow)
+**Type:** open-source
+**Phase/Area:** `scripts/humanize.py` — `rep.append(dict(time=...))`; SKILL.md "Confirm a fix on the excerpt, not the whole file"
+
+**Issue:** `humanize.py` writes `time=round(words[nb]["s"] * tempo, 2)`, which is the word's position in the **forced alignment** — i.e. on the raw stitch, before the master inserts 21.2 s of pauses and time-stretches sentences. Every consumer of that CSV sees a column called `time` in a report about the delivered file. The drift is not a constant offset either: this master's output is 731.6 s against a 735.8 s stitch, running *shorter* overall despite adding silence, because insertion and compression fight each other, so the error at any point depends on everything before it. "BC|the" reports at 2:33 and sits at 2:27; "56|killed" reports at 1:26 and sits at 1:22.
+
+The workflow makes this worse than a wrong number. SKILL.md's rule is to confirm a fix on a six-second excerpt so Sapro doesn't listen to twelve minutes — so a wrong offset does not produce an obviously broken artifact, it produces a *plausible* one: six seconds of correct narration from the wrong place. Both clips sounded fine and contained neither boundary. He had to catch it, which is the exact cost the excerpt rule exists to avoid.
+
+**Suggested improvement:** (1) Rename the column `align_time` and add a `delivered_time` computed after insertion — the report already knows how much silence it added before each boundary, so the second column is arithmetic it is uniquely placed to do. (2) Until then, SKILL.md's excerpt section must say: locate the boundary in the delivered file by ASR before cutting, never by a timestamp from a report written mid-pipeline. (3) Transcribe every excerpt before sending it and confirm it contains the words in question — cheap, and it would have caught this without knowing the cause.
+
+**Principle:** A timestamp is meaningless without the timeline it belongs to, and a pipeline that inserts and removes time has several. When a stage's report is read by a later stage, its time columns must name their frame of reference — and any artifact cut for a human to judge must be verified to contain the thing being judged, because a clip from the wrong place is indistinguishable from a clip from the right one.
