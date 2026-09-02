@@ -468,3 +468,22 @@ Nothing reported the loss. `humanize.py` logs `curated clause breaks: 10`, which
 **Suggested improvement:** Implemented: give a curated boundary its own kind (`"curated"`) sharing the comma target but exempt from the RUNTHROUGH guard, since "the voice read through it" cannot be evidence of intent at a boundary the writer never punctuated. Two things beyond the fix: (1) log applied-vs-requested, `curated clause breaks: 10 requested, 10 applied`, so a silent drop is visible in the run output; (2) the **post-date** beat takes the same `kind = "comma"` path and is the same shape of missing-comma boundary — it is likely suppressed identically and was not changed here, because it is outside what was reported. Check it before the next delivery.
 
 **Principle:** When a guard infers intent from an observation ("no silence here means the voice meant to run through"), that inference is only valid where the alternative was available. Applying it to cases where the observation is forced — a boundary with no punctuation to pause at — turns the guard into an unconditional veto on exactly the feature it shares a code path with. Two independently-correct rules can compose into a silent no-op, and neither one's logging will show it: count what was APPLIED, never what was requested.
+
+### Observation 31: Two bugs were cancelling, and fixing the one that was reported would have shipped the other
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** Immediately after fixing the RUNTHROUGH guard that was suppressing curated clause breaks (Observation 30), I flagged that post-date beats took the same code path and were probably suppressed identically, and Sapro said to fix it. Measuring first showed 9 of 10 post-date boundaries suppressed — the mechanism bug confirmed exactly as predicted.
+**Skill:** explaintory-vo-master
+**Type:** open-source
+**Phase/Area:** `scripts/humanize.py` — `NUMY`, the post-date branch, `RUNTHROUGH`
+
+**Issue:** The obvious fix — exempt post-date from the guard, as had just been done for curated breaks — would have made the file audibly worse. `NUMY` is `^[\d]`, so the branch documented as "post-date" matches **any token starting with a digit**, not a year. Of the ten boundaries it found in this script, one was a date ("around 100 BC ‖ the general Gaius Marius"); the other nine were plain quantities: "Just 4 ‖ Americans died", "For 25 ‖ hours the British pounded", "capturing 12 ‖ cannon", "About 300 ‖ scythemen ran", "wrote down 246,712 ‖ battle wounds". Unsuppressing them inserts nine stumbles mid-phrase. The two bugs had been cancelling: an over-broad rule generating bad beats, and a guard swallowing them because an unpunctuated boundary always has near-zero silence. Neither had ever been visible, and the pipeline sounded correct because of the interaction, not despite it.
+
+The near-miss is the finding. I had already predicted the mechanism correctly, named it in a delivery message, and been told to go ahead — every social and technical signal said "apply the same one-line fix". Only measuring which boundaries were affected, rather than how many, stopped it. Counting would have shown "9 suppressed, same as curated" and confirmed the plan; reading the actual list showed the plan was wrong.
+
+Shape cannot fix it either: 922, 400 and 300 are year-shaped and are not years here. Context can — an era token, a four-digit number, or a three-digit one after a date preposition ("in 1420 ‖ Žižka", "by 1916 ‖ the war"), while deliberately excluding vague quantifiers ("about 400", "About 300"), since "around 100 BC" is already caught by its era token.
+
+**Suggested improvement:** Implemented: `_is_date()` replaces the bare `NUMY` test in the post-date branch, which then gets its own kind and the same RUNTHROUGH exemption as curated. Verified on 12 cases including all ten from this script. More generally, SKILL.md should say that before applying a fix by analogy to one just made, check WHICH items the change affects, not how many — a matching count is the evidence that feels most like confirmation and carries the least information.
+
+**Principle:** When a defect has been latent for a long time in code that sounds right, suspect a second defect compensating for it. Fixing one half of a cancelling pair is worse than fixing neither, and the danger peaks exactly when a fix is being applied by analogy to one that just succeeded — the analogy supplies the confidence and skips the inspection. Verify by enumerating the affected items, never by matching their count.

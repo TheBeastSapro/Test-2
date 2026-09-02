@@ -284,6 +284,39 @@ ERA = re.compile(r"^(BC|AD|BCE|CE)[.,;:]?$", re.I)
 # "from 1966 to 1970", "1914-18".
 RANGE_JOINERS = {"and", "to", "or", "until", "through", "till"}
 
+# A date is introduced by one of these, or carries an era token. "about 400
+# Hussites" and "About 300 scythemen" are quantities and take no beat, so the
+# vaguer quantifiers ("about", "around", "some", "nearly") are deliberately out
+# — "around 100 BC" is caught by the era token instead.
+DATE_PREPS = {"in", "by", "since", "until", "from", "after", "before", "during"}
+YEAR = re.compile(r"^\d{3,4}(s|'s)?[.,;:]?$")
+YEAR4 = re.compile(r"^\d{4}(s|'s)?[.,;:]?$")
+
+
+def _is_date(seq, p, ow):
+    """True when the token at seq[p] is a DATE, not merely a number.
+
+    NUMY is `^[\d]`, so the rule documented as "post-date" fired on every
+    quantity in the script: "Just 4 || Americans died", "For 25 || hours",
+    "capturing 12 || cannon", "About 300 || scythemen ran". Ten such boundaries
+    in one script and only one of them was a date. Nine were saved from becoming
+    audible stumbles purely by the RUNTHROUGH guard swallowing them — so the two
+    bugs were cancelling, and fixing the guard alone would have put nine bad
+    beats into the file.
+
+    Shape alone cannot settle it: 922, 400 and 300 are year-shaped and are not
+    years here. Context can. A four-digit number is a year in practice, an era
+    token is explicit, and a three-digit year in this prose arrives after a date
+    preposition ("in 1420 || Zizka", "by 1916 || the war").
+    """
+    if ERA.match(ow):
+        return True
+    if YEAR4.match(ow):
+        return True
+    if YEAR.match(ow) and p > 0:
+        return seq[p - 1][1].strip(".,;:").lower() in DATE_PREPS
+    return False
+
 
 def _is_range(seq, p, nw):
     """True when the year at seq[p] is the FIRST half of a date range.
@@ -355,10 +388,10 @@ def build(x, words, lines, tgt, curated, tempo, max_wpm=None, min_factor=0.87,
             kind = "sentence"
         elif re.search(r"[,;:]\"?$", ow):
             kind = "comma"
-        elif ((NUMY.match(ow) or ERA.match(ow))
+        elif (_is_date(seq, p, ow)
               and not (NUMY.match(nw) or ERA.match(nw))
               and not _is_range(seq, p, nw)):
-            kind = "comma"                                    # post-date
+            kind = "postdate"                                 # post-date
         elif (ow.strip(".,;:"), nw.strip(".,;:")) in curated:
             # NOT "comma". A curated pair marks a boundary the script never
             # punctuated, so the voice has no reason to pause there and leaves
@@ -633,6 +666,7 @@ def main():
 
     tgt = dict(comma=a.comma, sentence=a.sentence, paragraph=a.paragraph, tail=a.tail)
     tgt["curated"] = a.comma          # a missing comma wants a comma's beat
+    tgt["postdate"] = a.comma         # same: the script never punctuated it
     y, rep, added, leveled, nst = build(x, words, lines, tgt, curated, a.tempo,
                                         a.max_wpm, a.min_factor, a.level_skip_start,
                                         a.adaptive_tempo, a.ceiling)

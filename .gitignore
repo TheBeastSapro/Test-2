@@ -31,3 +31,5 @@ work/out/
 # transient stage logs — rewritten on every run; the findings that matter
 # are carried in commit messages and the observation log instead.
 work/*.log
+work/pauses_approved.csv
+work/approved.mp3
