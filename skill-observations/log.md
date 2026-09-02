@@ -296,3 +296,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: The guide parser requires a dash, this guide used parentheses, and the plan reported the empty answer key as silence
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** Voicing "Weapons That Succeeded for the Wrong Reasons Explained". The source Doc's pronunciation guide is written as `- **Sébastien de Vauban** (say-bas-TYAN duh voh-BAN)` — bulleted, bold headword, respelling in parentheses.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/script_prep.py` — `_GUIDE_LINE` / `_guide_entry`; `scripts/voiceover.py` — `show_plan` PRE-FLIGHT block
+
+**Issue:** `_GUIDE_LINE` requires a `—|–|-|:|=` separator between headword and respelling. This document parenthesises the respelling instead, so `split_pronunciation_guide` parsed **zero** entries out of a 22-name guide. The block was still held out of the narration correctly (the section anchor from Observation 3 did its job), so the expensive failure did not occur — but the answer key was empty, and an empty answer key means `guide_preflight` has nothing to cross-reference. `--plan` then printed no `pronunciation guide: N names held out` line and no PRE-FLIGHT block at all. That output is **identical** to the output of a script whose guide cross-check passed cleanly. The check Observation 5 exists to provide had silently not run, and the only reason it was noticed was a manual re-parse of the guide block. Two failures compound: a format the parser does not know, and a gate that reports "did not run" and "ran and found nothing" with the same silence.
+
+**Suggested improvement:** (1) Add a parenthesised alternative to `_GUIDE_LINE` — `^[bullet]? **Name** (respelling)$` — which is at least as common in Docs-authored guides as the dash form, and handle the `**Gaul** (gawl) / **Gallic** (GAL-ik)` two-entries-per-line case by scanning all `\*\*(...)\*\*\s*\((...)\)` pairs on the line rather than matching the line once. (2) Independently of the parser: make `--plan` print the guide line unconditionally once a guide *block* is detected — `pronunciation guide: 22 names held out of the narration, 0 parsed` — so a zero-entry parse is loud. A detected block that yields no entries is a parser gap, and it should never render as a blank space where a clean result would also be blank.
+
+**Principle:** A check that reports "clean" and "did not run" with the same output cannot be relied on for either. Whenever a gate's finding is rendered as the absence of a warning, it must separately assert that it actually ran and over how much input — silence has to mean one thing.
