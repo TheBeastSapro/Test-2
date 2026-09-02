@@ -601,6 +601,14 @@ fronted modifier."** That reasoning dropped `fort|he` — "a fort ‖ he could t
 him" — from a delivered file, and it is the same construction as the "weakness" line
 Sapro then had to report by hand. The classes are different shapes; both want a beat.
 
+**Match the script's actual token, possessive and all.** `later|Kościuszko` silently
+did nothing because the script reads "Two months later Kościuszko's army" — the pair
+is matched against the script's own tokens with only `.,;:` stripped, so the
+apostrophe-s stays and `Kościuszko` never equals `Kościuszko's`. It fails the same
+silent way as everything else here: no warning, just one fewer beat. After a master,
+read back the applied count from `pauses.csv` (`kind == "curated"`) and check it
+equals the number of lines in the file.
+
 **A curated pair is a bigram, not a location.** `humanize.py` matches `wordA|wordB`
 against every adjacent pair in the script, so a pair occurring twice fires at both.
 Count occurrences before adding one: `men|it` wanted a beat in "The men ‖ it cut
