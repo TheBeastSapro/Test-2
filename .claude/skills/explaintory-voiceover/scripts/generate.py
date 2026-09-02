@@ -299,7 +299,16 @@ def _syllables(text):
         if tok.upper() == tok.upper() and not re.search(r"[aeiouy]", tok):
             n += sum(_LETTER_SYL.get(c, 1) for c in tok)   # 'M' in M16 -> 'em'
             continue
-        groups = len(re.findall(r"[aeiouy]+", tok))
+        # 'y' BETWEEN two vowels starts a new syllable rather than joining the
+        # group beside it: "bayonet" is bay-o-net, but [aeiouy]+ reads "ayo" as
+        # one group and returns 2. That undercount made the first chapter
+        # announcement of a delivery measure 3.59 syl/s when it read at 4.79 —
+        # inside the levelling tolerance, so the one heading that always rushes
+        # was the one heading never retimed, and Sapro heard it. Same class:
+        # loyal, royal, crayon, player, layer, mayonnaise. The trailing \w keeps
+        # "eye" (one syllable, nothing after the final vowel) from splitting.
+        tok_s = re.sub(r"([aeiou])y([aeiou]\w)", r"\1 y\2", tok)
+        groups = len(re.findall(r"[aeiouy]+", tok_s))
         if tok.endswith("e") and not tok.endswith(("le", "ee", "ye")) and groups > 1:
             groups -= 1                      # silent e: 'bombard' vs 'bombarde'
         n += max(1, groups)

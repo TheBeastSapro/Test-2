@@ -402,3 +402,20 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Give `regen_span.py` the same `--spend-log` argument and have it debit the ledger before sending, refusing when the remaining approval would be exceeded — the same check `generate.py` already performs. Then have the end-of-run summary read the total from the ledger rather than from the first pass, so the delivered figure includes repairs.
 
 **Principle:** A ledger only means what it claims if every path that spends writes to it. One spending path added later without the debit turns an authoritative total into an underestimate — and the number is trusted precisely because nobody expects it to have exceptions.
+
+### Observation 27: A vowel-group syllable count hid the one defect the heading leveller exists to catch
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** Sapro: "The Bayonet chapter read aloud is not good". It is the first chapter announcement of the video — precisely the section `level_headings` was written to fix — and the leveller had examined it and passed it.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/generate.py` — `_syllables`, used by `_speech_rate` and `level_headings`
+
+**Issue:** `_syllables` counts vowel groups with `re.findall(r"[aeiouy]+", tok)`. Because `y` is inside the character class, a `y` between two vowels merges three syllables into one group: `bayonet` → "b **ayo** n **e** t" → 2, where it is bay-o-net = 3. So "The Bayonet." measured 3 syllables instead of 4, and its rate came out **3.59 syl/s when it actually reads at 4.79** — the fastest of the eight announcements in the file. Against a median of 3.91 the true rate is 22.5% off and would have been retimed; the understated 3.59 is 8.2% off, inside the 12% tolerance, so the leveller looked at it and did nothing. The docstring on `level_headings` states the first announcement "is a real, repeatable difference and it is audible" — it was audible, Sapro heard it, and the measurement that was supposed to catch it was quietly wrong on that one word. The error is not exotic: `loyal`→1, `royal`→1, `crayon`→1, `player`→1, `layer`→1, `mayonnaise`→2 are all undercounts, and an undercount always makes a heading look SLOWER than it is, which biases the leveller toward leaving fast headings alone — the failure is one-directional and always in the unsafe direction.
+
+A second effect showed up on the fix. Each heading's target is the median of the *others*, so correcting one heading's rate moves the target for all the rest: with `bayonet` counted right, headings 7 and 13 fell inside tolerance and are no longer retimed, having been slowed x0.875 and x0.859 in the delivered version. One bad measurement had been shifting every other heading's decision, not just its own.
+
+**Suggested improvement:** Split the vowel group where a `y` sits between two vowels before counting — `re.sub(r"([aeiou])y([aeiou]\w)", r"\1 y\2", tok)` — with the trailing `\w` so "eye" (one syllable, nothing after the final vowel) is left alone. Applied here; verified against bayonet/loyal/royal/crayon/player/layer/mayonnaise/eye and every heading in this script. Worth adding a handful of these as assertions next to `_syllables`, since it is a measurement nothing downstream can sanity-check: a wrong rate produces a plausible-looking decision, and the only detector is Sapro's ear.
+
+**Principle:** When a heuristic measurement gates a correction, its errors are not noise — they are silent decisions. Bias matters more than accuracy: an approximation that errs in one direction will systematically suppress the corrections it exists to trigger, and it will look like the correction was considered and declined. Pin such a heuristic with test cases covering the class of input it is worst at, because nothing downstream can tell a wrong measurement from a right one.
