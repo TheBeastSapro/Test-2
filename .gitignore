@@ -29,3 +29,5 @@ lexicon.json
 # it is already covered by *.mp3 / *.wav above.
 work/out/
 work/run.log
+work/ckpt.log
+work/master.log

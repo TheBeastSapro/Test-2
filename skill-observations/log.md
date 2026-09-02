@@ -311,3 +311,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** (1) Add a parenthesised alternative to `_GUIDE_LINE` — `^[bullet]? **Name** (respelling)$` — which is at least as common in Docs-authored guides as the dash form, and handle the `**Gaul** (gawl) / **Gallic** (GAL-ik)` two-entries-per-line case by scanning all `\*\*(...)\*\*\s*\((...)\)` pairs on the line rather than matching the line once. (2) Independently of the parser: make `--plan` print the guide line unconditionally once a guide *block* is detected — `pronunciation guide: 22 names held out of the narration, 0 parsed` — so a zero-entry parse is loud. A detected block that yields no entries is a parser gap, and it should never render as a blank space where a clean result would also be blank.
 
 **Principle:** A check that reports "clean" and "did not run" with the same output cannot be relied on for either. Whenever a gate's finding is rendered as the absence of a warning, it must separately assert that it actually ran and over how much input — silence has to mean one thing.
+
+### Observation 21: The read-check flags names the guide already answers, and the answer key is right there
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** Read-check on "Weapons That Succeeded for the Wrong Reasons Explained". 16 of 49 sections flagged. Working through them by hand against the script's own pronunciation guide, 13 turned out to be the voice reading the name CORRECTLY and Whisper spelling it its own way.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/readcheck.py` — misread classification; interaction with `pronunciation_guide.json`
+
+**Issue:** The guide says `Jan Žižka — yahn ZHISH-ka`. The ASR heard `jishka`. That is not a misread, it is a *match* — the transcriber wrote down the respelling the guide asked for. Same for `Alesia`/`elysia` (guide: uh-LEE-zee-uh), `Szczekociny`/`shchecochini` (shcheh-kaw-CHEE-nih), `Głowacki`/`guavatsky` (gwoh-VAHTS-kee), `Vercingetorix`/`versengetteryx` (ver-sin-JET-uh-rix), and the whole `scythe`→`sides`/`sithemen`/`Worsight` cluster. Every one of these was reported as `misread:` with no indication that the evidence for "correct" was sitting in the same work directory. The skill already knows the shape of this — it tells you most name flags are "the transcriber spelling a name its own way" and to decide which are real — but it makes that a manual judgement per flag, on the one axis where a machine-readable answer key exists. On this script it was 13 judgements, and the cost is not just time: a reader working through 16 flags is being invited to approve re-renders for words that are already right, which is a spend the skill exists to prevent.
+
+**Suggested improvement:** In the read-check, when a flagged word has an entry in `pronunciation_guide.json`, compare the ASR's rendering against the *respelling* rather than the spelling — normalise both to a crude phonetic skeleton (lowercase, strip vowels' exact identity, collapse doubled consonants, map `zh|j|sh`, `k|c|ck|ch`, `ts|c|z` to single classes) and report the flag as `reads as the guide asks (ZHISH-ka ≈ "jishka") — no action` instead of `misread`. Keep it a separate class from both PASS and REDO so it stays auditable. Anything with no guide entry keeps today's behaviour.
+
+**Principle:** When a document ships its own answer key, the checker should grade against the answer key, not against the source text — otherwise every correct answer written in the key's own notation is reported as an error, and the human is put back in the loop the checker existed to take them out of.
+
+### Observation 22: A likelihood discriminator flipped its verdict when the window moved, and I nearly reported the first cut
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** Section 6 reads "army surgeons wrote down 246,712 battle wounds". Three ASR passes rendered the number three different ways (`246 7 7`, `246-7-7-12`, `246 seven sovereign 12`), so I built a forced-alignment discriminator to score competing hypotheses over the audio.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** verification method — ad-hoc discriminators built mid-run
+
+**Issue:** On a hand-cut 1.4 s tail window, `"seven seven twelve"` beat `"seven hundred and twelve"` by 0.94 logp/char — a clear-looking result I was one step from reporting as "the number is misread". Re-running the same test over the full 2.75 s number span, with no arbitrary interior cut, reordered the list and collapsed the gap to 0.14, with correct and misread hypotheses interleaved. The first window had almost certainly clipped the onset of "hundred", so the discriminator was scoring a hypothesis against audio the hypothesis no longer covered. I had no known-good and no known-bad control, so there was nothing to tell me that 0.94 was small — SKILL.md already records this exact failure for `prosody_gate.py` (2133 of 2371 words flagged; "do not present a clean run as evidence") and for respelling distance (Observation 15, "a distance with no baseline is not evidence"), and I rebuilt it anyway in a new form because a *likelihood* felt more principled than a *distance*. It is not. Both are numbers with no scale.
+
+**Suggested improvement:** Add a short rule to SKILL.md's verification section, next to the whole-file-transcript warning: any discriminator built mid-run — likelihood, distance, energy, anything producing a number — must be run on at least one span known to be correct and one known to be wrong before its verdict on the unknown span counts, and must be shown to hold when the analysis window moves by ±20%. If either check is skipped, the honest output is "ASR cannot settle this — listen to it", which is a supported outcome the skill already has a slot for.
+
+**Principle:** A verdict that changes when the measurement window moves is a property of the window, not of the thing measured. Any ad-hoc metric needs a control at each end and a stability check before its number is allowed to mean anything — and "I cannot settle this" must stay an available answer, or every unsettled case gets forced into whichever verdict the first cut happened to produce.
+
+### Observation 23: The damaged-cache recovery path prescribes the download mechanism that damaged it
+
+**Status:** OPEN
+**Date:** 2026-09-02
+**Session context:** The mastering stage failed on a truncated MMS_FA checkpoint — 1,244,705,601 bytes on disk against an upstream 1,262,047,414.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/voiceover.py` — the damaged-cache error path
+
+**Issue:** The detection is excellent and worked exactly as documented: it compared the on-disk size to upstream, named both numbers, deleted the bad file, and said so. But the recovery it prescribes is `re-run with --from master; the checkpoint will be fetched again` — and "fetched again" means `torch.hub.load_state_dict_from_url`, which is the un-resumable single-shot download that arrived short in the first place. On a flaky link that is a loop: fetch, truncate, detect, delete, refetch. SKILL.md separately knows the answer — "If a download keeps arriving short, fetch it with resume: `curl --retry 6 --retry-all-errors -C -`" — but that line is in the setup section, several screens away from the error the user is actually looking at, and the error message does not reference it. I fetched it manually with `curl -C -` and it completed to the exact byte on the first try.
+
+**Suggested improvement:** Put the resumable command *in the error message*, pre-filled with the real URL and destination path, so recovery is a copy-paste rather than a re-run of the mechanism that just failed — and verify the re-fetch by size before handing it back to torch. Better still, have the error path do the resumable fetch itself and continue, since it already knows the URL, the destination and the expected size.
+
+**Principle:** An error path that has diagnosed a transport failure should not prescribe the same transport as the fix. Recovery advice must name a mechanism that differs from the one that failed, in the message where the failure is reported — a correct remedy documented elsewhere is not part of the error path.
