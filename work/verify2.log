@@ -1,0 +1,19 @@
+[verify] Totally Wrong Weapon Facts Everyone Still Believes Explained (final).mp3 — 11:49.18
+[verify] measured -14.4 LUFS / -1.3 dBTP true peak (LRA 1.7)
+[verify] transcribing (this is the slow part)
+[readcheck] loading ASR (distil-large-v3, cpu float32) — first run downloads the model (distil-large-v3 is 1.5 GB on disk, measured)
+[verify] 2306 words heard vs 2292 in the script — WER 0.018
+[verify] 194 wpm overall, 218 articulation (reference 181/197); silence 11.0%
+[verify] 221 pauses traced to the script, 0 unexplained, 4 could not be placed
+[verify] date ranges: 0 carrying a beat that splits them
+[verify] chapters: 8 of 8 located in the audio
+
+  warn  QC could not run: No module named 'humanize'
+  warn  true peak -1.3 dBTP is above the -1.5 ceiling
+  warn  misread: after “…kind a wealthy french” expected “knight wore” heard “night war”
+  warn  repeated or added: after “…£30 so brutal that” expected “” heard “i had”
+  warn  repeated or added: after “…so brutal that a” expected “” heard “lot of a”
+  warn  4 silence(s) could not be matched to the script and were NOT judged; 1 of them over 200 ms, longest 485 ms
+
+[verify] verified — 0 failures, 6 warning(s)
+[verify] what this cannot tell you: whether the read sounds right. Stretch artefacts, emphasis and tone need an ear.

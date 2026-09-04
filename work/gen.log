@@ -1,0 +1,152 @@
+[voiceover] “Totally Wrong Weapon Facts Everyone Still Believes Explained” · 47 sections · 12340 chars
+[voiceover] pronunciation guide: 8 names, held out of the narration (katana, Gabriele de Mussi, Agincourt, Balearics / Balearic, Caffa…)
+[voiceover] PRE-FLIGHT ! guide entry “Balearics / Balearic” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/generate.py --script ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/narration_source.txt --out ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/raw_stitched.wav --parts-dir ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/parts --sections-json ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/sections.json --max-chunk 450 --spend-log ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/spend.json --profile profile_run.json --approve-spend 12340 --approval Go — no title read
+[voiceover] 47 sections · 12340 chars · ~12340 credits
+[voiceover] approved by Sapro: “Go — no title read”
+[voiceover] sending 12,340 chars (12,340 left of the 12,340 approved)
+[voiceover]   1/47 chapter, 38 chars
+[voiceover]   2/47 section, 325 chars
+[voiceover]   3/47 section, 312 chars
+[voiceover]   4/47 section, 387 chars
+[voiceover]   5/47 section, 367 chars
+[voiceover]   6/47 chapter, 36 chars
+[voiceover]   7/47 section, 203 chars
+[voiceover]   8/47 section, 444 chars
+[voiceover]   9/47 section, 93 chars
+[voiceover]   10/47 section, 393 chars
+[voiceover]   11/47 section, 386 chars
+[voiceover]   12/47 chapter, 33 chars
+[voiceover]   13/47 section, 377 chars
+[voiceover]   14/47 section, 370 chars
+[voiceover]   15/47 section, 229 chars
+[voiceover]   16/47 section, 251 chars
+[voiceover]   17/47 chapter, 39 chars
+[voiceover]   18/47 section, 379 chars
+[voiceover]   19/47 section, 328 chars
+[voiceover]   20/47 section, 125 chars
+[voiceover]   21/47 section, 420 chars
+[voiceover]   22/47 section, 265 chars
+[voiceover]   23/47 chapter, 33 chars
+[voiceover]   24/47 section, 301 chars
+[voiceover]   25/47 section, 255 chars
+[voiceover]   26/47 section, 284 chars
+[voiceover]   27/47 section, 277 chars
+[voiceover]   28/47 section, 366 chars
+[voiceover]   29/47 section, 189 chars
+[voiceover]   30/47 chapter, 28 chars
+[voiceover]   31/47 section, 416 chars
+[voiceover]   32/47 section, 400 chars
+[voiceover]   33/47 section, 220 chars
+[voiceover]   34/47 section, 270 chars
+[voiceover]   35/47 chapter, 24 chars
+[voiceover]   36/47 section, 372 chars
+[voiceover]   37/47 section, 142 chars
+[voiceover]   38/47 section, 367 chars
+[voiceover]   39/47 section, 256 chars
+[voiceover]   40/47 section, 331 chars
+[voiceover]   41/47 chapter, 37 chars
+[voiceover]   42/47 section, 277 chars
+[voiceover]   43/47 section, 435 chars
+[voiceover]   44/47 section, 417 chars
+[voiceover]   45/47 section, 54 chars
+[voiceover]   46/47 section, 433 chars
+[voiceover]   47/47 CTA, 356 chars
+[voiceover] stitching
+[voiceover]   heading 12: 4.79 syl/s vs 3.83 median — retiming x0.850
+[voiceover]   heading 23: 4.71 syl/s vs 3.83 median — retiming x0.850
+[voiceover]   heading 35: 2.77 syl/s vs 4.07 median — retiming x1.180
+[voiceover]   heading 41: 2.89 syl/s vs 4.07 median — retiming x1.180
+[voiceover] wrote ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/raw_stitched.wav  (11.9 min)
+[readcheck] loading ASR (distil-large-v3, cpu float32) — first run downloads the model (distil-large-v3 is 1.5 GB on disk, measured)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[readcheck]   1/47 — wer 0.00, 147 wpm, 2.5s
+[readcheck]   2/47 — wer 0.00, 182 wpm, 19.5s
+[readcheck]   3/47 — wer 0.00, 199 wpm, 16.9s
+[readcheck]   4/47 — wer 0.03, 185 wpm, 23.4s  REDO (1 problem)
+[readcheck]   5/47 — wer 0.00, 194 wpm, 21.3s
+[readcheck]   6/47 — wer 0.00, 175 wpm, 2.4s
+[readcheck]   7/47 — wer 0.00, 179 wpm, 11.7s
+[readcheck]   8/47 — wer 0.00, 216 wpm, 24.5s
+[readcheck]   9/47 — wer 0.12, 191 wpm, 5.3s  REDO (1 problem)
+[readcheck]   10/47 — wer 0.00, 184 wpm, 22.9s
+[readcheck]   11/47 — wer 0.00, 187 wpm, 22.4s
+[readcheck]   12/47 — wer 0.00, 215 wpm, 1.7s
+[readcheck]   13/47 — wer 0.00, 184 wpm, 23.2s
+[readcheck]   14/47 — wer 0.00, 197 wpm, 20.4s
+[readcheck]   15/47 — wer 0.00, 205 wpm, 12.3s
+[readcheck]   16/47 — wer 0.00, 198 wpm, 13.9s
+[readcheck]   17/47 — wer 0.33, 172 wpm, 2.1s  REDO (1 problem)
+[readcheck]   18/47 — wer 0.00, 184 wpm, 22.2s
+[readcheck]   19/47 — wer 0.10, 186 wpm, 19.4s  REDO (4 problems)
+[readcheck]   20/47 — wer 0.17, 183 wpm, 7.5s  REDO (2 problems)
+[readcheck]   21/47 — wer 0.00, 207 wpm, 23.7s
+[readcheck]   22/47 — wer 0.04, 200 wpm, 15.0s  REDO (1 problem)
+[readcheck]   23/47 — wer 0.00, 212 wpm, 1.7s
+[readcheck]   24/47 — wer 0.00, 217 wpm, 16.3s
+[readcheck]   25/47 — wer 0.00, 192 wpm, 14.0s
+[readcheck]   26/47 — wer 0.00, 193 wpm, 16.5s
+[readcheck]   27/47 — wer 0.02, 202 wpm, 16.3s
+[readcheck]   28/47 — wer 0.00, 188 wpm, 21.0s
+[readcheck]   29/47 — wer 0.00, 202 wpm, 11.0s
+[readcheck]   30/47 — wer 0.00, 177 wpm, 1.7s
+[readcheck]   31/47 — wer 0.00, 201 wpm, 22.9s
+[readcheck]   32/47 — wer 0.03, 194 wpm, 22.6s  REDO (1 problem)
+[readcheck]   33/47 — wer 0.00, 201 wpm, 12.9s
+[readcheck]   34/47 — wer 0.04, 217 wpm, 15.5s  REDO (1 problem)
+[readcheck]   35/47 — wer 0.00, 133 wpm, 1.8s
+[readcheck]   36/47 — wer 0.03, 168 wpm, 22.5s  REDO (1 problem)
+[readcheck]   37/47 — wer 0.00, 214 wpm, 8.1s
+[readcheck]   38/47 — wer 0.02, 176 wpm, 21.4s  REDO (1 problem)
+[readcheck]   39/47 — wer 0.04, 205 wpm, 14.0s  REDO (2 problems)
+[readcheck]   40/47 — wer 0.02, 215 wpm, 18.1s
+[readcheck]   41/47 — wer 0.20, 108 wpm, 2.8s  REDO (2 problems)
+[readcheck]   42/47 — wer 0.02, 166 wpm, 17.7s  REDO (1 problem)
+[readcheck]   43/47 — wer 0.08, 186 wpm, 25.5s
+[readcheck]   44/47 — wer 0.01, 183 wpm, 25.0s  REDO (1 problem)
+[readcheck]   45/47 — wer 0.00, 185 wpm, 3.2s
+[readcheck]   46/47 — wer 0.01, 204 wpm, 24.4s  REDO (1 problem)
+[readcheck]   47/47 — wer 0.00, 237 wpm, 18.5s
+REDO section 4 (185 wpm, 23.35s, wer 0.0274)
+     misread: after “…it does everything the” expected “films” heard “is”
+REDO section 9 (191 wpm, 5.33s, wer 0.1176)
+     misread: after “…sometimes pull out a” expected “sling” heard “slingstone”
+REDO section 17 (172 wpm, 2.09s, wer 0.3333)
+     misread: after “…the” expected “longbow” heard “bow”
+REDO section 19 (186 wpm, 19.36s, wer 0.1)
+     misread: after “…plate armor the kind” expected “a” heard “of”
+     misread: after “…kind a wealthy french” expected “knight wore” heard “night war”
+     misread: after “…confirming it fire a” expected “war” heard “warbow”
+     misread: after “…and the arrow shatters” expected “dents” heard “dense”
+REDO section 20 (183 wpm, 7.52s, wer 0.1739)
+     misread: after “…on the field the” expected “arrow” heard “aerostorm”
+     misread: after “…arrow storm was a” expected “hailstorm” heard “storm”
+REDO section 22 (200 wpm, 14.99s, wer 0.04)
+     misread: after “…blind drowning shuffle the” expected “longbow” heard “bow”
+REDO section 32 (194 wpm, 22.6s, wer 0.027)
+     misread: after “…holding them an english” expected “longbowman” heard “bowman”
+REDO section 34 (217 wpm, 15.46s, wer 0.0357)
+     misread: after “…on the longbow could” expected “outshoot” heard “shoot”
+REDO section 36 (168 wpm, 22.52s, wer 0.0328)
+     misread: after “…clumsy iron bars weighing” expected “1520” heard “20”
+REDO section 38 (176 wpm, 21.45s, wer 0.0154)
+     misread: after “…swords were feather light” expected “whippy” heard “wippy”
+REDO section 39 (205 wpm, 14.03s, wer 0.0417)
+     misread: after “…” expected “mail” heard “males”
+     misread: after “…shrugged off a light” expected “whippy” heard “wippy”
+REDO section 41 (108 wpm, 2.77s, wer 0.2)
+     misread: after “…” expected “trebuchets” heard “trebiches”
+     speaking rate 108 wpm is outside 120–240, and the transcript disagrees — text was dropped or repeated
+REDO section 42 (166 wpm, 17.68s, wer 0.0204)
+     misread: after “…plague bodies into a” expected “trebuchet” heard “trebouchet”
+REDO section 44 (183 wpm, 24.97s, wer 0.013)
+     misread: after “…really cooperate either a” expected “trebuchet” heard “treboshae”
+REDO section 46 (204 wpm, 24.42s, wer 0.012)
+     misread: after “…it never needed a” expected “trebuchet” heard “trebuche”
+
+47 sections · 15 need a redo
+[voiceover] 15 section(s) flagged: 4, 9, 17, 19, 20, 22, 32, 34, 36, 38, 39, 41, 42, 44, 46
+[voiceover] NOT re-rendering — that would send ~4,066 more characters and this run has spent 12,340 so far. The read-check evidence for each is above and in ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/readcheck.json.
+[voiceover] To re-render them, approve the spend explicitly:
+    python3 /home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/voiceover.py --script script.txt --work ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained --from check --auto-redo --max-redos 1 --approve-spend 16406
+[voiceover] stopping before master; raw stitch at ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/raw_stitched.wav

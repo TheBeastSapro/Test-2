@@ -1,0 +1,44 @@
+[voiceover] “Totally Wrong Weapon Facts Everyone Still Believes Explained” · 47 sections · 12340 chars
+[voiceover] pronunciation guide: 8 names, held out of the narration (katana, Gabriele de Mussi, Agincourt, Balearics / Balearic, Caffa…)
+[voiceover] PRE-FLIGHT ! guide entry “Balearics / Balearic” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py --audio ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/raw_stitched.wav --script ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/script_lines.txt --out ./out/Totally Wrong Weapon Facts Everyone Still Believes Explained (final).mp3 --report ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/pauses.csv --align-cache ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/align.json --curated curated.txt
+[humanize] decoding
+[humanize]   711.8s, peak -0.27 dBFS
+[humanize] QC (source): 1 finding(s)
+[humanize]     HOT     sample peak -0.27 dBFS (over -1 dBFS)
+[humanize] declipped 20 over-full-scale region(s)
+[humanize] removed 1 splice fragment(s)
+[humanize]     8:28.455  70 ms  -23 dB
+[humanize] script: 43 lines, 2292 words
+[humanize] forced alignment (this is the slow part)
+Downloading: "https://dl.fbaipublicfiles.com/mms/torchaudio/ctc_alignment_mling_uroman/model.pt" to /root/.cache/torch/hub/checkpoints/model.pt
+  0%|          | 0.00/1.18G [00:00<?, ?B/s]  0%|          | 2.75M/1.18G [00:00<00:44, 28.6MB/s]  1%|▏         | 15.1M/1.18G [00:00<00:14, 87.6MB/s]  2%|▏         | 26.5M/1.18G [00:00<00:12, 102MB/s]   3%|▎         | 39.5M/1.18G [00:00<00:10, 115MB/s]  4%|▍         | 52.0M/1.18G [00:00<00:09, 121MB/s]  5%|▌         | 64.4M/1.18G [00:00<00:09, 123MB/s]  6%|▋         | 76.2M/1.18G [00:00<00:09, 123MB/s]  7%|▋         | 88.0M/1.18G [00:00<00:10, 116MB/s]  9%|▊         | 103M/1.18G [00:00<00:09, 127MB/s]  10%|▉         | 116M/1.18G [00:01<00:08, 129MB/s] 11%|█         | 128M/1.18G [00:01<00:08, 130MB/s] 12%|█▏        | 141M/1.18G [00:01<00:08, 131MB/s] 13%|█▎        | 154M/1.18G [00:01<00:08, 131MB/s] 14%|█▍        | 166M/1.18G [00:01<00:09, 120MB/s] 15%|█▌        | 182M/1.18G [00:01<00:08, 132MB/s] 16%|█▌        | 195M/1.18G [00:01<00:08, 131MB/s] 17%|█▋        | 208M/1.18G [00:01<00:07, 131MB/s] 18%|█▊        | 221M/1.18G [00:01<00:07, 132MB/s] 19%|█▉        | 233M/1.18G [00:01<00:07, 132MB/s] 20%|██        | 246M/1.18G [00:02<00:07, 128MB/s] 22%|██▏       | 260M/1.18G [00:02<00:07, 131MB/s] 23%|██▎       | 272M/1.18G [00:02<00:07, 131MB/s] 24%|██▎       | 285M/1.18G [00:02<00:07, 131MB/s] 25%|██▍       | 297M/1.18G [00:02<00:07, 119MB/s] 26%|██▌       | 310M/1.18G [00:02<00:07, 123MB/s] 27%|██▋       | 323M/1.18G [00:02<00:07, 126MB/s] 28%|██▊       | 336M/1.18G [00:02<00:07, 128MB/s] 29%|██▉       | 348M/1.18G [00:02<00:06, 129MB/s] 30%|███       | 362M/1.18G [00:03<00:06, 131MB/s] 31%|███       | 375M/1.18G [00:03<00:06, 132MB/s] 32%|███▏      | 387M/1.18G [00:03<00:06, 130MB/s] 33%|███▎      | 401M/1.18G [00:03<00:06, 133MB/s] 34%|███▍      | 414M/1.18G [00:03<00:06, 131MB/s] 36%|███▌      | 427M/1.18G [00:03<00:06, 134MB/s] 37%|███▋      | 440M/1.18G [00:03<00:06, 133MB/s] 38%|███▊      | 453M/1.18G [00:03<00:06, 130MB/s] 39%|███▉      | 467M/1.18G [00:03<00:05, 134MB/s] 40%|███▉      | 480M/1.18G [00:03<00:05, 128MB/s] 41%|████      | 492M/1.18G [00:04<00:06, 114MB/s] 42%|████▏     | 505M/1.18G [00:04<00:06, 119MB/s] 43%|████▎     | 518M/1.18G [00:04<00:05, 123MB/s] 44%|████▍     | 530M/1.18G [00:04<00:05, 124MB/s] 45%|████▌     | 543M/1.18G [00:04<00:05, 128MB/s] 46%|████▌     | 556M/1.18G [00:04<00:05, 131MB/s] 47%|████▋     | 569M/1.18G [00:04<00:05, 129MB/s] 48%|████▊     | 581M/1.18G [00:04<00:05, 129MB/s] 49%|████▉     | 594M/1.18G [00:04<00:05, 119MB/s] 50%|█████     | 605M/1.18G [00:05<00:05, 113MB/s] 52%|█████▏    | 622M/1.18G [00:05<00:04, 128MB/s] 53%|█████▎    | 635M/1.18G [00:05<00:04, 131MB/s] 54%|█████▍    | 648M/1.18G [00:05<00:04, 131MB/s] 55%|█████▍    | 660M/1.18G [00:05<00:05, 105MB/s] 56%|█████▌    | 673M/1.18G [00:05<00:04, 112MB/s] 57%|█████▋    | 685M/1.18G [00:05<00:04, 115MB/s] 58%|█████▊    | 702M/1.18G [00:05<00:04, 131MB/s] 60%|█████▉    | 718M/1.18G [00:05<00:03, 143MB/s] 61%|██████    | 732M/1.18G [00:06<00:03, 141MB/s] 62%|██████▏   | 746M/1.18G [00:06<00:03, 128MB/s] 63%|██████▎   | 759M/1.18G [00:06<00:03, 129MB/s] 64%|██████▍   | 772M/1.18G [00:06<00:03, 118MB/s] 65%|██████▌   | 785M/1.18G [00:06<00:03, 121MB/s] 66%|██████▋   | 798M/1.18G [00:06<00:03, 125MB/s] 67%|██████▋   | 810M/1.18G [00:06<00:03, 125MB/s] 68%|██████▊   | 823M/1.18G [00:06<00:03, 129MB/s] 69%|██████▉   | 836M/1.18G [00:06<00:03, 127MB/s] 71%|███████   | 849M/1.18G [00:07<00:02, 131MB/s] 72%|███████▏  | 862M/1.18G [00:07<00:02, 131MB/s] 73%|███████▎  | 874M/1.18G [00:07<00:02, 131MB/s] 74%|███████▎  | 887M/1.18G [00:07<00:02, 123MB/s] 75%|███████▍  | 899M/1.18G [00:07<00:02, 122MB/s] 76%|███████▌  | 912M/1.18G [00:07<00:02, 127MB/s] 77%|███████▋  | 925M/1.18G [00:07<00:02, 126MB/s] 78%|███████▊  | 938M/1.18G [00:07<00:02, 130MB/s] 79%|███████▉  | 951M/1.18G [00:07<00:02, 124MB/s] 80%|████████  | 965M/1.18G [00:08<00:01, 130MB/s] 81%|████████▏ | 978M/1.18G [00:08<00:01, 133MB/s] 82%|████████▏ | 991M/1.18G [00:08<00:01, 131MB/s] 83%|████████▎ | 0.98G/1.18G [00:08<00:01, 131MB/s] 84%|████████▍ | 0.99G/1.18G [00:08<00:01, 127MB/s] 85%|████████▌ | 1.00G/1.18G [00:08<00:01, 117MB/s] 87%|████████▋ | 1.02G/1.18G [00:08<00:01, 126MB/s] 88%|████████▊ | 1.03G/1.18G [00:08<00:01, 128MB/s] 89%|████████▉ | 1.05G/1.18G [00:08<00:01, 128MB/s] 90%|█████████ | 1.06G/1.18G [00:09<00:00, 137MB/s] 91%|█████████▏| 1.07G/1.18G [00:09<00:00, 137MB/s] 93%|█████████▎| 1.09G/1.18G [00:09<00:00, 135MB/s] 94%|█████████▎| 1.10G/1.18G [00:09<00:00, 132MB/s] 95%|█████████▍| 1.11G/1.18G [00:09<00:00, 130MB/s] 96%|█████████▌| 1.12G/1.18G [00:09<00:00, 131MB/s] 97%|█████████▋| 1.14G/1.18G [00:09<00:00, 132MB/s] 98%|█████████▊| 1.15G/1.18G [00:09<00:00, 130MB/s] 99%|█████████▉| 1.16G/1.18G [00:09<00:00, 120MB/s] 99%|█████████▉| 1.16G/1.18G [00:09<00:00, 126MB/s]
+Traceback (most recent call last):
+  File "/home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py", line 660, in <module>
+    main()
+  File "/home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py", line 601, in main
+    words = align(w16, lines)
+            ^^^^^^^^^^^^^^^^^
+  File "/home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py", line 239, in align
+    model = bundle.get_model(with_star=False); model.eval()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torchaudio/pipelines/_wav2vec2/impl.py", line 1610, in get_model
+    state_dict = utils._get_state_dict(self._path, dl_kwargs, self._remove_aux_axis)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torchaudio/pipelines/_wav2vec2/utils.py", line 83, in _get_state_dict
+    state_dict = load_state_dict_from_url(url, **dl_kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/hub.py", line 898, in load_state_dict_from_url
+    return torch.load(cached_file, map_location=map_location, weights_only=weights_only)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/serialization.py", line 1572, in load
+    with _open_zipfile_reader(opened_file) as opened_zipfile:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/torch/serialization.py", line 807, in __init__
+    super().__init__(torch._C.PyTorchFileReader(name_or_buffer))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: PytorchStreamReader failed reading zip archive: failed finding central directory. This is an internal miniz error. If you are seeing this error, there is a high likelihood that your checkpoint file is corrupted. This can happen if the checkpoint was not saved properly, was transferred incorrectly, or the file was modified after saving.
+[voiceover] the cached MMS_FA alignment checkpoint is damaged: 1,250,238,773 bytes on disk, upstream is 1,262,047,414
+[voiceover] DELETED the cached file /root/.cache/torch/hub/checkpoints/model.pt (1,250,238,773 bytes on disk, upstream is 1,262,047,414) — the next run re-downloads it, so retrying can now succeed
+[voiceover] re-run with --from master; the checkpoint will be fetched again
+stage failed with exit 1: humanize.py

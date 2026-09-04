@@ -1,0 +1,36 @@
+[voiceover] “Totally Wrong Weapon Facts Everyone Still Believes Explained” · 47 sections · 12340 chars
+[voiceover] pronunciation guide: 8 names, held out of the narration (katana, Gabriele de Mussi, Agincourt, Balearics / Balearic, Caffa…)
+
+  TITLE: “Totally Wrong Weapon Facts Everyone Still Believes Explained”  (not narrated)
+  detected 8 chapters · 1 divider · 1 CTA — chapter names read aloud as intros
+    1. The Katana That Cuts Through Anything
+    2. The Sling Everyone Thinks Was a Toy
+    3. The Boomerang Built to Come Back
+    4. The Longbow That Punched Through Plate
+    5. The Knight Craned Onto His Horse
+    6. The First Guns Were Useless
+    7. Swords Were Heavy Clubs
+    8. Trebuchets That Flung Plague Corpses
+  CTA: “Thanks for watching. I love making these, and if you hav…”
+  pronunciation guide: 8 names held out of the narration
+
+  PRE-FLIGHT — 1 thing(s) to look at before spending:
+    ! guide entry “Balearics / Balearic” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+
+  47 sections (8 chapter announcements) · 12,340 chars · ~14:41 audio
+
+  CALIBRATION — every value that will be sent, and who chose it:
+  voice dUHbvtIZto0ZEBkhYiyk (profile)
+  model eleven_multilingual_v2 (profile)
+  stability 0.48 (profile) · similarity_boost 0.8 (profile)
+  style 0.05 (profile) · speed 1.07 (profile)
+  use_speaker_boost True (profile)
+  chunkSize 450 (profile) · chapterPause natural (profile)
+  collapseBreaks False (profile) · readTitle False (profile)
+  skipHeadings False (profile)
+
+  COST: ~12,340 credits (first pass) of 138,176 remaining
+  redo rounds: off (--max-redos 0) — flagged sections are reported, not re-rendered
+  WORST CASE this run: ~12,340 credits
+  master: /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py
+

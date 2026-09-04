@@ -1,0 +1,56 @@
+[voiceover] “Totally Wrong Weapon Facts Everyone Still Believes Explained” · 47 sections · 12340 chars
+[voiceover] pronunciation guide: 8 names, held out of the narration (katana, Gabriele de Mussi, Agincourt, Balearics / Balearic, Caffa…)
+[voiceover] PRE-FLIGHT ! guide entry “Balearics / Balearic” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py --audio ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/raw_stitched.wav --script ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/script_lines.txt --out ./out/Totally Wrong Weapon Facts Everyone Still Believes Explained (final).mp3 --report ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/pauses.csv --align-cache ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/align.json --curated curated.txt
+[humanize] decoding
+[humanize]   711.8s, peak -0.27 dBFS
+[humanize] QC (source): 1 finding(s)
+[humanize]     HOT     sample peak -0.27 dBFS (over -1 dBFS)
+[humanize] declipped 20 over-full-scale region(s)
+[humanize] removed 1 splice fragment(s)
+[humanize]     8:28.455  70 ms  -23 dB
+[humanize] script: 43 lines, 2292 words
+[humanize] forced alignment (this is the slow part)
+[humanize]   aligning 40s / 712s
+[humanize]   aligning 80s / 712s
+[humanize]   aligning 120s / 712s
+[humanize]   aligning 160s / 712s
+[humanize]   aligning 200s / 712s
+[humanize]   aligning 240s / 712s
+[humanize]   aligning 280s / 712s
+[humanize]   aligning 320s / 712s
+[humanize]   aligning 360s / 712s
+[humanize]   aligning 400s / 712s
+[humanize]   aligning 440s / 712s
+[humanize]   aligning 480s / 712s
+[humanize]   aligning 520s / 712s
+[humanize]   aligning 560s / 712s
+[humanize]   aligning 600s / 712s
+[humanize]   aligning 640s / 712s
+[humanize]   aligning 680s / 712s
+[humanize]   aligning 712s / 712s
+[humanize]   cached -> ./out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/align.json
+[humanize]   2292 words aligned | 193 wpm | mean confidence 0.94 | 1% weak
+[humanize] curated clause breaks: 2
+[humanize] 22 sentence(s) held back from the speed-up (292 chunks stretched)
+[humanize]     0:02.8  255 wpm  x1.000 -> 255   You have seen what a katana can do.
+[humanize]     1:48.1  254 wpm  x1.000 -> 254   He was holding a strip of leather that whipped a sto
+[humanize]     2:02.6  241 wpm  x1.036 -> 250   An arrow you could sometimes pull out.
+[humanize]     2:27.6  248 wpm  x1.007 -> 250   The giant brought a knife to a gunfight and never kn
+[humanize]     2:30.7  254 wpm  x1.000 -> 254   None of this was secret.
+[humanize]     3:36.4  268 wpm  x1.000 -> 268   Missing was the whole point, so it could be thrown a
+[humanize]     3:39.0  247 wpm  x1.013 -> 250   Coming back would have meant it missed.
+[humanize]     4:28.5  258 wpm  x1.000 -> 258   They were bouncing off it.
+[humanize]     5:01.1  245 wpm  x1.019 -> 250   He has a face, armpits, the backs of the knees, and 
+[humanize]     5:29.4  263 wpm  x1.000 -> 263   It just did not win the way the movies say.
+[humanize]     6:24.5  273 wpm  x1.000 -> 273   And you can see why it stuck.
+[humanize]     7:01.7  257 wpm  x1.000 -> 257   Twain wrote it as a joke.
+[humanize]     7:14.9  268 wpm  x1.000 -> 268   Here is a strange fact.
+[humanize]     7:40.3  281 wpm  x1.000 -> 281   It is the men holding them.
+[humanize]     ... and 8 more
+[humanize] inserted 21.4s at 258 boundaries {'sentence': 111, 'comma': 122, 'paragraph': 25}
+[humanize] studio master (classic, air 0.0)
+[humanize] loudnorm -14 LUFS / -1.5 dBTP
+[humanize] QC (delivered file): clean
+[humanize] done -> ./out/Totally Wrong Weapon Facts Everyone Still Believes Explained (final).mp3  (11:49.15)
+[voiceover] delivered ./out/Totally Wrong Weapon Facts Everyone Still Believes Explained (final).mp3 (22.7 MB, 11:49)

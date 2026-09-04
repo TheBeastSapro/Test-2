@@ -1,0 +1,741 @@
+{
+ "results": [
+  {
+   "index": 0,
+   "duration": 2.46,
+   "wpm": 147,
+   "peak_dbfs": -0.746765,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Katana That Cuts Through Anything.",
+   "heard": "The katana that cuts through anything."
+  },
+  {
+   "index": 1,
+   "duration": 19.46,
+   "wpm": 182,
+   "peak_dbfs": -0.649143,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "You have seen what a katana can do. It slices through a machine gun barrel, a falling silk scarf, another sword, and on a good day probably the guy holding it. The finest blade ever forged, folded a thousand times into steel no other culture could match. Great story. Almost none of it survives contact with an actual katana.",
+   "heard": "You have seen what a katana can do. It slices through a machine gun barrel, a falling silk scarf, another sword, and on a good day, probably the guy holding it. The finest blade ever forged, folded a thousand times into steel no other culture could match. Great story. Almost none of it survives contact with an actual katana."
+  },
+  {
+   "index": 2,
+   "duration": 16.9,
+   "wpm": 199,
+   "peak_dbfs": -0.735976,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The folding is the part where the magic supposedly lives, and it happened, just not for the reason the legend wants. Japanese smiths were stuck with iron sand full of impurities, and folding was how they beat the junk out and spread the carbon around. It was damage control for bad material, not a secret ritual.",
+   "heard": "The folding is the part where the magic supposedly lives, and it happened, just not for the reason the legend wants. Japanese smiths were stuck with iron sand full of impurities, and folding was how they beat the junk out and spread the carbon around. It was damage control for bad material, not a secret ritual."
+  },
+  {
+   "index": 3,
+   "duration": 23.35,
+   "wpm": 185,
+   "peak_dbfs": -0.576362,
+   "wer": 0.0274,
+   "problems": [
+    "misread: after “…it does everything the” expected “films” heard “is”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "films",
+     "is",
+     "it does everything the"
+    ]
+   ],
+   "text": "But good steel was never the katana's problem. The problem was armor. Against an unarmored body, a katana is a beautiful thing, and in a single draw, it does everything the films promise. Point it at the iron plate and watch the magic evaporate. It chips, it bends, and it loses, the same as any sword. Which is why a samurai walking toward an armored enemy did not reach for his katana.",
+   "heard": "But good steel was never the katana's problem. The problem was armor. Against an unarmored body, a katana is a beautiful thing. And in a single draw, it does everything the film's promise. Point it at the iron plate and watch the magic evaporate. It chips, it bends, and it loses the same as any sword. Which is why a samurai walking toward an armored enemy did not reach for his katana."
+  },
+  {
+   "index": 4,
+   "duration": 21.32,
+   "wpm": 194,
+   "peak_dbfs": -0.670611,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "He reached for a bow, or a spear, or something heavy enough to ruin a man through his plate.\n\nNotice when the legend got loudest. Not on any battlefield, but in twentieth-century films and comics, long after the sword left the battlefield. A blade built to cut cloth and flesh got sold as a blade that cuts tanks, by people who never needed it to cut anything at all.",
+   "heard": "He reached for a bow or a spear or something heavy enough to ruin a man through his plate. Notice when the legend got loudest. Not on any battlefield, but in 20th century films and comics, long after the sword left the battlefield, a blade built to cut cloth and flesh got sold as a blade that cuts tanks by people who never needed it to cut anything at all."
+  },
+  {
+   "index": 5,
+   "duration": 2.4,
+   "wpm": 175,
+   "peak_dbfs": -0.6201,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Sling Everyone Thinks Was a Toy.",
+   "heard": "The sling everyone thinks was a toy."
+  },
+  {
+   "index": 6,
+   "duration": 11.7,
+   "wpm": 179,
+   "peak_dbfs": -0.56911,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "A shepherd boy drops a nine-foot warrior with a single stone, and three thousand years later we are still calling it a miracle. We have the story backwards. The miracle would have been Goliath surviving.",
+   "heard": "A shepherd boy drops a nine-foot warrior with a single stone, and 3,000 years later, we are still calling it a miracle. We have the story backwards. The miracle would have been Goliath surviving."
+  },
+  {
+   "index": 7,
+   "duration": 24.48,
+   "wpm": 216,
+   "peak_dbfs": -0.4259,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The trouble is the word sling. Say it and people picture a slingshot, the little forked toy with a rubber band, something a child aims at cans. David was not holding a toy. He was holding a strip of leather that whipped a stone up to a hundred miles an hour, and in a trained hand it could put that stone through a target the size of a face from the far end of a field. Roman soldiers who fought slingers said the wounds were worse than arrows.",
+   "heard": "The trouble is the word sling. Say it and people picture a slingshot. The little forked toy with a rubber band, something a child aims at cans. David was not holding a toy. He was holding a strip of leather that whipped a stone up to a hundred miles an hour, and in a trained hand, it could put that stone through a target the size of a face from the far end of a field. Roman soldiers who fought slingers said the wounds were worse than arrows."
+  },
+  {
+   "index": 8,
+   "duration": 5.33,
+   "wpm": 191,
+   "peak_dbfs": -0.891329,
+   "wer": 0.1176,
+   "problems": [
+    "misread: after “…sometimes pull out a” expected “sling” heard “slingstone”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "sling",
+     "slingstone",
+     "sometimes pull out a"
+    ]
+   ],
+   "text": "An arrow you could sometimes pull out. A sling stone stayed where it landed, inside the bone.",
+   "heard": "An arrow you could sometimes pull out. A slingstone stayed where it landed inside the bone."
+  },
+  {
+   "index": 9,
+   "duration": 22.88,
+   "wpm": 184,
+   "peak_dbfs": -0.466874,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Now the fight makes sense. Goliath is a heavy infantryman, armored, deadly, and built to win the moment David steps inside the sword range. David has no intention of stepping anywhere. He is a marksman with an effective weapon at seventy meters, and Goliath cannot cross seventy meters before a stone finds his one bare patch of skin. The giant brought a knife to a gunfight and never knew it.",
+   "heard": "Now the fight makes sense. Goliath is a heavy infantryman, armored, deadly, and built to win the moment David steps inside the sword range. David has no intention of stepping anywhere. He is a marksman with an effective weapon at 70 meters, and Goliath cannot cross 70 meters before a stone finds his one bare patch of skin. The giant brought a knife to a gunfight and never knew it."
+  },
+  {
+   "index": 10,
+   "duration": 22.41,
+   "wpm": 187,
+   "peak_dbfs": -0.503424,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "None of this was secret. The best slingers in the ancient world, the islanders of the Balearics, were hunted as mercenaries by Carthage and Rome, and legend says they learned as boys by knocking their own supper off a post, no hit, no meal. People with slings won battles. It is only in the retelling, where the sling shrinks into a toy, that a trained killer becomes an innocent child.",
+   "heard": "None of this was secret. The best slingers in the ancient world, the islanders of the Balearics were hunted as mercenaries by Carthage and Rome, and legend says they learned as boys by knocking their own supper off a post. No hit, no meal. People with slings won battles. It is only in the retelling, where the sling shrinks into a toy that a trained killer becomes an innocent child."
+  },
+  {
+   "index": 11,
+   "duration": 1.67,
+   "wpm": 215,
+   "peak_dbfs": -1.061408,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Boomerang Built to Come Back.",
+   "heard": "The boomerang built to come back."
+  },
+  {
+   "index": 12,
+   "duration": 23.17,
+   "wpm": 184,
+   "peak_dbfs": -0.43697,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Aboriginal hunters carried a throwing stick that could shatter a kangaroo's legs at a hundred meters or cave in a man's skull if it had to. Heavy, nearly straight, thrown flat and hard so it flew dead level like a spinning blade. It was one of the deadliest thrown weapons ever made, and you know it by a name that has since come to mean the opposite of dangerous. A boomerang.",
+   "heard": "Aboriginal hunters carried a throwing stick that could shatter a kangaroo's legs at a hundred meters or cave in a man's skull if it had to. Heavy, nearly straight, thrown flat and hard so it flew dead level like a spinning blade. It was one of the deadliest thrown weapons ever made, and you know it by a name that has since come to mean the opposite of dangerous, a boomerang."
+  },
+  {
+   "index": 13,
+   "duration": 20.43,
+   "wpm": 197,
+   "peak_dbfs": -0.378494,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Because the boomerang everyone pictures does not do any of that. The one that loops through the air and floats back to your hand is light, curved, and almost harmless, and that is the entire problem with it as a weapon. That lightweight version was made for sport, for training, and for spooking birds into nets. Missing was the whole point, so it could be thrown again.",
+   "heard": "Because the boomerang everyone pictures does not do any of that. The one that loops through the air and floats back to your hand is light, curved, and almost harmless. And that is the entire problem with it as a weapon. That lightweight version was made for sport, for training, and for spooking birds into nets. Missing was the whole point, so it could be thrown again."
+  },
+  {
+   "index": 14,
+   "duration": 12.3,
+   "wpm": 205,
+   "peak_dbfs": -0.726783,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Coming back would have meant it missed. You threw it once, it hit, and it dropped whatever it hit. The return trick, the thing that made the boomerang famous, is the one feature the real weapon was specifically built not to have.",
+   "heard": "Coming back would have meant it missed. You threw it once, it hit, and it dropped whatever it hit. The return trick, the thing that made the boomerang famous, is the one feature the real weapon was specifically built not to have."
+  },
+  {
+   "index": 15,
+   "duration": 13.92,
+   "wpm": 198,
+   "peak_dbfs": -0.587112,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "So the most recognizable throwing weapon in the world is remembered entirely for its harmless cousin. We took a weapon that killed for tens of thousands of years, kept the trick version that grew off the side of it, and let the trick swallow the name.",
+   "heard": "So the most recognizable throwing weapon in the world is remembered entirely for its harmless cousin. We took a weapon that killed for tens of thousands of years, kept the trick version that grew off the side of it, and let the trick swallow the name."
+  },
+  {
+   "index": 16,
+   "duration": 2.09,
+   "wpm": 172,
+   "peak_dbfs": -0.718221,
+   "wer": 0.3333,
+   "problems": [
+    "misread: after “…the” expected “longbow” heard “bow”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "longbow",
+     "bow",
+     "the"
+    ]
+   ],
+   "text": "The Longbow That Punched Through Plate.",
+   "heard": "The long bow that punched through plate."
+  },
+  {
+   "index": 17,
+   "duration": 22.15,
+   "wpm": 184,
+   "peak_dbfs": -0.41018,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Agincourt, 1415. The sky over the French line goes dark, thousands of arrows drop at once, and armored knights fall in rows. Every film shows it the same way: the English longbow punching clean through the French plate like a nail through paper. It is one of the most famous images in military history, and the arrows were not going through that plate. They were bouncing off it.",
+   "heard": "Agincourt. 1415. The sky over the French line goes dark. Thousands of arrows drop at once, and armored knights fall in rows. Every film shows it the same way. The English longbow punching clean through the French plate like a nail through paper. It is one of the most famous images in military history, and the arrows were not going through that plate. They were bouncing off it."
+  },
+  {
+   "index": 18,
+   "duration": 19.36,
+   "wpm": 186,
+   "peak_dbfs": -0.472944,
+   "wer": 0.1,
+   "problems": [
+    "misread: after “…plate armor the kind” expected “a” heard “of”",
+    "misread: after “…kind a wealthy french” expected “knight wore” heard “night war”",
+    "misread: after “…confirming it fire a” expected “war” heard “warbow”",
+    "misread: after “…and the arrow shatters” expected “dents” heard “dense”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "a",
+     "of",
+     "plate armor the kind"
+    ],
+    [
+     "misread",
+     "knight wore",
+     "night war",
+     "kind a wealthy french"
+    ],
+    [
+     "misread",
+     "war",
+     "warbow",
+     "confirming it fire a"
+    ],
+    [
+     "misread",
+     "dents",
+     "dense",
+     "and the arrow shatters"
+    ]
+   ],
+   "text": "Good plate armor, the kind a wealthy French knight wore, was built to beat exactly this. The steel was curved and hardened so that an arrow arriving at the wrong angle skated off instead of biting. Modern tests keep confirming it. Fire a war bow at a breastplate of the right period, and the arrow shatters, dents it, and drops.",
+   "heard": "Good plate armor, the kind of wealthy French night war, was built to beat exactly this. The steel was curved and hardened, so that an arrow arriving at the wrong angle skated off instead of biting. Modern tests keep confirming it. Fire a warbow at a breastplate of the right period, and the arrow shatters, dense it, and drops."
+  },
+  {
+   "index": 19,
+   "duration": 7.52,
+   "wpm": 183,
+   "peak_dbfs": -0.383493,
+   "wer": 0.1739,
+   "problems": [
+    "misread: after “…on the field the” expected “arrow” heard “aerostorm”",
+    "misread: after “…arrow storm was a” expected “hailstorm” heard “storm”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "arrow",
+     "aerostorm",
+     "on the field the"
+    ],
+    [
+     "misread",
+     "hailstorm",
+     "storm",
+     "arrow storm was a"
+    ]
+   ],
+   "text": "Against the best armor on the field, the arrow storm was a hailstorm on a tin roof, loud and frightening and mostly harmless.",
+   "heard": "Against the best armor on the field, the aerostorm was a hail storm on a tin roof, loud and frightening and mostly harmless."
+  },
+  {
+   "index": 20,
+   "duration": 23.72,
+   "wpm": 207,
+   "peak_dbfs": -0.384999,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "So why did the French lose so badly? Because a knight is not a sealed tank. He has a face, armpits, the backs of the knees, and all the gaps a moving body opens. He is riding a horse that wears almost nothing. And he is walking uphill through knee-deep mud, into a headwind of arrows that make him lower his visor, hunch, and slow to a crawl, until he arrives at the English line exhausted and packed too tight to swing.",
+   "heard": "So why did the French lose so badly? Because a knight is not a sealed tank. He has a face, armpits, the backs of the knees, and all the gaps a moving body opens. He is riding a horse that wears almost nothing. And he is walking uphill through knee-deep mud into a headwind of arrows that make him lower his visor, hunch and slow to a crawl until he arrives at the English line exhausted and packed too tight to swing."
+  },
+  {
+   "index": 21,
+   "duration": 14.99,
+   "wpm": 200,
+   "peak_dbfs": -0.359925,
+   "wer": 0.04,
+   "problems": [
+    "misread: after “…blind drowning shuffle the” expected “longbow” heard “bow”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "longbow",
+     "bow",
+     "blind drowning shuffle the"
+    ]
+   ],
+   "text": "The arrows did not need to pierce the armor. They only needed to turn a charge into a slow, blind, drowning shuffle.\n\nThe longbow was a terrifying weapon. It just did not win the way the movies say. It broke the men inside the armor without ever getting through it.",
+   "heard": "The arrows did not need to pierce the armor. They only needed to turn a charge into a slow, blind, drowning shuffle. The long bow was a terrifying weapon. It just did not win the way the movies say. It broke the men inside the armor without ever getting through it."
+  },
+  {
+   "index": 22,
+   "duration": 1.7,
+   "wpm": 212,
+   "peak_dbfs": -1.014931,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Knight Craned Onto His Horse.",
+   "heard": "The knight craned onto his horse."
+  },
+  {
+   "index": 23,
+   "duration": 16.33,
+   "wpm": 217,
+   "peak_dbfs": -0.383341,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Picture a knight getting ready for battle. Good chance you are picturing a crane. A wooden frame, a rope, and a pulley, hauling a man in full armor up into the air so he can be lowered onto his horse like a chandelier, because the poor guy is so wrapped in steel he cannot get up there himself. Right?",
+   "heard": "Picture a knight getting ready for battle. Good chance you are picturing a crane, a wooden frame, a rope, and a pulley, hauling a man in full armor up into the air so he can be lowered onto his horse like a chandelier, because the poor guy is so wrapped in steel he cannot get up there himself, right?"
+  },
+  {
+   "index": 24,
+   "duration": 14.03,
+   "wpm": 192,
+   "peak_dbfs": -0.508451,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Not one medieval source describes this. Nobody built the crane, because nobody needed one. A full suit of field armor weighed about twenty-five kilograms spread head to toe, and the man wearing it climbed onto his horse the same way you climb onto a bike.",
+   "heard": "Not one medieval source describes this. Nobody built the crane because nobody needed one. A full suit of field armor weighed about 25 kilograms spread head to toe, and the man wearing it climbed onto his horse the same way you climb onto a bike."
+  },
+  {
+   "index": 25,
+   "duration": 16.48,
+   "wpm": 193,
+   "peak_dbfs": -0.509901,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "So where does the crane picture come from? A famous version came from a comedy novel. In 1889 Mark Twain wrote A Connecticut Yankee in King Arthur's Court, and his illustrator drew a gag of a knight winched into the saddle. That one drawing walked out of the book and never came back.",
+   "heard": "So, where does the crane picture come from? A famous version came from a comedy novel. In 1889, Mark Twain wrote a Connecticut Yankee in King Arthur's court, and his illustrator drew a gag of a knight winched into the saddle. That one drawing walked out of the book and never came back."
+  },
+  {
+   "index": 26,
+   "duration": 16.3,
+   "wpm": 202,
+   "peak_dbfs": -0.632947,
+   "wer": 0.0182,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "And you can see why it stuck. Armour looks the part. In a museum case it looks like something a man was bolted inside, not something he wore. It is heavy. Nobody says it wasn't.\n\nBut here is what the crane gets wrong. It thinks fifty pounds is a burden no matter where it sits.",
+   "heard": "And you can see why it's stuck. Armor looks the part. In a museum case, it looks like something a man was bolted inside, not something he wore. It is heavy. Nobody says it wasn't. But here is what the crane gets wrong. It thinks 50 pounds is a burden, no matter where it sits."
+  },
+  {
+   "index": 27,
+   "duration": 21.03,
+   "wpm": 188,
+   "peak_dbfs": -0.498136,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "It isn't. That weight sat across your whole body, every plate fitted to one man. Put someone in an accurate copy today, and they run, climb, and get up off the ground. One medieval writer bragged his favorite knight could go up a ladder from underneath, rung by rung, on his hands alone. Medieval writers exaggerate. But nobody brags about the guy who needs a crane.",
+   "heard": "It isn't. That weight sat across your whole body. Every plate fitted to one man. Put someone in an accurate copy today, and they run, climb, and get up off the ground. One medieval writer bragged his favorite knight could go up a ladder from underneath, rung by rung on his hands alone. Medieval writers exaggerate, but nobody brags about the guy who needs a crane."
+  },
+  {
+   "index": 28,
+   "duration": 11.0,
+   "wpm": 202,
+   "peak_dbfs": -0.511341,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Twain wrote it as a joke. His illustrator drew it as a joke. And five hundred years of real knights, men who trained their whole lives to move in that steel, lost the argument to a cartoon.",
+   "heard": "Twain wrote it as a joke, his illustrator drew it as a joke, and 500 years of real knights, men who trained their whole lives to move in that steel, lost the argument to a cartoon."
+  },
+  {
+   "index": 29,
+   "duration": 1.7,
+   "wpm": 177,
+   "peak_dbfs": -0.8599,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The First Guns Were Useless.",
+   "heard": "The first guns were useless."
+  },
+  {
+   "index": 30,
+   "duration": 22.94,
+   "wpm": 201,
+   "peak_dbfs": -0.410562,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Here is a strange fact. The longbow was better than the first guns in almost every way that matters. It shot faster, it shot further, it shot straighter, and a good archer could put ten arrows in the air before a gunner finished reloading once. So the obvious question is the one nobody asks. If the early gun was that much worse, why did it win, and why did the mighty longbow disappear off the battlefield forever?",
+   "heard": "Here's a strange fact. The longbow was better than the first guns in almost every way that matters. It shot faster. It shot further. It shot straighter. And a good archer could put 10 arrows in the air before a gunner finished reloading once. So the obvious question is the one nobody asks. If the early gun was that much worse, why did it win? And why did the mighty longbow disappear off the battlefield forever?"
+  },
+  {
+   "index": 31,
+   "duration": 22.6,
+   "wpm": 194,
+   "peak_dbfs": -0.500268,
+   "wer": 0.027,
+   "problems": [
+    "misread: after “…holding them an english” expected “longbowman” heard “bowman”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "longbowman",
+     "bowman",
+     "holding them an english"
+    ]
+   ],
+   "text": "The biggest reason is not the weapons at all. It is the men holding them. An English longbowman was a twenty-year project. You started him as a boy, you bent his spine and thickened his bones with a lifetime of daily practice, and skeletons of medieval archers are still visibly deformed from the draw. Lose that man and you cannot replace him, because there is no such thing as a spare twenty years.",
+   "heard": "The biggest reason is not the weapons at all. It is the men holding them. An English long bowman was a 20-year project. You started him as a boy. You bent his spine and thickened his bones with a lifetime of daily practice. And skeletons of medieval archers are still visibly deformed from the draw. Lose that man, and you cannot replace him because there is no such thing as a spare 20 years."
+  },
+  {
+   "index": 32,
+   "duration": 12.85,
+   "wpm": 201,
+   "peak_dbfs": -0.595223,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "A gunner took weeks, not years. Hand a farmer a gun and before long he can kill a knight who trained since childhood. The gun did not need to be good. It needed to be teachable, and it was teachable to absolutely anyone.",
+   "heard": "A gunner took weeks, not years, hand a farmer a gun, and before long he can kill a knight who trained since childhood. The gun did not need to be good. It needed to be teachable, and it was teachable to absolutely anyone."
+  },
+  {
+   "index": 33,
+   "duration": 15.46,
+   "wpm": 217,
+   "peak_dbfs": -0.568248,
+   "wer": 0.0357,
+   "problems": [
+    "misread: after “…on the longbow could” expected “outshoot” heard “shoot”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "outshoot",
+     "shoot",
+     "on the longbow could"
+    ]
+   ],
+   "text": "That is the quiet reason the age of the sword and bow ended. Not a better weapon, a cheaper soldier. The gun let a king turn a crowd of peasants into an army in a season, and no amount of skill on the longbow could outshoot a thousand men who only had to learn to point.",
+   "heard": "That is the quiet reason the age of the sword and bow ended. Not a better weapon, a cheaper soldier. The gun let a king turn a crowd of peasants into an army in a season, and no amount of skill on the longbow could out shoot a thousand men who only had to learn to point."
+  },
+  {
+   "index": 34,
+   "duration": 1.8,
+   "wpm": 133,
+   "peak_dbfs": -0.84917,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Swords Were Heavy Clubs.",
+   "heard": "Swords were heavy clubs."
+  },
+  {
+   "index": 35,
+   "duration": 22.52,
+   "wpm": 168,
+   "peak_dbfs": -0.252795,
+   "wer": 0.0328,
+   "problems": [
+    "misread: after “…clumsy iron bars weighing” expected “1520” heard “20”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "1520",
+     "20",
+     "clumsy iron bars weighing"
+    ]
+   ],
+   "text": "For about a century, everyone knew medieval swords were heavy. Clumsy iron bars weighing fifteen, twenty, or thirty pounds, so brutal that a knight basically clubbed people to death, and any hit that landed took an arm off through the armor. You will still see the claim on museum placards and in old textbooks, a fifteen-pound blade behind glass. It was completely wrong.",
+   "heard": "For about a century, everyone knew medieval swords were heavy, clumsy iron bars weighing 15, 20, or 30 pounds so brutal that a knight basically clubbed people to death, and any hit that landed took an arm off through the armor. You will still see the claim on museum placards and in old textbooks, a 15-pound blade behind glass. It was completely wrong."
+  },
+  {
+   "index": 36,
+   "duration": 8.12,
+   "wpm": 214,
+   "peak_dbfs": -0.506553,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "A real one-handed medieval sword weighs about a kilo and a half, less than a bag of sugar, and is balanced so well it feels alive in the hand.",
+   "heard": "A real one-handed medieval sword weighs about a kilo and a half, less than a bag of sugar, and is balanced so well, it feels alive in the hand."
+  },
+  {
+   "index": 37,
+   "duration": 21.45,
+   "wpm": 176,
+   "peak_dbfs": -0.482493,
+   "wer": 0.0154,
+   "problems": [
+    "misread: after “…swords were feather light” expected “whippy” heard “wippy”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "whippy",
+     "wippy",
+     "swords were feather light"
+    ]
+   ],
+   "text": "So the internet corrected the record, kept going, and overcorrected straight past the truth. Now the fashionable line is that swords were feather-light, whippy little wands you could flick around like a conductor's baton. That is just as wrong, in the opposite direction. A sword built for war was not a toy either. It had real weight forward of the grip, on purpose.",
+   "heard": "So the internet corrected the record, kept going, and overcorrected straight past the truth. Now the fashionable line is that swords were feather light, wippy little wands you could flick around like a conductor's baton. That is just as wrong. In the opposite direction, a sword built for war was not a toy either. It had real weight forward of the grip, on purpose."
+  },
+  {
+   "index": 38,
+   "duration": 14.03,
+   "wpm": 205,
+   "peak_dbfs": -0.487306,
+   "wer": 0.0417,
+   "problems": [
+    "misread: after “…” expected “mail” heard “males”",
+    "misread: after “…shrugged off a light” expected “whippy” heard “wippy”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "mail",
+     "males",
+     ""
+    ],
+    [
+     "misread",
+     "whippy",
+     "wippy",
+     "shrugged off a light"
+    ]
+   ],
+   "text": "Mail shrugged off a light, whippy cut, so a war sword needed enough mass behind the edge to land a blow that actually told through the armor. Some were made deliberately blade heavy, closer to a cleaver than a wand, because their whole job was to hit hard.",
+   "heard": "Males shrugged off a light wippy cut, so a war sword needed enough mass behind the edge to land a blow that actually told through the armor. Some were made deliberately blade heavy, closer to a cleaver than a wand, because their whole job was to hit hard."
+  },
+  {
+   "index": 39,
+   "duration": 18.1,
+   "wpm": 215,
+   "peak_dbfs": -0.669666,
+   "wer": 0.0154,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "This is the trap of busting a myth. You are so pleased to be smarter than the old lie that you sprint right past the boring truth in the middle. The sword was never a crowbar. It was also never a feather. It was a tool, weighted exactly as much as its job required, which is the least dramatic answer possible, and the correct one.",
+   "heard": "This is the trap of busting a myth. You are so pleased to be smarter than the old lie that you sprint right past the boring truth in the middle. The sword was never a crowbar. It was also never a feather. It was a tool. Waded exactly as much as its job required, which is the least dramatic answer possible. And the correct one."
+  },
+  {
+   "index": 40,
+   "duration": 2.77,
+   "wpm": 108,
+   "peak_dbfs": -0.620497,
+   "wer": 0.2,
+   "problems": [
+    "misread: after “…” expected “trebuchets” heard “trebiches”",
+    "speaking rate 108 wpm is outside 120–240, and the transcript disagrees — text was dropped or repeated"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "trebuchets",
+     "trebiches",
+     ""
+    ]
+   ],
+   "text": "Trebuchets That Flung Plague Corpses.",
+   "heard": "Trebiches that flung plague corpses."
+  },
+  {
+   "index": 41,
+   "duration": 17.68,
+   "wpm": 166,
+   "peak_dbfs": -0.304262,
+   "wer": 0.0204,
+   "problems": [
+    "misread: after “…plague bodies into a” expected “trebuchet” heard “trebouchet”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "trebuchet",
+     "trebouchet",
+     "plague bodies into a"
+    ]
+   ],
+   "text": "Everyone loves this one. Medieval armies loading plague bodies into a trebuchet and flinging them over the walls, the first biological weapon, catapulting death into a city on purpose. It is dark, it is clever, and it is built almost entirely on a single man who was not there.",
+   "heard": "Everyone loves this one. Medieval armies loading plague bodies into a trebouchet and flinging them over the walls. The first biological weapon catapulting death into a city on purpose. It is dark, it is clever, and it is built almost entirely on a single man who was not there."
+  },
+  {
+   "index": 42,
+   "duration": 25.5,
+   "wpm": 186,
+   "peak_dbfs": -0.351456,
+   "wer": 0.0759,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The story comes from the siege of Caffa in 1346, and our source is a notary named Gabriele de Mussi. He wrote a vivid account of the Mongols hurling their own plague dead over the walls until the defenders sickened and the Black Death slipped into Europe. There is one problem. For centuries people took this as an eyewitness account, and Gabriele de Mussi was in Italy the whole time, writing down a rumor from hundreds of miles away.",
+   "heard": "The story comes from the siege of Kaffa in 1346, and our source is a notary named Gabrielle de Moussi. He wrote a vivid account of the Mongols hurling their own plague dead over the walls until the defender sickened and the black death slipped into Europe. There is one problem. For centuries, people took this as an eyewitness account, and Gabriel de Moussi was in Italy the whole time, writing down a rumor from hundreds of miles away."
+  },
+  {
+   "index": 43,
+   "duration": 24.97,
+   "wpm": 183,
+   "peak_dbfs": -0.314419,
+   "wer": 0.013,
+   "problems": [
+    "misread: after “…really cooperate either a” expected “trebuchet” heard “treboshae”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "trebuchet",
+     "treboshae",
+     "really cooperate either a"
+    ]
+   ],
+   "text": "And the weapon does not really cooperate either. A trebuchet is built to smash stone walls with heavy rock, not to gently lob a soft, awkward, falling-apart body over a battlement from the far side of a siege camp. Plague travels on the backs of fleas and rats, quietly, through trade and flight, and by 1347 it was already loose across the trade routes. A body thrown over one wall might sicken the people behind it.",
+   "heard": "And the weapon does not really cooperate either. A treboshae is built to smash stone walls with heavy rock, not to gently lob a soft, awkward, falling apart body over a battlement from the far side of a siege camp. Plague travels on the backs of fleas and rats, quietly, through trade and flight, and by 1347, it was already loose across the trade routes. A body thrown over one wall might sicken the people behind it."
+  },
+  {
+   "index": 44,
+   "duration": 3.24,
+   "wpm": 185,
+   "peak_dbfs": -0.854696,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "It could not start a pandemic that was already moving.",
+   "heard": "It could not start a pandemic that was already moving."
+  },
+  {
+   "index": 45,
+   "duration": 24.42,
+   "wpm": 204,
+   "peak_dbfs": -0.615471,
+   "wer": 0.012,
+   "problems": [
+    "misread: after “…it never needed a” expected “trebuchet” heard “trebuche”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "trebuchet",
+     "trebuche",
+     "it never needed a"
+    ]
+   ],
+   "text": "So the most famous biological attack in history rests on one man who was not there. The corpse throwing may well have happened. It was grim, and it was possible. What the evidence cannot carry is the neat story everyone tells next, that one siege on the edge of the Black Sea is what turned the plague loose on Europe. The plague did that on its own, on the backs of rats and fleas and fleeing ships, and it never needed a trebuchet.",
+   "heard": "So the most famous biological attack in history rests on one man who was not there. The corpse throwing may well have happened. It was grim, and it was possible. What the evidence cannot carry is the neat story everyone tells next, that one siege on the edge of the Black Sea is what turned the plague loose on Europe. The plague did that on its own, on the backs of rats and fleas and fleeing ships, and it never needed a trebuche."
+  },
+  {
+   "index": 46,
+   "duration": 18.47,
+   "wpm": 237,
+   "peak_dbfs": -0.416066,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Thanks for watching. I love making these, and if you have got a myth you want me to tear apart next, drop it in the comments; I actually read them. But before you go, you need to see this next one. Every Failed Weapon in History Explained. It is grim, it is stupid, and some of it is hard to believe. Click on the screen now, and I will see you over there.",
+   "heard": "Thanks for watching. I love making these, and if you have got a myth you want me to tear apart next, drop it in the comments. I actually read them. But before you go, you need to see this next one. Every failed weapon in history explained. It is grim, it is stupid, and some of it is hard to believe. Click on the screen now, and I will see you over there."
+  }
+ ],
+ "asr_model": "distil-large-v3",
+ "round": 0
+}
