@@ -296,3 +296,63 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: Google Docs exports chapter headings as bold paragraphs, which script_prep silently narrates as prose
+
+**Status:** OPEN
+**Date:** 2026-09-04
+**Session context:** Voicing an ExplainTory script pulled straight from a Google Doc via the Drive MCP (markdown export).
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/script_prep.py` — `_classify` / `is_title_case_heading`
+
+**Issue:** The Doc's eight chapter titles were styled as bold body text, so the markdown export delivered them as `**The Katana That Cuts Through Anything**` — bold paragraphs, not `##` headings. `is_title_case_heading` rejects those outright: the line starts with `*`, which fails its `^[A-Z0-9]` test, and the `^\*[^*]{1,80}\*$` direction rule only matches single-asterisk italics. Every chapter would have been classed `text`, stripped to plain words by `strip_markdown`, and read as the opening clause of the following paragraph — no chapter announcements, no chapter pauses, in a finished paid render. The `--plan` gate would have said "detected 0 chapters", which is the only reason it was caught. `strip_markdown`'s docstring already anticipates the Docs-bold artifact (`## **Coca**`), so the export shape is known; it is just not handled at classification time.
+
+**Suggested improvement:** Strip surrounding emphasis before classifying a line, not only before sending it to the API — i.e. run a bold/italic unwrap on the stripped line at the top of `_classify` so `**Title Case Line**` reaches `is_title_case_heading` as `Title Case Line`. Guard it so a genuinely italicised stage direction still classifies as `direction` first. Add the bold-heading case to the pre-flight as an explicit warning when 0 chapters are detected but bold standalone lines exist.
+
+**Principle:** When a pipeline normalises a formatting artifact at one stage, check whether an earlier stage's decisions depend on the un-normalised text. Cleaning markup only at the output boundary leaves every upstream classifier reading the raw artifact — and a classifier that silently downgrades rather than erroring turns a formatting quirk into an invisible, billed defect.
+
+### Observation 21: SKILL.md and the code disagree on readTitle, and there is no flag to settle it
+
+**Status:** OPEN
+**Date:** 2026-09-04
+**Session context:** Voicing an ExplainTory script; the `--plan` gate reported `read_title` as the one value "nobody chose".
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** SKILL.md "Generation matches the studio exactly" vs `generate.py` `_opt("read_title", …, True)` and `voiceover.py` argparse
+
+**Issue:** SKILL.md states as a deliberate difference from the studio that "the script's H1 is treated as the video's title, not its first chapter, so the voiceover does not open by reading its own title aloud." `generate.py` defaults `read_title` to `True`, and `derive_title`'s own docstring says the opposite of the skill text — that the studio reads it by default "and that is the read Sapro has been publishing." So the documented behaviour and the shipped default are contradictory, and the plan gate correctly flags the value as an inherited default nobody chose. Worse, there is no CLI flag: `--skip-headings` exists, `--no-read-title` does not, so the only way to act on the decision is to fork the committed `voice-calibration.json` into a run-local copy just to flip one editorial field. That is an odd shape — the voice profile is a locked-in voice identity, while readTitle is a per-video choice.
+
+**Suggested improvement:** Resolve the contradiction in SKILL.md first (state which is true, and why), then add a `--read-title / --no-read-title` pair to `voiceover.py` mirroring `--skip-headings`, defaulting to `None` so the profile still wins when neither is passed. That keeps per-video editorial choices out of the voice profile entirely.
+
+**Principle:** When a document and the code it describes disagree about a default, the missing override flag is the real bug — a setting a user must fork a config file to change is a setting the tool has decided for them. Audit "value nobody chose" warnings for whether an override path even exists.
+
+### Observation 22: The delivery gate fails on the master's own curated breaks unless verify.py is given the same inputs
+
+**Status:** OPEN
+**Date:** 2026-09-04
+**Session context:** Running `verify.py` on a finished ExplainTory master before delivery.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** SKILL.md (no mention of `verify.py` at all) and `scripts/verify.py` argument handling
+
+**Issue:** `verify.py` is the stated delivery gate — "Nothing goes to Sapro until this passes" — but SKILL.md never names it, never shows its invocation, and never says it needs the same `--curated` and `--sections` files the master was given. Run without them on a legitimately clean file, it returned **NOT DELIVERABLE**: it flagged an unexplained 155 ms pause at a curated clause break that the master had deliberately inserted, and reported "chapters: 0 of 0 located" because it had no `sections.json`. Re-run with `--curated` and `--sections`, the identical audio passed with 0 failures and 8 of 8 chapters located. So the gate's headline verdict flips on operator inputs rather than on the audio, and its most alarming failure mode is a false one that points at a real, correct edit. An operator who trusts the first verdict either re-renders clean audio or stops trusting the gate.
+
+**Suggested improvement:** Have `verify.py` default `--curated` and `--sections` to the run's work directory when `--script` points inside one, so the common case needs no extra flags; where they genuinely cannot be resolved, downgrade the affected checks to explicit "not checked — no curated file supplied" warnings rather than counting them as failures. Add the verify invocation to SKILL.md as an explicit final step with all four arguments.
+
+**Principle:** A gate whose verdict depends on optional inputs must either find those inputs itself or refuse to render a verdict about the checks it could not run. Silently downgrading "I was not told" into "this failed" trains the operator to override the gate, which destroys the only thing a gate is for.
+
+### Observation 23: verify.py's signal QC silently does not run — a hole in the gate reported as a warning
+
+**Status:** OPEN
+**Date:** 2026-09-04
+**Session context:** Same delivery-gate run, on a container with the skill's own `setup.sh` dependencies installed.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/verify.py` — the QC import
+
+**Issue:** Both verify runs emitted `warn  QC could not run: No module named 'humanize'`. `verify.py`'s docstring lists `signal` (clipping, DC, noise floor, dead air) as one of the things it checks, so on this container one of its six advertised checks did not execute at all — and it said so as a *warning*, alongside genuinely minor ones, while still printing "verified — 0 failures". The name collision is the likely cause: the master ships `humanize.py`, and there is also a PyPI package called `humanize`, so the import resolves to neither reliably. It happens to be non-fatal here only because `humanize.py`'s own pass had already reported QC clean on the delivered file — a redundancy that is not guaranteed and is not what the gate claims.
+
+**Suggested improvement:** Import the master's QC by explicit path (the same `_skills_roots()` / `find_humanize` resolution `voiceover.py` already uses) rather than by bare module name, and add `humanize` to `setup.sh` if the PyPI package is genuinely wanted. Separately, a check that could not execute should not be reported at the same severity as a check that ran and found something minor — surface it as an explicit "NOT CHECKED" block above the verdict line.
+
+**Principle:** "This check did not run" and "this check passed" must never be reachable from the same summary line. A verification tool's most dangerous output is a green verdict that quietly excludes one of its own checks — the gap is invisible precisely to the person relying on the gate.
