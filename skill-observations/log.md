@@ -356,3 +356,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Import the master's QC by explicit path (the same `_skills_roots()` / `find_humanize` resolution `voiceover.py` already uses) rather than by bare module name, and add `humanize` to `setup.sh` if the PyPI package is genuinely wanted. Separately, a check that could not execute should not be reported at the same severity as a check that ran and found something minor — surface it as an explicit "NOT CHECKED" block above the verdict line.
 
 **Principle:** "This check did not run" and "this check passed" must never be reachable from the same summary line. A verification tool's most dangerous output is a green verdict that quietly excludes one of its own checks — the gap is invisible precisely to the person relying on the gate.
+
+### Observation 24: pauses.csv omits boundaries it did not act on, so absence from the report reads as absence of a pause
+
+**Status:** OPEN
+**Date:** 2026-09-05
+**Session context:** Diagnosing a sentence Sapro reported as reading too fast, using the master's own pause report.
+**Skill:** explaintory-voiceover / explaintory-vo-master
+**Type:** open-source
+**Phase/Area:** `humanize.py` pause reporting (`--report` / pauses.csv)
+
+**Issue:** pauses.csv lists only boundaries where the master inserted time. Boundaries it evaluated and correctly left alone — because the natural silence already met or exceeded the target — are absent entirely. Reading the report for the flagged sentence, I found no entry between two timestamps 5.23 s apart and concluded the passage had "no rest of any kind", then built a fix on that. Direct measurement showed a 0.200 s rest sitting in the middle of it: the boundary existed, was assessed, and needed nothing. The report's own columns (`silence_before`, `target`, `inserted`) show it is designed to record the decision, yet it only records the decisions that changed something, which is exactly when a diagnostician most needs to see the ones that did not.
+
+**Suggested improvement:** Emit a row for every boundary the master evaluates, with `inserted` of 0 where nothing was added, so the report is a complete record of decisions rather than a changelog. If file size is the concern, keep the current behaviour behind a flag and make the complete record the default for diagnosis. Failing that, state the omission in the CSV header.
+
+**Principle:** A report that logs only actions taken cannot be used to reason about what was considered. When a tool's output is used for diagnosis, "no entry" must mean "not evaluated" and never "evaluated, no change" — otherwise every silence in the log is ambiguous and confidently misreads as absence.
+
+### Observation 25: curated clause breaks silently no-op, and cannot make a beat longer than a comma
+
+**Status:** OPEN
+**Date:** 2026-09-05
+**Session context:** Trying to give a long, fast-reading sentence more room without spending credits.
+**Skill:** explaintory-voiceover / explaintory-vo-master
+**Type:** open-source
+**Phase/Area:** `humanize.py` `build()` — the curated branch; SKILL.md "Before mastering — the curated clause breaks"
+
+**Issue:** A curated break is implemented as `kind = "comma"`, so it can only raise a gap to the comma target (0.16 s). Where the natural silence already exceeds that, the break is correctly a no-op — but nothing says so. The log prints "curated clause breaks: 3" whether three were applied or none were, the pause report gains no row (see the companion observation), and the delivered file changes anyway through unrelated encoder non-determinism, so even an MD5 comparison suggests something happened. I added a break, re-mastered, and had three signals consistent with success while the target gap was unchanged at 0.200 s in both files — only a direct measurement of the two masters showed it identical to the millisecond. SKILL.md presents curated breaks as the tool for "clause breaks the script forgot to punctuate" without stating this ceiling, which is where the wrong expectation starts.
+
+**Suggested improvement:** Report applied-vs-skipped counts ("curated clause breaks: 3 read, 1 applied, 2 already exceeded target") and name the skipped pairs. Document the comma ceiling in SKILL.md. Consider a per-pair target syntax (`wordA|wordB|0.30`) so a curated break can request a real beat rather than only a comma.
+
+**Principle:** A no-op must announce itself. When a tool reports what it was given rather than what it did, and the artifact changes for unrelated reasons, every available signal points at success — so the operator's only defence is measuring the specific thing they intended to change, before claiming it changed.

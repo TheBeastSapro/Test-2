@@ -1,17 +1,17 @@
 {
- "duration": 709.176,
+ "duration": 710.424,
  "lufs": -14.4,
  "true_peak": -1.3,
  "lra": 1.7,
- "asr_words": 2306,
+ "asr_words": 2302,
  "script_words": 2292,
- "wer": 0.0178,
- "overall_wpm": 193.9,
- "articulation_wpm": 217.9,
- "pauses_explained": 221,
+ "wer": 0.0165,
+ "overall_wpm": 193.6,
+ "articulation_wpm": 217.4,
+ "pauses_explained": 222,
  "pauses_unexplained": [],
  "chapters": {
   "in_script": 8,
-  "found_in_audio": 8
+  "found_in_audio": 7
  }
 }
