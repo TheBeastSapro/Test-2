@@ -45,7 +45,7 @@ time,kind,silence_before,target,inserted,context
 123.16,sentence,0.17,0.21,0.04,far end of a field. || Roman soldiers who fought
 127.51,sentence,0.06,0.21,0.15,wounds were worse than arrows. || An arrow you could
 129.52,sentence,0.18,0.21,0.03,you could sometimes pull out. || A sling stone stayed
-131.79,comma,0.11,0.16,0.05,"stone stayed where it landed, || inside the bone. Now"
+131.79,comma,0.12,0.16,0.04,"stone stayed where it landed, || inside the bone. Now"
 132.98,paragraph,0.12,0.25,0.13,"it landed, inside the bone. || Now the fight makes"
 134.58,sentence,0.08,0.21,0.13,Now the fight makes sense. || Goliath is a heavy
 136.77,comma,0.14,0.16,0.02,"Goliath is a heavy infantryman, || armored, deadly, and built"

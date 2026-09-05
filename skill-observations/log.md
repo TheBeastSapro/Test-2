@@ -386,3 +386,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Report applied-vs-skipped counts ("curated clause breaks: 3 read, 1 applied, 2 already exceeded target") and name the skipped pairs. Document the comma ceiling in SKILL.md. Consider a per-pair target syntax (`wordA|wordB|0.30`) so a curated break can request a real beat rather than only a comma.
 
 **Principle:** A no-op must announce itself. When a tool reports what it was given rather than what it did, and the artifact changes for unrelated reasons, every available signal points at success — so the operator's only defence is measuring the specific thing they intended to change, before claiming it changed.
+
+### Observation 26: orphans.py picks one global fence mode, so it is blind to orphans fenced by codec noise on one side and digital zero on the other
+
+**Status:** OPEN
+**Date:** 2026-09-05
+**Session context:** Sapro reported an audible tick at the end of a chapter announcement. `orphans.py` reported zero candidates on both the delivered master and the raw stitch.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/orphans.py` — silence-floor auto-detection and the two-sided fence
+
+**Issue:** The script auto-detects whether the file has exact-zero silence or codec noise and applies that one floor to both fences. In a raw stitch both cases coexist: `generate.py` writes exact zeros for inserted chapter gaps, while the interior of each decoded MP3 section sits at about -70 dB. An orphan at the END of a section is therefore fenced by codec noise on its left and exact zero on its right. With the floor set to "exact zero" the left fence never satisfies, so the candidate is discarded — and the tool built specifically to find this defect printed "No orphan fragments. Nothing is stranded in the gaps." for a 21 ms, -4.1 dB burst that a listener heard immediately. The failure is silent and total: the report reads like a clean bill of health.
+
+**Suggested improvement:** Evaluate each fence independently against a level threshold (anything below roughly -55 dB counts as silence) rather than a single global exact-zero test, and treat exact zero as one way of satisfying a fence rather than the definition of one. Report the detected floor per side. Additionally, an island whose fence contains inserted digital zeros is by construction stranded in a gap the pipeline itself created — that is a far sharper discriminator than level and should be its own high-confidence class.
+
+**Principle:** When a file is assembled from sources with different noise characteristics, a detector that picks one global threshold will be blind exactly at the seams — which is where splice artifacts live. Per-boundary thresholds, not per-file ones.
+
+### Observation 27: the splice-fragment remover misses the loudest fragments, which are the audible ones
+
+**Status:** OPEN
+**Date:** 2026-09-05
+**Session context:** Same tick. The master's own repair pass removed a -21.7 dB fragment in the same file and left a -4.1 dB one.
+**Skill:** explaintory-vo-master
+**Type:** open-source
+**Phase/Area:** `humanize.py` — splice fragment removal ("removed 1 splice fragment(s)")
+
+**Issue:** Two orphan fragments sat in this stitch, both stranded against inserted chapter silence. The master removed the quieter one (66 ms at -21.7 dB) and left the louder one (21 ms at -4.1 dB) — and it is the loud one a listener notices. The likely cause is a level ceiling intended to keep the remover away from speech: a fragment at -4 dB reads as speech to a level-based test. The result inverts the tool's purpose, since audibility rises with level while detection falls with it. The log compounds this by reporting only a count of what was removed, so "removed 1 splice fragment(s)" reads as completeness rather than as one-of-two.
+
+**Suggested improvement:** Decide fragments by context rather than level — anything wholly contained within silence the pipeline inserted is a fragment regardless of how loud it is, since nothing legitimate can occupy a gap the stitcher created. Keep the transcript-based mute-and-retranscribe adjudication as the safety check. Report fragments found versus removed, with position and level for each, so a partial pass is visible.
+
+**Principle:** A cleanup filter whose sensitivity falls as the defect grows more noticeable is worse than no filter, because the cases it catches build confidence that the cases it misses are absent. Check whether a detector's threshold runs with or against the severity of what it detects.
+
+### Observation 28: measure a fence at the resolution of the artifact, or word-tails get labelled as orphans
+
+**Status:** OPEN
+**Date:** 2026-09-05
+**Session context:** Sweeping all 47 section takes for the reported tick's signature before proposing any repair.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** sweep methodology — the "one report means sweep the class" rule
+
+**Issue:** A first sweep at 10 ms frame resolution reported four sections carrying an end-of-section burst. Re-measuring the same four at 1 ms showed two had only 1 ms of silence before the burst: they were not stranded at all, they were the natural decay of the final word, split off by the threshold. Only two were genuinely fenced. Had the coarse result been acted on, two sections would have had real speech tails cut — the precise failure the skill already records from the "Captagon was in for children" incident, arrived at from a different direction. Note that the mute-and-retranscribe test did NOT catch this: muting a word's final 50 ms does not lose the word, so all four passed adjudication. The fence measurement was the only thing that separated them.
+
+**Suggested improvement:** State a minimum measurement resolution for fence tests in the sweep guidance — the fence is tens of milliseconds, so it must be measured at 1 ms, and a frame size near the artifact size will always manufacture false fences. Record that the transcript test proves "not a word" but only the fence proves "not part of a word".
+
+**Principle:** Two safety checks can both pass while the thing is still wrong, when each is blind to a different failure. The transcript test answers "is this speech?"; only the fence answers "is this stranded?" — and an artifact measured at its own scale disappears into the measurement.

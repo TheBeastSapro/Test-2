@@ -1,0 +1,7 @@
+file        out/.vo_Totally_Wrong_Weapon_Facts_Everyone_Still_Believes_Explained/raw_stitched.wav
+duration    712.939s
+silence     exact zero
+gaps        20 of >= 40 ms
+candidates  0
+
+No orphan fragments. Nothing is stranded in the gaps.
