@@ -6,12 +6,11 @@ The clever part sat on top. A wooden box of bolts fed down into the frame, and o
 Then it vanishes. No polybolos has ever been dug up. The whole machine survives in a single description by an engineer named Philo of Byzantium, detailed enough that a museum in Athens has since built a working one from it. Nobody would build a firing weapon this clever again for centuries. And when they finally did, they did not put the cleverness in the frame. They hid it inside the lock of a gun.
 
 ## The Renaissance
+In 1584 a man climbed the stairs of a house in Delft with a pistol hidden under his coat. At the top he met William of Orange, the leader of the Dutch revolt, and shot him dead on the landing. It is most likely the first killing of a head of state with a handgun, and it happened for one reason. The gun had been waiting under that coat, loaded and ready, for hours.
 
-The wheellock was the first gun that could start a fight without already being on fire. Every gun before it, the matchlock, needed a lit, smouldering cord held near the powder, useless in rain and a giveaway in the dark. Built in Germany in the early 1500s, the wheellock threw the burning rope away and made its own spark.
+No other gun could wait. Everything before it, the matchlock, needed a burning cord held to the powder, so a loaded gun was a lit gun, hopeless in rain and a glowing dot in the dark. You cannot hide under a coat with a lit fuse. The wheellock, built in Germany around the early 1500s, carried its fire wound up inside instead. A little steel wheel sat cranked tight against a spring, the way you wind a clock, and pulling the trigger let it spin against a shard of iron pyrite and rake sparks into the powder. It was a cigarette lighter, three centuries before the cigarette, and it could sit cocked and silent for as long as you needed.
 
-Inside sat a small rough-edged steel wheel, wound tight against a spring with a key, the same way you wind a clock. Pull the trigger and it spun against a clamped lump of iron pyrite, scraping sparks straight down into the powder. It was a cigarette lighter, three hundred years before the cigarette. Nobody is sure who built the first; the design appears in a Leonardo sketch and was perfected by gunsmiths in Nuremberg.
-
-A wheellock could sit loaded and hidden under a coat for hours, then fire in a single second. In 1584 Balthasar Gerard used one to walk up to William of Orange, the leader of the Dutch revolt, and shoot him dead on his own stairs, widely called the first head of state ever killed with a handgun. A lifetime later, one gunsmith would try to make every part of the gun that clever at once.
+Which is how a man carried one up a staircase in Delft and changed what a hidden hand could mean.
 
 ## The Age of Kings
 A soldier in the 1600s reloaded the way everyone had for a century. Half a minute on his feet, defenseless, ramming a ball down the barrel while the enemy walked closer. The Kalthoff flintlock cut that to about a second. One man could fire up to thirty shots while the soldier next to him was still loading his first.
