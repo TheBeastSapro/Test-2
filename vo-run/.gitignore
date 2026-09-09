@@ -1,3 +1,12 @@
 # Generated audio and per-run work dir — rebuildable, and large.
-# The script, the curated clause breaks and the stage logs are tracked.
 out/
+unlevelled.wav
+excerpts/
+
+# Stage logs are appended to live by a running job, so tracking them means
+# every turn sees a dirty tree mid-write. The completed logs are committed
+# as *.final.log once a run ends.
+gen.log
+master.log
+restitch.log
+breaks.log
