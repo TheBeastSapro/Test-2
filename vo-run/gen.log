@@ -58,3 +58,6 @@ Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF
 [readcheck]   2/41 — wer 0.00, 172 wpm, 26.2s
 [readcheck]   3/41 — wer 0.01, 205 wpm, 23.1s
 [readcheck]   4/41 — wer 0.00, 192 wpm, 23.1s
+[readcheck]   5/41 — wer 0.00, 112 wpm, 1.1s
+[readcheck]   6/41 — wer 0.00, 219 wpm, 20.2s
+[readcheck]   7/41 — wer 0.03, 199 wpm, 18.7s
