@@ -334,3 +334,39 @@ it at an earlier stage will silently misclassify anything the normaliser was
 meant to handle. When a structural gate can return a plausible-looking zero,
 make zero loud — the count a human is asked to confirm must distinguish "this
 script has none" from "the detector found none".
+
+### Observation 21: --suggest-breaks proposes breaks after a coordinating conjunction that already carries a comma
+
+**Status:** OPEN
+**Date:** 2026-09-09
+**Session context:** Curating clause breaks for a 9-chapter voiceover before the
+mastering pass.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** voiceover.py `--suggest-breaks` (the fronted-modifier subtree
+walk, ~lines 200-217)
+
+**Issue:** Three of six candidates were wrong, all with one signature: the
+subtree's last token was a coordinating conjunction whose clause was already
+comma'd on its left. `and|the` for "Tip the muzzle up, and the next ball
+dropped…", `and|its` for "Sixteen years on guard, and its single kill was an
+accident", and `and|over` for "Over and over he fired it" — the last of which
+splits the fixed phrase "Over and over" down the middle. The existing guard only
+skips a boundary already punctuated on either side, and it tests the token
+*after* the last subtree token; here the punctuation sits *before* the
+conjunction, so the guard never fires and the suggestion puts a beat after
+"and", where no reader would pause. The skill's stated "wrong about a third of
+the time" understated it at 50% on this script, and the errors were not random —
+they were one rule missing.
+
+**Suggested improvement:** Skip a candidate whose left token is a coordinating
+conjunction (spaCy `dep_ == "cc"` or `pos_ == "CCONJ"`). A beat belongs
+before a conjunction that joins clauses, never after it, so the pair is wrong
+regardless of surrounding punctuation. Optionally note in SKILL.md that the
+conjunction cases are the ones to look for when reading the candidate list.
+
+**Principle:** A guard that checks only one side of a boundary will pass every
+failure that lives on the other side. When a proposal tool's errors share a
+single signature, that is a missing rule, not the expected noise floor — and a
+documented error rate can hide a systematic bug by making it look like the
+tool's normal behaviour.

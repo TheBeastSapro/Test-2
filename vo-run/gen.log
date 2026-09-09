@@ -1,0 +1,46 @@
+[voiceover] “Weapons With a Strange Mechanism From Every Era Explained” · 41 sections · 10975 chars
+[voiceover] pronunciation guide: 10 names, held out of the narration (polybolos, Dionysius of Alexandria, Philo of Byzantium, Girandoni, Kalthoff…)
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/generate.py --script vo-run/out/.vo_Weapons_With_a_Strange_Mechanism_From_Every_Era_Explained/narration_source.txt --out vo-run/out/.vo_Weapons_With_a_Strange_Mechanism_From_Every_Era_Explained/raw_stitched.wav --parts-dir vo-run/out/.vo_Weapons_With_a_Strange_Mechanism_From_Every_Era_Explained/parts --sections-json vo-run/out/.vo_Weapons_With_a_Strange_Mechanism_From_Every_Era_Explained/sections.json --max-chunk 450 --spend-log vo-run/out/.vo_Weapons_With_a_Strange_Mechanism_From_Every_Era_Explained/spend.json --profile voice-calibration.json --approve-spend 10975 --approval go ahead and generate
+[voiceover] 41 sections · 10975 chars · ~10975 credits
+[voiceover] approved by Sapro: “go ahead and generate”
+[voiceover] sending 10,975 chars (10,975 left of the 10,975 approved)
+[voiceover]   1/41 chapter, 18 chars
+[voiceover]   2/41 section, 407 chars
+[voiceover]   3/41 section, 406 chars
+[voiceover]   4/41 section, 402 chars
+[voiceover]   5/41 chapter, 16 chars
+[voiceover]   6/41 section, 366 chars
+[voiceover]   7/41 section, 326 chars
+[voiceover]   8/41 section, 409 chars
+[voiceover]   9/41 chapter, 17 chars
+[voiceover]   10/41 section, 317 chars
+[voiceover]   11/41 section, 326 chars
+[voiceover]   12/41 section, 345 chars
+[voiceover]   13/41 chapter, 22 chars
+[voiceover]   14/41 section, 404 chars
+[voiceover]   15/41 section, 384 chars
+[voiceover]   16/41 section, 397 chars
+[voiceover]   17/41 section, 430 chars
+[voiceover]   18/41 section, 87 chars
+[voiceover]   19/41 chapter, 18 chars
+[voiceover]   20/41 section, 210 chars
+[voiceover]   21/41 section, 402 chars
+[voiceover]   22/41 section, 405 chars
+[voiceover]   23/41 section, 60 chars
+[voiceover]   24/41 chapter, 20 chars
+[voiceover]   25/41 section, 369 chars
+[voiceover]   26/41 section, 364 chars
+[voiceover]   27/41 section, 370 chars
+[voiceover]   28/41 chapter, 21 chars
+[voiceover]   29/41 section, 327 chars
+[voiceover]   30/41 section, 436 chars
+[voiceover]   31/41 section, 402 chars
+[voiceover]   32/41 section, 284 chars
+[voiceover]   33/41 chapter, 13 chars
+[voiceover]   34/41 section, 413 chars
+[voiceover]   35/41 section, 340 chars
+[voiceover]   36/41 chapter, 16 chars
+[voiceover]   37/41 section, 261 chars
+[voiceover]   38/41 section, 408 chars
+[voiceover]   39/41 section, 282 chars
+[voiceover]   40/41 section, 370 chars
