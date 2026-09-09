@@ -1,3 +1,5 @@
+# Completed stage logs are tracked as *.final.log
+
 # Generated audio and per-run work dir — rebuildable, and large.
 out/
 unlevelled.wav
@@ -10,3 +12,5 @@ gen.log
 master.log
 restitch.log
 breaks.log
+
+!*.final.log
