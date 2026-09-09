@@ -14,3 +14,7 @@ restitch.log
 breaks.log
 
 !*.final.log
+regen.log
+final2.log
+orphans2.log
+orthans.log
