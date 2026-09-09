@@ -44,3 +44,17 @@
 [voiceover]   38/41 section, 408 chars
 [voiceover]   39/41 section, 282 chars
 [voiceover]   40/41 section, 370 chars
+[voiceover]   41/41 section, 105 chars
+[voiceover] stitching
+[voiceover]   heading 1: 2.89 syl/s vs 3.74 median — retiming x1.180
+[voiceover]   heading 9: 2.78 syl/s vs 3.74 median — retiming x1.180
+[voiceover]   heading 13: 4.70 syl/s vs 3.69 median — retiming x0.850
+[voiceover]   heading 33: 2.73 syl/s vs 3.74 median — retiming x1.180
+[voiceover]   heading 36: 4.16 syl/s vs 3.69 median — retiming x0.887
+[voiceover] wrote vo-run/out/.vo_Weapons_With_a_Strange_Mechanism_From_Every_Era_Explained/raw_stitched.wav  (10.7 min)
+[readcheck] loading ASR (distil-large-v3, cpu float32) — first run downloads the model (distil-large-v3 is 1.5 GB on disk, measured)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[readcheck]   1/41 — wer 0.00, 130 wpm, 1.4s
+[readcheck]   2/41 — wer 0.00, 172 wpm, 26.2s
+[readcheck]   3/41 — wer 0.01, 205 wpm, 23.1s
+[readcheck]   4/41 — wer 0.00, 192 wpm, 23.1s

@@ -370,3 +370,43 @@ failure that lives on the other side. When a proposal tool's errors share a
 single signature, that is a missing rule, not the expected noise floor — and a
 documented error rate can hide a systematic bug by making it look like the
 tool's normal behaviour.
+
+### Observation 22: Heading levelling hit the clamp rail on 4 of 5 corrections and never asked for an ear; SKILL.md misstates the clamp
+
+**Status:** OPEN
+**Date:** 2026-09-09
+**Session context:** Stitching a 9-chapter voiceover with heading levelling left
+at its default (on).
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** generate.py `level_headings` (clamp + warning condition); the
+"first chapter announcement reads fast" section of SKILL.md
+
+**Issue:** Two documentation drifts and one suppressed signal, all in the same
+mechanism. (1) SKILL.md says corrections are "clamped to ±15%". The code is
+`floor=0.85, ceil=1.18` — asymmetric, +18% on the stretch side. (2) SKILL.md
+says "when the clamp binds it says so and asks for an ear". It says so only when
+the clamp binds AND the residual miss is >= 1.0 syl/s. On this run four of five
+corrections were pinned to a rail — three at x1.180 (want was x1.294) and one at
+x0.850 (want x0.785) — and every warning was suppressed because each residual
+was 0.31-0.33 syl/s. So four chapter announcements were stretched to the
+maximum, three of them past the ~15% the function's own comment calls audible,
+with no prompt to listen. The residual-based gate is defensible on its own terms
+(it was added to stop a sub-one-word-per-minute miss reading as a problem), but
+it means "the clamp bound" and "you were told" are different events, and only
+the second is documented.
+
+**Suggested improvement:** Correct the ±15% figure in SKILL.md to −15%/+18%, and
+correct the warning claim to say the ear-check fires only on a large residual.
+Then separate the two signals in `level_headings`: keep the current
+residual-gated "listen" note, and add an unconditional one-line summary when any
+correction lands on a rail ("4 of 5 headings clamped"), since hitting the rail
+means the correction was truncated regardless of how small the leftover looks.
+A run where most corrections are truncated is a run where the levelling
+assumption is not holding.
+
+**Principle:** When a safety limit binds, that is a fact about the input worth
+surfacing on its own, independent of how large the resulting error is. Gating
+the only notification on error magnitude makes a systematically truncated run
+look identical to a clean one. And a documented tolerance that does not match
+the constant in the code is worse than no documentation: it gets reasoned from.
