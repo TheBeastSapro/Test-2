@@ -411,3 +411,47 @@ surfacing on its own, independent of how large the resulting error is. Gating
 the only notification on error magnitude makes a systematically truncated run
 look identical to a clean one. And a documented tolerance that does not match
 the constant in the code is worse than no documentation: it gets reasoned from.
+
+### Observation 23: The read-check's word-boundary filter misses compound splits, producing a 6-of-7 false-positive rate
+
+**Status:** OPEN
+**Date:** 2026-09-09
+**Session context:** Read-check on a 41-section voiceover flagged 7 sections for
+re-render. Windowed re-transcription cleared 6 of them.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** readcheck.py — the word-boundary-difference filter applied before
+WER is computed
+
+**Issue:** SKILL.md states that word-boundary differences ("temple sat" heard as
+"temples at") are the same sounds segmented differently and are dropped before
+the WER is computed. Four of this run's seven flags were exactly that class and
+were not dropped: "musketman" heard as "musket man", "downrange" as "down
+range", "hand-made" as "handmade", and "bullets sit" as "bullet sits". Each
+appears in the log as a substitution or a drop ("expected downrange heard
+range"), which reads like a missing word and is not one -- the words are present,
+contiguous, at 0.97-1.00 confidence. The filter appears to handle the
+two-tokens-to-two-tokens case ("temple sat"/"temples at") but not the
+one-token-to-two case (a compound the transcriber splits) or the hyphenated-
+compound case, which are the ones an ExplainTory script produces most.
+Of the remaining three, two were proper-name spellings (Merriweather, Wallace,
+catch/ketch) and one a connected-speech homophone ("hold her"/"holed her"), all
+of which the skill already anticipates. Exactly one flag was a genuine ambiguity
+and it turned out to be an ASR error too. With --auto-redo enabled this run
+would have spent ~2,691 credits re-rendering correct audio, and the redo output
+would have looked like the pipeline working.
+
+**Suggested improvement:** Extend the boundary filter to compare the
+whitespace-stripped concatenation of an aligned span on both sides, so
+"downrange" == "down range" and "bullets sit" == "bullet sits" collapse before
+scoring; strip hyphens on the script side first so "hand-made" == "handmade".
+Until that lands, add a line to SKILL.md's read-check section: a flag whose
+"heard" text is a substring or a split of the expected word is a segmentation
+artifact, and must be confirmed with a windowed re-transcription before it is
+allowed to justify a re-render.
+
+**Principle:** A filter that suppresses a known false-positive class must be
+tested against every shape that class takes, not the one example that motivated
+it. Where the cost of a false positive is real money, the check that clears it
+belongs in the tool, not in the reviewer's habits -- and a documented
+"we already handle this" claim is what stops anyone from looking.
