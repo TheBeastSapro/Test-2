@@ -296,3 +296,41 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: Heading detection runs before markdown stripping, so bold-only chapter headings are read as prose
+
+**Status:** OPEN
+**Date:** 2026-09-09
+**Session context:** Voicing a 9-chapter script exported from Google Docs, where
+each chapter heading was exported as a bold-only line (`**The Ancient World**`)
+with no `#` prefix.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** script_prep.py — `detect_structure` / `_classify`, and the
+"Confirm the structure first" gate in SKILL.md
+
+**Issue:** `--plan` reported "detected no chapters or directions · 0 chapter
+announcements" on a script with nine obvious chapter headings. `strip_markdown`
+is only applied at send time (script_prep.py:572, :608), never before
+classification, so `_classify` sees `**The Ancient World**`, fails its
+`^[A-Z0-9]` test on the leading asterisk, and returns "text". The docstring
+assumes Docs exports headings as `## **Coca**`, where the `#{1,6}` rule
+catches them regardless of bold — but a Docs heading exported with bold and no
+`#` falls through every branch. Feeding `strip_markdown` in before
+classification is NOT the fix: it would rewrite `*pause*` to `pause` and
+destroy the `^\*[^*]{1,80}\*$` stage-direction branch. Worked around for this
+run by normalising the nine bold-only lines to `## ` in the script.
+
+**Suggested improvement:** In `_classify`, unwrap a line that is *entirely*
+`**...**` (`^\*\*([^*]+)\*\*$`) before the title-case test — a whole-line bold
+is never a `*direction*`, so the narrow unwrap is safe where a blanket strip is
+not. Separately, make the pre-flight state the risk rather than only the count:
+a script with zero detected headings and multiple blank-line-separated
+Title-Case lines should print a warning, because "0 chapters" currently reads as
+a fact about the script instead of a possible detector miss.
+
+**Principle:** A detector that normalises its input at one stage and classifies
+it at an earlier stage will silently misclassify anything the normaliser was
+meant to handle. When a structural gate can return a plausible-looking zero,
+make zero loud — the count a human is asked to confirm must distinguish "this
+script has none" from "the detector found none".

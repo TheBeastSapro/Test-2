@@ -1,0 +1,92 @@
+**The Ancient World**
+
+A catapult is a simple promise. Wind it back, drop in a stone, let go, and a crew of sweating men spends the next minute doing all of it again. The polybolos was a catapult that skipped the wasted minute. Around 300 BC a Greek engineer named Dionysius of Alexandria built one that loaded and fired itself, over and over, more than two thousand years before anyone bolted a machine gun together in the 1800s.
+
+The clever part sat on top. A wooden box of bolts fed down into the frame, and one man turning a crank sent a flat chain dragging the slider back, drawing the cord, and dropping a fresh bolt into the groove like rounds into a magazine. Turn, shoot, turn, shoot, no crew, and no pause. It is the oldest chain drive we know of, and the men who first watched it work must have thought the thing was possessed.
+
+Then it vanishes. No polybolos has ever been dug up. The whole machine survives in a single description by an engineer named Philo of Byzantium, detailed enough that a museum in Athens has since built a working one from it. Nobody would build a firing weapon this clever again for centuries. And when they finally did, they did not put the cleverness in the frame. They hid it inside the lock of a gun.
+
+**The Renaissance**
+
+In 1584 a man climbed the stairs of a house in Delft with a pistol hidden under his coat. At the top he met William of Orange, the leader of the Dutch revolt, and shot him dead on the landing. It is most likely the first killing of a head of state with a handgun, and it happened for one reason. The gun had been waiting under that coat, loaded and ready, for hours.
+
+No other gun could wait. Everything before it, the matchlock, needed a burning cord held to the powder, so a loaded gun was a lit gun, hopeless in rain and a glowing dot in the dark. You cannot hide under a coat with a lit fuse. The wheellock, built in Germany around the early 1500s, carried its fire wound up inside instead. A little steel wheel sat cranked tight against a spring, the way you wind a clock, and pulling the trigger let it spin against a shard of iron pyrite and rake sparks into the powder. It was a cigarette lighter, three centuries before the cigarette, and it could sit cocked and silent for as long as you needed.
+
+Which is how a man carried one up a staircase in Delft and changed what a hidden hand could mean.
+
+**The Age of Kings**
+
+A soldier in the 1600s reloaded the way everyone had for a century. Half a minute on his feet, defenseless, ramming a ball down the barrel while the enemy walked closer. The Kalthoff flintlock cut that to about a second. One man could fire up to thirty shots while the soldier next to him was still loading his first.
+
+Swing the trigger guard down and back once, and the gun did by itself what a soldier normally did by hand. Two magazines hid inside the stock, one holding lead balls and one holding loose powder, and that single sweep of the lever fed a ball, measured the charge, and cocked the lock. Nothing else on earth reloaded like that.
+
+So the best gun in the world went nowhere. Denmark took about a hundred to the siege of Copenhagen in 1659, but only a master could build one or keep one running, and the delicate insides choked on mud and powder smoke. The idea was right by two hundred years. The engineering was not. So the next man chasing rapid fire threw out the gunpowder.
+
+**The Age of Revolution**
+
+Every gun you can picture, from a musket to a machine gun, does the same thing: it lights an explosion behind the bullet and lets the blast shove it out the front. The Girandoni air rifle exploded nothing. Built around 1780, it fired twenty shots on squeezed air alone, and it was so far ahead of everything around it that the two most famous explorers in American history carried one across a continent.
+
+The butt of the rifle was a hollow iron flask, pumped full of air to around eight hundred pounds of pressure. Pull the trigger, and a valve cracked open for a heartbeat, let out one measured puff, and snapped shut, throwing a ball almost as hard as gunpowder but with no bang, no smoke, and no flash. Tip the muzzle up, and the next ball dropped into place from a tube along the side. Twenty shots, in an age when a good musketman managed about three rounds a minute.
+
+There was a catch. Filling the flask took around fifteen hundred strokes of a hand pump, and as the air bled off, every shot came out weaker than the last. A sprinter's weapon in a marathon war. The Austrians adopted it and fielded it for decades, then gave up, defeated by how fragile and hand-made each one was.
+
+Meriwether Lewis took one west in 1803 and used it like a magic trick. Over and over he fired it for the Native nations along the route, shot after silent shot from a gun that never seemed to run dry. Whether the display kept an outnumbered party safe is impossible to prove, but Lewis plainly thought the impression was worth making. The journals mention the gun more than any other weapon, almost never explaining how it worked.
+
+A repeating military rifle that ran on pressure instead of powder. Plain, ordinary air.
+
+**The Victorian Age**
+
+The Brennan torpedo had no engine. To send it racing out to sea, you hauled it backward on a wire. In the 1880s an Irish engineer named Louis Brennan built it exactly that way, steered from a shed on the shore.
+
+Two long wires ran from steam winches on land, through the water, and onto two drums inside the torpedo. Start the winches hauling the wire back in, and the drums spun, the propellers spun, and the torpedo shot away from the very machines pulling on it. Wind one winch faster than the other, and it turned. A man on a cliff, watching through a telescope, could steer it into a ship he could barely see.
+
+It worked, and that was the unlikely part. Britain guarded its harbors with Brennan torpedoes for sixteen years, a guided weapon built decades before there was radio to guide anything, and it was never once fired at an enemy. The only ship a Brennan ever sank was a British ketch during a trial in 1901, when a practice torpedo with no detonator holed her below the waterline and sent her down by mistake. Sixteen years on guard, and its single kill was an accident.
+
+**The First World War**
+
+Bolt a machine gun to the front of an airplane, point it where you are flying, and you will saw your own propeller off in about a second. Every early pilot ran straight into that wall. In 1915 a Dutch designer named Anthony Fokker beat it in the least likely way imaginable. His team wired the gun to the propeller and let the spinning blades tell the gun when to fire.
+
+The propeller turned around twenty times a second. A cam on the engine shaft spun with it, linked to the trigger, and did one ruthless little job: it blocked the gun from firing whenever a blade was in front of the muzzle, and released it through the empty gaps between. The bullets streamed forward between the blades without ever clipping one, hundreds a minute.
+
+The effect was immediate and one-sided. For months the synchronized Fokkers dominated the front so badly that the British called it the Fokker Scourge, and sent up crews in machines they bitterly nicknamed Fokker fodder. The gun and the engine were both old news. The breakthrough was teaching two machines that had no business cooperating to share the same half second.
+
+**The Second World War**
+
+A dam is one of the hardest things in the world to bomb. Drop a bomb from a height, and it misses by yards. Send a torpedo at the wall, and steel nets hung across the water stop it dead. In 1943 a British engineer named Barnes Wallis beat both defenses with a single ridiculous idea: skip the bomb across the lake like a stone.
+
+The bouncing bomb, as it became known, was a four-ton drum. Before letting it go, the aircraft spun it backwards at five hundred turns a minute, and that backspin let it skip along the surface, hop after hop, clean over the torpedo nets. When it finally struck the dam, the spin was still working, dragging the drum down the face of the concrete, deeper and deeper, until the water pressure was right and it fired flat against the wall.
+
+Getting there meant flying a heavy bomber at night, sixty feet above the water, into the guns defending the dam. Sixty feet was so exact that crews pointed two spotlights down at the lake and dropped lower until the beams met in a single circle on the surface. On the night of the 16th of May, nineteen crews went in. Eight never came home, and fifty-three men died in one night. Two of the dams broke.
+
+The flood that tore down the Ruhr valley killed well over a thousand people, and most of them were not German soldiers. They were foreign prisoners of war and forced laborers, drowned in the camps below the dams. The walls were rebuilt within months. The people in the water were not.
+
+**The Cold War**
+
+Every bullet you have ever seen is fastest the instant it leaves the barrel, and slows down from there. The Gyrojet did the opposite. It left the gun slow and sped up as it flew.
+
+The trick was the bullet itself. It was a tiny rocket. Fired in the 1960s by a California company, each round carried its own propellant and puffed it out through angled holes in the base, so it kept accelerating the further it flew.
+
+Which produced the one problem you cannot design around. Up close, the rocket had barely started burning, so it hit soft and wandered, and it was never accurate. It only reached full speed a good sixty feet downrange. A gun that hit hardest when you least needed it was one the army had no use for, and it faded into an expensive curiosity.
+
+**The Digital Age**
+
+For two thousand years, every inventor in this video made a weapon stranger by adding parts to it. A spark wheel, a hidden magazine, a tank of air. In 1997 an Australian named Mike O'Dwyer went the other way. He built a gun by taking almost the entire gun away.
+
+A Metal Storm barrel has no moving parts at all. No bolt, no magazine, nothing that slides or springs. The bullets sit stacked nose to tail inside the barrel itself, each with its own charge behind it, and they are fired by an electric spark running down the line, one after another, as fast as electricity can travel. There is nothing to load and nothing to cycle, because there is no machine left to do it.
+
+With no moving parts to slow it down, it reached a rate nothing else has come close to. A 36-barrel prototype nicknamed Bertha loosed 180 rounds in a fraction of a second, a burst rate the company put at around a million rounds a minute. On paper, it was the fastest gun ever built.
+
+And it never reached the battlefield. A gun that empties itself in a single burst, then needs slow, careful rebuilding, solved a problem few armies actually had. O'Dwyer spent more than a decade demonstrating it, and the company did win military research contracts along the way. But mass adoption never came, the money kept running out, and in 2012 the business folded. The fastest gun ever built had reached a million rounds a minute, and never found an army that needed it.
+
+Pronunciation:
+
+  - polybolos: POL-ee-BOH-loss
+  - Dionysius of Alexandria: dy-uh-NISH-us of al-ig-ZAN-dree-uh
+  - Philo of Byzantium: FY-loh of bih-ZAN-tee-um
+  - Girandoni: jee-rahn-DOH-nee
+  - Kalthoff: KAL-toff
+  - Delft: delft
+  - Fokker: FOK-er
+  - Ruhr: ROOR
+  - Gyrojet: JY-roh-jet
+  - O'Dwyer: oh-DWY-er

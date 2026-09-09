@@ -1,0 +1,34 @@
+[voiceover] “The Weirdest Weapons Ever Built” · 41 sections · 10975 chars
+[voiceover] pronunciation guide: 10 names, held out of the narration (polybolos, Dionysius of Alexandria, Philo of Byzantium, Girandoni, Kalthoff…)
+
+  TITLE: “The Weirdest Weapons Ever Built”  (not narrated)
+  detected 9 chapters — chapter names read aloud as intros
+    1. The Ancient World
+    2. The Renaissance
+    3. The Age of Kings
+    4. The Age of Revolution
+    5. The Victorian Age
+    6. The First World War
+    7. The Second World War
+    8. The Cold War
+    9. The Digital Age
+  pronunciation guide: 10 names held out of the narration
+
+  41 sections (9 chapter announcements) · 10,975 chars · ~13:03 audio
+
+  CALIBRATION — every value that will be sent, and who chose it:
+  voice dUHbvtIZto0ZEBkhYiyk (profile)
+  model eleven_multilingual_v2 (profile)
+  stability 0.48 (profile) · similarity_boost 0.8 (profile)
+  style 0.05 (profile) · speed 1.07 (profile)
+  use_speaker_boost True (profile)
+  chunkSize 450 (profile) · chapterPause natural (profile)
+  collapseBreaks False (profile) · readTitle True (default)
+  skipHeadings False (profile)
+  ^ 1 value(s) nobody chose — inherited defaults, not settings: read_title
+
+  COST: ~10,975 credits (first pass) of 131,391 remaining
+  redo rounds: off (--max-redos 0) — flagged sections are reported, not re-rendered
+  WORST CASE this run: ~10,975 credits
+  master: /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py
+
