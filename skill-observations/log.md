@@ -389,9 +389,10 @@ says "when the clamp binds it says so and asks for an ear". It says so only when
 the clamp binds AND the residual miss is >= 1.0 syl/s. On this run four of five
 corrections were pinned to a rail — three at x1.180 (want was x1.294) and one at
 x0.850 (want x0.785) — and every warning was suppressed because each residual
-was 0.31-0.33 syl/s. So four chapter announcements were stretched to the
-maximum, three of them past the ~15% the function's own comment calls audible,
-with no prompt to listen. The residual-based gate is defensible on its own terms
+was 0.31-0.33 syl/s. So four chapter announcements were retimed to the maximum
+the clamp allows -- three sped up by 18% (they read slow, at 2.89 syl/s against
+a 3.74 median) and one slowed by 15% -- with no prompt to listen, three of them
+past the ~15% the function's own comment calls audible. The residual-based gate is defensible on its own terms
 (it was added to stop a sub-one-word-per-minute miss reading as a problem), but
 it means "the clamp bound" and "you were told" are different events, and only
 the second is documented.
