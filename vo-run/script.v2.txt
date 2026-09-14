@@ -6,11 +6,12 @@ The clever part sat on top. A wooden box of bolts fed down into the frame, and o
 Then it vanishes. No polybolos has ever been dug up. The whole machine survives in a single description by an engineer named Philo of Byzantium, detailed enough that a museum in Athens has since built a working one from it. Nobody would build a firing weapon this clever again for centuries. And when they finally did, they did not put the cleverness in the frame. They hid it inside the lock of a gun.
 
 ## The Renaissance
-In 1584 a man climbed the stairs of a house in Delft with a pistol hidden under his coat. At the top he met William of Orange, the leader of the Dutch revolt, and shot him dead on the landing. It is most likely the first killing of a head of state with a handgun, and it happened for one reason. The gun had been waiting under that coat, loaded and ready, for hours.
 
-No other gun could wait. Everything before it, the matchlock, needed a burning cord held to the powder, so a loaded gun was a lit gun, hopeless in rain and a glowing dot in the dark. You cannot hide under a coat with a lit fuse. The wheellock, built in Germany around the early 1500s, carried its fire wound up inside instead. A little steel wheel sat cranked tight against a spring, the way you wind a clock, and pulling the trigger let it spin against a shard of iron pyrite and rake sparks into the powder. It was a cigarette lighter, three centuries before the cigarette, and it could sit cocked and silent for as long as you needed.
+The wheellock was the first gun that could start a fight without already being on fire. Every gun before it, the matchlock, needed a lit, smouldering cord held near the powder, useless in rain and a giveaway in the dark. Built in Germany in the early 1500s, the wheellock threw the burning rope away and made its own spark.
 
-Which is how a man carried one up a staircase in Delft and changed what a hidden hand could mean.
+Inside sat a small rough-edged steel wheel, wound tight against a spring with a key, the same way you wind a clock. Pull the trigger and it spun against a clamped lump of iron pyrite, scraping sparks straight down into the powder. It was a cigarette lighter, three hundred years before the cigarette. Nobody is sure who built the first; the design appears in a Leonardo sketch and was perfected by gunsmiths in Nuremberg.
+
+A wheellock could sit loaded and hidden under a coat for hours, then fire in a single second. In 1584 Balthasar Gerard used one to walk up to William of Orange, the leader of the Dutch revolt, and shoot him dead on his own stairs, widely called the first head of state ever killed with a handgun. A lifetime later, one gunsmith would try to make every part of the gun that clever at once.
 
 ## The Age of Kings
 A soldier in the 1600s reloaded the way everyone had for a century. Half a minute on his feet, defenseless, ramming a ball down the barrel while the enemy walked closer. The Kalthoff flintlock cut that to about a second. One man could fire up to thirty shots while the soldier next to him was still loading his first.
@@ -29,14 +30,6 @@ There was a catch. Filling the flask took around fifteen hundred strokes of a ha
 Meriwether Lewis took one west in 1803 and used it like a magic trick. Over and over he fired it for the Native nations along the route, shot after silent shot from a gun that never seemed to run dry. Whether the display kept an outnumbered party safe is impossible to prove, but Lewis plainly thought the impression was worth making. The journals mention the gun more than any other weapon, almost never explaining how it worked.
 
 A repeating military rifle that ran on pressure instead of powder. Plain, ordinary air.
-
-## The Industrial Age
-
-In 1849 the Austrian army tried to bomb Venice with paper balloons, because its guns could not do the job alone. The city had rebelled, but it sat in a shallow lagoon, and Austrian artillery on the mainland could reach the city's edges without ever bringing the whole of it under fire. So an artillery officer named Franz von Uchatius reached for the one thing that could cross the water on its own and carry a bomb over the enemy: the hot-air balloon.
-
-His plan was almost absurdly simple. Build a balloon out of paper, hang a bomb beneath it, and wait for a wind blowing toward Venice. Then let it go. The heated air lifted the balloon up and over the lagoon, and a time fuse, set to burn for about half an hour, was meant to release the bomb over the city and let it fall. There was no pilot, no engine, and no way to aim beyond the guess of the wind. It is remembered as the first air raid in history. A few accounts describe a more elaborate version, meant to be set off by an electric wire trailing back to shore, though the balloons that actually flew used plain time fuses.
-
-And it mostly failed. The wind is a poor bombardier. Reports speak of as many as two hundred balloons, but many drifted off course, and some blew straight back over the Austrian lines. Venice did surrender that August, though from starvation, cholera, and ordinary cannon firing a thousand shells a day, not from the few bombs that fell from the sky. The balloons killed almost no one. What they launched was the idea, a lifetime before the aeroplane, that a city could be hit from above by a weapon with nobody inside it.
 
 ## The Victorian Age
 The Brennan torpedo had no engine. To send it racing out to sea, you hauled it backward on a wire. In the 1880s an Irish engineer named Louis Brennan built it exactly that way, steered from a shed on the shore.
@@ -66,7 +59,16 @@ Every bullet you have ever seen is fastest the instant it leaves the barrel, and
 
 The trick was the bullet itself. It was a tiny rocket. Fired in the 1960s by a California company, each round carried its own propellant and puffed it out through angled holes in the base, so it kept accelerating the further it flew.
 
-Which produced the one problem you cannot design around. Up close, the rocket had barely started burning, so it hit soft and wandered, and it was never accurate. It only reached full speed a good sixty feet downrange, the exact opposite of what you want from a gun. The army tried it, saw a weapon that was strongest only once the fight was already over, and quietly put it down. The little rocket that wanted to be a bullet ended up in a glass case, admired by everyone and fired by no one.
+Which produced the one problem you cannot design around. Up close, the rocket had barely started burning, so it hit soft and wandered, and it was never accurate. It only reached full speed a good sixty feet downrange. A gun that hit hardest when you least needed it was one the army had no use for, and it faded into an expensive curiosity.
+
+## The Digital Age
+For two thousand years, every inventor in this video made a weapon stranger by adding parts to it. A spark wheel, a hidden magazine, a tank of air. In 1997 an Australian named Mike O'Dwyer went the other way. He built a gun by taking almost the entire gun away.
+
+A Metal Storm barrel has no moving parts at all. No bolt, no magazine, nothing that slides or springs. The bullets sit stacked nose to tail inside the barrel itself, each with its own charge behind it, and they are fired by an electric spark running down the line, one after another, as fast as electricity can travel. There is nothing to load and nothing to cycle, because there is no machine left to do it.
+
+With no moving parts to slow it down, it reached a rate nothing else has come close to. A 36-barrel prototype nicknamed Bertha loosed 180 rounds in a fraction of a second, a burst rate the company put at around a million rounds a minute. On paper, it was the fastest gun ever built.
+
+And it never reached the battlefield. A gun that empties itself in a single burst, then needs slow, careful rebuilding, solved a problem few armies actually had. O'Dwyer spent more than a decade demonstrating it, and the company did win military research contracts along the way. But mass adoption never came, the money kept running out, and in 2012 the business folded. The fastest gun ever built had reached a million rounds a minute, and never found an army that needed it.
 
 Pronunciation:
 
@@ -79,3 +81,4 @@ Pronunciation:
   - Fokker: FOK-er
   - Ruhr: ROOR
   - Gyrojet: JY-roh-jet
+  - O'Dwyer: oh-DWY-er
