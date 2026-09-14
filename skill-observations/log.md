@@ -455,3 +455,48 @@ tested against every shape that class takes, not the one example that motivated
 it. Where the cost of a false positive is real money, the check that clears it
 belongs in the tool, not in the reviewer's habits -- and a documented
 "we already handle this" claim is what stops anyone from looking.
+
+### Observation 24: humanize.py's splice-fragment remover deleted two real words after a chapter announcement
+
+**Status:** OPEN
+**Date:** 2026-09-14
+**Session context:** Mastering a voiceover after inserting a new chapter. The
+delivered file was missing words the raw take contained.
+**Skill:** explaintory-vo-master (defect); explaintory-voiceover (the check that
+caught it)
+**Type:** open-source
+**Phase/Area:** humanize.py `fix_glitches`
+
+**Issue:** The master silently deleted "In" and "the" from "In 1849 the Austrian
+army tried to bomb Venice", the first line after a new chapter announcement. The
+raw part and the raw stitch both transcribe correctly; only the delivered file
+is wrong, so the master created the defect. Its own log named the edits --
+"removed 2 splice fragment(s), 5:01.375 170 ms -7 dB, 5:03.060 125 ms -6 dB" --
+but described them as fragments, so the log reads like the pipeline working.
+`fix_glitches` removes any burst under 250 ms that is isolated by silence on
+both sides and sits within 50 ms of a hard digital splice. A chapter
+announcement is bounded by exact digital silence, and the first word after it is
+short and flanked by pauses, so a real word matches the fragment profile
+exactly. Earlier builds of this same video removed 0 fragments; the count went
+to 2 only when a chapter was inserted, which is the tell. This is the same class
+as the documented "Captagon was in for children" incident, where a chapter-gap
+sweep ate a word -- that one was a hand-rolled sweep, this one is the shipped
+mastering stage, so the lesson did not transfer to the tool that needed it.
+Worked around for this delivery with `--keep-glitches`, verified by
+re-transcribing the region.
+
+**Suggested improvement:** `fix_glitches` must not delete anything it has not
+proven is non-speech. Adopt the adjudication `orphans.py` already uses: mute
+the candidate, re-transcribe the window, and keep it if any word is LOST. Failing
+that, never treat the region immediately following a chapter-announcement gap as
+splice-adjacent -- the gap there is deliberate, not a splice artifact. Also make
+the log honest about uncertainty: "removed 2 splice fragment(s)" should name the
+timestamps as candidates unless they were adjudicated.
+
+**Principle:** A destructive cleanup must carry the burden of proof that what it
+removes is not signal. When a heuristic's false positives are invisible in every
+level, waveform and loudness check, and its own log reports them as successes,
+the only thing standing between it and a corrupted deliverable is an independent
+content check -- so the content check has to be mandatory, not a habit. A repair
+tool whose edits are only verified by the person who suspects them will ship its
+mistakes.
