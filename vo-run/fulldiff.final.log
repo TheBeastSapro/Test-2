@@ -1,0 +1,128 @@
+[readcheck] loading ASR (distil-large-v3, cpu float32) — first run downloads the model (distil-large-v3 is 1.5 GB on disk, measured)
+script words: 2104
+heard  words: 2105
+similarity  : 0.9774
+
+DIFFERENCES (script -> heard):
+  [replace] after '...over and over more than'
+      script: two thousand
+      heard : 2 000
+  [replace] after '...the men who first watched'
+      script: it
+      heard : at
+  [replace] after '...with a lit fuse the'
+      script: wheellock
+      heard : wheel lock
+  [replace] after '...the enemy walked closer the'
+      script: kalthoff
+      heard : kaltaf
+  [replace] after '...man could fire up to'
+      script: thirty
+      heard : 30
+  [replace] after '...the idea was right by'
+      script: two hundred
+      heard : 200
+  [replace] after '...it out the front the'
+      script: girandoni
+      heard : girondoni
+  [replace] after '...built around 1780 it fired'
+      script: twenty
+      heard : 20
+  [replace] after '...full of air to around'
+      script: eight hundred
+      heard : 800
+  [replace] after '...an age when a good'
+      script: musketman
+      heard : musket man
+  [replace] after '...filling the flask took around'
+      script: fifteen hundred
+      heard : 1 500
+  [replace] after '...was worth making the journals'
+      script: mention
+      heard : mentioned
+  [replace] after '...bomb over the enemy the'
+      script: hotair
+      heard : hot air
+  [replace] after '...balloons that actually flew used'
+      script: plain
+      heard : plane
+  [replace] after '...speak of as many as'
+      script: two hundred
+      heard : 200
+  [replace] after '...idea a lifetime before the'
+      script: aeroplane
+      heard : airplane
+  [replace] after '...harbors with brennan torpedoes for'
+      script: sixteen
+      heard : 16
+  [replace] after '...an enemy the only ship'
+      script: a
+      heard : of
+  [replace] after '...ever sank was a british'
+      script: ketch
+      heard : catch
+  [replace] after '...practice torpedo with no detonator'
+      script: holed
+      heard : hold
+  [replace] after '...sent her down by mistake'
+      script: sixteen
+      heard : 16
+  [replace] after '...a dutch designer named anthony'
+      script: fokker
+      heard : focker
+  [replace] after '...fire the propeller turned around'
+      script: twenty
+      heard : 20
+  [replace] after '...released it through the empty'
+      script: gaps
+      heard : galley
+  [replace] after '...the effect was immediate and'
+      script: onesided
+      heard : one sided
+  [replace] after '...the british called it the'
+      script: fokker
+      heard : focker
+  [replace] after '...in machines they bitterly nicknamed'
+      script: fokker
+      heard : focker
+  [delete] after '...second the second world war'
+      script: a dam
+      heard : (NOTHING - DROPPED)
+  [replace] after '...a british engineer named barnes'
+      script: wallis
+      heard : wallace
+  [replace] after '...it became known was a'
+      script: fourton
+      heard : four ton
+  [replace] after '...aircraft spun it backwards at'
+      script: five hundred
+      heard : 500
+  [replace] after '...turns a minute and that'
+      script: backspin
+      heard : backs
+  [replace] after '...a heavy bomber at night'
+      script: sixty
+      heard : 60
+  [replace] after '...the guns defending the dam'
+      script: sixty
+      heard : 60
+  [insert] after '...a single circle on the'
+      script: (nothing)
+      heard : storm
+  [replace] after '...of the 16th of may'
+      script: nineteen
+      heard : 19
+  [replace] after '...eight never came home and'
+      script: fiftythree
+      heard : 53
+  [replace] after '...flood that tore down the'
+      script: ruhr
+      heard : rour
+  [replace] after '...slows down from there the'
+      script: gyrojet
+      heard : jarajet
+  [replace] after '...reached full speed a good'
+      script: sixty
+      heard : 60
+
+total difference regions: 41

@@ -1,0 +1,23 @@
+[humanize] decoding
+[humanize]   666.9s, peak -0.31 dBFS
+[humanize] QC (source): 1 finding(s)
+[humanize]     HOT     sample peak -0.31 dBFS (over -1 dBFS)
+[humanize] declipped 20 over-full-scale region(s)
+[humanize] script: 39 lines, 2104 words
+[humanize] reusing cached alignment (2104 words)
+[humanize]   2104 words aligned | 189 wpm | mean confidence 0.93 | 3% weak
+[humanize] curated clause breaks: 2
+[humanize] 8 sentence(s) held back from the speed-up (258 chunks stretched)
+[humanize]     0:45.2  256 wpm  x1.000 -> 256   It is the oldest chain drive we know of, and the men
+[humanize]     1:11.8  270 wpm  x1.000 -> 270   They hid it inside the lock of a gun.
+[humanize]     1:26.9  252 wpm  x1.000 -> 252   It is most likely the first killing of a head of sta
+[humanize]     4:02.0  267 wpm  x1.000 -> 267   Tip the muzzle up, and the next ball dropped into pl
+[humanize]     7:59.3  257 wpm  x1.000 -> 257   His team wired the gun to the propeller and let the 
+[humanize]     8:47.0  255 wpm  x1.000 -> 255   A dam is one of the hardest things in the world to b
+[humanize]     10:11.6  253 wpm  x1.000 -> 253   The people in the water were not.
+[humanize]     10:27.4  254 wpm  x1.000 -> 254   It was a tiny rocket.
+[humanize] inserted 16.9s at 226 boundaries {'sentence': 86, 'comma': 119, 'paragraph': 21}
+[humanize] studio master (classic, air 0.0)
+[humanize] loudnorm -14 LUFS / -1.5 dBTP
+[humanize] QC (delivered file): clean
+[humanize] done -> vo-run/out/Weapons With a Strange Mechanism From Every Era Explained (final).mp3  (11:00.66)
