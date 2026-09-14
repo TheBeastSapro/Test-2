@@ -1,20 +1,10 @@
-# Completed stage logs are tracked as *.final.log
-
 # Generated audio and per-run work dir — rebuildable, and large.
 out/
 unlevelled.wav
 excerpts/
 
 # Stage logs are appended to live by a running job, so tracking them means
-# every turn sees a dirty tree mid-write. The completed logs are committed
-# as *.final.log once a run ends.
-gen.log
-master.log
-restitch.log
-breaks.log
-
+# every turn sees a dirty tree mid-write. A stage's log is copied to
+# <stage>.final.log once it finishes, and that copy is what gets committed.
+*.log
 !*.final.log
-regen.log
-final2.log
-orphans2.log
-orthans.log
