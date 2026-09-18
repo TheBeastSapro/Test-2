@@ -326,3 +326,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Document the launch line as the job alone, backgrounded, with no trailing status peek: `nohup python3 voiceover.py … > run.log 2>&1 &` and nothing after it. Read progress in a separate call with an absolute path — never a relative one, since the cwd does not persist. Add a line to "Then run it" stating that the job's own exit code is the only success signal and that a harness "failed" notice on a compound command must be confirmed against `ps` and the log body before anything is re-run, because a re-run is a second spend.
 
 **Principle:** A status signal is only as trustworthy as the narrowest thing it actually measures. When a costly, irreversible job is wrapped in anything, the wrapper's exit code silently replaces the job's — so before acting on a failure report, confirm the failure is the job's own, especially when the remedy is to pay for the work again.
+
+### Observation 22: The documented clamp is symmetric; the code's is not
+
+**Status:** OPEN
+**Date:** 2026-09-18
+**Session context:** Heading levelling on "Famous “Good” Weapons That Were Actually Bad Explained" reported `heading 20: 3.19 syl/s vs 3.72 median — retiming x1.166` with no clamp warning. SKILL.md states corrections are "clamped to ±15%", so x1.166 reads as a correction that should have been clamped and silently was not.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** SKILL.md "The first chapter announcement reads fast"; `generate.py` — `level_headings(tol=0.12, floor=0.85, ceil=1.18)`
+
+**Issue:** The real bounds are asymmetric — 0.85 floor, 1.18 ceiling — because slowing a read down is audible sooner than speeding it up. The prose rounds both to "±15%", which is right for the floor and wrong for the ceiling, and the discrepancy shows up exactly when someone does what the skill tells them to do: check what levelling would do before trusting it. It cost a code read to establish that an unclamped 16.6% stretch was correct behaviour and not a missing warning.
+
+**Suggested improvement:** State the two bounds separately in SKILL.md — "slowdowns stop at 15%, speed-ups at 18%, because a stretched read betrays itself before a compressed one does" — and say the tolerance for triggering at all is 12%. One sentence, and it also records the asymmetry's reason, which the numbers alone do not carry.
+
+**Principle:** When documentation rounds two different constants into one figure, it stops being a summary and becomes a false negative: the reader who checks the tool against the doc concludes the tool is broken. Asymmetric bounds must be documented asymmetrically, with the reason, or the doc actively costs more than it saves.
