@@ -399,3 +399,27 @@ The cost is the part that matters: re-mastering is free, so this beat could have
 **Suggested improvement:** Extend `suggest_breaks` to the reduced-relative class with the two guards above (allow the copular `ccomp` case; require the clause to have its own subject), and keep the existing fronted-modifier pass. Print the two classes under separate headings so the reader knows which is which. Then change the SKILL.md wording: it currently says `--suggest-breaks` "prints candidates", which reads as a complete list to curate down from. It should say which single construction it covers and that clause-boundary beats in reduced relatives must be found separately — until the detector covers them.
 
 **Principle:** A helper that implements one case of a general need will be mistaken for coverage of the need, and the gap is invisible precisely because the helper returns a plausible non-empty answer. State the construction a detector covers, in its output and its docs, so a short list reads as narrow scope rather than a clean script — and when a free downstream stage can apply the fix, an incomplete detector costs a delivery round rather than nothing.
+
+### Observation 26: The run-through guard silently deletes the curated breaks it was never meant to see
+
+**Status:** OPEN
+**Date:** 2026-09-18
+**Session context:** Sapro asked for a beat after "disaster" in "But the design was never the disaster its reputation made it" — "we already built it just for that". The curated-break mechanism is exactly that. `humanize.py` logged `curated clause breaks: 9`, ran clean, and produced a file in which **4 of the 9 existed**. His was not one of them.
+**Skill:** explaintory-voiceover / explaintory-vo-master
+**Type:** open-source
+**Phase/Area:** `humanize.py` — `build()`, the `kind == "comma" and have < RUNTHROUGH` guard vs. the curated branch
+
+**Issue:** A curated pair is assigned `kind = "comma"`. Forty lines later:
+
+    if kind == "comma" and have < RUNTHROUGH:   # RUNTHROUGH = 0.060
+        ins = 0.0
+
+That guard is correct and hard-won — it stops the pipeline padding a *punctuated* comma the voice deliberately ran through in one breath, a defect Sapro heard at 0:03 and which survived every section-level fix because this stage put it back each time. But a curated pair is, by construction, a boundary the script never punctuated and the voice ran straight through, so its measured silence is near zero and the guard zeroes it. The feature and the guard describe the same acoustic condition and mean opposite things by it, and the guard runs second.
+
+So the mechanism deletes precisely the class it exists to create. The four survivors were not the ones judged most necessary — they were the ones that happened to have ≥60 ms of natural silence already, which is to say the ones that needed the least help. Nothing reported this: the log line counts pairs *read from the file*, not beats *inserted*, and the CSV only carries rows where `ins > 0.005`, so a dropped break leaves no trace anywhere. Two deliveries went out with `curated clause breaks: 2` in the log, and I read that as two beats applied.
+
+Fix applied this session: the curated branch sets `kind = "curated"` with the same target as a comma (`tgt["curated"] = a.comma`), which leaves the guard's comma behaviour untouched and exempts curated pairs from it. No pause target changed.
+
+**Suggested improvement:** Keep the separate kind, and close the reporting hole that hid it — log `curated clause breaks: N read, M applied` and name the dropped ones, since a curated list is short, hand-made, and every entry is a deliberate request. More generally, any boundary dropped after being detected should say so; a stage that silently discards work it was explicitly asked to do is indistinguishable from one that did it.
+
+**Principle:** When a guard and a feature key off the same measurable condition and draw opposite conclusions from it, whichever runs second wins silently — so the condition is not actually the thing being tested and one of them must carry its own provenance. And a count of inputs read is not a count of work done: report the applied figure, because the input count is the one that reads as success.

@@ -360,7 +360,16 @@ def build(x, words, lines, tgt, curated, tempo, max_wpm=None, min_factor=0.87,
               and not _is_range(seq, p, nw)):
             kind = "comma"                                    # post-date
         elif (ow.strip(".,;:"), nw.strip(".,;:")) in curated:
-            kind = "comma"                                    # missing-comma break
+            # NOT "comma". A curated pair is, by definition, a boundary the script
+            # never punctuated and the voice ran straight through -- so the
+            # run-through guard below (written for PUNCTUATED commas the voice
+            # delivered in one breath) zeroed every curated break that had less
+            # than RUNTHROUGH of its own silence, which is the whole class the
+            # list exists to create. Sapro asked for a beat after "the disaster"
+            # in "never the disaster its reputation made it"; it had ~0 ms there,
+            # so it was silently dropped while 4 luckier pairs survived on natural
+            # silence they already had. Same target as a comma, exempt from the guard.
+            kind = "curated"                                  # missing-comma break
         if not kind: continue
         nb = next_aligned(p)
         if nb is None or nb == 0 or nb >= len(words): continue
@@ -623,7 +632,8 @@ def main():
                 p, q = ln.strip().split("|", 1); curated.add((p.strip(), q.strip()))
         log(f"curated clause breaks: {len(curated)}")
 
-    tgt = dict(comma=a.comma, sentence=a.sentence, paragraph=a.paragraph, tail=a.tail)
+    tgt = dict(comma=a.comma, sentence=a.sentence, paragraph=a.paragraph, tail=a.tail,
+               curated=a.comma)
     y, rep, added, leveled, nst = build(x, words, lines, tgt, curated, a.tempo,
                                         a.max_wpm, a.min_factor, a.level_skip_start,
                                         a.adaptive_tempo, a.ceiling)
