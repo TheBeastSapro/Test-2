@@ -296,3 +296,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: The pronunciation guide was not a heading, and the script was a third of the document
+
+**Status:** OPEN
+**Date:** 2026-09-18
+**Session context:** Voicing "Famous “Good” Weapons That Were Actually Bad Explained" from a Google Doc. The doc contained `# Script` (9 chapters, ~11 KB) followed by `# Storyboard` (~52 KB of shot lists and Accuracy Cards). The pronunciation guide sat between them, written not as a heading but as the literal line `\--- PRONUNCIATION GUIDE ---` — an escaped horizontal rule the Docs export produced.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `script_prep.py` — pronunciation-guide detection; the SKILL.md section "The pronunciation guide at the end of the script"
+
+**Issue:** Both documented anchors would have missed it. The TAIL anchor fails because 52 KB of storyboard follows the guide. The SECTION anchor fails because it requires a *heading* that says "pronunciation", and this guide is not a heading at all — it is a text line beginning with an escaped dash run. Fed the raw export, the video would have closed by reciting its glossary and then reading nine chapters of camera directions aloud, at roughly six times the script's own cost in credits. Observation 3 recorded the tail-anchor failure and the section anchor was built for it; this is the same failure class arriving through a different door, because the fix assumed the guide would always be marked up as a heading. Nothing in the pipeline flagged it: `--plan` reported a clean structure for whatever it was handed, and only a manual read of the document's heading outline caught that the script ended at line 92 of 723.
+
+**Suggested improvement:** Add a THIRD anchor that matches a guide *marker line* rather than a heading — a line whose text (after stripping leading `\`, `-`, `—`, `*` and whitespace) matches the same "pronunciation"/"how to say" test already used on headings. More important, add a pre-flight assertion that has nothing to do with guides: when the narration is a minority of the source document, say so. "narrating 10,777 of 63,169 source chars (17%) — 52,392 chars held out" printed in the plan block would have surfaced this instantly, and would also catch the inverse case where a guide, a storyboard or an animator note is silently about to be read aloud. The plan gate currently proves the structure it *found* is self-consistent; it never proves that what it found is the whole document.
+
+**Principle:** A detector anchored to one syntactic form silently fails on the same content expressed another way, and the fallback inherits the assumption if it only moves the anchor rather than dropping it. Guard the quantity instead: a stage that consumes part of its input should report the ratio it kept, because "what fraction of the source am I about to act on" catches every variant of "I found the wrong boundary" — including the ones nobody has met yet.
+
+### Observation 21: A wrapper's failure was reported as the billed job's failure
+
+**Status:** OPEN
+**Date:** 2026-09-18
+**Session context:** Generation was launched as `cd <workdir> && nohup python3 voiceover.py … > run.log 2>&1 & echo pid=$!; sleep 20; tail -5 run.log`. The harness resets the shell's cwd between calls, so `tail` ran from the wrong directory, could not open `run.log`, and the whole Bash call exited 1. The harness then posted `status: failed — Background command … failed with exit code 1`. The ElevenLabs job was untouched and was at section 13 of 42, mid-spend.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** how the pipeline is launched — the SKILL.md section "Then run it"
+
+**Issue:** The exit code that reached the notification belonged to the last command in a compound line, not to the job. For a stage whose whole design principle is "every stage exits non-zero if it produced no artifact, so the exit code can be trusted", wrapping it in `&& … ; tail` throws that property away at the call site: the trustworthy exit code was still sitting in the background process, and the one that got reported came from a convenience command. The failure mode this invites is the expensive one — the obvious response to "generation failed" partway through a 10,777-credit send is to run it again, which would have spent it twice. Observation 12's rule (never filter a long job on the pipe) is the same lesson one step earlier: don't let the plumbing you wrapped around a job decide what is known about the job.
+
+**Suggested improvement:** Document the launch line as the job alone, backgrounded, with no trailing status peek: `nohup python3 voiceover.py … > run.log 2>&1 &` and nothing after it. Read progress in a separate call with an absolute path — never a relative one, since the cwd does not persist. Add a line to "Then run it" stating that the job's own exit code is the only success signal and that a harness "failed" notice on a compound command must be confirmed against `ps` and the log body before anything is re-run, because a re-run is a second spend.
+
+**Principle:** A status signal is only as trustworthy as the narrowest thing it actually measures. When a costly, irreversible job is wrapped in anything, the wrapper's exit code silently replaces the job's — so before acting on a failure report, confirm the failure is the job's own, especially when the remedy is to pay for the work again.
