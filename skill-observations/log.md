@@ -341,3 +341,25 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the two bounds separately in SKILL.md — "slowdowns stop at 15%, speed-ups at 18%, because a stretched read betrays itself before a compressed one does" — and say the tolerance for triggering at all is 12%. One sentence, and it also records the asymmetry's reason, which the numbers alone do not carry.
 
 **Principle:** When documentation rounds two different constants into one figure, it stops being a summary and becomes a false negative: the reader who checks the tool against the doc concludes the tool is broken. Asymmetric bounds must be documented asymmetrically, with the reason, or the doc actively costs more than it saves.
+
+### Observation 23: WER ranked the two real defects below the noise and a clean take at the top
+
+**Status:** OPEN
+**Date:** 2026-09-18
+**Session context:** Read-check on "Famous “Good” Weapons That Were Actually Bad Explained" flagged 7 of 42 sections. Adjudicating them by forced alignment rather than by WER inverted the ranking almost exactly.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `readcheck.py` — how sections are flagged and ordered; the SKILL.md section "The read-check"
+
+**Issue:** The two genuine defects were both dropped digits, and WER buried both:
+
+- Section 11, **wer 0.0244**, reported as `expected “88 mm” heard “80 limeter”`. Forced alignment over the span scored "eighty millimeter" at 0.6225 against "eighty-eight millimeter" at 0.5342, and two independent decodes put "80" at p≈0.97. The voice says *eighty* millimetre. The Tiger's gun is the 88 — a factual error in the finished video, ranked sixth of seven by WER.
+- Section 31, **wer 0.0256**, reported as `expected “push” heard “pushed”`. The flag names a trailing "-ed" on a verb. The actual defect is in the same section and was not named at all: "The Jumo 004" was read "The Jumo zero-four", scoring 0.6738 against 0.5635 for "zero zero four" and 0.4892 for the guide's "oh-oh-four". One zero gone from a named engine in Sapro's own pronunciation guide, invisible because the number normaliser mapped both to the same token.
+
+Meanwhile the worst-scoring section in the run, **section 29 at wer 1.0**, is clean: "Me 262 Jet." transcribed "Me, two, on 62 Jet." is the normaliser failing to recombine "two" + "62" across a 110 ms articulation boundary on a three-token string, where one disagreement is 33% of the section. Gap analysis found no hesitation and the durations fit the guide's reading. So the run's loudest alarm was an artifact and its two quiet ones were the job.
+
+The cause is structural, not a tuning miss. WER divides by section length, so a single wrong digit inside a 400-character section can never clear a threshold that a short heading trips on rounding — and the normaliser that correctly settles *harbour/harbor* and *nineteen forty three/1943* is the same component that erases the difference between 004 and 04. Normalisation is applied to make spellings comparable and it silently makes digit strings incomparable.
+
+**Suggested improvement:** Check identifiers separately from prose, before and outside the WER path. Extract the designation-shaped tokens from each section's script (`88mm`, `004`, `M16`, `V-2`, `Me 262`, `T-34`) and confirm each one survives, comparing digit sequences *unnormalised*; hyphenation and spacing differences (`M16`/`M-16`, `V-2`/`V2`) are not defects and should be normalised away, but a changed or missing digit always is. Report those as their own category — "identifiers" — ranked above WER flags, because a wrong number is a factual error in a video about hardware and a wrong "-ed" is not. The sweep that found both of these was six lines of code over `readcheck.json` and needed no audio. Second: when a section is short enough that one token is a large fraction of it, say so beside the WER instead of reporting a bare 1.0 — the figure is meaningless at that length and currently outranks everything real.
+
+**Principle:** An aggregate error rate measures the wrong thing whenever the cost of an error is not proportional to its length. Normalisation designed to remove nuisance variation removes signal in the same stroke wherever the nuisance and the signal share a form — so the fields whose exact form carries the meaning must be pulled out and checked before the aggregate ever runs, and ranked by what an error there would cost rather than by how much of the text it moved.
