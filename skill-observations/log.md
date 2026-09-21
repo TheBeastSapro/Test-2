@@ -296,3 +296,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: The committed calibration is not the file the tool reads, so every session hand-converts it
+
+**Status:** OPEN
+**Date:** 2026-09-21
+**Session context:** Fresh ephemeral container, first voiceover run of the session. `voice-calibration.json` is committed at the repo root exactly as Observation 2 asked for, but `voiceover.py --profile` wants a `voiceover_profile.json`, so the run began by writing a scratchpad file that wraps `calibration` in a new object — a hand copy of the locked settings, made before any gate could check it.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/voiceover.py` — `--profile` resolution; the CALIBRATION provenance block
+
+**Issue:** The fix for "the locked voice profile has no persistent home" stopped one step short. The durable copy exists and is committed, but the tool cannot consume it, so the durable copy is transcribed into an ephemeral one at the start of every session. That transcription is exactly the step the provenance block was built to police: it prints where each value came from, and here every value reads `(profile)` — which is true and useless, because the profile it names was written by the agent sixty seconds earlier. A typo in `similarity_boost` would be reported as a deliberate setting with full confidence. The previous failure this same block caught, 0.75 instead of 0.80, is precisely a copy error of this shape.
+
+**Suggested improvement:** Have `--profile` accept the committed calibration file directly (detect the `calibration` key and use it as-is), and default to `<repo root>/voice-calibration.json` when no `--profile` is given. Mark those values `(calibration, committed)` in the provenance block, distinct from `(profile)`, so a hand-made profile is visibly different from the checked-in one.
+
+**Principle:** Making state durable is only half the fix — if the tool cannot read the durable copy, the copy step survives and the durability is decorative. Provenance labels must distinguish a value's true origin from the file it was last copied into, or they certify the copy instead of the source.
