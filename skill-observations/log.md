@@ -312,3 +312,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Change SKILL.md's Setup section to name `voice-calibration.json` at the repo root as the profile, and make `--profile` default to it so the flag is optional. Keep the studio-export instructions as the secondary path. Separately, label committed-calibration values `(calibration, committed)` in the provenance block so a hand-made profile is visibly distinguishable from the checked-in one.
 
 **Principle:** When a fix is implemented in the tool but the instructions still describe the workaround, the workaround is what gets executed — documentation is the interface, and an un-updated doc silently un-ships the fix. Store the rationale where the reader looks, not in the config file that happens to enforce it.
+
+### Observation 21: The plan gate holds the account's billing status in its hand and reads only the two numbers next to it
+
+**Status:** OPEN
+**Date:** 2026-09-21
+**Session context:** Approved run of a 41-section script. The plan gate reported "COST: ~10,675 credits of 116,840 remaining", the run was approved on that basis, and generation died on section 1 of 41 with HTTP 401 `payment_issue` — "Your subscription has a failed or incomplete payment." The account was `past_due` with `has_open_invoices: true` the whole time. Nothing was spent, but the approval was collected against a balance that could not be spent.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/voiceover.py:378-380` (the plan's remaining-credits line); `scripts/generate.py:180-181` (the 401 branch)
+
+**Issue:** Two failures in the same API response, in opposite directions. (1) `voiceover.py` calls `user.subscription.get()` — the object that carries `status`, `has_open_invoices`, `tier` — and uses exactly two of its fields, `character_limit - character_count`. The number it prints is arithmetically correct and operationally false: a `past_due` account has a full quota and can spend none of it. The gate exists to make the irreversible step safe to approve, and it surfaced the one figure that looked fine while discarding the one that decided the outcome, from the same payload. (2) `generate.py` then maps every 401 to "Invalid or expired ElevenLabs API key", discarding a body that said `payment_required`, `payment_issue`, and "Complete the latest invoice to continue usage." The key is valid. That message sends the user to rotate a working credential, which cannot fix a billing hold — and the branch immediately below it, for 402/quota, would have printed the real reason, but ElevenLabs returns 401 for payment problems so it never runs.
+
+**Suggested improvement:** In the plan gate, read `status` and `has_open_invoices` from the subscription object already fetched and refuse to print a spendable balance when the account cannot spend — make it a PRE-FLIGHT line ("account past_due, open invoice — generation will fail"), which costs one field lookup and no extra request. In `generate.py`, branch on the error body's `type`/`code` rather than the status code alone, and when neither is recognised include the server's own `message` verbatim instead of substituting a guess.
+
+**Principle:** An error message that names a cause the response did not claim is worse than one that quotes the response and explains nothing — it converts a two-minute fix into a search of the wrong subsystem. And a gate that fetches a rich status object to compute one number should be asked what else in that object would have changed the decision: the field that decides whether the plan is possible is usually already in hand, unread.
