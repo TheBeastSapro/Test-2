@@ -327,3 +327,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** In the plan gate, read `status` and `has_open_invoices` from the subscription object already fetched and refuse to print a spendable balance when the account cannot spend — make it a PRE-FLIGHT line ("account past_due, open invoice — generation will fail"), which costs one field lookup and no extra request. In `generate.py`, branch on the error body's `type`/`code` rather than the status code alone, and when neither is recognised include the server's own `message` verbatim instead of substituting a guess.
 
 **Principle:** An error message that names a cause the response did not claim is worse than one that quotes the response and explains nothing — it converts a two-minute fix into a search of the wrong subsystem. And a gate that fetches a rich status object to compute one number should be asked what else in that object would have changed the decision: the field that decides whether the plan is possible is usually already in hand, unread.
+
+### Observation 22: The clamp warning is gated on a threshold two headings missed by 0.04 and 0.18
+
+**Status:** OPEN
+**Date:** 2026-09-21
+**Session context:** 8-chapter script. `level_headings` clamped two chapter names at the full extent of its range and printed no warning for either, because both landed just inside the threshold that triggers one. "Yi's Last Stand" was corrected the maximum +18% and still sits at 2.95 syl/s against a 3.91 median — 25% slower than the other chapter names, and the only reason it reached me was that I read the retiming factors and did the arithmetic by hand.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/generate.py:371,413-422` — `level_headings`, `floor=0.85, ceil=1.18`, the `abs(landed - target) >= 1.0` warning gate
+
+**Issue:** Two separate drifts, and they compound. (1) The warning fires only when the clamped heading lands 1.0 syl/s or more from the median. Heading 1 landed 0.82 short, heading 32 landed 0.96 short — both hit the clamp at its limit, neither warned. A gate meant to catch "the correction could not reach the target" is instead reporting "could not reach it by a lot", and 0.96 rounds to a miss the listener hears. The signal that matters is *the clamp bound at all*; the distance is a second, separate question. (2) SKILL.md says corrections are "clamped to ±15%", and the code comment says "past ~15%", but the constants are `floor=0.85, ceil=1.18` — asymmetric, and the ceiling is 18%. So a reader checking whether the clamp bound computes against ±15% and concludes it did not.
+
+**Suggested improvement:** Report every binding clamp, and separate the two facts: state that the clamp bound and by how much the heading still misses, rather than suppressing the first because the second is small. Keep a louder tier for large misses if the noise is a concern. Fix SKILL.md to state the real asymmetric range, or make the constants symmetric to match the documentation — either way the two must agree.
+
+**Principle:** When a guard suppresses its own warning below a threshold, the threshold becomes the real contract and the guard's stated purpose becomes decoration. Report the condition the guard detects — that a limit bound — separately from the magnitude, because a caller who needs to know the limit was reached cannot recover that fact from silence.
+
+### Observation 23: The runtime estimate quoted at the approval gate was 23% over, and nothing reconciles it afterwards
+
+**Status:** OPEN
+**Date:** 2026-09-21
+**Session context:** The plan gate estimated "~12:42 audio" and that figure was quoted to Sapro as part of what he approved. The delivered file is 10:19 — and that is *after* the master inserts 15.5 s of pauses, so the raw read was ~10:04. The estimate was over by 2m23s, or 23%, and no stage ever compared the two.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `scripts/voiceover.py` — the `--plan` duration estimate; the delivery summary
+
+**Issue:** The estimate is derived from character count and does not account for `speed 1.07` in the profile, which is exactly the kind of locked-in setting the CALIBRATION block prints two lines below it. The cost figure in credits was exact (10,675 estimated, 10,675 spent); the runtime figure beside it was not, and nothing marks the difference, so both read as equally firm. Runtime is what a video script is actually planned against — it decides whether the piece fits the slot — so the soft number is the one the user makes decisions with. And because no stage reconciles the estimate against the delivered duration, the error is invisible run to run: it can be wrong by the same 23% every time and never be noticed.
+
+**Suggested improvement:** Fold the profile's `speed` into the estimate, and calibrate the chars-per-second constant against `align.json` from completed runs rather than a fixed guess. Print the estimate with its real precision ("~11-13 min") instead of to the second. In the delivery summary, state estimated vs actual runtime so any drift surfaces on every run instead of never.
+
+**Principle:** An estimate printed to the same precision as a measurement will be read as one. State estimates at their true precision, and close the loop by comparing them to the outcome at delivery — an estimate that is never reconciled against the result cannot improve and cannot be caught being wrong.
