@@ -297,17 +297,18 @@ resolved statuses always carry their resolution date
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
 
-### Observation 20: The committed calibration is not the file the tool reads, so every session hand-converts it
+### Observation 20: The skill documents a profile path the tool does not require, so a copy gets made that nothing asked for
 
 **Status:** OPEN
 **Date:** 2026-09-21
-**Session context:** Fresh ephemeral container, first voiceover run of the session. `voice-calibration.json` is committed at the repo root exactly as Observation 2 asked for, but `voiceover.py --profile` wants a `voiceover_profile.json`, so the run began by writing a scratchpad file that wraps `calibration` in a new object — a hand copy of the locked settings, made before any gate could check it.
+**Session context:** Fresh container, first voiceover run of the session. SKILL.md's Setup section says "The profile, `--profile path/to/voiceover_profile.json` ... copy it across unchanged, minus the key", so the run opened by hand-converting the committed `voice-calibration.json` into a scratchpad `voiceover_profile.json`. `--profile voice-calibration.json` turns out to work directly and print a byte-identical plan. The copy was never needed, and the only place that says so is a comment in `.gitignore`.
+
 **Skill:** explaintory-voiceover
 **Type:** open-source
-**Phase/Area:** `scripts/voiceover.py` — `--profile` resolution; the CALIBRATION provenance block
+**Phase/Area:** SKILL.md "Setup — two things, once"; the `--profile` line and the "Profile" entry in the 2026-08-14 preamble
 
-**Issue:** The fix for "the locked voice profile has no persistent home" stopped one step short. The durable copy exists and is committed, but the tool cannot consume it, so the durable copy is transcribed into an ephemeral one at the start of every session. That transcription is exactly the step the provenance block was built to police: it prints where each value came from, and here every value reads `(profile)` — which is true and useless, because the profile it names was written by the agent sixty seconds earlier. A typo in `similarity_boost` would be reported as a deliberate setting with full confidence. The previous failure this same block caught, 0.75 instead of 0.80, is precisely a copy error of this shape.
+**Issue:** Observation 2's fix landed in two places and was documented in neither of the two a reader consults. The tool learned to accept the committed calibration; `.gitignore` recorded why ("Pass that file to --profile"); SKILL.md still describes the pre-fix workflow and names a filename that `.gitignore` also blocks from ever being committed. So the documented path and the working path diverged, and the documented one is the one that gets followed — producing an unnecessary hand transcription of the exact values whose last copy error (`similarity_boost` 0.75 for 0.80) the provenance block exists to catch. The provenance block cannot catch it either: a hand-made profile and the committed calibration both print `(profile)`, so the label certifies the file the values were last read from, not where they came from.
 
-**Suggested improvement:** Have `--profile` accept the committed calibration file directly (detect the `calibration` key and use it as-is), and default to `<repo root>/voice-calibration.json` when no `--profile` is given. Mark those values `(calibration, committed)` in the provenance block, distinct from `(profile)`, so a hand-made profile is visibly different from the checked-in one.
+**Suggested improvement:** Change SKILL.md's Setup section to name `voice-calibration.json` at the repo root as the profile, and make `--profile` default to it so the flag is optional. Keep the studio-export instructions as the secondary path. Separately, label committed-calibration values `(calibration, committed)` in the provenance block so a hand-made profile is visibly distinguishable from the checked-in one.
 
-**Principle:** Making state durable is only half the fix — if the tool cannot read the durable copy, the copy step survives and the durability is decorative. Provenance labels must distinguish a value's true origin from the file it was last copied into, or they certify the copy instead of the source.
+**Principle:** When a fix is implemented in the tool but the instructions still describe the workaround, the workaround is what gets executed — documentation is the interface, and an un-updated doc silently un-ships the fix. Store the rationale where the reader looks, not in the config file that happens to enforce it.

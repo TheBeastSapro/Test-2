@@ -23,3 +23,7 @@ cues.md
 voiceover_profile.json
 **/voiceover_profile.json
 lexicon.json
+
+# voiceover run working dirs — section takes, stitches, read-check JSON, ledger.
+# Per-run intermediates, regenerated from the script; never source.
+out/
