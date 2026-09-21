@@ -357,3 +357,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Fold the profile's `speed` into the estimate, and calibrate the chars-per-second constant against `align.json` from completed runs rather than a fixed guess. Print the estimate with its real precision ("~11-13 min") instead of to the second. In the delivery summary, state estimated vs actual runtime so any drift surfaces on every run instead of never.
 
 **Principle:** An estimate printed to the same precision as a measurement will be read as one. State estimates at their true precision, and close the loop by comparing them to the outcome at delivery — an estimate that is never reconciled against the result cannot improve and cannot be caught being wrong.
+
+### Observation 24: Three confident diagnoses, three wrong, and each one got built before it got questioned
+
+**Status:** OPEN
+**Date:** 2026-09-21
+**Session context:** Sapro reported one comma reading without a pause. I diagnosed it three times — suppressed pause, flat pitch contour, missing phrase-final lengthening — and every one was wrong. He settled it in one sentence: "the pause makes something is off like it's not ending like there is a comma." The word closes at 119 Hz (lower than 78% of commas in the file) and runs 2.14x an ordinary word (comma words average 1.82x). Every measurement said it should sound correct. He ended up taking the original file because the loop had cost more than the defect.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** defect triage — the path from a user report to a fix
+
+**Issue:** The failures were not independent; each was the same move. A report arrived, I picked a measurable quantity, found it anomalous, and built an artifact on it before checking the reading against him — a full demo master (8 minutes) on the pause theory, a patched threshold copy, a spliced C variant. The second diagnosis was refuted by my own control measurement in the same call that produced it, and the third by my own output two lines below where I had pre-written the conclusion "it is not lengthened for the comma" into a print statement before seeing the number. Meanwhile the one question that resolved it — what does "missing" mean here — cost one sentence and was never asked. A measurable anomaly next to a reported defect is a correlation; I treated each one as the cause because it was the only thing my tools could see.
+
+**Suggested improvement:** On a defect report whose mechanism is not already known, ask one clarifying question before building anything, and state the diagnosis as a hypothesis with its disconfirming test attached. Never write the interpretation into the output template before the number exists. And when a measurement clears the suspect — as the pitch control did — say so and stop, rather than moving to the next measurable quantity in the same breath.
+
+**Principle:** Repeatedly reaching for the nearest measurable quantity is not investigation, it is a search of the space the instruments happen to cover. When the tools cannot see the defect and the user can, the cheapest instrument in the room is the question — ask it before spending eight minutes proving something the user could have ruled out in one line.
+
+### Observation 25: The run-through gate measures deep silence, which is not the gap a listener hears
+
+**Status:** OPEN
+**Date:** 2026-09-21
+**Session context:** `RUNTHROUGH = 0.060` in `humanize.py` suppressed the comma beat at 10 of 117 commas, plus a post-date beat and one of 5 curated clause breaks. `true_sil` reported 40 ms at the reported comma; the word-boundary gap was ~180 ms and the audible quiet run ~35 ms — three different numbers for one boundary, from three tools.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `.claude/skills/explaintory-vo-master/scripts/humanize.py:266-277, 434-443` — `RUNTHROUGH`, `true_sil`
+
+**Issue:** `true_sil` counts frames below -45 dB. Breath and articulatory closure sit above that, so a boundary with 180 ms between words can measure 40 ms of "silence" and be classified a deliberate run-through. The threshold's own source contradicts itself about the band this creates: the comment at the constant says the beats to clear "sat at 30-50 ms" and "0.060 clears those", while the comment at the point of use says "a comma the voice gave 40-90 ms still wants topping up to target; that is the case this pipeline was built for". Nine of the ten suppressed commas sit in the 40-50 ms band both comments claim. The threshold was also raised in response to a previous delivery's complaint, so a fix for one set of scripts is silently degrading another, with no record that the trade was made.
+
+**Suggested improvement:** Separate the two cases the single number is conflating: a comma with genuinely zero gap (a real run-through — one such existed here, at 0 ms) and one with a short but non-zero gap. Gate on the audible quiet run measured against the local noise floor rather than a fixed -45 dB, and report every suppressed comma in the pause report so the decision is visible instead of silent. Reconcile the two comments; as written they license opposite behaviour.
+
+**Principle:** A threshold is only as meaningful as the agreement between what it measures and what it is proxying for. When a gate silently drops cases, its decisions must appear in the report — a suppression that produces no row is indistinguishable from a boundary that was never considered.
+
+### Observation 26: The pause report counts what it was handed, not what it placed
+
+**Status:** OPEN
+**Date:** 2026-09-21
+**Session context:** `humanize.py` logged "curated clause breaks: 5" and I reported to Sapro that the master included his 5 curated breaks. Three landed. `morning|Fabius` and `minutes|most` were both suppressed by the run-through gate, and nothing said so.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** `humanize.py` — the curated-breaks log line; the skill's delivery-message requirements
+
+**Issue:** The line reports the size of the input file. Every break then passes through the same suppression as any other boundary, so the number printed before the work is not the number after it, and only the pre-work number is ever shown. A curated list is the one input a human hand-authored for this specific script — the place where silent discard is least acceptable and most likely to be believed, because the count printed is exactly the count supplied. I repeated it in the delivery summary as a fact about the output without checking `pauses.csv`, where the discrepancy was visible the whole time.
+
+**Suggested improvement:** Log curated breaks as "placed N of M", and name the ones dropped with the reason. More generally, when a stage reports a count for an input that the stage can reject, it must report the post-stage count, not the pre-stage one. And in the delivery message, read every claimed figure out of the artifact that stage produced rather than the line that announced its intent.
+
+**Principle:** A count printed before the work describes an intention; reported afterwards it will be read as a result. Any stage that can discard its input must report what survived, and a summary must be built from output artifacts rather than from the log lines that preceded them.
