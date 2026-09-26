@@ -296,3 +296,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: SKILL.md says the H1 title is not read aloud; the code reads it by default
+
+**Status:** OPEN
+**Date:** 2026-09-26
+**Session context:** Project Pluto voiceover, single-section script submitted with "Voiceover this section". `--plan` reported `TITLE: "Project Pluto" (read aloud — readTitle is on)` and flagged `readTitle True (default)` as a value nobody chose.
+**Skill:** explaintory-voiceover
+**Type:** internal
+**Phase/Area:** "Generation matches the studio exactly" — the "two deliberate differences" paragraph
+
+**Issue:** SKILL.md states "the script's H1 is treated as the video's title, not its first chapter, so the voiceover does not open by reading its own title aloud." `voiceover.py` (`derive_title`, read_title=True) follows the studio's readTitle default and DOES speak it. The doc and the code disagree, and the plan gate is the only thing that surfaced it. It matters more for a script submitted as "this section" of a longer video, where the H1 is plausibly a chapter name that SHOULD be spoken — the right answer depends on intent, not on a default.
+
+**Suggested improvement:** Correct the SKILL.md paragraph to match the code, and record Sapro's actual choice for readTitle in `voice-calibration.json` so it stops printing as `(default)`. For single-section submissions, have `--plan` ask explicitly whether the heading is a video title (silent) or a chapter announcement (spoken).
+
+**Principle:** When prose documentation describes a behaviour the code also implements, one of them drifts; the gate that prints what will actually be sent is the one to trust, and the prose should be corrected the moment they disagree.
