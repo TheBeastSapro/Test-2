@@ -326,3 +326,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When the exact match fails, locate the span by its neighbours: the end of the previous sentence (or the section start) and the first word of the next sentence ("Nope."), both of which ARE in the transcript. Fall back to the read-check's own diff alignment, which already knows which heard words map onto the expected sentence. Keep the refusal only when neither neighbour anchor can be found.
 
 **Principle:** A repair tool that locates its target using the thing that is broken can't repair it. Anchor on the undamaged context around the defect, not on the defect.
+
+### Observation 22: The comma run-through rule has no override, and pauses.csv times aren't file times
+
+**Status:** OPEN
+**Date:** 2026-09-26
+**Session context:** Project Pluto master. Sapro: "after Tory two C there's a comma and I can't see a gap". The voice gave that comma 50 ms, under RUNTHROUGH (60 ms), so humanize.py treated it as a deliberate run-through and added nothing. "okay, sure" was skipped by the same rule (40 ms). A 6 s excerpt cut at the pauses.csv time missed the boundary by about 3 s.
+**Skill:** explaintory-vo-master
+**Type:** internal
+**Phase/Area:** humanize.py build() run-through rule; pauses.csv report
+
+**Issue:** (1) The run-through rule was added because of one complaint ("Cusco to Quito,") and it applies to every comma, with no way to ask for a beat back. Fixed this session: a pair named in --curated is now exempt. (2) The pauses.csv `time` column is aligned-source time × tempo, not a position in the delivered file, so excerpts cut from it land seconds off.
+
+**Suggested improvement:** Also list the commas the run-through rule suppressed in the humanize log, each with its measured silence, so a suppressed beat shows up before Sapro has to find it by ear. Write output-file time into pauses.csv (track the running inserted total), or rename the column so it isn't mistaken for file time.
+
+**Principle:** When a heuristic removes something the source asked for (here, a comma's pause), log every suppression so the user can review it, and give them a way to override it.
