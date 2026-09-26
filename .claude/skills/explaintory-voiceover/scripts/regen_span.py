@@ -169,6 +169,8 @@ def main():
                          "'stayed a' -> 'was just a'). The splice is then verified "
                          "against the NEW wording, and the change must also be made "
                          "in the script and sections.json")
+    ap.add_argument("--spend-log",
+                    help="the run's spend.json (default: next to --sections-json)")
     ap.add_argument("--profile")
     ap.add_argument("--approval", default="",
                     help="Sapro's own words approving this send. Required.")
@@ -317,6 +319,13 @@ def main():
         cl = gen.client(prof)
         audio, _ = gen.tts(cl, prof, span, 0, [])
         open(newp, "wb").write(audio)
+        # Debit the run's ledger like every other render. This tool sent outside
+        # it, so the Pluto run's spend.json read 2,053 after 2,137 had gone out —
+        # the same blind spot as the old per-invocation budget.
+        ledger = a.spend_log or os.path.join(os.path.dirname(os.path.abspath(
+            a.sections_json)), "spend.json")
+        gen.record_spend(ledger, len(new_sentence), a.section - 1)
+        print(f"spend             : {len(new_sentence)} chars recorded in {ledger}")
 
     old_lvl = level_db(part, cut_a, cut_b)
     new_lvl = level_db(newp)
