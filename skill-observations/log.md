@@ -341,3 +341,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Also list the commas the run-through rule suppressed in the humanize log, each with its measured silence, so a suppressed beat shows up before Sapro has to find it by ear. Write output-file time into pauses.csv (track the running inserted total), or rename the column so it isn't mistaken for file time.
 
 **Principle:** When a heuristic removes something the source asked for (here, a comma's pause), log every suppression so the user can review it, and give them a way to override it.
+
+### Observation 23: Two repair-path bugs that every check passed, found by reading and by a duration sanity check
+
+**Status:** OPEN
+**Date:** 2026-09-26
+**Session context:** Project Pluto, second edit round: delete "Just by flying over? How?" and reword the opening of section 4.
+**Skill:** explaintory-voiceover
+**Type:** internal
+**Phase/Area:** regen_span.py conditioning; generate.py --stitch-only
+
+**Issue:** (1) regen_span's docstring promised previous_text/next_text conditioning, but it passed tts() a one-item list with the context in keys tts() never reads, so no repair ever sent any context. It was found by reading the code, not by any output: the repairs sounded acceptable, so nothing flagged it. (2) --stitch-only re-split the edited script. A shortened section merged with its neighbour, 7 sections became 6, and the files were stitched against the wrong text. The last take was dropped (2.0 -> 1.6 min) and sections.json was overwritten. Only the stitch length printed in the log gave it away. Both are fixed and committed.
+
+**Suggested improvement:** Add a length check to the stitch: expected duration is roughly the previous stitch plus the net change from the edit, and the stitch should refuse to proceed when it's off by more than a few seconds. For repair tools, add a test that inspects what is actually sent to the API (the kwargs) rather than trusting the manifest the tool builds.
+
+**Principle:** Parameters handed to another function are only real if that function reads them; verify at the boundary where the data is actually sent. After an edit, derived state (which file holds which text) has to come from the record that was kept, never re-derived from the edited source.
