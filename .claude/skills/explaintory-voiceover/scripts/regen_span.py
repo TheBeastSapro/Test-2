@@ -268,8 +268,24 @@ def main():
             + ".\nRe-roll the whole section instead — a splice without silence on "
             "both sides clicks, and a click is worse than the defect.")
 
-    new_sentence = (text[s:si] + (a.replace_with or a.sentence).strip() + text[ei:e]).strip()
+    deleting = a.replace_with is not None and not a.replace_with.strip()
+    repl = "" if deleting else (a.replace_with or a.sentence).strip()
+    new_sentence = re.sub(r"\s+", " ", text[s:si] + repl + " " + text[ei:e]).strip()
     new_text = head + new_sentence + tail
+    # Context the model hears either side, as generate.py gives a full section:
+    # the neighbouring SECTIONS too, not only this section's own words. A
+    # sentence that opens a section otherwise renders cold.
+    idx = a.section - 1
+    prev_sec = sections[idx - 1] if idx else None
+    next_sec = sections[idx + 1] if idx + 1 < len(sections) else None
+    ctx_prev = head.strip()
+    if prev_sec and not prev_sec.get("is_heading") and len(ctx_prev) < gen.CONTEXT_CHARS:
+        ctx_prev = (prev_sec["send_text"] + " " + ctx_prev).strip()
+    ctx_next = tail.strip()
+    if next_sec and len(ctx_next) < gen.CONTEXT_CHARS:
+        ctx_next = (ctx_next + " " + next_sec["send_text"]).strip()
+    ctx_prev = ctx_prev[-gen.CONTEXT_CHARS:]
+    ctx_next = ctx_next[:gen.CONTEXT_CHARS]
     print(f"section {a.section}: {sec['chars']} chars")
     if (s, e) != (si, ei):
         print(f"span grown        : +{si - s} chars before, +{e - ei} after — no silence "
@@ -278,8 +294,11 @@ def main():
           f"({sec['chars'] - len(new_sentence)} saved vs re-rolling the section)")
     print(f"  replaces        : “{span}”")
     print(f"  with            : “{new_sentence}”")
-    print(f"conditioning      : previous_text {len(head.strip())} chars, "
-          f"next_text {len(tail.strip())} chars")
+    if deleting and not new_sentence:
+        print("mode              : DELETE — nothing is rendered, 0 characters sent")
+    else:
+        print(f"conditioning      : previous_text {len(ctx_prev)} chars, "
+              f"next_text {len(ctx_next)} chars")
     p0, p1 = L_hi, R_lo
     print(f"take duration     : {dur:.2f}s   span approx {p0:.2f}-{p1:.2f}s")
     print(f"edge windows      : start {L_lo:.2f}-{L_hi:.2f}s, end {R_lo:.2f}-{R_hi:.2f}s "
@@ -294,30 +313,44 @@ def main():
     if a.dry_run:
         print("\ndry run — nothing sent.")
         return 0
-    if not a.approval.strip():
+    tmp = os.path.join(a.parts_dir, "_span")
+    os.makedirs(tmp, exist_ok=True)
+    cut_only = deleting and not new_sentence
+    if cut_only:
+        newp = None
+    elif not a.approval.strip():
         raise SystemExit(
             f"\nSTOPPED. Sapro has not approved this send.\n"
             f"  WOULD SEND — 1 sentence, {len(new_sentence)} characters:\n"
             f"    {new_sentence}\n\n"
             f"Ask him, then pass his words back with --approval.\n")
 
-    prof = gen.load_profile(a.profile)
-    gen.check_profile(prof)
-    print(f"approved by Sapro: “{a.approval.strip()[:90]}”")
+    else:
+        prof = gen.load_profile(a.profile)
+        gen.check_profile(prof)
+        print(f"approved by Sapro: “{a.approval.strip()[:90]}”")
+        newp = os.path.join(tmp, "span.mp3")
 
-    # One-section manifest: the sentence, conditioned on its own surroundings.
-    span = [{"index": 0, "text": new_sentence, "send_text": new_sentence,
-             "is_heading": False, "is_cta": False, "chars": len(new_sentence),
-             "_prev": head.strip(), "_next": tail.strip()}]
-    tmp = os.path.join(a.parts_dir, "_span")
-    os.makedirs(tmp, exist_ok=True)
-    newp = os.path.join(tmp, "span.mp3")
-    if a.use_existing_span and os.path.isfile(newp):
+    # tts() conditions a section on its NEIGHBOURS in the list it is given. This
+    # used to pass a one-item list with the context in unused "_prev"/"_next"
+    # keys, so every repair went out with no previous_text or next_text at all —
+    # the conditioning the docstring promises never reached the API. The context
+    # now travels as real neighbour entries.
+    stub = lambda txt: {"index": -1, "text": txt, "send_text": txt, "is_heading": False,
+                        "is_cta": False, "chars": len(txt)}
+    span = ([stub(ctx_prev)] if ctx_prev else []) + [
+        {"index": 0, "text": new_sentence, "send_text": new_sentence,
+         "is_heading": False, "is_cta": False, "chars": len(new_sentence)}] + \
+        ([stub(ctx_next)] if ctx_next else [])
+    at = 1 if ctx_prev else 0
+    if cut_only:
+        pass
+    elif a.use_existing_span and os.path.isfile(newp):
         # A splice that failed AFTER the API call must never pay twice to retry.
         print(f"reusing the already-rendered span at {newp} — nothing sent")
     else:
         cl = gen.client(prof)
-        audio, _ = gen.tts(cl, prof, span, 0, [])
+        audio, _ = gen.tts(cl, prof, span, at, [])
         open(newp, "wb").write(audio)
         # Debit the run's ledger like every other render. This tool sent outside
         # it, so the Pluto run's spend.json read 2,053 after 2,137 had gone out —
@@ -327,24 +360,30 @@ def main():
         gen.record_spend(ledger, len(new_sentence), a.section - 1)
         print(f"spend             : {len(new_sentence)} chars recorded in {ledger}")
 
-    old_lvl = level_db(part, cut_a, cut_b)
-    new_lvl = level_db(newp)
-    print(f"level             : replaced {old_lvl:.2f} dB, new {new_lvl:.2f} dB, "
-          f"difference {new_lvl - old_lvl:+.2f} dB")
-    print("  (no gain is applied — if this is beyond about 1 dB, say so rather "
-          "than correcting it silently)")
+    if not cut_only:
+        old_lvl = level_db(part, cut_a, cut_b)
+        new_lvl = level_db(newp)
+        print(f"level             : replaced {old_lvl:.2f} dB, new {new_lvl:.2f} dB, "
+              f"difference {new_lvl - old_lvl:+.2f} dB")
+        print("  (no gain is applied — if this is beyond about 1 dB, say so rather "
+              "than correcting it silently)")
 
     out = os.path.join(tmp, "spliced.wav")
     lst = os.path.join(tmp, "concat.txt")
-    pieces = (["head"] if cut_a > 0 else []) + ["mid"] + (["tail"] if cut_b < dur else [])
+    pieces = (["head"] if cut_a > 0 else []) + ([] if cut_only else ["mid"]) + \
+        (["tail"] if cut_b < dur else [])
+    if not pieces:
+        raise SystemExit("\nREFUSED: that would delete the whole section — drop it "
+                         "from the script instead.")
     for tag, args in (("head", ["-t", f"{cut_a:.3f}"]), ("tail", ["-ss", f"{cut_b:.3f}"])):
         if tag not in pieces:
             continue      # the sentence runs to the file edge on this side
         subprocess.run(["ffmpeg", "-v", "error", "-i", part, *args,
                         "-ar", "44100", "-ac", "1", os.path.join(tmp, f"{tag}.wav"), "-y"],
                        check=True)
-    subprocess.run(["ffmpeg", "-v", "error", "-i", newp, "-ar", "44100", "-ac", "1",
-                    os.path.join(tmp, "mid.wav"), "-y"], check=True)
+    if not cut_only:
+        subprocess.run(["ffmpeg", "-v", "error", "-i", newp, "-ar", "44100", "-ac", "1",
+                        os.path.join(tmp, "mid.wav"), "-y"], check=True)
     # ffmpeg resolves concat entries relative to the CONCAT FILE, not the cwd, so
     # a relative path here silently becomes <dir>/<dir>/head.wav and the demuxer
     # fails after the API call has already been paid for. Absolute, always.

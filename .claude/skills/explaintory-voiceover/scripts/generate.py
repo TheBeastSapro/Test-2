@@ -529,6 +529,23 @@ def main():
     preset = a.chapter_pause or prof["chapter_pause"]
     raw_script = open(a.script, encoding="utf-8").read()
     sections = build_sections(raw_script, a.skip_headings, a.max_chunk, a.run_on)
+    # --stitch-only after a script edit must NOT re-split. The manifest is the only
+    # record of which sec_NNN.mp3 holds which text; once a repair has shortened a
+    # section, a fresh split can merge it with its neighbour. On Project Pluto that
+    # turned 7 sections into 6, paired every later file with the wrong text, dropped
+    # the last take from the stitch (2.0 min -> 1.6 min) and overwrote the manifest.
+    if a.stitch_only and a.sections_json and os.path.isfile(a.sections_json):
+        sections = json.load(open(a.sections_json, encoding="utf-8"))["sections"]
+        log(f"stitch-only: using the existing manifest ({len(sections)} sections), "
+            f"not a fresh split of the script")
+    if a.stitch_only:
+        pdir = a.parts_dir or os.path.splitext(a.out)[0] + "_parts"
+        have = sorted(f for f in os.listdir(pdir) if re.fullmatch(r"sec_\d{3}\.mp3", f))
+        if len(have) != len(sections):
+            raise SystemExit(
+                f"stitch-only: {len(have)} section files in {pdir} but the manifest "
+                f"has {len(sections)} sections — they no longer describe the same "
+                f"audio. Refusing rather than stitching files against the wrong text.")
     if not sections:
         raise SystemExit("Nothing to narrate — the script is empty after removing headings.")
 
