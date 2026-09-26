@@ -29,7 +29,11 @@ the agent can repeal, which is why it lives in `generate.py` now.
 
 **Repair granularity.** Never re-roll a section to fix a word. Use
 `regen_span.py` on the sentence — 134 characters instead of 403, conditioned on
-the surrounding script and spliced inside measured silence. It refuses when there
+the surrounding script and spliced inside measured silence. It finds the sentence by
+its correctly-heard NEIGHBOURS, not its own words, so it works on the misread it
+exists for; `--replace-with` sends a reworded sentence; and when the voice runs a
+full stop straight through ("…the room. Nope." at -24 dB) it grows the span to the
+next real pause and says how many characters that adds. It refuses when there
 is no silence at an edge, and it verifies itself afterwards and auto-reverts if a
 word went missing (it ate "personal insult" once, before that check was inline).
 Re-rolling a section also re-rolls every correct word in it: a header re-roll

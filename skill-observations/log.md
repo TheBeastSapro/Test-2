@@ -314,7 +314,7 @@ resolved statuses always carry their resolution date
 
 ### Observation 21: regen_span refuses exactly the misread it exists to repair
 
-**Status:** OPEN
+**Status:** ACTIONED (2026-09-26) — regen_span locates by correctly-heard neighbours via whole-section alignment, grows the span to the next real pause when an edge has none, takes --replace-with, and reverts on duplicated runs
 **Date:** 2026-09-26
 **Session context:** Project Pluto voiceover. Read-check flagged section 6, where "this stayed a drawing" was heard as "this state of drawing". Two windowed re-transcriptions agreed at 0.95–0.99. A `regen_span.py --dry-run` on the 76-char sentence refused: "could not locate the sentence in the take's own transcript".
 **Skill:** explaintory-voiceover

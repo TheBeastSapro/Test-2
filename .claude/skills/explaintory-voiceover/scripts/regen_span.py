@@ -33,6 +33,7 @@ caller is told to re-roll the section instead.
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -93,6 +94,69 @@ def level_db(path, lo=None, hi=None):
     return float(20 * np.log10(np.sqrt((y ** 2).mean()) + 1e-12))
 
 
+MAX_GAP = 2.0             # widest anchor-to-anchor window a cut may be searched in
+
+
+def heard_tokens(segs, normalize):
+    """-> [(token, start, end)], one entry per NORMALISED token.
+
+    The normaliser turns one heard word into several ("I'd" -> "i would"), so
+    tokens are flattened here and each carries its source word's times. Comparing
+    whole heard words against script tokens is what put every later word one slot
+    out of step.
+    """
+    out = []
+    for s_ in segs:
+        for w in (s_.words or []):
+            for tok in normalize(w.word).split():
+                out.append((tok, float(w.start), float(w.end)))
+    return out
+
+
+def locate(heard, section_text, sentence, normalize, dur):
+    """-> ((L_lo, L_hi), (R_lo, R_hi)) windows holding the sentence's two edges.
+
+    Aligns the WHOLE section's script against the take's transcript and anchors
+    each edge on the nearest words that were heard correctly, on either side of
+    it — not on the sentence's own words. The sentence being repaired is, by
+    definition, the part that was misread: the old matcher looked for it by its
+    own words, and refused the one case it exists for ("this stayed a drawing",
+    heard as "this state of drawing", Project Pluto).
+
+    Raises SystemExit when the anchors are too far apart for the silence search to
+    be anything but a guess.
+    """
+    import difflib
+    head, _ = section_text.split(sentence, 1)
+    want = normalize(section_text).split()
+    s0 = len(normalize(head).split()) if head.strip() else 0
+    s1 = s0 + len(normalize(sentence).split()) - 1
+    got = [h[0] for h in heard]
+    sm = difflib.SequenceMatcher(a=want, b=got, autojunk=False)
+    m = {}
+    for blk in sm.get_matching_blocks():
+        for k in range(blk.size):
+            m[blk.a + k] = blk.b + k
+
+    before = [i for i in m if i < s0]
+    inside = [i for i in m if s0 <= i <= s1]
+    after = [i for i in m if i > s1]
+    if not inside:
+        raise SystemExit("\nREFUSED: no word of the sentence was heard at all, so "
+                         "there is nothing to confirm the anchors bracket it.")
+    L_lo = heard[m[max(before)]][2] if before else 0.0
+    L_hi = heard[m[min(inside)]][1]
+    R_lo = heard[m[max(inside)]][2]
+    R_hi = heard[m[min(after)]][1] if after else dur
+    for name, lo, hi in (("start", L_lo, L_hi), ("end", R_lo, R_hi)):
+        if hi - lo > MAX_GAP:
+            raise SystemExit(
+                f"\nREFUSED: the {name} edge could only be narrowed to "
+                f"{lo:.2f}-{hi:.2f}s ({hi - lo:.2f}s) — too wide to pick the right "
+                f"pause in. Re-roll the whole section instead.")
+    return (L_lo, L_hi), (R_lo, R_hi)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Re-render one sentence and splice it in.")
     ap.add_argument("--parts-dir", required=True)
@@ -100,6 +164,11 @@ def main():
     ap.add_argument("--section", type=int, required=True, help="1-based section number")
     ap.add_argument("--sentence", required=True,
                     help="the sentence to re-render, verbatim from the section text")
+    ap.add_argument("--replace-with",
+                    help="send this wording instead of --sentence (a script fix, e.g. "
+                         "'stayed a' -> 'was just a'). The splice is then verified "
+                         "against the NEW wording, and the change must also be made "
+                         "in the script and sections.json")
     ap.add_argument("--profile")
     ap.add_argument("--approval", default="",
                     help="Sapro's own words approving this send. Required.")
@@ -118,7 +187,6 @@ def main():
         raise SystemExit(f"Sentence not found verbatim in section {a.section}.\n"
                          f"Section text:\n  {text}")
 
-    head, tail = text.split(a.sentence, 1)
     part = os.path.join(a.parts_dir, f"sec_{sec['index']:03d}.mp3")
     if not os.path.isfile(part):
         raise SystemExit(f"No existing take at {part} to splice into.")
@@ -129,12 +197,6 @@ def main():
     if not os.path.isfile(backup):
         subprocess.run(["cp", part, backup], check=True)
 
-    print(f"section {a.section}: {sec['chars']} chars")
-    print(f"sentence          : {len(a.sentence)} chars   "
-          f"({sec['chars'] - len(a.sentence)} saved vs re-rolling the section)")
-    print(f"conditioning      : previous_text {len(head.strip())} chars, "
-          f"next_text {len(tail.strip())} chars")
-
     # Where does the sentence sit in the existing take?
     #
     # This was proportional-to-characters, and it ate two words. The estimate put
@@ -144,47 +206,88 @@ def main():
     # worse than the defect it replaced, and it is invisible to every level and
     # waveform check — only the transcript caught it.
     #
-    # So locate by what the take actually says: transcribe it, match the
-    # sentence's first and last words in the word stream, and use their measured
-    # times. The silence search is then a narrow +/-0.25 s around a real boundary
-    # rather than a wide guess around an estimated one.
+    # So locate by what the take actually says — see locate() — and search for
+    # silence only between correctly-heard neighbours.
     import librosa
     import readcheck as rc
     dur = librosa.get_duration(path=part)
     model = rc.load_asr()
     segs, _ = model.transcribe(part, language="en", beam_size=5,
                                condition_on_previous_text=False, word_timestamps=True)
-    heard = [(rc.normalize(w.word).strip(), float(w.start), float(w.end))
-             for s_ in segs for w in (s_.words or [])]
-    want = rc.normalize(a.sentence).split()
-    hw = [h[0] for h in heard]
-    hit = None
-    for i in range(len(hw) - len(want) + 1):
-        win = hw[i:i + len(want)]
-        same = sum(1 for x, y in zip(win, want) if x == y)
-        if same >= max(3, int(0.7 * len(want))):
-            hit = (i, i + len(want) - 1)
+    heard = heard_tokens(segs, rc.normalize)
+
+    # The voice does not always pause at a full stop: in Project Pluto it ran
+    # "…out of the room. Nope." straight through at -24 dB, and the only clean
+    # silence was after "Nope.". When an edge has no silence, grow the span by one
+    # sentence on that side and try again — a few more characters beats a re-roll
+    # of the whole section, and beats a cut through speech by far.
+    si = text.index(a.sentence)
+    ei = si + len(a.sentence)
+    ends = [m.end() for m in re.finditer(r'[.!?]["”’)]*(?=\s|$)', text)]
+    def grow(b, f):
+        s, e = si, ei
+        before = [x for x in ends if x <= si]
+        after = [x for x in ends if x > ei]
+        if b:
+            if b > len(before):
+                return None
+            s = before[-b - 1] if b < len(before) else 0
+            while s < si and text[s].isspace():
+                s += 1
+        if f:
+            if f > len(after):
+                return None
+            e = after[f - 1]
+        return s, e
+    tried = []
+    for b, f in ((0, 0), (0, 1), (1, 0), (1, 1), (0, 2), (2, 0)):
+        g = grow(b, f)
+        if g is None:
+            continue
+        s, e = g
+        span = text[s:e]
+        head, tail = text[:s], text[e:]
+        (L_lo, L_hi), (R_lo, R_hi) = locate(heard, text, span, rc.normalize, dur)
+        # A span that opens (or closes) its section has no speech on that side to
+        # cut around: the file edge IS the boundary, and the stitch puts the
+        # silence between sections back.
+        sil_a = (0.0, 0.0) if not head.strip() else \
+            find_silence(part, max(0, L_lo - 0.05), L_hi + 0.05)
+        sil_b = (dur, dur) if not tail.strip() else \
+            find_silence(part, max(0, R_lo - 0.05), min(dur, R_hi + 0.05))
+        tried.append((b, f, bool(sil_a), bool(sil_b)))
+        if sil_a and sil_b:
             break
-    if hit is None:
+    else:
         raise SystemExit(
-            "\nREFUSED: could not locate the sentence in the take's own transcript, "
-            "so the cut points would be a guess. Re-roll the whole section instead.")
-    p0, p1 = heard[hit[0]][1], heard[hit[1]][2]
-    sil_a = find_silence(part, max(0, p0 - 0.25), p0 + 0.10)
-    sil_b = find_silence(part, max(0, p1 - 0.10), min(dur, p1 + 0.25))
-    print(f"take duration     : {dur:.2f}s   sentence approx {p0:.2f}-{p1:.2f}s")
-    if not sil_a or not sil_b:
-        raise SystemExit(
-            "\nREFUSED: no silence found at "
-            + ("the start edge" if not sil_a else "the end edge")
-            + " of the sentence, so a clean cut is not possible.\n"
-            "Re-roll the whole section instead — a splice without silence on both "
-            "sides clicks, and a click is worse than the defect.")
+            "\nREFUSED: no silence at "
+            + ", ".join(f"{'start' if not ok_a else 'end'} edge with {b} sentence(s) "
+                        f"before / {f} after" for b, f, ok_a, ok_b in tried)
+            + ".\nRe-roll the whole section instead — a splice without silence on "
+            "both sides clicks, and a click is worse than the defect.")
+
+    new_sentence = (text[s:si] + (a.replace_with or a.sentence).strip() + text[ei:e]).strip()
+    new_text = head + new_sentence + tail
+    print(f"section {a.section}: {sec['chars']} chars")
+    if (s, e) != (si, ei):
+        print(f"span grown        : +{si - s} chars before, +{e - ei} after — no silence "
+              f"at the sentence's own edge, so the cut moves to the next pause")
+    print(f"span              : {len(new_sentence)} chars   "
+          f"({sec['chars'] - len(new_sentence)} saved vs re-rolling the section)")
+    print(f"  replaces        : “{span}”")
+    print(f"  with            : “{new_sentence}”")
+    print(f"conditioning      : previous_text {len(head.strip())} chars, "
+          f"next_text {len(tail.strip())} chars")
+    p0, p1 = L_hi, R_lo
+    print(f"take duration     : {dur:.2f}s   span approx {p0:.2f}-{p1:.2f}s")
+    print(f"edge windows      : start {L_lo:.2f}-{L_hi:.2f}s, end {R_lo:.2f}-{R_hi:.2f}s "
+          f"(between correctly-heard neighbours)")
     cut_a = (sil_a[0] + sil_a[1]) / 2
     cut_b = (sil_b[0] + sil_b[1]) / 2
-    print(f"cut points        : {cut_a:.3f}s and {cut_b:.3f}s "
-          f"(inside {(sil_a[1]-sil_a[0])*1000:.0f} ms and "
-          f"{(sil_b[1]-sil_b[0])*1000:.0f} ms of silence)")
+    edge = lambda sil: ("the file edge" if sil[0] == sil[1] else
+                        f"{(sil[1]-sil[0])*1000:.0f} ms of silence")
+    print(f"cut points        : {cut_a:.3f}s ({edge(sil_a)}) and "
+          f"{cut_b:.3f}s ({edge(sil_b)})")
 
     if a.dry_run:
         print("\ndry run — nothing sent.")
@@ -192,8 +295,8 @@ def main():
     if not a.approval.strip():
         raise SystemExit(
             f"\nSTOPPED. Sapro has not approved this send.\n"
-            f"  WOULD SEND — 1 sentence, {len(a.sentence)} characters:\n"
-            f"    {a.sentence}\n\n"
+            f"  WOULD SEND — 1 sentence, {len(new_sentence)} characters:\n"
+            f"    {new_sentence}\n\n"
             f"Ask him, then pass his words back with --approval.\n")
 
     prof = gen.load_profile(a.profile)
@@ -201,8 +304,8 @@ def main():
     print(f"approved by Sapro: “{a.approval.strip()[:90]}”")
 
     # One-section manifest: the sentence, conditioned on its own surroundings.
-    span = [{"index": 0, "text": a.sentence, "send_text": a.sentence,
-             "is_heading": False, "is_cta": False, "chars": len(a.sentence),
+    span = [{"index": 0, "text": new_sentence, "send_text": new_sentence,
+             "is_heading": False, "is_cta": False, "chars": len(new_sentence),
              "_prev": head.strip(), "_next": tail.strip()}]
     tmp = os.path.join(a.parts_dir, "_span")
     os.makedirs(tmp, exist_ok=True)
@@ -224,7 +327,10 @@ def main():
 
     out = os.path.join(tmp, "spliced.wav")
     lst = os.path.join(tmp, "concat.txt")
+    pieces = (["head"] if cut_a > 0 else []) + ["mid"] + (["tail"] if cut_b < dur else [])
     for tag, args in (("head", ["-t", f"{cut_a:.3f}"]), ("tail", ["-ss", f"{cut_b:.3f}"])):
+        if tag not in pieces:
+            continue      # the sentence runs to the file edge on this side
         subprocess.run(["ffmpeg", "-v", "error", "-i", part, *args,
                         "-ar", "44100", "-ac", "1", os.path.join(tmp, f"{tag}.wav"), "-y"],
                        check=True)
@@ -234,7 +340,7 @@ def main():
     # a relative path here silently becomes <dir>/<dir>/head.wav and the demuxer
     # fails after the API call has already been paid for. Absolute, always.
     with open(lst, "w") as f:
-        for t in ("head", "mid", "tail"):
+        for t in pieces:
             f.write(f"file '{os.path.abspath(os.path.join(tmp, t + '.wav'))}'\n")
     subprocess.run(["ffmpeg", "-v", "error", "-f", "concat", "-safe", "0",
                     "-i", lst, "-c", "copy", out, "-y"], check=True)
@@ -250,10 +356,21 @@ def main():
     import difflib
     print("\nverifying the splice (destructive edit — must be proved harmless)")
     t, _ = rc.transcribe(model, part)
-    want = rc.normalize(text).split()
+    want = rc.normalize(new_text).split()
     got = rc.normalize(t).split()
     sm = difflib.SequenceMatcher(a=want, b=got, autojunk=False)
     dropped = [want[i1:i2] for tag, i1, i2, _, _ in sm.get_opcodes() if tag == "delete"]
+    # The mirror case: a cut that lands INSIDE the old sentence keeps some of its
+    # words, and they play again before the new take. That is a gained run, not a
+    # lost one, so the dropped-words test alone passes it.
+    extra = [got[j1:j2] for tag, _, _, j1, j2 in sm.get_opcodes()
+             if tag == "insert" and j2 - j1 >= 2]
+    if extra and not dropped:
+        subprocess.run(["cp", backup, part], check=True)
+        raise SystemExit(
+            "\nREVERTED. The splice left extra words in: "
+            + "; ".join(" ".join(e) for e in extra)
+            + f"\n{part} is restored byte-for-byte from {backup}.")
     print(f"  script {len(want)} words, heard {len(got)} words, ratio {sm.ratio():.4f}")
     if dropped:
         subprocess.run(["cp", backup, part], check=True)
