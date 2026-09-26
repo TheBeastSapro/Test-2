@@ -238,6 +238,13 @@ def split_pronunciation_guide(text):
 # against the guide, which listed ".303 — read as three-oh-three".
 _ORPHAN_DECIMAL = re.compile(r"\w\.\s+\d{2,3}\b")
 
+# A designation that runs digits into letters — "Tory 2C", "V2", "3M". The voice
+# has several readings for it ("two C", "two see", "second C") and picks one per
+# take, so the script should say which. Ordinals and decades ("2nd", "1960s")
+# have one reading and are left alone.
+_MIXED_TOKEN = re.compile(r"\b(?=\w*\d)(?=\w*[A-Za-z])\w+\b")
+_ONE_READING = re.compile(r"^\d+(st|nd|rd|th|s|'s)$", re.I)
+
 
 def _appears_verbatim(word, text, fold=False):
     """Is `word` in `text` as a whole token? Internal whitespace is allowed to vary."""
@@ -288,6 +295,12 @@ def guide_preflight(narration, guide):
         out.append(f"orphaned decimal point: “…{ctx}…” — a Docs export splits "
                    f'".303" into ". 303", so the voice reads a sentence boundary '
                    f"mid-clause and says the number in full. Fix the script.")
+    for m in _MIXED_TOKEN.finditer(narration):
+        if _ONE_READING.match(m.group()):
+            continue
+        out.append(f"mixed letter/number token “{m.group()}” — the voice can read it "
+                   f"more than one way. Write it out as it should be spoken "
+                   f"(e.g. “Tory 2C” → “Tory two C”).")
     return out
 
 

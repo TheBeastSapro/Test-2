@@ -252,6 +252,29 @@ most for the artifact that leaves the text well-formed: Google Docs exports ".30
 and three", and no downstream check can catch it — the read-check diffs the ASR
 against the same corrupted script and finds agreement.
 
+## Proof-read the script with the plan — always
+
+Sapro asked for this by name (2026-09-26: "that cross check is great keep that up
+… you should show this if I made mistakes like this"). Every plan message carries a
+short **script check** block alongside the tool's PRE-FLIGHT lines, so a mistake is
+fixed for free in text rather than paid for in a render:
+
+- **Pronunciation hazards** — anything the voice can read more than one way.
+  Mixed letter/number designations ("Tory 2C", "V2") are flagged by PRE-FLIGHT
+  automatically; propose the spoken form ("Tory two C") and write it into the
+  script once he agrees.
+- **Internal consistency** — the same event told twice as if it were two
+  (Pluto: the opening's five-minute full-power run and "in 1964 the second one
+  roared to life" were one test, told so a viewer would count two), dates or
+  counts that disagree between paragraphs, a callback that contradicts its setup.
+- **Facts worth a second look** — only where the script's own claim is checkable
+  and likely wrong. Name it and say why; do not rewrite the line.
+
+Rules: flag, never silently edit his script — the one exception is a fix he has
+already approved. Keep it to what would change the audio or mislead a viewer; this
+is not a style edit. If there is nothing, say "script check: nothing found" so
+the absence is visible.
+
 ## Then run it
 
 ```bash
@@ -384,9 +407,10 @@ the two can be mixed on the same project:
   ~0.45 s before the chapter name and ~0.50 s after it, measured off Sapro's own edits
 
 Two deliberate differences: the stitch is a 48 kHz WAV, not a re-encoded MP3, so
-mastering runs on un-degraded audio and only the delivered file is encoded once; and
-the script's H1 is treated as the video's title, not its first chapter, so the
-voiceover does not open by reading its own title aloud.
+mastering runs on un-degraded audio and only the delivered file is encoded once.
+The script's H1 IS read aloud (`readTitle: true`, locked in `voice-calibration.json`
+on 2026-09-26: "Project Pluto is read aloud"). An earlier version of this file said
+the opposite; the code always followed the studio and spoke it.
 
 ### The first chapter announcement reads fast
 

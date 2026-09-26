@@ -10,7 +10,8 @@
     "",
     "pronOn is false on purpose: Sapro compared a raw take against a respelled one",
     "and chose the raw. The pronunciation guide is the reference for CHECKING, not",
-    "an automatic substitution."
+    "an automatic substitution.",
+    "readTitle is true because Sapro said so on 2026-09-26: \"Project Pluto is read aloud\"."
   ],
   "calibration": {
     "voice": "dUHbvtIZto0ZEBkhYiyk",
@@ -24,6 +25,7 @@
     "chapterPause": "natural",
     "skipHeadings": false,
     "pronOn": false,
-    "chunkSize": 450
+    "chunkSize": 450,
+    "readTitle": true
   }
 }
