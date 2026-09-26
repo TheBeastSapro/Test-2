@@ -346,9 +346,11 @@ def build(x, words, lines, tgt, curated, tempo, max_wpm=None, min_factor=0.87,
         return None
 
     targets = {}
+    forced = set()   # boundaries Sapro named in --curated: never treated as run-through
     for p in range(len(seq)-1):
         li, ow, _ = seq[p]; nli, nw, _ = seq[p+1]
         kind = None
+        named = (ow.strip(".,;:"), nw.strip(".,;:")) in curated
         if nli != li:
             kind = None if (is_card(lines[nli]) or is_card(lines[li])) else "paragraph"
         elif re.search(r"[.!?]\"?$", ow) and not ABB.match(ow):
@@ -364,6 +366,7 @@ def build(x, words, lines, tgt, curated, tempo, max_wpm=None, min_factor=0.87,
         if not kind: continue
         nb = next_aligned(p)
         if nb is None or nb == 0 or nb >= len(words): continue
+        if named: forced.add(nb)
         if nb not in targets or tgt[kind] > targets[nb][0]:
             targets[nb] = (tgt[kind], kind)
 
@@ -440,7 +443,11 @@ def build(x, words, lines, tgt, curated, tempo, max_wpm=None, min_factor=0.87,
         #
         # Only near-zero counts. A comma the voice gave 40-90 ms still wants
         # topping up to target; that is the case this pipeline was built for.
-        if kind == "comma" and have < RUNTHROUGH:
+        #
+        # A comma named in --curated is the exception: Sapro asked for a beat there
+        # ("after Tory two C there's a comma and I can't see a gap"), and the voice
+        # giving it 50 ms is exactly the case that inference gets wrong.
+        if kind == "comma" and have < RUNTHROUGH and nb not in forced:
             ins = 0.0
         if ins > 0.005:
             out.append(np.zeros(int(ins*SR), np.float32)); added += ins

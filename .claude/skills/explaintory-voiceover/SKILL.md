@@ -407,10 +407,9 @@ the two can be mixed on the same project:
   ~0.45 s before the chapter name and ~0.50 s after it, measured off Sapro's own edits
 
 Two deliberate differences: the stitch is a 48 kHz WAV, not a re-encoded MP3, so
-mastering runs on un-degraded audio and only the delivered file is encoded once.
-The script's H1 IS read aloud (`readTitle: true`, locked in `voice-calibration.json`
-on 2026-09-26: "Project Pluto is read aloud"). An earlier version of this file said
-the opposite; the code always followed the studio and spoke it.
+mastering runs on un-degraded audio and only the delivered file is encoded once; and
+the script's H1 is treated as the video's title, not its first chapter, so the
+voiceover does not open by reading its own title aloud.
 
 ### The first chapter announcement reads fast
 
