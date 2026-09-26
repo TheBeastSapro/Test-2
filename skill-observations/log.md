@@ -311,3 +311,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Correct the SKILL.md paragraph to match the code, and record Sapro's actual choice for readTitle in `voice-calibration.json` so it stops printing as `(default)`. For single-section submissions, have `--plan` ask explicitly whether the heading is a video title (silent) or a chapter announcement (spoken).
 
 **Principle:** When prose documentation describes a behaviour the code also implements, one of them drifts; the gate that prints what will actually be sent is the one to trust, and the prose should be corrected the moment they disagree.
+
+### Observation 21: regen_span refuses exactly the misread it exists to repair
+
+**Status:** OPEN
+**Date:** 2026-09-26
+**Session context:** Project Pluto voiceover. Read-check flagged section 6, where "this stayed a drawing" was heard as "this state of drawing". Two windowed re-transcriptions agreed at 0.95–0.99. A `regen_span.py --dry-run` on the 76-char sentence refused: "could not locate the sentence in the take's own transcript".
+**Skill:** explaintory-voiceover
+**Type:** internal
+**Phase/Area:** regen_span.py, span location
+
+**Issue:** regen_span finds the cut points by matching the sentence's words in the take's own ASR transcript. When the defect IS a misread, those words are not in the transcript, so the tool refuses and says to re-roll the whole section (446 chars here, which also re-rolls a "Tory two C" that came out right). The one-sentence repair path can't be used for the defect class the read-check reports most often.
+
+**Suggested improvement:** When the exact match fails, locate the span by its neighbours: the end of the previous sentence (or the section start) and the first word of the next sentence ("Nope."), both of which ARE in the transcript. Fall back to the read-check's own diff alignment, which already knows which heard words map onto the expected sentence. Keep the refusal only when neither neighbour anchor can be found.
+
+**Principle:** A repair tool that locates its target using the thing that is broken can't repair it. Anchor on the undamaged context around the defect, not on the defect.
