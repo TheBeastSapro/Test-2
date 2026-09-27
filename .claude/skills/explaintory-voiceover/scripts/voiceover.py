@@ -453,6 +453,8 @@ def main():
     ap.add_argument("--out-dir", default=".", help="where the delivered MP3 lands")
     ap.add_argument("--work", help="working directory (default: <out-dir>/.vo_<title>)")
     ap.add_argument("--profile", help="voiceover_profile.json from Voiceover Studio")
+    ap.add_argument("--hold", help="boundaries the master must NOT pad "
+                                   "(one 'wordA|wordB' pair per line)")
     ap.add_argument("--curated", help="clause-break file for the mastering pass "
                                       "(one 'wordA|wordB' pair per line)")
     ap.add_argument("--lexicon", help="pronunciation lexicon JSON — names respelled so "
@@ -729,6 +731,8 @@ def main():
             "--align-cache", os.path.join(work, "align.json")]
     if a.curated:
         mcmd += ["--curated", a.curated]
+    if a.hold:
+        mcmd += ["--hold", a.hold]
     if a.max_wpm:
         mcmd += ["--max-wpm", str(a.max_wpm)]
         log(f"levelling sentences above {a.max_wpm:.0f} wpm "

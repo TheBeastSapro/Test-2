@@ -326,7 +326,7 @@ def sentence_rates(words, lines):
     return S
 
 def build(x, words, lines, tgt, curated, tempo, max_wpm=None, min_factor=0.87,
-          level_skip_start=25.0, adaptive=False, ceiling=250.0):
+          level_skip_start=25.0, adaptive=False, ceiling=250.0, hold=frozenset()):
     hop = int(0.01*SR); nf = len(x)//hop
     db = 20*np.log10(np.sqrt(np.array([np.mean(x[i*hop:(i+1)*hop]**2)
                                        for i in range(nf)]))+1e-12)
@@ -351,6 +351,11 @@ def build(x, words, lines, tgt, curated, tempo, max_wpm=None, min_factor=0.87,
         li, ow, _ = seq[p]; nli, nw, _ = seq[p+1]
         kind = None
         named = (ow.strip(".,;:"), nw.strip(".,;:")) in curated
+        # --hold: boundaries Sapro wants left exactly as the voice timed them. A
+        # quick aside like "Which, okay, sure." padded at every comma turns into
+        # three evenly spaced one-word beats, which is what made it sound robotic.
+        if (ow.strip(".,;:!?"), nw.strip(".,;:!?")) in hold:
+            continue
         if nli != li:
             kind = None if (is_card(lines[nli]) or is_card(lines[li])) else "paragraph"
         elif re.search(r"[.!?]\"?$", ow) and not ABB.match(ow):
@@ -535,6 +540,8 @@ def main():
     ap.add_argument("--script", required=True, help="plain text, one paragraph per line")
     ap.add_argument("--out", required=True, help=".wav or .mp3")
     ap.add_argument("--report", help="CSV of every inserted pause")
+    ap.add_argument("--hold", help="text file, one 'wordA|wordB' pair per line: add NO "
+                                   "pause there, keep the voice's own timing")
     ap.add_argument("--curated", help="optional text file, one 'wordA|wordB' pair per line, "
                                       "marking clause breaks the script forgot to punctuate")
     for k, v in DEFAULTS.items():
@@ -630,10 +637,17 @@ def main():
                 p, q = ln.strip().split("|", 1); curated.add((p.strip(), q.strip()))
         log(f"curated clause breaks: {len(curated)}")
 
+    hold = set()
+    if a.hold:
+        for ln in open(a.hold, encoding="utf-8"):
+            if "|" in ln:
+                p, q = ln.strip().split("|", 1); hold.add((p.strip(), q.strip()))
+        log(f"held boundaries (no pause added): {len(hold)}")
+
     tgt = dict(comma=a.comma, sentence=a.sentence, paragraph=a.paragraph, tail=a.tail)
     y, rep, added, leveled, nst = build(x, words, lines, tgt, curated, a.tempo,
                                         a.max_wpm, a.min_factor, a.level_skip_start,
-                                        a.adaptive_tempo, a.ceiling)
+                                        a.adaptive_tempo, a.ceiling, frozenset(hold))
     if leveled:
         what = "held back from the speed-up" if a.adaptive_tempo else "slowed"
         log(f"{len(leveled)} sentence(s) {what} ({nst} chunks stretched)")
