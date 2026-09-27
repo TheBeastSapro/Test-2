@@ -356,3 +356,19 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a length check to the stitch: expected duration is roughly the previous stitch plus the net change from the edit, and the stitch should refuse to proceed when it's off by more than a few seconds. For repair tools, add a test that inspects what is actually sent to the API (the kwargs) rather than trusting the manifest the tool builds.
 
 **Principle:** Parameters handed to another function are only real if that function reads them; verify at the boundary where the data is actually sent. After an edit, derived state (which file holds which text) has to come from the record that was kept, never re-derived from the edited source.
+
+### Observation 24: When a line gains a lead-in, render only the new words and keep the approved delivery
+
+**Status:** OPEN
+**Date:** 2026-09-27
+**Session context:** Project Pluto. Sapro changed "The answer is monstrous, and a little bit genius." to "And if you're wondering how that works, the answer is monstrous, and a little bit genius." The whole new sentence was rendered (89 chars). He preferred the ORIGINAL delivery of "the answer is monstrous". The fix was free: the new take's lead-in, cut inside the 110 ms pause after "works,", joined to the untouched original section. 87/87 words, and he confirmed "better".
+
+**Skill:** explaintory-voiceover
+**Type:** internal
+**Phase/Area:** regen_span.py / repair workflow
+
+**Issue:** The repair re-rendered words that already had an approved delivery, so their delivery changed too, which is the same failure as re-rolling a section to fix one word, only smaller. Here the edit was purely additive (a lead-in in front of existing words), so only the new words needed rendering.
+
+**Suggested improvement:** When --replace-with keeps the original sentence as a suffix (or prefix), render the full sentence for context, then splice only the new portion onto the original take at a measured pause, and offer that as the default. Keep the fully re-rendered version as an alternative to compare. Keep the pre-splice take as a delivery reference until the user confirms.
+
+**Principle:** Re-render only the words that changed. Words with an approved delivery are an asset: keep their audio and join the new words to it at a real pause.
