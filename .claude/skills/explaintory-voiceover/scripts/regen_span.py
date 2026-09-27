@@ -404,8 +404,11 @@ def main():
     import difflib
     print("\nverifying the splice (destructive edit — must be proved harmless)")
     t, _ = rc.transcribe(model, part)
-    want = rc.normalize(new_text).split()
-    got = rc.normalize(t).split()
+    # Punctuation-only tokens are not words: the normaliser turns "Which…" into
+    # "which ." and the lone "." then read as a DROPPED word, reverting a clean
+    # splice (Project Pluto, "Which… okay, sure.").
+    want = [w for w in rc.normalize(new_text).split() if re.search(r"\w", w)]
+    got = [w for w in rc.normalize(t).split() if re.search(r"\w", w)]
     sm = difflib.SequenceMatcher(a=want, b=got, autojunk=False)
     dropped = [want[i1:i2] for tag, i1, i2, _, _ in sm.get_opcodes() if tag == "delete"]
     # The mirror case: a cut that lands INSIDE the old sentence keeps some of its
