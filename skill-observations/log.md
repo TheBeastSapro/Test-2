@@ -372,3 +372,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** When --replace-with keeps the original sentence as a suffix (or prefix), render the full sentence for context, then splice only the new portion onto the original take at a measured pause, and offer that as the default. Keep the fully re-rendered version as an alternative to compare. Keep the pre-splice take as a delivery reference until the user confirms.
 
 **Principle:** Re-render only the words that changed. Words with an approved delivery are an asset: keep their audio and join the new words to it at a real pause.
+
+### Observation 25: Padding every comma in a short aside makes it sound robotic
+
+**Status:** OPEN
+**Date:** 2026-09-27
+**Session context:** Project Pluto. Sapro: "Which, okay, sure." "not feel like a human reaction... the accent is bit robotic". The master had added pauses at all four boundaries of a 1.3 s line (+0.05/+0.08/+0.12/+0.07 s), one of them forced by me. Fixed with a fresh take (his pick of 3 versions, 55 chars) plus a new --hold list in humanize.py that leaves those boundaries at the voice's own timing. He confirmed "good".
+**Skill:** explaintory-vo-master
+**Type:** internal
+**Phase/Area:** humanize.py boundary padding
+
+**Issue:** Comma padding is tuned for clauses. Applied to a run of one-word items, it spaces them evenly and turns a quick aside into a stiff list. Automatic pitch measures (pyin) could not judge "which take sounds human": the same voice read as anywhere from 142 to 300 Hz across four clips.
+
+**Suggested improvement:** Skip comma padding automatically when both sides of the comma are 1–2 word pieces inside a short sentence (fewer than 5 words), and list every skipped boundary in the log. Keep --hold for manual cases. When the user asks which take sounds more human, say plainly that no reliable measure exists yet and ask them to judge by ear.
+
+**Principle:** A pacing rule tuned for clause boundaries shouldn't apply to one-word asides. And when no reliable measure exists, say so rather than presenting unreliable numbers as evidence.
