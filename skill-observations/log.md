@@ -296,3 +296,48 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: Skill prose and code drifted on six locked values; an export exposed it
+
+**Status:** OPEN
+**Date:** 2026-09-29
+**Session context:** Exporting the voiceover pipeline as a standalone SOP for another agent
+**Skill:** explaintory-voiceover (and explaintory-vo-master)
+**Type:** open-source
+**Phase/Area:** SKILL.md "Generation matches the studio exactly", vo-master "Locked settings", HANDOFF state
+
+**Issue:** Writing the SOP from code instead of prose surfaced six disagreements: vo-master says global atempo 1.04 (code: per-sentence, 250 wpm cap); "4 ms fades at splices" (section joins use 3 ms); approved final was 320 kbps (code writes 256k); last delivery used --no-level-headings (voiceover.py cannot pass it); chapter gaps quoted as ~0.45/0.50 (inserted values 0.22/0.30); --approve-spend help says default 2000 (generate.py default 1000). Two different humanize.py copies also existed (repo copy newer than the synced skill's).
+
+**Suggested improvement:** Add a "locked values" table to SKILL.md generated from the code constants (or a check script that greps them), and either add --no-level-headings passthrough to voiceover.py or correct the SKILL.md note. Sync the vo-master skill's humanize.py to the repo copy.
+
+**Principle:** When a skill documents numeric settings that live in code, the document must be derived from the code (or checked against it), never maintained by hand in parallel — prose copies of constants drift silently.
+
+### Observation 21: --suggest-breaks output silently matches nothing when passed to --curated
+
+**Status:** OPEN
+**Date:** 2026-09-29
+**Session context:** Writing RUN.md for the voiceover export
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** voiceover.py --suggest-breaks / humanize.py --curated parser
+
+**Issue:** --suggest-breaks prints "wordA|wordB<TAB><TAB>… sentence …". humanize.py splits on the first "|" and keeps the rest of the line as wordB, so an unedited candidate file parses to ("Angolpo", "the\t\t… At Angolpo …") and matches no boundary — zero curated beats, no error. Verified by replaying the parser.
+
+**Suggested improvement:** Have humanize.py take only the first whitespace-delimited token after "|" (or have --suggest-breaks write context as a trailing "#" comment that the parser strips), and log "curated pairs matched: N of M" so zero matches is visible.
+
+**Principle:** When one tool's output is meant to feed another tool's input, test the round trip; a parser that accepts malformed input and matches nothing fails silently.
+
+### Observation 22: The pipeline emits no word timings for the delivered file
+
+**Status:** OPEN
+**Date:** 2026-09-29
+**Session context:** Voiceover export — SOP section on word timings
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** master stage outputs (align.json, pauses.csv)
+
+**Issue:** align.json holds MMS_FA word timings on the RAW stitch timeline (before per-sentence tempo and pause insertion); pauses.csv times are raw×1.04 and ignore earlier insertions; readcheck.json drops faster-whisper word times. Nothing gives timings for the final MP3, which captions/edit sync would need.
+
+**Suggested improvement:** Have humanize.py carry each word's position through build() (it already knows every cut and insertion) and write final-timeline word timings (JSON + optionally SRT) alongside the MP3.
+
+**Principle:** Any intermediate timing artifact should be labelled with the timeline it belongs to; if a transform moves audio, either re-map the timings through it or say explicitly that they no longer apply.
