@@ -1,0 +1,135 @@
+[
+ {
+  "cue": "m1",
+  "id": "b3e2ca7f-c3cf-3baf-8b6e-d3023754df39",
+  "title": "Merlin's Curse",
+  "bpm": 89.1,
+  "dur": 128.0
+ },
+ {
+  "cue": "m2",
+  "id": "7b7dd169-d2c4-393b-9862-6197c8289fad",
+  "title": "In Front of the Fort",
+  "bpm": 86.1,
+  "dur": 113.647
+ },
+ {
+  "cue": "m3",
+  "id": "3f52ca6a-6c09-3825-b13c-0077e84edf71",
+  "title": "Bug-A-Boo",
+  "bpm": 123.0,
+  "dur": 114.922
+ },
+ {
+  "cue": "m4",
+  "id": "f246d650-6f28-3988-8589-78c795bc9b9b",
+  "title": "Time Is Running Fast",
+  "bpm": 103.4,
+  "dur": 109.195
+ },
+ {
+  "cue": "m5",
+  "id": "801e6380-2b02-323f-bc25-8a1b340339fb",
+  "title": "Half-Time Break",
+  "bpm": 172.3,
+  "dur": 115.978
+ },
+ {
+  "cue": "m6",
+  "id": "4669ca1d-a25d-4489-bdea-e572e99220e0",
+  "title": "Close Call",
+  "bpm": 112.3,
+  "dur": 173.104
+ },
+ {
+  "cue": "m7",
+  "id": "e7fa12db-3b70-33ba-b536-600ca7d9f8c3",
+  "title": "A Path Well Trodden",
+  "bpm": 107.7,
+  "dur": 173.5
+ },
+ {
+  "cue": "m8",
+  "id": "5ca57aed-1b7a-3e79-b083-f14f364009cf",
+  "title": "Leviathan",
+  "bpm": 99.4,
+  "dur": 106.8
+ },
+ {
+  "cue": "m9",
+  "id": "9bb378bc-bca3-3c25-b300-c163eb354bf4",
+  "title": "Don't Come Closer",
+  "bpm": 83.4,
+  "dur": 110.584
+ },
+ {
+  "cue": "m10",
+  "id": "2713fe2e-8397-39d8-ac73-d3b9652a9c54",
+  "title": "Be Honest",
+  "bpm": 103.4,
+  "dur": 117.673
+ },
+ {
+  "cue": "m11",
+  "id": "6bcb2533-e4b8-39f7-b1db-e14f94b9b088",
+  "title": "Controlled Collision",
+  "bpm": 123.0,
+  "dur": 114.425
+ },
+ {
+  "cue": "m12",
+  "id": "bb1ba429-b34e-4995-8000-f798ec24b95b",
+  "title": "Rise to the Power",
+  "bpm": 99.4,
+  "dur": 168.625
+ },
+ {
+  "cue": "m13",
+  "id": "a5b8c42b-a800-4ad2-9070-482021b9e6e5",
+  "title": "On the Brink of Glory",
+  "bpm": 136.0,
+  "dur": 149.615
+ },
+ {
+  "cue": "m14",
+  "id": "0cac5c99-1164-4b87-8718-9edcb49a4256",
+  "title": "Alter Hero",
+  "bpm": 123.0,
+  "dur": 220.604
+ },
+ {
+  "cue": "m15",
+  "id": "7674c101-043f-38e3-955a-e19ec194616e",
+  "title": "Incendiary Treasures",
+  "bpm": 129.2,
+  "dur": 124.766
+ },
+ {
+  "cue": "m16",
+  "id": "45f55614-784b-3ee5-bc0d-1d688bc01e50",
+  "title": "Call to Arms",
+  "bpm": 103.4,
+  "dur": 102.595
+ },
+ {
+  "cue": "m17",
+  "id": "0640da0e-7e22-3ae4-846f-a3006c0617e1",
+  "title": "Unite and Fight",
+  "bpm": 68.0,
+  "dur": 105.913
+ },
+ {
+  "cue": "m18",
+  "id": "bb228d99-9150-34c1-b668-e6282350ef24",
+  "title": "Ghosting",
+  "bpm": 95.7,
+  "dur": 181.333
+ },
+ {
+  "cue": "m19",
+  "id": "de20a9f5-53fb-4f1b-b3d9-bc94c0b9e5f9",
+  "title": "Coldfront",
+  "bpm": 123.0,
+  "dur": 177.822
+ }
+]

@@ -17,3 +17,6 @@ cues.md
 
 # per-video working dir; the record is examples/<job>/
 jobs/
+
+# the export is a build artifact; sound-design-export/ itself is committed
+sound-design-export.zip
