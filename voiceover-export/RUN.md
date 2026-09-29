@@ -11,7 +11,7 @@ bash skills/explaintory-voiceover/scripts/setup.sh
 
 This installs elevenlabs, faster-whisper, jiwer, whisper-normalizer, spaCy +
 en_core_web_sm, numpy, scipy, and CPU torch/torchaudio. The first real run downloads two
-models: distil-large-v3 (**1.5 GB**) for the read-check and MMS_FA (**1.18 GB**) for
+models: distil-large-v3 (**1.5 GB**) for the read-check and MMS_FA (**1.26 GB**, 1,262,047,414 bytes) for
 alignment. Both are cached after that. The sandbox needs network access to
 huggingface.co and download.pytorch.org.
 
@@ -71,7 +71,7 @@ Result: `$OUT/<Title> (final).mp3`, 48 kHz mono, 256 kbps. The working files are
 
 ```bash
 W="$OUT/.vo_<Title_with_underscores>"
-python3 $S/orphans.py --audio "$OUT/<Title> (final).mp3"          # exit 1 = stranded fragments found
+python3 $S/orphans.py --audio "$OUT/<Title> (final).mp3"          # exit 1 = candidates found; read the KEEP/ORPHAN verdicts
 python3 $S/verify.py  --audio "$OUT/<Title> (final).mp3" --script "$W/script_lines.txt" \
                       --curated breaks.txt --sections "$W/sections.json"   # exit 1 = do not deliver
 ```
@@ -163,8 +163,8 @@ Predicted output, **not measured**:
 - The log ends with `[humanize] inserted … at N boundaries {…}` and `[voiceover]
   delivered test/out/The Tiny Test Video (final).mp3 (… MB, 0:3x)`, exit 0.
 - Pauses the master should insert or top up: a post-date beat after "In 1547", **none**
-  inside "1547 and 1550", a comma beat after "1550," (unless the voice left under
-  60 ms), a curated beat at "Angolpo ‖ the", a post-date beat after "255 BC", and
+  inside "1547 and 1550", a comma beat after "1550,", a curated beat at "Angolpo ‖ the", and a post-date
+  beat after "255 BC" (every 0.16 s beat here, including the one after "In 1547", is skipped if the voice left under 60 ms), and
   sentence beats at each period.
 - Integrated loudness ≈ −14 LUFS, true peak ≤ −1.5 dBTP. Check with
   `ffmpeg -i "<file>" -af ebur128=peak=true -f null -`.

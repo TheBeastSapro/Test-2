@@ -73,9 +73,9 @@ the owner's Voiceover Studio:
 - `previous_text`: the last 300 characters of the previous section
 - `next_text`: the first 300 characters of the next section
 - `previous_request_ids`: request IDs of the last 3 sections
-- All conditioning is **dropped for the section right after a chapter heading**, so
-  the narration starts fresh instead of continuing the heading's sentence.
-  CHANNEL TASTE.
+- For the section right after a chapter heading, `previous_text` and
+  `previous_request_ids` are **dropped**, so the narration starts fresh instead of
+  continuing the heading's sentence. `next_text` is still sent. CHANNEL TASTE.
 
 **Re-render stability nudge.** This happens only with `--auto-redo`, which is off by
 default. Redo round 1 is a plain re-roll. Each later round raises stability by
@@ -131,7 +131,7 @@ the studio's chosen sweet spot.
 | Silence between sections | exact digital zeros, lengths in §4 | CHANNEL TASTE |
 | Heading rate levelling | **ON** when run through `voiceover.py`. Measures every chapter announcement in syllables/second over its spoken span. A heading more than **12%** off the median of the *other* headings is time-stretched toward it, clamped to **×0.85–×1.18**. Needs ≥3 headings. | CHANNEL TASTE |
 | Output | `<work>/raw_stitched.wav`, 48 kHz mono 16-bit PCM | GENERAL |
-| Truncation check | the stitch must be ≥90% of the summed section lengths or the run stops | GENERAL |
+| Truncation check | the stitch file's duration must be ≥90% of the expected end time (sections plus inserted silence), or the run stops | GENERAL |
 
 ---
 
@@ -159,14 +159,15 @@ chapter name and **0.39–0.57 s after** it (code comment in `script_prep.py`).
 
 ### 4b. Master stage: true-silence targets at punctuation (`humanize.py DEFAULTS`)
 
-Each target is a **minimum amount of true silence** (frames under −45 dB). The
-silence is measured in the last 0.35 s before the next word's onset. Inserted =
+Each target is a **minimum amount of true silence** (10 ms frames under −45 dB). The
+silence is measured from `max(previous word end, next onset − 0.35 s) − 0.05 s` to
+`next onset + 0.05 s`. Inserted =
 `max(0, target − measured)`.
 
 | Boundary | Target | Tag |
 |---|---|---|
 | **Comma**, `;` or `:` | **0.16 s** | CHANNEL TASTE |
-| Comma "run-through" rule | if the voice left **< 0.060 s** at a comma, **nothing is added** (the voice read through it on purpose) | CHANNEL TASTE |
+| "Run-through" rule | if the voice left **< 0.060 s**, **nothing is added**. Applies to every 0.16 s beat (comma, post-date **and** curated), because the code treats all three as "comma". Not applied to sentence or paragraph. | CHANNEL TASTE |
 | **Post-date beat** (a number or BC/AD followed by a non-number, e.g. "In 1547 ‖ the viceroy") | **0.16 s**. Skipped inside a date range ("between 1547 and 1550"). | CHANNEL TASTE |
 | **Curated clause break** (`--curated` file, `wordA|wordB`) | **0.16 s** | CHANNEL TASTE |
 | **Sentence** end (`. ! ?`, not `A.`) | **0.21 s**. The run-through rule does not apply. | CHANNEL TASTE |
@@ -189,7 +190,7 @@ All in `humanize.py`, called by `voiceover.py` with its defaults plus `--curated
 | # | Step | Exact settings | Tag |
 |---|---|---|---|
 | 1 | Decode | 48 kHz mono float32; 16 kHz copy for alignment | GENERAL |
-| 2 | QC report (log only) | flags clip ≥ −0.01 dBFS, hot > −1 dBFS, DC > 0.001, noise range < 35 dB, sub-60 Hz rumble, sibilance ratio > 1.2 | GENERAL |
+| 2 | QC report (log only) | flags clip at sample peak ≥ 0.999 (≈ −0.009 dBFS), hot > −1 dBFS, DC > 0.001, noise range < 35 dB, sub-60 Hz rumble, sibilance ratio > 1.2 | GENERAL |
 | 3 | **Declip** | runs with \|x\| ≥ 0.95 rebuilt by cubic fit over 8 samples either side | GENERAL |
 | 4 | **Splice-fragment cleanup** | removes bursts ≤ 0.25 s, above −50 dB, ≥15 dB over silence on both sides, within 50 ms of a digital-silence edge; 2 ms fades. `--keep-glitches` disables it. | GENERAL |
 | 5 | Forced alignment | torchaudio MMS_FA, 40 s chunks, 2 s overlap. **Aborts** if the implied rate is outside 90–260 wpm, or mean confidence < 0.55, or > 25% of words < 0.4 | GENERAL |
@@ -213,7 +214,7 @@ true-peak control only.
 
 | Item | Value | Tag |
 |---|---|---|
-| File name | `<Title> (final).mp3` in `--out-dir`. Title = `--title`, else the H1, else the file name; characters other than letters, digits, `-`, `.`, space are removed; max 80 chars | CHANNEL TASTE |
+| File name | `<Title> (final).mp3` in `--out-dir`. Title = `--title`, else the H1, else the file name. Characters matching `[^\w\-. ]` are removed (so letters, including Unicode letters, digits, `_`, `-`, `.` and space are kept), runs of whitespace become one space, and the name is capped at 80 chars | CHANNEL TASTE |
 | Codec | MP3 (libmp3lame), **256 kbps** CBR | GENERAL |
 | Sample rate / channels | **48 kHz, mono** | GENERAL |
 | Working folder | `<out-dir>/.vo_<Title_with_underscores>/`, holding `parts/sec_NNN.mp3` (each TTS take), `parts/request_ids.json`, `raw_stitched.wav`, `sections.json`, `script_lines.txt`, `narration_source.txt`, `readcheck.json`, `align.json`, `pauses.csv`, `spend.json`, `pronunciation_guide.json` | GENERAL |
