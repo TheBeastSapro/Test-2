@@ -387,3 +387,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Skip comma padding automatically when both sides of the comma are 1–2 word pieces inside a short sentence (fewer than 5 words), and list every skipped boundary in the log. Keep --hold for manual cases. When the user asks which take sounds more human, say plainly that no reliable measure exists yet and ask them to judge by ear.
 
 **Principle:** A pacing rule tuned for clause boundaries shouldn't apply to one-word asides. And when no reliable measure exists, say so rather than presenting unreliable numbers as evidence.
+
+### Observation 26: A subscribe ask at the end of a paragraph turns the whole paragraph into a CTA
+
+**Status:** OPEN
+**Date:** 2026-10-01
+**Session context:** Script v2 (Google Doc with tabs) for "The Most Insane Military Projects That Almost Happened". The plan listed "I'd love to tell you this stayed a drawing…" as a CTA. The only reason was that the new line "Quick thing, if you're enjoying this, subscribe…" was appended to the end of that narrative paragraph.
+**Skill:** explaintory-voiceover
+**Type:** internal
+**Phase/Area:** script_prep CTA detection / --plan
+
+**Issue:** CTA detection works per paragraph, so a narrative paragraph that ends with a subscribe ask gets CTA spacing (inserted silence around it) and is labelled a CTA in the plan. Splitting the ask into its own paragraph fixed it with no wording change. The plan showed it only because it prints the first words of each CTA.
+
+**Suggested improvement:** Detect CTAs per sentence. When a CTA sentence closes a narrative paragraph, split it off automatically and say so in PRE-FLIGHT ("CTA split from the end of paragraph N").
+
+**Principle:** A classifier that works per container mislabels the whole container when one part matches. Classify the smallest unit that carries the signal.
