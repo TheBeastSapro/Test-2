@@ -402,3 +402,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Detect CTAs per sentence. When a CTA sentence closes a narrative paragraph, split it off automatically and say so in PRE-FLIGHT ("CTA split from the end of paragraph N").
 
 **Principle:** A classifier that works per container mislabels the whole container when one part matches. Classify the smallest unit that carries the signal.
+
+### Observation 27: Heading levelling's "slow" flag was a false alarm on two heavy one-syllable words
+
+**Status:** OPEN
+**Date:** 2026-10-01
+**Session context:** "The Most Insane Military Projects…" (Script v2). The stitch flagged "Tsar Tank." as slow (2.32 syl/s against a 4.0 median) and wanted to speed it up 18%. Measured speech length was 0.67 s, the same as "The Natter." (0.70 s). I rendered 3 alternatives (59 chars). Sapro listened and kept the current take: "Current feels good".
+**Skill:** explaintory-voiceover
+**Type:** internal
+**Phase/Area:** generate.py level_headings; the review step
+
+**Issue:** Syllables per second penalises headings made of long stressed monosyllables. Here it raised a flag that cost a review round and 59 characters, and the user's answer was "no change". The same pass also scored "The Manned Orbiting Laboratory" as rushed.
+
+**Suggested improvement:** Judge headings by speech length against headings of similar syllable count, or by absolute length, before calling one slow. Report anything flagged as "listen", never as a defect. Before rendering candidates, offer "keep current" as an explicit option.
+
+**Principle:** A rate measure that ignores how long each syllable naturally is will flag words that are just heavy. Check the flag against a plain duration comparison before spending on it.
