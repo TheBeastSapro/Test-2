@@ -277,6 +277,10 @@ def align(wav16_path, lines, chunk_s=40):
 RUNTHROUGH = 0.060
 
 ABB = re.compile(r"^[A-Z]\.$")
+# Times of day end in a full stop but rarely end the sentence: "a 2 a.m. idea" got a
+# 0.18 s sentence beat between "a.m." and "idea". Only a capitalised next word makes
+# it a real sentence end ("…at 2 a.m. Nobody was awake").
+AMPM = re.compile(r"^[ap]\.m\.$", re.I)
 NUMY = re.compile(r"^[\d]")
 ERA = re.compile(r"^(BC|AD|BCE|CE)[.,;:]?$", re.I)
 
@@ -358,7 +362,8 @@ def build(x, words, lines, tgt, curated, tempo, max_wpm=None, min_factor=0.87,
             continue
         if nli != li:
             kind = None if (is_card(lines[nli]) or is_card(lines[li])) else "paragraph"
-        elif re.search(r"[.!?]\"?$", ow) and not ABB.match(ow):
+        elif re.search(r"[.!?]\"?$", ow) and not ABB.match(ow) \
+                and not (AMPM.match(ow) and not nw[:1].isupper()):
             kind = "sentence"
         elif re.search(r"[,;:]\"?$", ow):
             kind = "comma"
