@@ -401,3 +401,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** In --plan, fetch /v1/models and the voice record; print each calibration value as SENT / IGNORED BY MODEL, and refuse a model that cannot serve the voice. When a model is tested, A/B must be loudness-matched and use the same header and gap, or level and pacing differences get mistaken for quality.
 
 **Principle:** A setting the model cannot honour is a setting nobody chose — the provenance check has to include the model, not just the profile.
+
+### Observation 27: A pre-master filter written to 16-bit clipped 2,048 samples, and the master quietly repaired it
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Full v4 render, de-hiss (70 Hz HPF + -5 dB shelf at 9.5 kHz) before humanize.py
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** any processing inserted between stitch and master
+
+**Issue:** The stitch peaked at -0.34 dBFS. A high-pass and shelf cut still raise peaks (phase shift), and writing pcm_s16le hard-clipped 2,048 samples. humanize.py reported "declipped 2084 over-full-scale regions" (vs 20 on the v2 file) and "removed 3 splice fragments", then QC'd the delivered file as clean — the master's repair hid the defect from its own final check. The A/B clip Sapro approved had the same fault (38 full-scale samples).
+
+**Suggested improvement:** Any filter step before the master: -3 dB headroom, float output (pcm_f32le), assert peak < -0.5 dBFS before handing off. Treat a declip count more than ~5x the previous delivery's as a stop-and-look signal, not a log line. Make de-hiss a documented stage for v4 with these guards built in.
+
+**Principle:** A downstream repair that succeeds makes an upstream bug invisible — compare repair counts across runs, not just the final QC verdict.
