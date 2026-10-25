@@ -386,3 +386,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Add a `--which "<a>|<b>|..." --at <t>` mode to verify.py that ranks candidate readings by forced-alignment log-prob. Use it for numerals, regnal numbers, abbreviations and homophones, where ASR's output spelling is normalised and carries no evidence.
 
 **Principle:** When an instrument's output space collapses the distinction you care about, change instruments — ask a model that scores hypotheses rather than one that emits a best guess.
+
+### Observation 26: Model switch drops settings silently and the plan has no per-model capability check
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same video, Sapro asked for an Eleven v4 A/B on the opening paragraph
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** generate.py profile/settings, --plan
+
+**Issue:** /v1/models reports eleven_v4 with can_use_style=false, can_use_speaker_boost=false, serves_pro_voices=false. generate.py always sends style and use_speaker_boost (code defaults), so on v4 two locked settings stop existing with no line in the plan saying so. The voice's category (cloned vs professional) decides whether v4 can serve it at all; nothing checks it. First v4 take: 181 vs 209 wpm, sentence pauses ~0.55 s vs ~0.20 s, -15.4 vs -13.3 LUFS raw — and it spelled "Po-2" as "P-O-2", a misread v2 never made. Also: Sapro's "first section" is ambiguous between the pipeline's chunk and the first chapter; the costed offer on the table (395 chars) was taken as the scope.
+
+**Suggested improvement:** In --plan, fetch /v1/models and the voice record; print each calibration value as SENT / IGNORED BY MODEL, and refuse a model that cannot serve the voice. When a model is tested, A/B must be loudness-matched and use the same header and gap, or level and pacing differences get mistaken for quality.
+
+**Principle:** A setting the model cannot honour is a setting nobody chose — the provenance check has to include the model, not just the profile.
