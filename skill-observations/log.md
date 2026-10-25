@@ -341,3 +341,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Surface the API's own detail.message on every error; branch on body.detail.code before status. Have --plan check subscription status alongside the balance.
 
 **Principle:** Never replace an upstream error message with a guess about its cause; pass the original through.
+
+### Observation 23: Read-check crashes on PyAV 19; heading leveller clamps 4 of 6 silently; re-run gate miscounts cached takes
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same voiceover, after a successful 11,483-char first pass
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** setup.sh, generate.level_headings, generate.py spend gate
+
+**Issue:** (1) faster-whisper 1.2.1 calls av.open(metadata_errors=...), which PyAV 19 removed; the read-check crashed after generation finished. Pinning av==16.1.0 (binary wheel) fixed it. (2) The leveller retimed 6 of 8 headings and 4 of them hit the 0.85/1.18 clamp — the code clamps at ceil=1.18, not the documented ±15%, and printed no "clamp bound, needs an ear" line. Two different medians (3.83 vs 4.19) appeared because the median excludes the heading itself. (3) generate.py without --regen computes due as the FULL script even when every sec_NNN.mp3 exists (`only is None or ...` short-circuits), so a plain re-stitch demands approval for 11,483 chars. The gate failed safe; --stitch-only was the way through.
+
+**Suggested improvement:** Pin av<17 in setup.sh. Make the leveller ceiling 1.15 to match the docs, print the clamp warning, and default it off (the last two deliveries ran without it). Fix due to subtract cached parts when not regenerating.
+
+**Principle:** A cost estimate that ignores the cache overstates — still safe, but it trains the reader to distrust the gate.
