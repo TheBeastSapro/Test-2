@@ -296,3 +296,33 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: Guide parser takes the wrong block when a script has two guide-like sections
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Voiceover of "More Weapons That Succeeded for the Wrong Reasons Explained"
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** script_prep.split_pronunciation_guide / --plan pre-flight
+
+**Issue:** The script ends with "## Pronunciation guide" (26 names, `- **Name:** "RES-pel"` with the colon INSIDE the bold) followed by "## Numbers, as spoken" (11 entries). The narration was cut correctly, but the extracted answer key was the 11 number entries — zero names. The pre-flight then warned on "1942 / 1945" and "1098 / 1099" (combined entries, false positives) and checked none of the names it exists to check.
+
+**Suggested improvement:** Parse `**Name:**` (colon inside bold) as an entry; merge every guide-like block between the guide heading and the next H1 rather than keeping one; have --plan print the name count so "11 names" that are all numbers is visible. Split "A / B" headwords before the verbatim check.
+
+**Principle:** A check that silently runs on the wrong input reports clean — print what the check was actually given, not just that it ran.
+
+### Observation 21: setup.sh dies at the spaCy model step, so mastering deps are never installed
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same voiceover, fresh container (Python 3.13, spaCy 3.8.16)
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/setup.sh
+
+**Issue:** `spacy download en_core_web_sm` crashes with "OverflowError: Python int too large to convert to C ssize_t" inside the tokenizer load. Under `set -e` the script exits there, so torch/torchaudio/scipy (needed by the master) are never installed, though spaCy is only used by --suggest-breaks. Also, --plan does not count lexicon expansions in its character cost.
+
+**Suggested improvement:** Install the required stages first and the optional spaCy step last, non-fatally, with a clear "--suggest-breaks unavailable" message. Apply the lexicon before computing the plan's cost.
+
+**Principle:** Order an installer by necessity; an optional component's failure must not block the required ones.
