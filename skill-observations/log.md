@@ -326,3 +326,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Install the required stages first and the optional spaCy step last, non-fatally, with a clear "--suggest-breaks unavailable" message. Apply the lexicon before computing the plan's cost.
 
 **Principle:** Order an installer by necessity; an optional component's failure must not block the required ones.
+
+### Observation 22: generate.py reports every 401 as a bad key, hiding a billing failure
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same voiceover, first send after approval
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/generate.py tts() error handling
+
+**Issue:** ElevenLabs returned 401 with body type "payment_required" / code "payment_issue" ("Your subscription has a failed or incomplete payment"). tts() maps any 401 to "Invalid or expired ElevenLabs API key.", which points at the wrong fix. The key was valid — --plan had just read the credit balance with it. Also, --plan reads the balance but not the subscription status, so the gate passed a run that could not send.
+
+**Suggested improvement:** Surface the API's own detail.message on every error; branch on body.detail.code before status. Have --plan check subscription status alongside the balance.
+
+**Principle:** Never replace an upstream error message with a guess about its cause; pass the original through.
