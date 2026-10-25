@@ -356,3 +356,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Pin av<17 in setup.sh. Make the leveller ceiling 1.15 to match the docs, print the clamp warning, and default it off (the last two deliveries ran without it). Fix due to subtract cached parts when not regenerating.
 
 **Principle:** A cost estimate that ignores the cache overstates — still safe, but it trains the reader to distrust the gate.
+
+### Observation 24: 17 of 18 read-check flags were false positives from two normalisation gaps
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same voiceover, read-check after first pass
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/readcheck.py normalisation and REDO decision
+
+**Issue:** 18 sections flagged REDO (~5,947 chars). Only one was a real misread ("scrap metal" rendered "metals", 0.90 conf), and that was fixed for free by trimming the trailing 70 ms fricative (ZCR 8–14k) and re-transcribing (metal. 1.00). The rest: (a) curly apostrophes in the script (couldn’t) are not normalised, so the reference becomes "couldn t" against ASR "could not" — sections 3, 4, 5; (b) the boundary-merge drops "fire ships"→"fireships" and "Salt Peter"→"saltpeter" only in one direction, reporting "heard ships"/"heard peter" as dropped words; (c) names spelled the ASR's own way (Kociok→Kochuk, Werff→Verf). A missing possessive ("fighter’s"→"fighter", 0.49) was not flagged at all because of (a), and was confirmed present by a 130 ms fricative at the word end. "Croesus" read as five spellings, settled by MFCC-DTW against a "Cyrus" baseline (0.15–0.30 vs 0.08–0.67): no outlier.
+
+**Suggested improvement:** Fold ’ to ' before EnglishTextNormalizer, on both sides. Merge adjacent heard tokens when their concatenation equals the expected token (and vice versa) before computing problems. Down-rank single-name substitutions that are guide headwords to "name spelling, check acoustically" instead of REDO. Add the trailing-fricative trim as a documented free repair for a spurious plural at a sentence end.
+
+**Principle:** A checker that cries wolf on 17 of 18 sections teaches the operator to approve re-renders blindly; normalise the input before measuring the output.
