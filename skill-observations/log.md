@@ -371,3 +371,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Fold ’ to ' before EnglishTextNormalizer, on both sides. Merge adjacent heard tokens when their concatenation equals the expected token (and vice versa) before computing problems. Down-rank single-name substitutions that are guide headwords to "name spelling, check acoustically" instead of REDO. Add the trailing-fricative trim as a documented free repair for a spurious plural at a sentence end.
 
 **Principle:** A checker that cries wolf on 17 of 18 sections teaches the operator to approve re-renders blindly; normalise the input before measuring the output.
+
+### Observation 25: When ASR's spelling cannot distinguish two readings, score both with the forced aligner
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same voiceover, final verification of the delivered file
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** delivery verification
+
+**Issue:** "Philip II" was sent as "Philip the Second", but Whisper writes "Philip II" whether the voice said "the Second" or "two", so the transcript could not confirm the fix. Scoring candidate transcripts against a 1.5 s cut with MMS_FA CTC forced alignment settled it: "the second" -68.9 / -49.5 vs "two" -111.3 / -95.4 vs "eye eye" -119.1 / -102.8. Separately, the whole-file pass invented three insertions ("coming", "try to", "thank you") that windowed passes showed were absent, matching Observation 14.
+
+**Suggested improvement:** Add a `--which "<a>|<b>|..." --at <t>` mode to verify.py that ranks candidate readings by forced-alignment log-prob. Use it for numerals, regnal numbers, abbreviations and homophones, where ASR's output spelling is normalised and carries no evidence.
+
+**Principle:** When an instrument's output space collapses the distinction you care about, change instruments — ask a model that scores hypotheses rather than one that emits a best guess.
