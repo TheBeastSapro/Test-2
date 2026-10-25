@@ -416,3 +416,22 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** Any filter step before the master: -3 dB headroom, float output (pcm_f32le), assert peak < -0.5 dBFS before handing off. Treat a declip count more than ~5x the previous delivery's as a stop-and-look signal, not a log line. Make de-hiss a documented stage for v4 with these guards built in.
 
 **Principle:** A downstream repair that succeeds makes an upstream bug invisible — compare repair counts across runs, not just the final QC verdict.
+
+### Observation 28: Eleven v4 needs a de-hiss stage before mastering — Sapro approved it by ear
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** First v4 delivery ("More Weapons That Succeeded for the Wrong Reasons Explained"); Sapro asked for this to be logged
+**Skill:** explaintory-voiceover (also explaintory-vo-master)
+**Type:** internal
+**Phase/Area:** between stitch and humanize.py, v4 renders only
+
+**Issue:** Sapro preferred v4 over multilingual_v2 on an A/B, but heard background noise in it. Measured during speech: v4 carries +4–5 dB more energy at 10–16 kHz relative to 1–4 kHz than v2 (mastered: -17.1 vs -21.1 dB), plus ~2 dB more rumble below 80 Hz. The pauses are cleaner than v2's (-87.5 vs -70.3 dBFS), so it is hiss riding on the voice, not a noise floor — a gate or spectral denoiser keyed on silence would not touch it. He listened to v2 mastered / v4 mastered / v4 de-hissed mastered and chose the de-hissed one: "Dehiss mastered is good."
+
+**Suggested improvement:** Make it a fixed stage for any v4 render, applied to the stitch before humanize.py:
+
+    ffmpeg -i stitch.wav -af "volume=-3dB,highpass=f=70:poles=2,treble=g=-5:f=9500:t=s:w=0.7" -c:a pcm_f32le stitch_dehiss.wav
+
+Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,048 samples — see the previous observation). Acceptance check: 10–16 kHz vs 1–4 kHz during speech within ~0.5 dB of v2's mastered figure (-21 dB); 4–8 kHz must not drop (sibilance intact, -6.0 dB before and after). Not applied to v2 renders — they do not need it. The v4 calibration that went with it: model eleven_v4, stability 0.48, similarity_boost 0.80, speed 1.07; style and use_speaker_boost are unsupported on v4 and must be sent as 0 / false; readTitle false; lexicon "Po-2" → "Poh-two" (v4 otherwise spelled it "P-O-2").
+
+**Principle:** When a model change brings a new artifact, record the fix alongside the model choice — the two were decided together and are only valid together.
