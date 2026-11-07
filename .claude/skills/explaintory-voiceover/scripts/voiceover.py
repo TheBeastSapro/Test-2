@@ -361,6 +361,14 @@ def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None,
                        p("read_title", "readTitle", prof["read_title"]),
                        p("skip_headings", "skipHeadings", skip_headings)]):
         print(line)
+    try:
+        from generate import settings_for
+        _, dropped = settings_for(prof["model"], s)
+    except Exception:
+        dropped = []
+    if dropped:
+        print(f"  ^ {prof['model']} cannot use {', '.join(dropped)} — sent as off/0, "
+              f"not the profile value; speed is sent but the docs say v4 ignores it")
     inherited = [k for k in ("stability", "similarity_boost", "style", "speed",
                              "use_speaker_boost", "chunk_size", "chapter_pause",
                              "collapse_breaks", "read_title", "skip_headings")

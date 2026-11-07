@@ -46,6 +46,29 @@ DEFAULT_SETTINGS = {
 }
 DEFAULT_MODEL = "eleven_multilingual_v2"
 
+# Voice settings per model. eleven_v4 / v3: "Style and Speed sliders are not
+# available in Eleven v4" (ElevenLabs docs) and /v1/models reports can_use_style
+# and can_use_speaker_boost false. The v4 calibration Sapro approved on 2026-10-25
+# (observation 28) sent speed 1.07 with style 0 and speaker boost off, so that is
+# what is sent here: speed passes through (the docs say v4 ignores it — measure the
+# rate, do not assume it), and the two settings v4 cannot use are forced off rather
+# than sent at their v2 values. A model missing from this table gets every setting.
+MODEL_SETTINGS = {
+    "eleven_v4": {"style": 0.0, "use_speaker_boost": False},
+    "eleven_v4_turbo": {"style": 0.0, "use_speaker_boost": False},
+    "eleven_v3": {"style": 0.0, "use_speaker_boost": False},
+}
+
+
+def settings_for(model, settings):
+    """-> (settings to send, names whose profile value this model cannot use)."""
+    forced = MODEL_SETTINGS.get(model)
+    if not forced:
+        return dict(settings), []
+    out = dict(settings)
+    out.update(forced)
+    return out, [k for k in forced if k in settings]
+
 
 def log(m):
     print(f"[voiceover] {m}", flush=True)
@@ -153,7 +176,7 @@ def tts(client, prof, sections, index, prev_ids):
         text=sec["send_text"],
         model_id=prof["model"],
         output_format=OUTPUT_FORMAT,
-        voice_settings=VoiceSettings(**prof["settings"]),
+        voice_settings=VoiceSettings(**settings_for(prof["model"], prof["settings"])[0]),
     )
     if prev and not fresh_start:
         kw["previous_text"] = prev["send_text"][-CONTEXT_CHARS:]

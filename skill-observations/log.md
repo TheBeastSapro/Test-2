@@ -435,3 +435,48 @@ resolved statuses always carry their resolution date
 Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,048 samples — see the previous observation). Acceptance check: 10–16 kHz vs 1–4 kHz during speech within ~0.5 dB of v2's mastered figure (-21 dB); 4–8 kHz must not drop (sibilance intact, -6.0 dB before and after). Not applied to v2 renders — they do not need it. The v4 calibration that went with it: model eleven_v4, stability 0.48, similarity_boost 0.80, speed 1.07; style and use_speaker_boost are unsupported on v4 and must be sent as 0 / false; readTitle false; lexicon "Po-2" → "Poh-two" (v4 otherwise spelled it "P-O-2").
 
 **Principle:** When a model change brings a new artifact, record the fix alongside the model choice — the two were decided together and are only valid together.
+
+### Observation 29: The v4 calibration lived only on an unmerged branch, so the next v4 job started without it
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Voiceover of "How 150 Soldiers Beat 4,000 Zulus at Rorke's Drift" on Eleven v4, tempo matched to v2
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** session start / where locked settings are stored
+
+**Issue:** The first v4 delivery (2026-10-25) settled the v4 calibration, a de-hiss stage Sapro approved by ear, and a same-text A/B (v4 181 wpm vs v2 209, sentence pauses 0.55 s vs 0.20 s). All of it was recorded as Observations 26-28 on an unmerged session branch, and nowhere in voice-calibration.json or SKILL.md. This session read the main-line log (max #19), began rebuilding v4 handling from the ElevenLabs docs, and only found the earlier work after Sapro said "you already done a voiceover with v4, take a look at that".
+
+**Suggested improvement:** Locked per-model settings go in voice-calibration.json (a per-model block: v4 = style 0, speaker boost off, de-hiss chain) and get committed to the main line in the session that settles them, not only into the log. At session start, check origin branches for skill-observations/log.md entries newer than the local log, and merge them before reading OPEN observations.
+
+**Principle:** Knowledge that sits on an unmerged branch is not in the system. A decision the user approved has to land wherever the next run will look first, not only where it was written down.
+
+### Observation 30: --regen into a parts dir with missing sections renders them all, while the gate counts only the listed ones
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Same voiceover, planning a 4-section v2 control render
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/generate.py generate_sections / spend gate
+
+**Issue:** generate_sections renders a section when `i in todo or not os.path.isfile(path)`. With --regen 18,19,20,21 into an empty parts dir, it would render all 40 sections (about 12.9k characters), while the gate's `due` counts only the 4 listed sections (about 1.5k). The approval quoted to Sapro would understate the send roughly 8x. This is the mirror of Observation 23(3), where the gate overstates. Found by reading the code before the send; nothing was spent. Worked around by giving the control render its own script, containing only those paragraphs.
+
+**Suggested improvement:** With --regen, render ONLY the listed indices and treat missing neighbours as absent conditioning. Compute `due` from the same predicate the renderer uses, through one shared function, so the gate and the renderer can never disagree.
+
+**Principle:** A spend gate and the code that spends must share one predicate. If they compute "what will be sent" separately, they will drift, and the gate becomes a number that does not bind.
+
+### Observation 31: The master only tops pauses up, so "match the v2 wpm" cannot be done with global tempo alone
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Same voiceover; Sapro asked for v4 with tempo raised to v2's wpm
+**Skill:** explaintory-voiceover (also explaintory-vo-master)
+**Type:** open-source
+**Phase/Area:** between stitch and humanize.py, pacing
+
+**Issue:** humanize.py inserts `max(0, target - existing)` at each boundary. It never shortens a gap. v4's sentence gaps (about 0.55 s against v2's 0.20 s) therefore survive mastering intact. A uniform atempo big enough to close the wpm gap (209/181, about 1.155) would push articulation well past v2's, because about two thirds of the gap is pauses, not speech rate.
+
+**Suggested improvement:** For a model whose native pauses run long, add a pre-master step that caps inter-sentence silence at the v2-measured length (cut at measured silence, then transcribe to prove no word was lost). Then apply atempo only for the remaining articulation-rate difference, measured on a same-text v2 control. Report the final wpm next to v2's.
+
+**Principle:** Decompose a rate mismatch before correcting it. When a downstream stage repairs one component and passes the other through, a single global correction overshoots the part that was already fine.
