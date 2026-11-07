@@ -264,6 +264,19 @@ def record_spend(path, chars, index=None):
     os.replace(tmp, path)                 # never leave a half-written ledger behind
 
 
+def to_render(sections, parts_dir, only=None):
+    """-> indexes this invocation will SEND. The renderer and the spend gate both
+    call this, so the number Sapro approves is the number that gets sent.
+
+    A section is sent when it is listed in `only` (an explicit re-render) or when its
+    take is not on disk. Before this, a plain run re-rendered every section even if
+    its take existed, and --regen into a sparse parts dir rendered every missing
+    section while the gate counted only the listed ones (observations 23, 30)."""
+    listed = set(only or ())
+    return [i for i in range(len(sections))
+            if i in listed or not os.path.isfile(os.path.join(parts_dir, f"sec_{i:03d}.mp3"))]
+
+
 def generate_sections(prof, sections, parts_dir, only=None, on_spend=None):
     """Render sections to parts_dir/sec_NNN.mp3. `only` = iterable of indexes to
     (re)generate; everything else is reused from disk. Returns request ids.
@@ -275,11 +288,11 @@ def generate_sections(prof, sections, parts_dir, only=None, on_spend=None):
     ids_path = os.path.join(parts_dir, "request_ids.json")
     ids = json.load(open(ids_path)) if os.path.isfile(ids_path) else {}
 
-    todo = set(range(len(sections))) if only is None else set(only)
+    todo = set(to_render(sections, parts_dir, only))
     prev_ids = []
     for i, sec in enumerate(sections):
         path = os.path.join(parts_dir, f"sec_{i:03d}.mp3")
-        if i in todo or not os.path.isfile(path):
+        if i in todo:
             kind = "chapter" if sec["is_heading"] else "CTA" if sec["is_cta"] else "section"
             log(f"  {i+1}/{len(sections)} {kind}, {sec['chars']} chars")
             audio, rid = tts(cl, prof, sections, i, prev_ids)
@@ -580,10 +593,8 @@ def main():
         # Count what is actually about to be SENT — sections already on disk are
         # free. A redo pass is where a bill quietly doubles, so it is checked by
         # the same ceiling as a first render.
-        todo = range(len(sections)) if only is None else only
-        due = sum(sections[i]["chars"] for i in todo
-                  if only is None or not os.path.isfile(
-                      os.path.join(parts_dir, f"sec_{i:03d}.mp3")) or i in set(only))
+        todo = to_render(sections, parts_dir, only)
+        due = sum(sections[i]["chars"] for i in todo)
         ceiling = max(a.budget, a.approve_spend)
         already = spend_so_far(a.spend_log)
         remaining = ceiling - already if already >= 0 else 0
