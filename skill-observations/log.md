@@ -525,3 +525,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** Package the two measurements as a verify mode: (a) candidate ranking by MMS_FA log-prob (Observation 25), (b) a 5 ms dB/HF-share profile for closure-vs-fricative and fricative-length questions, with in-file reference words picked automatically. Down-rank a plural flag where the next word starts with s or z: it is a geminate the ASR collapses by design.
 
 **Principle:** Before spending to fix a flag, ask which instrument can actually see the difference. Where none can, as with a geminate across a word boundary, report it as undecidable rather than forcing a verdict either way.
+
+### Observation 35: v4 masters land 1.3 LU under the -14 LUFS target, and the master's log says -14
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Rorke's Drift v4 delivery, final verification
+**Skill:** explaintory-vo-master (also explaintory-voiceover)
+**Type:** open-source
+**Phase/Area:** humanize.py step 7 (loudnorm) and its log line
+
+**Issue:** humanize.py logs "loudnorm -14 LUFS / -1.5 dBTP" and "QC (delivered file): clean". ebur128 measures the delivered v4 master at -15.3 LUFS integrated (the approved x1.05 sample: -15.2). loudnorm runs single-pass with linear=true. When the file's peak-to-loudness ratio won't let it reach -14 without passing -1.5 dBTP, it settles lower, and nothing reports the shortfall. v4 is peakier than v2 (Observation 26: raw -15.4 vs -13.3 LUFS), so this probably hits every v4 delivery. YouTube turns loud files down but never turns quiet ones up, so a v4 video plays about 1.3 dB quieter than a v2 one. Not changed this session: mastering settings are locked. verify.py caught it.
+
+**Suggested improvement:** After loudnorm, measure the output and log the measured LUFS/TP, not the requested ones. Fail or warn past 0.5 LU. For v4, decide (Sapro's call, by ear) between a true-peak limiter ahead of loudnorm and accepting -15.3.
+
+**Principle:** Log what was measured, not what was asked for. A stage that reports its own parameters as results hides every case where the tool could not reach them.
