@@ -495,3 +495,33 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** Quote a logged measurement in an approval question only as "last time: X", never as the plan's premise. Render the sample first, measure, then say the plan. For v4 tempo matching: atempo = v2 wpm / v4 span wpm, applied after de-hiss and before humanize.py, with peak < -0.5 dBFS checked.
 
 **Principle:** A number measured on a different input is a hypothesis about this one. Spend nothing on the strength of it: measure the cheapest sample first, then state the plan.
+
+### Observation 33: regen_span refused a real misread because "night's" normalised to one token on one side and two on the other
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Rorke's Drift v4, fixing "on fire with" read as "on fire, but"
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/regen_span.py sentence location; spend ledger
+
+**Issue:** regen_span normalises each heard word on its own ("night's" -> one token "night is") but the target sentence as a whole ("night", "is"). Every later position shifted by one. A sentence with one contraction plus the misreads it was being re-rendered for fell under the 70% positional match and was REFUSED, with advice to re-roll the whole section (230 chars instead of 99). Fixed by splitting each heard word's normalisation into separate tokens that share its timestamps. Separately, regen_span on this branch does not debit spend.json (a fix exists on another branch, commit b638134), so the 99 characters were added to the ledger by hand.
+
+**Suggested improvement:** Keep the token-split fix. Make one shared normalise-and-tokenise helper for both sides of every heard-vs-script comparison (readcheck, regen_span, verify). Merge the spend.json debit into the main line.
+
+**Principle:** Two sides of a comparison must be tokenised by the same function. Matching a per-word transform against a whole-string transform drifts at the first token that expands, and the drift shows up as a refusal that blames the input.
+
+### Observation 34: Settling read-check flags by acoustics: 9 of 10 cleared, 1 real, and a merged plural that no tool can decide
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Same voiceover, triage of 10 read-check flags on a full v4 read
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** read-check triage
+
+**Issue:** Ten flags, about 3.4k characters if re-rolled. Cleared at no cost: the section-level transcript cleared "Help Makar"/Helpmakaar and "guy's"/guys. Forced-alignment scoring tied "there's"/"they're" and favoured "Chard" over "charge"/"shard". A closure measurement settled "so Chard" (vowel -> 20 ms closure at -6 dB -> fricative, vs a reference "to shoot": vowel straight into frication with no dip). Fricative length settled the plurals: "Zulus stabbing" 245 ms and "guys still" 250 ms (plural present), against single s 80-90 ms. One real misread: "on fire WITH" read as "on fire, BUT" (FA -20 vs -27), fixed with a 99-char span re-render (after: with -30.6 vs but -40.5). "Zulus set" stayed ambiguous on both takes: about 140 ms of s with no voiced z, and an FA tie. Whisper writes "Zulu" for both merged plurals.
+
+**Suggested improvement:** Package the two measurements as a verify mode: (a) candidate ranking by MMS_FA log-prob (Observation 25), (b) a 5 ms dB/HF-share profile for closure-vs-fricative and fricative-length questions, with in-file reference words picked automatically. Down-rank a plural flag where the next word starts with s or z: it is a geminate the ASR collapses by design.
+
+**Principle:** Before spending to fix a flag, ask which instrument can actually see the difference. Where none can, as with a geminate across a word boundary, report it as undecidable rather than forcing a verdict either way.
