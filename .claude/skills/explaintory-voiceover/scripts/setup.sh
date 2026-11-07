@@ -18,6 +18,8 @@ command -v ffmpeg >/dev/null || { echo "ffmpeg is required and not on PATH"; exi
 
 echo "installing generation + read-check…"
 "${PIP[@]}" elevenlabs faster-whisper jiwer whisper-normalizer spacy
+# faster-whisper 1.2.x calls av.open(metadata_errors=...), removed in PyAV 19 (obs 23)
+"${PIP[@]}" "av<17"
 python3 -m spacy download en_core_web_sm
 
 echo "installing mastering deps…"

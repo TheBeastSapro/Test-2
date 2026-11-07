@@ -480,3 +480,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** For a model whose native pauses run long, add a pre-master step that caps inter-sentence silence at the v2-measured length (cut at measured silence, then transcribe to prove no word was lost). Then apply atempo only for the remaining articulation-rate difference, measured on a same-text v2 control. Report the final wpm next to v2's.
 
 **Principle:** Decompose a rate mismatch before correcting it. When a downstream stage repairs one component and passes the other through, a single global correction overshoots the part that was already fine.
+
+### Observation 32: A logged figure was carried into an approval question as fact, and the measurement contradicted it
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Rorke's Drift v4 sample, matching tempo to v2
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** planning the tempo match / wording of the spend question
+
+**Issue:** The approval question told Sapro that about two thirds of v4's wpm gap was pauses (0.55 s vs 0.20 s), quoting Observation 26. The first v4 take of this script measured mean internal silence 0.19 s at -50, -40 and -35 dBFS (max 0.50 s). The gap was articulation: 181.7 wpm span-rate against the logged v2 209, the same 181 as last time. Capping pauses would have removed about 1.2 s out of a needed 7.5 s. The fix that matched was a plain atempo of x1.150 before the master. Mastered result: 213 wpm (native v4 through the same master: 187). The whole-file transcript diff was identical between the two versions, so the tempo cost no words.
+
+**Suggested improvement:** Quote a logged measurement in an approval question only as "last time: X", never as the plan's premise. Render the sample first, measure, then say the plan. For v4 tempo matching: atempo = v2 wpm / v4 span wpm, applied after de-hiss and before humanize.py, with peak < -0.5 dBFS checked.
+
+**Principle:** A number measured on a different input is a hypothesis about this one. Spend nothing on the strength of it: measure the cheapest sample first, then state the plan.
