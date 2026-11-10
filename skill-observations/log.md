@@ -296,3 +296,35 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+## 2026-11-10
+
+### Observation 20: The script link is checked against the wrong Google account before anything else happens
+
+**Status:** OPEN
+**Date:** 2026-11-10
+**Session context:** Voiceover request with a docs.google.com script link
+**Skill:** explaintory-voiceover
+**Type:** internal
+**Phase/Area:** Intake (before --plan)
+
+**Issue:** The Drive connector is signed in to the channel's business account. The script doc returned "not found" from both read_file_content and get_file_metadata, and the public export returned 401, so the doc is owned by or shared with a different account. The skill has no intake step for this, and the whole pipeline is blocked until the user re-shares or pastes the script.
+
+**Suggested improvement:** Add an intake step at the top of the skill: read the script through the Drive connector first; on not-found, ask once for "share with the connected account, or paste the text", and name the connected account. Never guess the script from the title.
+
+**Principle:** Check that an input is reachable before preparing anything that depends on it, and when it is not, say exactly which identity cannot see it.
+
+### Observation 21: Switching the model drops locked settings without anything flagging it
+
+**Status:** OPEN
+**Date:** 2026-11-10
+**Session context:** User asked for eleven_v4 rather than the locked eleven_multilingual_v2
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** Calibration / generate.py profile loading
+
+**Issue:** /v1/models reports eleven_v4 with can_use_style=false and can_use_speaker_boost=false. The locked profile sets style 0.05 and use_speaker_boost true. generate.py sends VoiceSettings from the profile as-is, and its CALIBRATION printout would show both values as "(profile)" even though the model ignores or rejects them. Whether v4 accepts previous_request_ids (request stitching) is also undocumented in the model record. The stability, speed and mastering targets were all tuned on v2 takes.
+
+**Suggested improvement:** In generate.py, fetch the model's capability flags from /v1/models (a free call) and mark each setting the model cannot use as "(ignored by <model>)" in the plan. Then decide per flag whether to drop it or refuse. Run one short paid test section on a new model, with approval, before the full send.
+
+**Principle:** A settings printout has to reflect what the target system will actually use, not just what the config file contains. A value the model ignores is not really a setting.
