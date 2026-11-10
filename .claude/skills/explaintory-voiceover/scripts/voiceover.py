@@ -465,6 +465,9 @@ def main():
                                       "(one 'wordA|wordB' pair per line)")
     ap.add_argument("--lexicon", help="pronunciation lexicon JSON — names respelled so "
                                       "the voice reads them right")
+    ap.add_argument("--heading-gap", type=float, default=None,
+                    help="with headings skipped: total silence in seconds where each "
+                         "chapter name would have been")
     ap.add_argument("--skip-headings", action="store_true", default=None,
                     help="do not read chapter names aloud (default: whatever the profile locked in)")
     ap.add_argument("--max-chunk", type=int, default=None)
@@ -636,6 +639,8 @@ def main():
         gen_cmd += ["--profile", a.profile]
     if a.skip_headings:
         gen_cmd += ["--skip-headings"]
+        if a.heading_gap:
+            gen_cmd += ["--heading-gap", str(a.heading_gap)]
     if a.chapter_pause:
         gen_cmd += ["--chapter-pause", a.chapter_pause]
     if a.lexicon:

@@ -1,0 +1,38 @@
+{
+  "_comment": [
+    "ExplainTory voice profile for Eleven v4. Pass with --profile voice-calibration.v4.json.",
+    "Settled across two deliveries: 'More Weapons That Succeeded for the Wrong Reasons'",
+    "(2026-10-25, A/B vs v2, de-hiss approved by ear: 'Dehiss mastered is good') and",
+    "'How 150 Soldiers Beat 4,000 Zulus at Rorke's Drift' (2026-11-07, delivered at",
+    "tempo x1.05). Observations 26-35 in skill-observations/log.md hold the evidence.",
+    "",
+    "v4 cannot use style or speaker boost (/v1/models: can_use_style=false,",
+    "can_use_speaker_boost=false); generate.py forces them to 0/false for v4.",
+    "",
+    "post_stitch is applied by hand between the stitch and humanize.py, in this order.",
+    "Write float WAV and check peak < -0.5 dBFS after it, or it clips (Observation 27).",
+    "",
+    "NO API KEY IN THIS FILE."
+  ],
+  "calibration": {
+    "voice": "dUHbvtIZto0ZEBkhYiyk",
+    "model": "eleven_v4",
+    "stability": 0.48,
+    "similarity_boost": 0.80,
+    "style": 0.0,
+    "speed": 1.07,
+    "use_speaker_boost": false,
+    "collapseBreaks": false,
+    "chapterPause": "natural",
+    "skipHeadings": false,
+    "readTitle": false,
+    "pronOn": false,
+    "chunkSize": 450
+  },
+  "post_stitch": {
+    "dehiss": "volume=-3dB,highpass=f=70:poles=2,treble=g=-5:f=9500:t=s:w=0.7",
+    "atempo": 1.05,
+    "output": "pcm_f32le",
+    "max_peak_dbfs": -0.5
+  }
+}

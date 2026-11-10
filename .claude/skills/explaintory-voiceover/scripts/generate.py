@@ -489,20 +489,54 @@ def _edge_fade(pcm_bytes, rate, dur=SPLICE_FADE):
     return a.tobytes()
 
 
-def stitch(parts_dir, sections, out_path, preset="natural", rate=SR, level=True):
+SILENCE_DBFS = -50.0
+
+
+def _edge_silence(pcm_bytes, rate, lead=True, floor_db=SILENCE_DBFS):
+    """Seconds of near-silence (< floor_db) at the start (lead) or end of a take."""
+    import array
+    a = array.array("h")
+    a.frombytes(pcm_bytes)
+    thr = 32768 * 10 ** (floor_db / 20.0)
+    idx = range(len(a)) if lead else range(len(a) - 1, -1, -1)
+    n = 0
+    for k in idx:
+        if abs(a[k]) > thr:
+            break
+        n += 1
+    return n / rate
+
+
+def stitch(parts_dir, sections, out_path, preset="natural", rate=SR, level=True,
+           heading_gap=None):
     """Concatenate the sections with exact digital silence between them.
-    Returns [{index, start, end}] so a flagged section maps back to a timestamp."""
+    Returns [{index, start, end}] so a flagged section maps back to a timestamp.
+
+    heading_gap: with headings skipped, the TOTAL silence (seconds) wanted where a
+    chapter name would have been. The voice's own edge silence on both sides is
+    measured and only the remainder is inserted, so the gap lands on the number
+    instead of number + ~0.4 s of model padding."""
     gaps = chapter_gaps(sections, preset)
     factors = level_headings(parts_dir, sections) if level else {}
     pcm = bytearray()
     marks = []
     for i, sec in enumerate(sections):
+        take = _edge_fade(
+            _decode(os.path.join(parts_dir, f"sec_{i:03d}.mp3"), rate,
+                    factors.get(i, 1.0)), rate)
+        silent_gap = None
+        if heading_gap and i and sec.get("after_silent_heading"):
+            have = (_edge_silence(bytes(pcm), rate, lead=False)
+                    + _edge_silence(take, rate, lead=True))
+            gaps[i] = max(gaps[i], heading_gap - have, 0.0)
+            silent_gap = round(have + gaps[i], 3)
         if gaps[i] > 0:
             pcm += b"\x00\x00" * int(round(gaps[i] * rate))
         start = len(pcm) / 2 / rate
-        pcm += _edge_fade(
-            _decode(os.path.join(parts_dir, f"sec_{i:03d}.mp3"), rate,
-                    factors.get(i, 1.0)), rate)
+        pcm += take
+        if silent_gap is not None:
+            log(f"silent heading before section {i + 1}: {silent_gap:.3f}s total "
+                f"silence ({gaps[i]:.3f}s inserted)")
         marks.append({"index": i, "start": round(start, 3),
                       "end": round(len(pcm) / 2 / rate, 3),
                       "retimed": round(factors.get(i, 1.0), 4)})
@@ -528,6 +562,10 @@ def main():
     ap.add_argument("--skip-headings", action="store_true",
                     help="do not read chapter names aloud (studio default is to read them)")
     ap.add_argument("--max-chunk", type=int, default=450)
+    ap.add_argument("--heading-gap", type=float, default=None,
+                    help="with --skip-headings: total seconds of silence where each "
+                         "chapter name would have been (edge silence measured, "
+                         "remainder inserted). Off by default.")
     ap.add_argument("--chapter-pause", choices=["tight", "natural", "wide"])
     ap.add_argument("--regen", help="comma-separated 1-based sections to re-render")
     ap.add_argument("--approval", default="",
@@ -651,7 +689,8 @@ def main():
                           if a.spend_log else None)
 
     log("stitching")
-    marks = stitch(parts_dir, sections, a.out, preset, level=not a.no_level_headings)
+    marks = stitch(parts_dir, sections, a.out, preset, level=not a.no_level_headings,
+                   heading_gap=a.heading_gap if a.skip_headings else None)
     # The stitch is this stage's artifact, so this stage says whether it exists.
     # ffmpeg reporting a problem on stderr and still exiting 0 has to end the run
     # here, not four minutes later inside the master with a confusing message.

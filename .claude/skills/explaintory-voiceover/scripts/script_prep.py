@@ -24,6 +24,11 @@ import sys
 
 SECTION_MARK = "\x01"
 PAUSE_MARK = "\x02"
+# Skip mode: the first narration after a heading that is NOT read aloud. It forces
+# a section break there so the stitch can put a measured silence where the chapter
+# name would have been (Sapro, 2026-11-10: "headers are not read aloud ... leave a
+# gap for a sec for header").
+SILENT_HEAD_MARK = "\x03"
 
 # chars per TTS request. 400-600 is the studio's sweet spot: the voice model
 # drifts over a long generation and holds its best delivery for ~30s.
@@ -61,7 +66,8 @@ _SMALL_WORD = re.compile(
 
 
 def unmark(t):
-    return t.replace(SECTION_MARK, "").replace(PAUSE_MARK, "")
+    return (t.replace(SECTION_MARK, "").replace(PAUSE_MARK, "")
+            .replace(SILENT_HEAD_MARK, ""))
 
 
 def strip_markdown(t):
@@ -431,6 +437,7 @@ def detect_structure(text, runon=False):
     kept, spoken, cta_previews = [], [], []
     pending_break = False
     pending_join = False        # runon: glue the next narration line to the chapter name
+    pending_silent = False      # skip mode: next narration line opens a silent chapter
     prev_was_cta = False
     ctas = 0
 
@@ -441,6 +448,7 @@ def detect_structure(text, runon=False):
             if it["type"] == "heading" and it["meta"]:
                 pending_break = True                # silent label still starts a fresh section
             if it["type"] == "heading" and not it["meta"]:
+                pending_silent = True
                 h = (it["say"] or it["text"].strip())
                 h = re.sub(r"^#{1,6}\s+", "", h)
                 h = re.sub(r"^\d{1,2}[.):]\s+", "", h)
@@ -481,6 +489,10 @@ def detect_structure(text, runon=False):
                 pending_break = False
             prev_was_cta = is_cta
 
+        if pending_silent and kept_out:
+            body = kept_out[1:] if kept_out.startswith(SECTION_MARK) else kept_out
+            kept_out = SECTION_MARK + SILENT_HEAD_MARK + body
+            pending_silent = False
         kept.append(kept_out)
         if pending_join and not out:
             continue        # the blank after '## Coca' must not become the join target
@@ -568,11 +580,14 @@ def build_sections(script_text, skip_headings=False, max_chunk=MAX_CHUNK, runon=
     out = []
     for i, t in enumerate(split_script(narration, max_chunk)):
         is_heading = bool(re.search(r"\x02\s*$", t)) and "\n" not in t
-        is_cta = t.startswith(PAUSE_MARK)
+        after_silent = t.startswith(SILENT_HEAD_MARK)
+        is_cta = t.lstrip(SILENT_HEAD_MARK).startswith(PAUSE_MARK)
         send = strip_markdown(
-            re.sub(r"\s*\x02", "", t).replace(SECTION_MARK, "")).strip()
+            re.sub(r"\s*\x02", "", t).replace(SECTION_MARK, "")
+            .replace(SILENT_HEAD_MARK, "")).strip()
         out.append({"index": i, "text": t, "send_text": send,
-                    "is_heading": is_heading, "is_cta": is_cta, "chars": len(send)})
+                    "is_heading": is_heading, "is_cta": is_cta,
+                    "after_silent_heading": after_silent, "chars": len(send)})
     return out
 
 
