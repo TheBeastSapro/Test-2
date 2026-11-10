@@ -585,3 +585,33 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** Done in this session: a line that is entirely **bold**, at most 10 words, and not ending in . ! ? … or , is classified as a heading (sentence case allowed), and the asterisks are stripped from the heading list. Still to do: --plan should warn when it detects 0 headings but the script has whole-line bold or short standalone lines between paragraphs.
 
 **Principle:** A structure detector that silently finds nothing is indistinguishable from a script with nothing in it. When the count is zero, the plan should say what it looked at and failed to classify.
+
+### Observation 39: The master's speed-up shrinks silent-heading gaps, so the gap has to be restored after mastering
+
+**Status:** OPEN
+**Date:** 2026-11-10
+**Session context:** Babylon v4 voiceover, headings silent, 1.0 s gap requested
+**Skill:** explaintory-voiceover (also explaintory-vo-master)
+**Type:** open-source
+**Phase/Area:** stitch heading_gap -> atempo -> humanize.py
+
+**Issue:** The stitch measured each silent-heading gap at exactly 1.070 s. After atempo x1.05 they were 1.004-1.022 s. After humanize.py, which applies an overall speed-up (631.7 s in, 616.9 s out, despite inserting 3.4 s of pauses), they were 0.903-0.988 s. Restored for free by inserting zeros at each gap's midpoint (the master writes exact digital silence there, -240 dBFS at every splice). Everything outside the inserts was asserted sample-identical. Final: seven gaps at 1.000-1.002 s.
+
+**Suggested improvement:** Either pass the silent-heading boundaries to humanize.py as protected (its --hold mechanism), or make the post-master gap restore a scripted step: find gaps within 0.15 s of the target, pad them to the target at the midpoint, and assert the samples outside are unchanged. Measure the gap in the DELIVERED file and report that number, not the stitch figure.
+
+**Principle:** A duration set before a time-altering stage is a request, not a result. Measure it after the last stage that can change it.
+
+### Observation 40: orphans.py calls v4 plosive releases "ORPHAN": 7 of 8 were speech
+
+**Status:** OPEN
+**Date:** 2026-11-10
+**Session context:** Same delivery, orphan sweep at --floor -50 on the final MP3
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/orphans.py adjudication
+
+**Issue:** The default exact-zero fence found 0 candidates. At --floor -50 it found 20 and judged 8 ORPHAN ("muting loses no words"). Word timestamps placed every one: the release of "up." (twice), "breast.", "top", the "-tch" of "witch." (peak -1.65 dBFS), the "-d" of "cleaned", part of "about" and "opens", and one 230 ms breath before "her breast". v4 closes to near-digital silence (-75 to -90 dBFS) inside words, so word-final bursts come out fenced by silence on both sides. The mute test cannot defend them, because Whisper restores a word from its vowel and context once the release is gone. Cutting the 8 would have clipped 7 words. Nothing was cut.
+
+**Suggested improvement:** In orphans.py, before calling ORPHAN, check the island against the forced-alignment word spans (align.json from the master). An island within 0.3 s after the end of a word ending in a plosive or affricate (p t k b d g ch) is that word's release: report it as RELEASE, not ORPHAN. Treat a peak above -6 dBFS as speech by default. Only flag islands at section joins as high-confidence orphans, since that is where every confirmed orphan so far was found.
+
+**Principle:** A one-sided test ("nothing was lost when muted") is only as good as the instrument's inability to guess. A recogniser that fills words in from context will call real speech removable.
