@@ -389,6 +389,13 @@ def _classify(s, idx, lines, prev_type):
         return "heading", True, ""                  # ## Hook
     if re.match(r"^#{1,6}\s+", s):
         return "heading", False, ""                 # ## Siren Head
+    bold = re.fullmatch(r"\*\*([^*]{1,80})\*\*", s)
+    if bold and not re.search(r"[.!?…,][\"'”’)]*$", bold.group(1).strip()) \
+            and len(bold.group(1).split()) <= 10:
+        # '**The King’s Slap**' — a Google Docs export of a bold line used as the
+        # chapter title, with no '#'. Undetected, it is narrated mid-paragraph.
+        # Sentence case counts ('**The hungry dead**'), so no title-case test.
+        return "heading", False, bold.group(1).strip()
     if re.match(r"^\[[^\]]{1,80}\]$", s) or re.match(r"^\*[^*]{1,80}\*$", s):
         return "direction", False, ""               # [SFX: sirens], *pause*
     if (re.match(_SECTION_WORD + r"\s*(\d+|[ivxIVX]+)\b[:.\-–—)]?\s*.{0,60}$", s, re.I)
@@ -427,7 +434,7 @@ def detect_structure(text, runon=False):
         typ, meta, say = _classify(s, idx, lines, prev_type)
         items.append({"text": line, "type": typ, "meta": meta, "say": say})
         if typ == "heading":
-            headings.append(re.sub(r"^#{1,6}\s+", "", s))
+            headings.append(re.sub(r"^\*\*(.*)\*\*$", r"\1", re.sub(r"^#{1,6}\s+", "", s)))
         if typ == "direction":
             directions += 1
         if typ == "divider":

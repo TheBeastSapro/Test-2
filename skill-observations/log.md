@@ -570,3 +570,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** Apply #29 structurally, not as a sentence. (1) Put a per-model block in voice-calibration.json (v4: style 0, speaker boost off, readTitle false, de-hiss chain, tempo-match rule) and commit it on the session branch that settles it. (2) At session start, run `git fetch && git log --all -- skill-observations/log.md` and merge any branch whose log has entries above the local maximum before reading OPEN observations. Reading the local log alone is not enough.
 
 **Principle:** A logged fix that is never applied is a prediction of the next failure. When an observation recurs, the remedy has to be the structural one, because the reminder version has already been tried and failed.
+
+### Observation 38: Bold-line chapter titles from a Google Docs export were not detected, so they would have been narrated
+
+**Status:** OPEN
+**Date:** 2026-11-10
+**Session context:** "Ancient Babylon Was More Terrifying Than You Think", v4, headings silent with a 1 s gap
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** script_prep._classify
+
+**Issue:** The script's 7 chapter titles were exported by the Drive connector as whole-line bold ("**The King’s Slap**", "**The hungry dead**"), with no '#'. No heading rule matched. The title-case rule failed on the asterisks, and two titles are sentence case anyway. --plan reported "0 chapter announcements" and placed the titles inside the narration chunks, so the voice would have read them aloud mid-paragraph, the exact opposite of the brief. The silent-gap feature would also have had nothing to anchor to. Caught only because the plan said 0 headings on a script with visible chapter titles.
+
+**Suggested improvement:** Done in this session: a line that is entirely **bold**, at most 10 words, and not ending in . ! ? … or , is classified as a heading (sentence case allowed), and the asterisks are stripped from the heading list. Still to do: --plan should warn when it detects 0 headings but the script has whole-line bold or short standalone lines between paragraphs.
+
+**Principle:** A structure detector that silently finds nothing is indistinguishable from a script with nothing in it. When the count is zero, the plan should say what it looked at and failed to classify.
