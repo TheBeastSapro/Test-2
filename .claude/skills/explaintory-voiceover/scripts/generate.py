@@ -46,6 +46,29 @@ DEFAULT_SETTINGS = {
 }
 DEFAULT_MODEL = "eleven_multilingual_v2"
 
+# Voice settings per model. eleven_v4 / v3: "Style and Speed sliders are not
+# available in Eleven v4" (ElevenLabs docs) and /v1/models reports can_use_style
+# and can_use_speaker_boost false. The v4 calibration Sapro approved on 2026-10-25
+# (observation 28) sent speed 1.07 with style 0 and speaker boost off, so that is
+# what is sent here: speed passes through (the docs say v4 ignores it — measure the
+# rate, do not assume it), and the two settings v4 cannot use are forced off rather
+# than sent at their v2 values. A model missing from this table gets every setting.
+MODEL_SETTINGS = {
+    "eleven_v4": {"style": 0.0, "use_speaker_boost": False},
+    "eleven_v4_turbo": {"style": 0.0, "use_speaker_boost": False},
+    "eleven_v3": {"style": 0.0, "use_speaker_boost": False},
+}
+
+
+def settings_for(model, settings):
+    """-> (settings to send, names whose profile value this model cannot use)."""
+    forced = MODEL_SETTINGS.get(model)
+    if not forced:
+        return dict(settings), []
+    out = dict(settings)
+    out.update(forced)
+    return out, [k for k in forced if k in settings]
+
 
 def log(m):
     print(f"[voiceover] {m}", flush=True)
@@ -153,7 +176,7 @@ def tts(client, prof, sections, index, prev_ids):
         text=sec["send_text"],
         model_id=prof["model"],
         output_format=OUTPUT_FORMAT,
-        voice_settings=VoiceSettings(**prof["settings"]),
+        voice_settings=VoiceSettings(**settings_for(prof["model"], prof["settings"])[0]),
     )
     if prev and not fresh_start:
         kw["previous_text"] = prev["send_text"][-CONTEXT_CHARS:]
@@ -241,6 +264,19 @@ def record_spend(path, chars, index=None):
     os.replace(tmp, path)                 # never leave a half-written ledger behind
 
 
+def to_render(sections, parts_dir, only=None):
+    """-> indexes this invocation will SEND. The renderer and the spend gate both
+    call this, so the number Sapro approves is the number that gets sent.
+
+    A section is sent when it is listed in `only` (an explicit re-render) or when its
+    take is not on disk. Before this, a plain run re-rendered every section even if
+    its take existed, and --regen into a sparse parts dir rendered every missing
+    section while the gate counted only the listed ones (observations 23, 30)."""
+    listed = set(only or ())
+    return [i for i in range(len(sections))
+            if i in listed or not os.path.isfile(os.path.join(parts_dir, f"sec_{i:03d}.mp3"))]
+
+
 def generate_sections(prof, sections, parts_dir, only=None, on_spend=None):
     """Render sections to parts_dir/sec_NNN.mp3. `only` = iterable of indexes to
     (re)generate; everything else is reused from disk. Returns request ids.
@@ -252,11 +288,11 @@ def generate_sections(prof, sections, parts_dir, only=None, on_spend=None):
     ids_path = os.path.join(parts_dir, "request_ids.json")
     ids = json.load(open(ids_path)) if os.path.isfile(ids_path) else {}
 
-    todo = set(range(len(sections))) if only is None else set(only)
+    todo = set(to_render(sections, parts_dir, only))
     prev_ids = []
     for i, sec in enumerate(sections):
         path = os.path.join(parts_dir, f"sec_{i:03d}.mp3")
-        if i in todo or not os.path.isfile(path):
+        if i in todo:
             kind = "chapter" if sec["is_heading"] else "CTA" if sec["is_cta"] else "section"
             log(f"  {i+1}/{len(sections)} {kind}, {sec['chars']} chars")
             audio, rid = tts(cl, prof, sections, i, prev_ids)
@@ -557,10 +593,8 @@ def main():
         # Count what is actually about to be SENT — sections already on disk are
         # free. A redo pass is where a bill quietly doubles, so it is checked by
         # the same ceiling as a first render.
-        todo = range(len(sections)) if only is None else only
-        due = sum(sections[i]["chars"] for i in todo
-                  if only is None or not os.path.isfile(
-                      os.path.join(parts_dir, f"sec_{i:03d}.mp3")) or i in set(only))
+        todo = to_render(sections, parts_dir, only)
+        due = sum(sections[i]["chars"] for i in todo)
         ceiling = max(a.budget, a.approve_spend)
         already = spend_so_far(a.spend_log)
         remaining = ceiling - already if already >= 0 else 0

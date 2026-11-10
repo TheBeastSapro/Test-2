@@ -297,34 +297,276 @@ resolved statuses always carry their resolution date
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
 
-## 2026-11-10
+### Observation 20: Guide parser takes the wrong block when a script has two guide-like sections
 
-### Observation 20: The script link is checked against the wrong Google account before anything else happens
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Voiceover of "More Weapons That Succeeded for the Wrong Reasons Explained"
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** script_prep.split_pronunciation_guide / --plan pre-flight
+
+**Issue:** The script ends with "## Pronunciation guide" (26 names, `- **Name:** "RES-pel"` with the colon INSIDE the bold) followed by "## Numbers, as spoken" (11 entries). The narration was cut correctly, but the extracted answer key was the 11 number entries — zero names. The pre-flight then warned on "1942 / 1945" and "1098 / 1099" (combined entries, false positives) and checked none of the names it exists to check.
+
+**Suggested improvement:** Parse `**Name:**` (colon inside bold) as an entry; merge every guide-like block between the guide heading and the next H1 rather than keeping one; have --plan print the name count so "11 names" that are all numbers is visible. Split "A / B" headwords before the verbatim check.
+
+**Principle:** A check that silently runs on the wrong input reports clean — print what the check was actually given, not just that it ran.
+
+### Observation 21: setup.sh dies at the spaCy model step, so mastering deps are never installed
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same voiceover, fresh container (Python 3.13, spaCy 3.8.16)
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/setup.sh
+
+**Issue:** `spacy download en_core_web_sm` crashes with "OverflowError: Python int too large to convert to C ssize_t" inside the tokenizer load. Under `set -e` the script exits there, so torch/torchaudio/scipy (needed by the master) are never installed, though spaCy is only used by --suggest-breaks. Also, --plan does not count lexicon expansions in its character cost.
+
+**Suggested improvement:** Install the required stages first and the optional spaCy step last, non-fatally, with a clear "--suggest-breaks unavailable" message. Apply the lexicon before computing the plan's cost.
+
+**Principle:** Order an installer by necessity; an optional component's failure must not block the required ones.
+
+### Observation 22: generate.py reports every 401 as a bad key, hiding a billing failure
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same voiceover, first send after approval
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/generate.py tts() error handling
+
+**Issue:** ElevenLabs returned 401 with body type "payment_required" / code "payment_issue" ("Your subscription has a failed or incomplete payment"). tts() maps any 401 to "Invalid or expired ElevenLabs API key.", which points at the wrong fix. The key was valid — --plan had just read the credit balance with it. Also, --plan reads the balance but not the subscription status, so the gate passed a run that could not send.
+
+**Suggested improvement:** Surface the API's own detail.message on every error; branch on body.detail.code before status. Have --plan check subscription status alongside the balance.
+
+**Principle:** Never replace an upstream error message with a guess about its cause; pass the original through.
+
+### Observation 23: Read-check crashes on PyAV 19; heading leveller clamps 4 of 6 silently; re-run gate miscounts cached takes
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same voiceover, after a successful 11,483-char first pass
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** setup.sh, generate.level_headings, generate.py spend gate
+
+**Issue:** (1) faster-whisper 1.2.1 calls av.open(metadata_errors=...), which PyAV 19 removed; the read-check crashed after generation finished. Pinning av==16.1.0 (binary wheel) fixed it. (2) The leveller retimed 6 of 8 headings and 4 of them hit the 0.85/1.18 clamp — the code clamps at ceil=1.18, not the documented ±15%, and printed no "clamp bound, needs an ear" line. Two different medians (3.83 vs 4.19) appeared because the median excludes the heading itself. (3) generate.py without --regen computes due as the FULL script even when every sec_NNN.mp3 exists (`only is None or ...` short-circuits), so a plain re-stitch demands approval for 11,483 chars. The gate failed safe; --stitch-only was the way through.
+
+**Suggested improvement:** Pin av<17 in setup.sh. Make the leveller ceiling 1.15 to match the docs, print the clamp warning, and default it off (the last two deliveries ran without it). Fix due to subtract cached parts when not regenerating.
+
+**Principle:** A cost estimate that ignores the cache overstates — still safe, but it trains the reader to distrust the gate.
+
+### Observation 24: 17 of 18 read-check flags were false positives from two normalisation gaps
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same voiceover, read-check after first pass
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/readcheck.py normalisation and REDO decision
+
+**Issue:** 18 sections flagged REDO (~5,947 chars). Only one was a real misread ("scrap metal" rendered "metals", 0.90 conf), and that was fixed for free by trimming the trailing 70 ms fricative (ZCR 8–14k) and re-transcribing (metal. 1.00). The rest: (a) curly apostrophes in the script (couldn’t) are not normalised, so the reference becomes "couldn t" against ASR "could not" — sections 3, 4, 5; (b) the boundary-merge drops "fire ships"→"fireships" and "Salt Peter"→"saltpeter" only in one direction, reporting "heard ships"/"heard peter" as dropped words; (c) names spelled the ASR's own way (Kociok→Kochuk, Werff→Verf). A missing possessive ("fighter’s"→"fighter", 0.49) was not flagged at all because of (a), and was confirmed present by a 130 ms fricative at the word end. "Croesus" read as five spellings, settled by MFCC-DTW against a "Cyrus" baseline (0.15–0.30 vs 0.08–0.67): no outlier.
+
+**Suggested improvement:** Fold ’ to ' before EnglishTextNormalizer, on both sides. Merge adjacent heard tokens when their concatenation equals the expected token (and vice versa) before computing problems. Down-rank single-name substitutions that are guide headwords to "name spelling, check acoustically" instead of REDO. Add the trailing-fricative trim as a documented free repair for a spurious plural at a sentence end.
+
+**Principle:** A checker that cries wolf on 17 of 18 sections teaches the operator to approve re-renders blindly; normalise the input before measuring the output.
+
+### Observation 25: When ASR's spelling cannot distinguish two readings, score both with the forced aligner
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same voiceover, final verification of the delivered file
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** delivery verification
+
+**Issue:** "Philip II" was sent as "Philip the Second", but Whisper writes "Philip II" whether the voice said "the Second" or "two", so the transcript could not confirm the fix. Scoring candidate transcripts against a 1.5 s cut with MMS_FA CTC forced alignment settled it: "the second" -68.9 / -49.5 vs "two" -111.3 / -95.4 vs "eye eye" -119.1 / -102.8. Separately, the whole-file pass invented three insertions ("coming", "try to", "thank you") that windowed passes showed were absent, matching Observation 14.
+
+**Suggested improvement:** Add a `--which "<a>|<b>|..." --at <t>` mode to verify.py that ranks candidate readings by forced-alignment log-prob. Use it for numerals, regnal numbers, abbreviations and homophones, where ASR's output spelling is normalised and carries no evidence.
+
+**Principle:** When an instrument's output space collapses the distinction you care about, change instruments — ask a model that scores hypotheses rather than one that emits a best guess.
+
+### Observation 26: Model switch drops settings silently and the plan has no per-model capability check
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Same video, Sapro asked for an Eleven v4 A/B on the opening paragraph
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** generate.py profile/settings, --plan
+
+**Issue:** /v1/models reports eleven_v4 with can_use_style=false, can_use_speaker_boost=false, serves_pro_voices=false. generate.py always sends style and use_speaker_boost (code defaults), so on v4 two locked settings stop existing with no line in the plan saying so. The voice's category (cloned vs professional) decides whether v4 can serve it at all; nothing checks it. First v4 take: 181 vs 209 wpm, sentence pauses ~0.55 s vs ~0.20 s, -15.4 vs -13.3 LUFS raw — and it spelled "Po-2" as "P-O-2", a misread v2 never made. Also: Sapro's "first section" is ambiguous between the pipeline's chunk and the first chapter; the costed offer on the table (395 chars) was taken as the scope.
+
+**Suggested improvement:** In --plan, fetch /v1/models and the voice record; print each calibration value as SENT / IGNORED BY MODEL, and refuse a model that cannot serve the voice. When a model is tested, A/B must be loudness-matched and use the same header and gap, or level and pacing differences get mistaken for quality.
+
+**Principle:** A setting the model cannot honour is a setting nobody chose — the provenance check has to include the model, not just the profile.
+
+### Observation 27: A pre-master filter written to 16-bit clipped 2,048 samples, and the master quietly repaired it
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** Full v4 render, de-hiss (70 Hz HPF + -5 dB shelf at 9.5 kHz) before humanize.py
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** any processing inserted between stitch and master
+
+**Issue:** The stitch peaked at -0.34 dBFS. A high-pass and shelf cut still raise peaks (phase shift), and writing pcm_s16le hard-clipped 2,048 samples. humanize.py reported "declipped 2084 over-full-scale regions" (vs 20 on the v2 file) and "removed 3 splice fragments", then QC'd the delivered file as clean — the master's repair hid the defect from its own final check. The A/B clip Sapro approved had the same fault (38 full-scale samples).
+
+**Suggested improvement:** Any filter step before the master: -3 dB headroom, float output (pcm_f32le), assert peak < -0.5 dBFS before handing off. Treat a declip count more than ~5x the previous delivery's as a stop-and-look signal, not a log line. Make de-hiss a documented stage for v4 with these guards built in.
+
+**Principle:** A downstream repair that succeeds makes an upstream bug invisible — compare repair counts across runs, not just the final QC verdict.
+
+### Observation 28: Eleven v4 needs a de-hiss stage before mastering — Sapro approved it by ear
+
+**Status:** OPEN
+**Date:** 2026-10-25
+**Session context:** First v4 delivery ("More Weapons That Succeeded for the Wrong Reasons Explained"); Sapro asked for this to be logged
+**Skill:** explaintory-voiceover (also explaintory-vo-master)
+**Type:** internal
+**Phase/Area:** between stitch and humanize.py, v4 renders only
+
+**Issue:** Sapro preferred v4 over multilingual_v2 on an A/B, but heard background noise in it. Measured during speech: v4 carries +4–5 dB more energy at 10–16 kHz relative to 1–4 kHz than v2 (mastered: -17.1 vs -21.1 dB), plus ~2 dB more rumble below 80 Hz. The pauses are cleaner than v2's (-87.5 vs -70.3 dBFS), so it is hiss riding on the voice, not a noise floor — a gate or spectral denoiser keyed on silence would not touch it. He listened to v2 mastered / v4 mastered / v4 de-hissed mastered and chose the de-hissed one: "Dehiss mastered is good."
+
+**Suggested improvement:** Make it a fixed stage for any v4 render, applied to the stitch before humanize.py:
+
+    ffmpeg -i stitch.wav -af "volume=-3dB,highpass=f=70:poles=2,treble=g=-5:f=9500:t=s:w=0.7" -c:a pcm_f32le stitch_dehiss.wav
+
+Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,048 samples — see the previous observation). Acceptance check: 10–16 kHz vs 1–4 kHz during speech within ~0.5 dB of v2's mastered figure (-21 dB); 4–8 kHz must not drop (sibilance intact, -6.0 dB before and after). Not applied to v2 renders — they do not need it. The v4 calibration that went with it: model eleven_v4, stability 0.48, similarity_boost 0.80, speed 1.07; style and use_speaker_boost are unsupported on v4 and must be sent as 0 / false; readTitle false; lexicon "Po-2" → "Poh-two" (v4 otherwise spelled it "P-O-2").
+
+**Principle:** When a model change brings a new artifact, record the fix alongside the model choice — the two were decided together and are only valid together.
+
+### Observation 29: The v4 calibration lived only on an unmerged branch, so the next v4 job started without it
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Voiceover of "How 150 Soldiers Beat 4,000 Zulus at Rorke's Drift" on Eleven v4, tempo matched to v2
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** session start / where locked settings are stored
+
+**Issue:** The first v4 delivery (2026-10-25) settled the v4 calibration, a de-hiss stage Sapro approved by ear, and a same-text A/B (v4 181 wpm vs v2 209, sentence pauses 0.55 s vs 0.20 s). All of it was recorded as Observations 26-28 on an unmerged session branch, and nowhere in voice-calibration.json or SKILL.md. This session read the main-line log (max #19), began rebuilding v4 handling from the ElevenLabs docs, and only found the earlier work after Sapro said "you already done a voiceover with v4, take a look at that".
+
+**Suggested improvement:** Locked per-model settings go in voice-calibration.json (a per-model block: v4 = style 0, speaker boost off, de-hiss chain) and get committed to the main line in the session that settles them, not only into the log. At session start, check origin branches for skill-observations/log.md entries newer than the local log, and merge them before reading OPEN observations.
+
+**Principle:** Knowledge that sits on an unmerged branch is not in the system. A decision the user approved has to land wherever the next run will look first, not only where it was written down.
+
+### Observation 30: --regen into a parts dir with missing sections renders them all, while the gate counts only the listed ones
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Same voiceover, planning a 4-section v2 control render
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/generate.py generate_sections / spend gate
+
+**Issue:** generate_sections renders a section when `i in todo or not os.path.isfile(path)`. With --regen 18,19,20,21 into an empty parts dir, it would render all 40 sections (about 12.9k characters), while the gate's `due` counts only the 4 listed sections (about 1.5k). The approval quoted to Sapro would understate the send roughly 8x. This is the mirror of Observation 23(3), where the gate overstates. Found by reading the code before the send; nothing was spent. Worked around by giving the control render its own script, containing only those paragraphs.
+
+**Suggested improvement:** With --regen, render ONLY the listed indices and treat missing neighbours as absent conditioning. Compute `due` from the same predicate the renderer uses, through one shared function, so the gate and the renderer can never disagree.
+
+**Principle:** A spend gate and the code that spends must share one predicate. If they compute "what will be sent" separately, they will drift, and the gate becomes a number that does not bind.
+
+### Observation 31: The master only tops pauses up, so "match the v2 wpm" cannot be done with global tempo alone
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Same voiceover; Sapro asked for v4 with tempo raised to v2's wpm
+**Skill:** explaintory-voiceover (also explaintory-vo-master)
+**Type:** open-source
+**Phase/Area:** between stitch and humanize.py, pacing
+
+**Issue:** humanize.py inserts `max(0, target - existing)` at each boundary. It never shortens a gap. v4's sentence gaps (about 0.55 s against v2's 0.20 s) therefore survive mastering intact. A uniform atempo big enough to close the wpm gap (209/181, about 1.155) would push articulation well past v2's, because about two thirds of the gap is pauses, not speech rate.
+
+**Suggested improvement:** For a model whose native pauses run long, add a pre-master step that caps inter-sentence silence at the v2-measured length (cut at measured silence, then transcribe to prove no word was lost). Then apply atempo only for the remaining articulation-rate difference, measured on a same-text v2 control. Report the final wpm next to v2's.
+
+**Principle:** Decompose a rate mismatch before correcting it. When a downstream stage repairs one component and passes the other through, a single global correction overshoots the part that was already fine.
+
+### Observation 32: A logged figure was carried into an approval question as fact, and the measurement contradicted it
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Rorke's Drift v4 sample, matching tempo to v2
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** planning the tempo match / wording of the spend question
+
+**Issue:** The approval question told Sapro that about two thirds of v4's wpm gap was pauses (0.55 s vs 0.20 s), quoting Observation 26. The first v4 take of this script measured mean internal silence 0.19 s at -50, -40 and -35 dBFS (max 0.50 s). The gap was articulation: 181.7 wpm span-rate against the logged v2 209, the same 181 as last time. Capping pauses would have removed about 1.2 s out of a needed 7.5 s. The fix that matched was a plain atempo of x1.150 before the master. Mastered result: 213 wpm (native v4 through the same master: 187). The whole-file transcript diff was identical between the two versions, so the tempo cost no words.
+
+**Suggested improvement:** Quote a logged measurement in an approval question only as "last time: X", never as the plan's premise. Render the sample first, measure, then say the plan. For v4 tempo matching: atempo = v2 wpm / v4 span wpm, applied after de-hiss and before humanize.py, with peak < -0.5 dBFS checked.
+
+**Principle:** A number measured on a different input is a hypothesis about this one. Spend nothing on the strength of it: measure the cheapest sample first, then state the plan.
+
+### Observation 33: regen_span refused a real misread because "night's" normalised to one token on one side and two on the other
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Rorke's Drift v4, fixing "on fire with" read as "on fire, but"
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** scripts/regen_span.py sentence location; spend ledger
+
+**Issue:** regen_span normalises each heard word on its own ("night's" -> one token "night is") but the target sentence as a whole ("night", "is"). Every later position shifted by one. A sentence with one contraction plus the misreads it was being re-rendered for fell under the 70% positional match and was REFUSED, with advice to re-roll the whole section (230 chars instead of 99). Fixed by splitting each heard word's normalisation into separate tokens that share its timestamps. Separately, regen_span on this branch does not debit spend.json (a fix exists on another branch, commit b638134), so the 99 characters were added to the ledger by hand.
+
+**Suggested improvement:** Keep the token-split fix. Make one shared normalise-and-tokenise helper for both sides of every heard-vs-script comparison (readcheck, regen_span, verify). Merge the spend.json debit into the main line.
+
+**Principle:** Two sides of a comparison must be tokenised by the same function. Matching a per-word transform against a whole-string transform drifts at the first token that expands, and the drift shows up as a refusal that blames the input.
+
+### Observation 34: Settling read-check flags by acoustics: 9 of 10 cleared, 1 real, and a merged plural that no tool can decide
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Same voiceover, triage of 10 read-check flags on a full v4 read
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** read-check triage
+
+**Issue:** Ten flags, about 3.4k characters if re-rolled. Cleared at no cost: the section-level transcript cleared "Help Makar"/Helpmakaar and "guy's"/guys. Forced-alignment scoring tied "there's"/"they're" and favoured "Chard" over "charge"/"shard". A closure measurement settled "so Chard" (vowel -> 20 ms closure at -6 dB -> fricative, vs a reference "to shoot": vowel straight into frication with no dip). Fricative length settled the plurals: "Zulus stabbing" 245 ms and "guys still" 250 ms (plural present), against single s 80-90 ms. One real misread: "on fire WITH" read as "on fire, BUT" (FA -20 vs -27), fixed with a 99-char span re-render (after: with -30.6 vs but -40.5). "Zulus set" stayed ambiguous on both takes: about 140 ms of s with no voiced z, and an FA tie. Whisper writes "Zulu" for both merged plurals.
+
+**Suggested improvement:** Package the two measurements as a verify mode: (a) candidate ranking by MMS_FA log-prob (Observation 25), (b) a 5 ms dB/HF-share profile for closure-vs-fricative and fricative-length questions, with in-file reference words picked automatically. Down-rank a plural flag where the next word starts with s or z: it is a geminate the ASR collapses by design.
+
+**Principle:** Before spending to fix a flag, ask which instrument can actually see the difference. Where none can, as with a geminate across a word boundary, report it as undecidable rather than forcing a verdict either way.
+
+### Observation 35: v4 masters land 1.3 LU under the -14 LUFS target, and the master's log says -14
+
+**Status:** OPEN
+**Date:** 2026-11-07
+**Session context:** Rorke's Drift v4 delivery, final verification
+**Skill:** explaintory-vo-master (also explaintory-voiceover)
+**Type:** open-source
+**Phase/Area:** humanize.py step 7 (loudnorm) and its log line
+
+**Issue:** humanize.py logs "loudnorm -14 LUFS / -1.5 dBTP" and "QC (delivered file): clean". ebur128 measures the delivered v4 master at -15.3 LUFS integrated (the approved x1.05 sample: -15.2). loudnorm runs single-pass with linear=true. When the file's peak-to-loudness ratio won't let it reach -14 without passing -1.5 dBTP, it settles lower, and nothing reports the shortfall. v4 is peakier than v2 (Observation 26: raw -15.4 vs -13.3 LUFS), so this probably hits every v4 delivery. YouTube turns loud files down but never turns quiet ones up, so a v4 video plays about 1.3 dB quieter than a v2 one. Not changed this session: mastering settings are locked. verify.py caught it.
+
+**Suggested improvement:** After loudnorm, measure the output and log the measured LUFS/TP, not the requested ones. Fail or warn past 0.5 LU. For v4, decide (Sapro's call, by ear) between a true-peak limiter ahead of loudnorm and accepting -15.3.
+
+**Principle:** Log what was measured, not what was asked for. A stage that reports its own parameters as results hides every case where the tool could not reach them.
+
+### Observation 36: The script link is not visible to the connected Google account, and the skill has no intake step for it
 
 **Status:** OPEN
 **Date:** 2026-11-10
-**Session context:** Voiceover request with a docs.google.com script link
+**Session context:** Voiceover request with a docs.google.com script link, Eleven v4, headings silent
 **Skill:** explaintory-voiceover
 **Type:** internal
 **Phase/Area:** Intake (before --plan)
 
-**Issue:** The Drive connector is signed in to the channel's business account. The script doc returned "not found" from both read_file_content and get_file_metadata, and the public export returned 401, so the doc is owned by or shared with a different account. The skill has no intake step for this, and the whole pipeline is blocked until the user re-shares or pastes the script.
+**Issue:** The Drive connector is signed in to the channel's business account. The script doc returned "not found" from read_file_content and get_file_metadata, and the public export returned 401, so the doc belongs to a different account. Nothing in the skill covers this. The pipeline is blocked until the user re-shares the doc or pastes the text.
 
-**Suggested improvement:** Add an intake step at the top of the skill: read the script through the Drive connector first; on not-found, ask once for "share with the connected account, or paste the text", and name the connected account. Never guess the script from the title.
+**Suggested improvement:** Add an intake step: read the script through Drive first; on not-found, ask once to "share with the connected account or paste the text", naming the account that cannot see it.
 
-**Principle:** Check that an input is reachable before preparing anything that depends on it, and when it is not, say exactly which identity cannot see it.
+**Principle:** Check that an input can be reached before preparing anything that depends on it, and when it cannot, say which identity is being refused.
 
-### Observation 21: Switching the model drops locked settings without anything flagging it
+### Observation 37: Observation 29 happened again: v4 work still unmerged, and the session rebuilt it from the docs a second time
 
 **Status:** OPEN
 **Date:** 2026-11-10
-**Session context:** User asked for eleven_v4 rather than the locked eleven_multilingual_v2
-**Skill:** explaintory-voiceover
+**Session context:** Same session
+**Skill:** explaintory-voiceover (also task-observer session-start)
 **Type:** open-source
-**Phase/Area:** Calibration / generate.py profile loading
+**Phase/Area:** session start / where locked settings are stored
 
-**Issue:** /v1/models reports eleven_v4 with can_use_style=false and can_use_speaker_boost=false. The locked profile sets style 0.05 and use_speaker_boost true. generate.py sends VoiceSettings from the profile as-is, and its CALIBRATION printout would show both values as "(profile)" even though the model ignores or rejects them. Whether v4 accepts previous_request_ids (request stitching) is also undocumented in the model record. The stability, speed and mastering targets were all tuned on v2 takes.
+**Issue:** Observation 29 (2026-11-07) recorded that the v4 calibration lived only on an unmerged branch, and that a session had rebuilt v4 handling from scratch before Sapro pointed it out. Its fix was never applied. The branch (claude/gifted-brown-yguxgd) was still unmerged, voice-calibration.json still had no v4 block, and this session did exactly the same thing: queried /v1/models, concluded "style and speaker boost unsupported, never tested", logged it as a new observation that duplicated #26 under a colliding number, and told Sapro the v4 settings were untested. He corrected it again: "You already done a voiceover recently with the settings check it".
 
-**Suggested improvement:** In generate.py, fetch the model's capability flags from /v1/models (a free call) and mark each setting the model cannot use as "(ignored by <model>)" in the plan. Then decide per flag whether to drop it or refuse. Run one short paid test section on a new model, with approval, before the full send.
+**Suggested improvement:** Apply #29 structurally, not as a sentence. (1) Put a per-model block in voice-calibration.json (v4: style 0, speaker boost off, readTitle false, de-hiss chain, tempo-match rule) and commit it on the session branch that settles it. (2) At session start, run `git fetch && git log --all -- skill-observations/log.md` and merge any branch whose log has entries above the local maximum before reading OPEN observations. Reading the local log alone is not enough.
 
-**Principle:** A settings printout has to reflect what the target system will actually use, not just what the config file contains. A value the model ignores is not really a setting.
+**Principle:** A logged fix that is never applied is a prediction of the next failure. When an observation recurs, the remedy has to be the structural one, because the reminder version has already been tried and failed.
