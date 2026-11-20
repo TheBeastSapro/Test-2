@@ -1,0 +1,655 @@
+{
+ "results": [
+  {
+   "index": 0,
+   "duration": 1.31,
+   "wpm": 138,
+   "peak_dbfs": -0.983789,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Rhino Tanks.",
+   "heard": "The Rhino Tanks"
+  },
+  {
+   "index": 1,
+   "duration": 12.51,
+   "wpm": 201,
+   "peak_dbfs": -0.9433,
+   "wer": 0.0233,
+   "problems": [
+    "misread: after “…and it was more” expected “use” heard “used”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "use",
+     "used",
+     "and it was more"
+    ]
+   ],
+   "text": "The steel Germany planted on the D-Day beaches to rip open Allied landing boats ended up welded to the front of American tanks. And it was more use to the Americans there than it ever was to the Germans on the beach.",
+   "heard": "The steel Germany planted on the D-Day beaches to rip open Allied landing boats ended up welded to the front of American tanks. And it was more used to the Americans there than it ever was to the Germans on the beach."
+  },
+  {
+   "index": 2,
+   "duration": 25.97,
+   "wpm": 180,
+   "peak_dbfs": -0.679277,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Its new job was cutting hedges, and in Normandy in the summer of 1944, that was a serious job. A few miles inland, the country was chopped into thousands of small fields, each one walled in by a bank of earth with a thick hedge on top, some about fifteen feet tall. To the Germans, every one of them was a free fort. To an American tank, it was a car trying to drive up a garden wall.",
+   "heard": "Its new job was cutting hedges, and in Normandy in the summer of 1944, that was a serious job. A few miles inland, the country was chopped into thousands of small fields. Each one walled in by a bank of earth with a thick hedge on top, some about 15 feet tall. To the Germans, every one of them was a free fort. To an American tank, it was a car trying to drive up a garden wall."
+  },
+  {
+   "index": 3,
+   "duration": 14.92,
+   "wpm": 157,
+   "peak_dbfs": -0.95677,
+   "wer": 0.0256,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "It had to climb, and halfway up it showed its belly, where the armour was thinnest, to whatever gun was waiting in the next field. That July, twelve American divisions spent seventeen days fighting and moved about seven miles.",
+   "heard": "It had to climb, and halfway up, it showed its belly, where the armor was thinnest, to whatever gun was waiting in the next field. That July, 12 American Division spent 17 days fighting and moved about seven miles."
+  },
+  {
+   "index": 4,
+   "duration": 22.36,
+   "wpm": 177,
+   "peak_dbfs": -0.816403,
+   "wer": 0.0147,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "So who fixed it? A soldier from Tennessee named Roberts, who asked why they couldn't just put saw teeth on the front of a tank and cut through. Everyone laughed. Sergeant Curtis Culin didn't. His unit welded a set of steel teeth onto a Sherman, America's main tank, and the teeth bit into the bottom of the bank, so the tank pushed through it, belly down.",
+   "heard": "So who fixed it? A soldier from Tennessee named Roberts, who asked why they couldn't just put saw teeth on the front of a tank and cut through. Everyone laughed. Sergeant Curtis Kulin didn't. His unit welded a set of steel teeth onto a Sherman, America's main tank, and the teeth bit into the bottom of the bank, so the tank pushed through it, belly down."
+  },
+  {
+   "index": 5,
+   "duration": 25.0,
+   "wpm": 199,
+   "peak_dbfs": -0.68925,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "On the fourteenth of July, Omar Bradley, the general running the American army in Normandy, came to watch. A hedge blew apart, and a Sherman came out the other side. Bradley ordered as many as they could build, and the Army made them out of the steel obstacles the Germans had planted on the beaches, which were just scrap now that the beaches were won. By the big breakout at the end of July, three in every five of his tanks had teeth.",
+   "heard": "On the 14th of July, Omar Bradley, the general running the American army in Normandy, came to watch. A hedge blew apart, and a Sherman came out the other side. Bradley ordered as many as they could build, and the army made them out of the steel obstacles the Germans had planted on the beaches, which were just scrap now that the beaches were won. By the big breakout at the end of July, three in every five of his tanks had teeth."
+  },
+  {
+   "index": 6,
+   "duration": 22.44,
+   "wpm": 176,
+   "peak_dbfs": -0.824355,
+   "wer": 0.0149,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The crews called them Rhinos, which, looking at the thing, was fair.\n\nHow much the teeth did in the breakout itself is still argued over. Even the Army's own official history said one of their most important jobs was lifting the crews' spirits, because by then the hedges scared tankers more than they deserved to.\n\nCulin tried to give the credit to Roberts. It didn't stick.",
+   "heard": "The crews called them rhinos, which, looking at the thing, was fair. How much the teeth did in the breakout itself is still argued over. Even the army's own official history said one of their most important jobs was lifting the crew's spirits, because by then, the hedges scared tankers more than they deserved to. Cullen tried to give the credit to Roberts. It didn't stick."
+  },
+  {
+   "index": 7,
+   "duration": 1.65,
+   "wpm": 109,
+   "peak_dbfs": -0.991811,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Genoese Ships.",
+   "heard": "The Genoese Ships"
+  },
+  {
+   "index": 8,
+   "duration": 24.11,
+   "wpm": 177,
+   "peak_dbfs": -0.960623,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "A few warships helped capture Jerusalem in 1099, a city in the hills more than thirty miles from the sea.\n\nThe armies of the First Crusade had reached Jerusalem that June after nearly three years on the march, and found they had almost nothing to break the walls with. Their first big attack failed. The hills around the city had hardly any trees, so there was no wood for siege towers.",
+   "heard": "A few warships helped capture Jerusalem in 1099, a city in the hills more than 30 miles from the sea. The armies of the First Crusade had reached Jerusalem that June after nearly three years on the march, and found they had almost nothing to break the walls with. Their first big attack failed. The hills around the city had hardly any trees, so there was no wood for siege towers."
+  },
+  {
+   "index": 9,
+   "duration": 13.24,
+   "wpm": 177,
+   "peak_dbfs": -0.819941,
+   "wer": 0.0256,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Then a few ships put into Jaffa, the nearest port. Two of them were galleys from Genoa, led by a man named Guglielmo Embriaco. Almost as soon as they arrived, an Egyptian fleet turned up and blocked the harbour.",
+   "heard": "Then, a few ships put into Jaffa, the nearest port. Two of them were galleys from Genoa, led by a man named Gullielmo Embriaco. Almost as soon as they arrived, an Egyptian fleet turned up and blocked the harbor."
+  },
+  {
+   "index": 10,
+   "duration": 22.83,
+   "wpm": 184,
+   "peak_dbfs": -0.573114,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "So the sailors did the one thing sailors never want to do. They took their own ships apart. The planks, the ropes and the nails were carried inland to the army outside Jerusalem, and the sailors went with them. That turned out to matter as much as the wood. Men who spent their lives rigging masts knew how to raise a tall wooden frame and hold it together with rope.",
+   "heard": "So the sailors did the one thing sailors never want to do. They took their own ships apart. The planks, the ropes, and the nails were carried inland to the army outside Jerusalem, and the sailors went with them. That turned out to matter as much as the wood. Men who spent their lives rigging masts knew how to raise a tall wooden frame and hold it together with rope."
+  },
+  {
+   "index": 11,
+   "duration": 24.53,
+   "wpm": 183,
+   "peak_dbfs": -0.847829,
+   "wer": 0.0267,
+   "problems": [
+    "misread: after “…it with a nickname” expected “mallet” heard “mallethead”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "mallet",
+     "mallethead",
+     "it with a nickname"
+    ]
+   ],
+   "text": "With the ship timber, plus logs the crusaders dragged in from forests to the north, they built siege towers on wheels. Embriaco seems to have come out of it with a nickname, Mallet Head.\n\nIn the middle of July the towers rolled up to the walls, and on the fifteenth the crusaders climbed from them into the city. Ships that never got within thirty miles of Jerusalem by sea had ended up against its walls.",
+   "heard": "With the ship timber, plus logs the Crusaders dragged in from forests to the north, they built siege towers on wheels. Embriaco seems to have come out of it with a nickname, mallethead. In the middle of July, the towers rolled up to the walls, and on the 15th, the Crusaders climbed from them into the city. Ships that never got within 30 miles of Jerusalem by sea had ended up against its walls."
+  },
+  {
+   "index": 12,
+   "duration": 19.07,
+   "wpm": 160,
+   "peak_dbfs": -0.953938,
+   "wer": 0.0392,
+   "problems": [
+    "misread: after “…to their knees and” expected “bridle reins” heard “bridal rains”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "bridle reins",
+     "bridal rains",
+     "to their knees and"
+    ]
+   ],
+   "text": "What followed was a massacre. The crusaders killed huge numbers of the city's people, Muslims and Jews alike. Later accounts say many Jews died when the synagogue they had sheltered in was set on fire. One crusader chronicler wrote that men \"rode in blood up to their knees and bridle reins.\"",
+   "heard": "What followed was a massacre. The Crusaders killed huge numbers of the city's people, Muslims and Jews alike. Later accounts say many Jews died when the synagogue they had sheltered in was set on fire. One crusader chronicler wrote that men rode in blood up to their knees and bridal rains."
+  },
+  {
+   "index": 13,
+   "duration": 1.41,
+   "wpm": 128,
+   "peak_dbfs": -0.825929,
+   "wer": 0.6667,
+   "problems": [
+    "chapter name “The StuG III.” transcribed as “The Stuke 3” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong"
+   ],
+   "regen": false,
+   "hard": [],
+   "text": "The StuG III.",
+   "heard": "The Stuke 3"
+  },
+  {
+   "index": 14,
+   "duration": 6.35,
+   "wpm": 189,
+   "peak_dbfs": -0.940756,
+   "wer": 0.1,
+   "problems": [
+    "misread: after “…war was built to” expected “knock” heard “knockout”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "knock",
+     "knockout",
+     "war was built to"
+    ]
+   ],
+   "text": "One of Germany's deadliest tank killers of the Second World War was built to knock out bunkers for the infantry.",
+   "heard": "One of Germany's deadliest tank killers of the Second World War was built to knockout bunkers for the infantry."
+  },
+  {
+   "index": 15,
+   "duration": 27.87,
+   "wpm": 172,
+   "peak_dbfs": -0.861234,
+   "wer": 0.0122,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The idea came from an officer named Erich von Manstein in the mid-1930s. German foot soldiers needed something that could roll along with them and blast machine-gun nests and pillboxes at close range. What they got was a squat armoured gun on tank tracks, with no turret and a short, stubby cannon that fired big explosive shells. It sat so low it was easy to hide, and in France in 1940 it did exactly the job it was built for.",
+   "heard": "The idea came from an officer named Eric von Manstein in the mid-1930s. German foot soldiers needed something that could roll along with them and blast machine gun nests and pillboxes at close range. What they got was a squat armored gun on tank tracks with no turret and a short stubby cannon that fired big explosive shells. It sat so low it was easy to hide, and in France in 1940, it did exactly the job it was built for."
+  },
+  {
+   "index": 16,
+   "duration": 11.47,
+   "wpm": 188,
+   "peak_dbfs": -0.82026,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The tank branch had no men to spare for it, and neither did the infantry, so it was handed to the artillery. Which is how a vehicle on tank tracks ended up being run by gunners.",
+   "heard": "The tank branch had no men to spare for it, and neither did the infantry. So it was handed to the artillery, which is how a vehicle on tank tracks ended up being run by gunners."
+  },
+  {
+   "index": 17,
+   "duration": 28.11,
+   "wpm": 160,
+   "peak_dbfs": -0.84906,
+   "wer": 0.026,
+   "problems": [
+    "misread: after “…to give the squat” expected “bunker” heard “bunkerbuster”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "bunker",
+     "bunkerbuster",
+     "to give the squat"
+    ]
+   ],
+   "text": "Then, in 1941, Germany invaded the Soviet Union and ran into the T-34, a Soviet tank most German guns could barely dent. The fix was to give the squat bunker-buster a long, high-speed gun. From 1942, it could punch through a tank from far away. And because it sat so low, it could hide in a ditch or behind a bank and wait. Germany built about ten thousand of them, more than any German tank.",
+   "heard": "Then, in 1941, Germany invaded the Soviet Union and ran into the T-34, a Soviet tank most German guns could barely dent. The fix was to give the squat Bunkerbuster a long, high-speed gun. From 1942, it could punch through a tank from far away, and because it sat so low, it could hide in a ditch or behind a bank and wait. Germany built about 10,000 of them, more than any German tank."
+  },
+  {
+   "index": 18,
+   "duration": 23.88,
+   "wpm": 166,
+   "peak_dbfs": -0.421672,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "By the spring of 1944, the crews claimed twenty thousand enemy tanks. That's their own count, and tank killers on every side of that war were generous counters.\n\nIt got so good at killing tanks that the infantry were left without their bunker-buster. So from late 1942, Germany built another version, with a short howitzer, to do the job the first one had been built for.",
+   "heard": "By the spring of 1944, the crews claimed 20,000 enemy tanks. That's their own count, and tank killers on every side of that war were generous counters. It got so good at killing tanks that the infantry were left without their bunker buster. So, from late 1942, Germany built another version, with a short howitzer to do the job the first one had been built for."
+  },
+  {
+   "index": 19,
+   "duration": 2.19,
+   "wpm": 137,
+   "peak_dbfs": -0.972158,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Naval Guns at Ladysmith.",
+   "heard": "The Naval Guns at Ladysmith"
+  },
+  {
+   "index": 20,
+   "duration": 5.56,
+   "wpm": 205,
+   "peak_dbfs": -0.916455,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The only British guns that could hit back at the Boers' biggest cannon were built to fight at sea.",
+   "heard": "The only British guns that could hit back at the Boer's biggest cannon were built to fight at sea."
+  },
+  {
+   "index": 21,
+   "duration": 26.83,
+   "wpm": 163,
+   "peak_dbfs": -0.672996,
+   "wer": 0.027,
+   "problems": [
+    "misread: after “…guns the british called” expected “long” heard “longtoms”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "long",
+     "longtoms",
+     "guns the british called"
+    ]
+   ],
+   "text": "In October 1899, early in the Boer War, a British army was pulling back into the town of Ladysmith in South Africa. The Boers had brought heavy French siege guns the British called Long Toms, which could throw a shell about six miles. The army's field guns couldn't reach them. The British commander, General George White, put it bluntly in a telegram. The enemy's guns, he wrote, \"range further than our field guns.\"",
+   "heard": "In October 1899, early in the Boer War, a British army was pulling back into the town of Ladysmith in South Africa. The Boers had brought heavy French siege guns the British called Longtoms, which could throw a shell about six miles. The army's field guns couldn't reach them. The British commander, General George White, put it bluntly in a telegram. The enemy's guns, he wrote, range further than our field guns."
+  },
+  {
+   "index": 22,
+   "duration": 27.56,
+   "wpm": 176,
+   "peak_dbfs": -0.824624,
+   "wer": 0.0247,
+   "problems": [
+    "misread: after “…started building mounts for” expected “dry” heard “dryland”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "dry",
+     "dryland",
+     "started building mounts for"
+    ]
+   ],
+   "text": "The navy had guns that could. The trouble was, they were built to sit on ships. So Captain Percy Scott, the navy's best gunnery officer, started building mounts for dry land. For the heavy guns, his men made platforms out of big timber beams. For the lighter ones, they used an axle and the wheels off a farm wagon. Scott later admitted the mounts looked amateurish, and that he had trouble convincing the authorities one of them \"was not a toy.\"",
+   "heard": "The Navy had guns that could. The trouble was they were built to sit on ships. So Captain Percy Scott, the Navy's best gunnery officer, started building mounts for dryland. For the heavy guns, his men made platforms out of big timber beams. For the lighter ones, they used an axle and the wheels off a farm wagon. Scott later admitted the mounts looked amateurish and that he had trouble convincing the authorities one of them was not a toy."
+  },
+  {
+   "index": 23,
+   "duration": 17.4,
+   "wpm": 179,
+   "peak_dbfs": -0.816262,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The guns went up the coast by ship, then onto a train, and pulled into Ladysmith on the thirtieth of October, in the middle of a battle the British were losing. Some went into action almost straight off the train. Within days, the town was surrounded, with the navy's guns inside it.",
+   "heard": "The guns went up the coast by ship, then onto a train, and pulled into Ladysmith on the 30th of October, in the middle of a battle the British were losing. Some went into action almost straight off the train. Within days, the town was surrounded, with the Navy's guns inside it."
+  },
+  {
+   "index": 24,
+   "duration": 20.77,
+   "wpm": 168,
+   "peak_dbfs": -0.755479,
+   "wer": 0.069,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The toy then spent four months duelling the Boers' biggest guns. The sailors had so few shells that they rationed them, at first firing twenty or thirty a day, later far fewer. More than once, their shots made a Long Tom stop firing for a while. Ladysmith held until it was relieved at the end of February 1900\\.",
+   "heard": "The toy then spent four months dueling the boar's biggest guns. The sailors had so few shells that they rationed them, at first firing 20 or 30 a day, later far fewer. More than once, their shots made a long time stop firing for a while. Lady Smith held until it was relieved at the end of February 1900."
+  },
+  {
+   "index": 25,
+   "duration": 1.65,
+   "wpm": 109,
+   "peak_dbfs": -0.78266,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Trench Shotgun.",
+   "heard": "The Trench Shotgun"
+  },
+  {
+   "index": 26,
+   "duration": 27.72,
+   "wpm": 175,
+   "peak_dbfs": -0.617042,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The country that brought poison gas to the First World War filed a formal protest in 1918 against an American hunting gun.\n\nThe gun was the Winchester Model 1897, a pump-action shotgun designed by John Browning, and one of the most popular hunting guns in America. When the United States joined the war, the Army took it to France. It got a metal guard over the barrel, so the soldier's hand didn't burn on it, and a fitting for a bayonet.",
+   "heard": "The country that brought poison gas to the First World War filed a formal protest in 1918 against an American hunting gun. The gun was the Winchester Model 1897, a pump-action shotgun designed by John Browning and one of the most popular hunting guns in America. When the United States joined the war, the army took it to France. It got a metal guard over the barrel, so the soldier's hand didn't burn on it, and a fitting for a bayonet."
+  },
+  {
+   "index": 27,
+   "duration": 14.45,
+   "wpm": 195,
+   "peak_dbfs": -0.769614,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "In a trench, it made a lot of sense. Trenches were narrow and full of corners, and a rifle fires one bullet at a time. Each shotgun shell threw a handful of lead balls, and the gun fired as fast as a man could work the pump.",
+   "heard": "In a trench, it made a lot of sense. Trenches were narrow and full of corners, and a rifle fires one bullet at a time. Each shotgun shell threw a handful of lead balls, and the gun fired as fast as a man could work the pump."
+  },
+  {
+   "index": 28,
+   "duration": 17.4,
+   "wpm": 159,
+   "peak_dbfs": -0.47934,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "That September, Germany sent its complaint through the Swiss, who handled its business in Washington. It said the shotgun broke the rule against weapons that cause unnecessary suffering. And it warned that any American captured with a shotgun, or even with shotgun shells, would be executed.",
+   "heard": "That September, Germany sent its complaint through the Swiss, who handled its business in Washington. It said the shotgun broke the rule against weapons that cause unnecessary suffering, and it warned that any American captured with a shotgun, or even with shotgun shells, would be executed."
+  },
+  {
+   "index": 29,
+   "duration": 24.35,
+   "wpm": 160,
+   "peak_dbfs": -0.787773,
+   "wer": 0.0154,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "This was from the army that had launched the first big chlorine gas attack, at Ypres in 1915, and was burning men out of trenches with flamethrowers on the same front.\n\nThe reply came from the Secretary of State, Robert Lansing. The shotgun, he wrote, \"cannot be the subject of legitimate or reasonable protest.\" And if Germany carried out its threat, America would take reprisals.",
+   "heard": "This was from the army that had launched the first big chlorine gas attack at Iphe in 1915, and was burning men out of trenches with flamethrowers on the same front. The reply came from the Secretary of State, Robert Lansing. The shotgun, he wrote, cannot be the subject of legitimate or reasonable protest. And if Germany carried out its threat, America would take reprisals."
+  },
+  {
+   "index": 30,
+   "duration": 6.43,
+   "wpm": 196,
+   "peak_dbfs": -0.887355,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "That's five weapons doing the wrong job so far. Which one would you have bet against? Leave it in the comments.",
+   "heard": "That's five weapons doing the wrong job so far. Which one would you have bet against? Leave it in the comments."
+  },
+  {
+   "index": 31,
+   "duration": 1.88,
+   "wpm": 64,
+   "peak_dbfs": -1.237639,
+   "wer": 0.5,
+   "problems": [
+    "chapter name “HMS Campbeltown.” transcribed as “HMS Campbelltown” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong"
+   ],
+   "regen": false,
+   "hard": [],
+   "text": "HMS Campbeltown.",
+   "heard": "HMS Campbelltown"
+  },
+  {
+   "index": 32,
+   "duration": 29.31,
+   "wpm": 170,
+   "peak_dbfs": -0.858087,
+   "wer": 0.0116,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "One of the worn-out destroyers America handed to Britain in 1940 did the most important job of her life as a bomb.\n\nShe'd been built as USS Buchanan at the end of the First World War. In 1940, early in the Second World War, she was one of fifty old American destroyers swapped to Britain. The British renamed her HMS Campbeltown and put her to work guarding convoys. She was old, she was spare, and I think that's exactly why she got picked.",
+   "heard": "One of the worn-out destroyers America handed to Britain in 1940 did the most important job of her life as a bomb. She'd been built as USS Buchanan at the end of the First World War. In 1940, early in the Second World War, she was one of 50 old American destroyers swapped to Britain. The British renamed her HMS Campbelltown and put her to work guarding convoys. She was old, she was spare, and I think that's exactly why she got picked."
+  },
+  {
+   "index": 33,
+   "duration": 19.88,
+   "wpm": 184,
+   "peak_dbfs": -0.949478,
+   "wer": 0.0328,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The target was a dock at St Nazaire, on the French Atlantic coast. It was the only dock on that coast big enough to repair Germany's giant battleship Tirpitz. Without it, a damaged Tirpitz would have to make a long, dangerous run home past the Royal Navy. So the Germans would think twice about sending her into the Atlantic at all.",
+   "heard": "The target was a dock at St. Nazaire on the French Atlantic coast. It was the only dock on that coast big enough to repair Germany's giant battleship Tirpits. Without it, a damaged Tirpits would have to make a long, dangerous run home past the Royal Navy. So the Germans would think twice about sending her into the Atlantic at all."
+  },
+  {
+   "index": 34,
+   "duration": 24.53,
+   "wpm": 186,
+   "peak_dbfs": -0.754391,
+   "wer": 0.039,
+   "problems": [
+    "misread: after “…a small fleet of” expected “motor” heard “motorboats”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "motor",
+     "motorboats",
+     "a small fleet of"
+    ]
+   ],
+   "text": "So the British stripped Campbeltown out, cut down her funnels so she'd look like a German warship, and packed her bow with about four tons of explosive on a delayed fuse. On the night of the twenty-seventh of March 1942, she ran five miles up the river with a small fleet of motor boats full of commandos. Just after half past one in the morning, under heavy fire, she rammed the dock gate and stuck there.",
+   "heard": "So the British stripped Campbelltown out, cut down her funnels so she'd look like a German warship, and packed her bow with about four tons of explosive on a delayed fuse. On the night of the 27th of March, 1942, she ran five miles up the river with a small fleet of motorboats full of commandos. Just after half-past one in the morning, under heavy fire, she rammed the dock gate and stuck there."
+  },
+  {
+   "index": 35,
+   "duration": 24.35,
+   "wpm": 173,
+   "peak_dbfs": -0.826295,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Then nothing happened. The commandos fought their way ashore and wrecked what they could, and by morning most of them were dead or captured. German soldiers swarmed over the wreck, and officers went aboard to look her over.\n\nLate that morning, the explosives went off. The blast wrecked the dock gate and killed many of the Germans on and around the ship. The dock stayed out of use until 1948\\.",
+   "heard": "Then, nothing happened. The commandos fought their way ashore and wrecked what they could, and by morning, most of them were dead or captured. German soldiers swarmed over the wreck, and officers went aboard to look her over. Late that morning, the explosives went off. The blast wrecked the dock gate and killed many of the Germans on and around the ship. The dock stayed out of use until 1948."
+  },
+  {
+   "index": 36,
+   "duration": 8.05,
+   "wpm": 134,
+   "peak_dbfs": -0.852408,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Of the 612 men who set out on the raid, 169 were killed and 215 were taken prisoner.",
+   "heard": "Of the 612 men who set out on the raid, 169 were killed, and 215 were taken prisoner."
+  },
+  {
+   "index": 37,
+   "duration": 1.72,
+   "wpm": 104,
+   "peak_dbfs": -0.936207,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The M2 Browning.",
+   "heard": "The M2 Browning"
+  },
+  {
+   "index": 38,
+   "duration": 29.0,
+   "wpm": 180,
+   "peak_dbfs": -0.729474,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "For thirty-five years, the longest sniper kill on record was made with a machine gun.\n\nThe gun was the M2, a heavy machine gun John Browning designed at the end of the First World War. The American army adopted it in 1933, and it was built to spray big bullets at planes, trucks and troops. But each bullet was half an inch wide, and it flew flat and far. Fired one shot at a time from a heavy tripod, the gun turned out to be very steady.",
+   "heard": "For 35 years, the longest sniper kill on record was made with a machine gun. The gun was the M2, a heavy machine gun John Browning designed at the end of the First World War. The American Army adopted it in 1933, and it was built to spray big bullets at planes, trucks, and troops. But each bullet was half an inch wide, and it flew flat and far. Fired one shot at a time from a heavy tripod, the gun turned out to be very steady."
+  },
+  {
+   "index": 39,
+   "duration": 17.4,
+   "wpm": 152,
+   "peak_dbfs": -0.658639,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Soldiers in Korea had already tried fitting it with telescopes. In Vietnam, a Marine sniper named Carlos Hathcock fixed a rifle scope to one. In February 1967, he used it to make a kill about 2,500 yards away, nearly a mile and a half.",
+   "heard": "Soldiers in Korea had already tried fitting it with telescopes. In Vietnam, a Marine sniper named Carlos Hathcock fixed a rifle scope to one. In February 1967, he used it to make a kill about 2,500 yards away, nearly a mile and a half."
+  },
+  {
+   "index": 40,
+   "duration": 22.83,
+   "wpm": 184,
+   "peak_dbfs": -0.559429,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The stories about that shot differ on the exact distance, on how many shots it took, and even on who he hit. The record itself stood until 2002, when a Canadian sniper in Afghanistan beat it with a rifle built for the job.\n\nAnd the machine gun's huge bullet went on to become a sniper round in its own right. Big sniper rifles have been built around it ever since.",
+   "heard": "The stories about that shot differ on the exact distance, on how many shots it took, and even on who he hit. The record itself stood until 2002, when a Canadian sniper in Afghanistan beat it with a rifle built for the job. And the machine gun's huge bullet went on to become a sniper round in its own right. Big sniper rifles have been built around it ever since."
+  },
+  {
+   "index": 41,
+   "duration": 1.41,
+   "wpm": 85,
+   "peak_dbfs": -1.118444,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The R-7.",
+   "heard": "The R7"
+  },
+  {
+   "index": 42,
+   "duration": 26.67,
+   "wpm": 155,
+   "peak_dbfs": -0.868977,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The first missile that could carry a nuclear bomb from one continent to another was almost useless as a weapon. Its family has since flown more than two thousand times.\n\nThe Soviet Union built it in the 1950s, under a rocket designer named Sergei Korolev. Soviet nuclear bombs were heavy back then, so the missile had to be huge, and it was. It first flew properly in August 1957\\.",
+   "heard": "The first missile that could carry a nuclear bomb from one continent to another was almost useless as a weapon. Its family has since flown more than 2,000 times. The Soviet Union built it in the 1950s, under a rocket designer named Sergei Korolev. Soviet nuclear bombs were heavy back then, so the missile had to be huge. And it was. It first flew properly in August 1957."
+  },
+  {
+   "index": 43,
+   "duration": 24.45,
+   "wpm": 174,
+   "peak_dbfs": -0.633024,
+   "wer": 0.0139,
+   "problems": [
+    "misread: after “…missile could not sit” expected “fuelled” heard “fueled”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "fuelled",
+     "fueled",
+     "missile could not sit"
+    ]
+   ],
+   "text": "The trouble was everything else. It ran on kerosene and liquid oxygen, which is so cold it boils away, so the missile couldn't sit fuelled and waiting for long. Getting one ready took about twenty hours. And it needed a launch site so big that American spy planes could photograph it from the sky. In a real war, it would probably have been destroyed before it ever got off the ground.",
+   "heard": "The trouble was everything else. It ran on kerosene and liquid oxygen, which is so cold it boils away, so the missile couldn't sit fueled and waiting for long. Getting one ready took about 20 hours, and it needed a launch site so big that American spy planes could photograph it from the sky. In a real war, it would probably have been destroyed before it ever got off the ground."
+  },
+  {
+   "index": 44,
+   "duration": 25.81,
+   "wpm": 165,
+   "peak_dbfs": -0.760976,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Soviets planned dozens of launch sites and ended up with only a handful.\n\nBut a rocket strong enough to throw a heavy bomb across the world is also strong enough to throw something into orbit. Less than seven weeks after that first good flight, a modified one put Sputnik into space, the first satellite in history. In 1961, another version carried Yuri Gagarin, the first person to go to space.",
+   "heard": "The Soviets planned dozens of launch sites and ended up with only a handful. But a rocket strong enough to throw a heavy bomb across the world is also strong enough to throw something into orbit. Less than seven weeks after that first good flight, a modified one put Sputnik into space, the first satellite in history. In 1961, another version carried Yuri Gagarin, the first person to go to space."
+  },
+  {
+   "index": 45,
+   "duration": 17.79,
+   "wpm": 169,
+   "peak_dbfs": -0.792196,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "As a weapon, it was out of service by 1968\\. As a rocket, it never stopped. Its descendants, the Soyuz rockets, still carry people and cargo into space today.\n\nIt was never much of a missile. It just turned out to be the most launched family of rockets in history.",
+   "heard": "As a weapon, it was out of service by 1968. As a rocket, it never stopped. Its descendants, the Soyuz rockets, still carry people and cargo into space today. It was never much of a missile. It just turned out to be the most launched family of rockets in history."
+  },
+  {
+   "index": 46,
+   "duration": 11.73,
+   "wpm": 205,
+   "peak_dbfs": -0.771042,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "If you want more weapons that won for the wrong reasons, the first video is on screen now, and it starts with a blade that won its battles by almost never cutting anyone. Subscribe, and there'll be more of these.",
+   "heard": "If you want more weapons that won for the wrong reasons, the first video is on screen now, and it starts with a blade that won its battles by almost never cutting anyone. Subscribe, and there'll be more of these."
+  }
+ ],
+ "asr_model": "distil-large-v3",
+ "round": 0
+}

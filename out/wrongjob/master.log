@@ -1,0 +1,13 @@
+[voiceover] “Weapons That Worked Better for the Wrong Job Explained” · 47 sections · 12607 chars
+[voiceover] pronunciation guide: 27 names, held out of the narration (Curtis Culin, Omar Bradley, Guglielmo Embriaco, Jaffa, Erich von Manstein…)
+[voiceover] PRE-FLIGHT ! guide entry “Boer, Boers” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] PRE-FLIGHT ! guide entry “4.7-inch” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py --audio ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/raw_stitched.wav --script ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/script_lines.txt --out ./Weapons That Worked Better for the Wrong Job Explained (final).mp3 --report ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/pauses.csv --align-cache ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/align.json --curated curated.txt
+[humanize] decoding
+[humanize]   772.3s, peak -1.37 dBFS
+[humanize] QC (source): clean
+[humanize] declipped 0 over-full-scale region(s)
+[humanize] removed 1 splice fragment(s)
+[humanize]     12:40.830  5 ms  -46 dB
+[humanize] script: 58 lines, 2334 words
+[humanize] forced alignment (this is the slow part)

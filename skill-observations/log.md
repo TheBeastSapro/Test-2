@@ -630,3 +630,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** In --plan, fetch /v1/models for the selected model and mark any setting the model cannot use as "(ignored by <model>)"; probe a 1-sentence render with and without stitching params before a full run on a model the pipeline has never used. Detect a pre-first-heading block labelled handoff/read note and hold it out like the pronunciation guide.
 
 **Principle:** A settings gate must check each value against what the target actually accepts, not only where the value came from — a correct-looking value sent to a model that silently drops it is a decision nobody made.
+
+### Observation 42: The v4 post-stitch chain is still a by-hand step, and the read-check's compound-word flags cost a full triage
+
+**Status:** OPEN
+**Date:** 2026-11-20
+**Session context:** "Weapons That Worked Better for the Wrong Job Explained", v4, full run
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** voiceover.py between check and master; readcheck.py normalisation
+
+**Issue:** (1) voice-calibration.v4.json carries a post_stitch block (de-hiss, atempo 1.05, float out, peak < -0.5 dBFS) but voiceover.py ignores it, so it was applied by hand with ffmpeg and swapped in as raw_stitched.wav before --from master. (2) The heading leveller hit its clamp on 5 of 8 headings and is still on by default though the last delivery ran without it; re-stitched with --stitch-only --no-level-headings. (3) 7 of 9 read-check REDO flags were ASR joining compounds ("knockout", "longtoms", "motorboats", "mallethead", "dryland", "bunkerbuster") or US spelling ("fueled"); one was a homophone ("reins"/"rains"). The remaining one ("use" vs "used to") tied on MMS_FA scoring (0.484 vs 0.478). Following the printed redo command would have spent ~3,071 credits on zero real defects. (4) readcheck labels sections 1-based while parts/ files are 0-based, which misdirected the first windowed check.
+
+**Suggested improvement:** voiceover.py applies calibration.post_stitch automatically and asserts the peak; default level_headings off when the calibration says so; readcheck drops a mismatch when removing spaces/hyphens from the heard token equals the concatenated expected tokens, and runs the British/US normaliser on single-word subs before flagging; print the parts filename next to each section number.
+
+**Principle:** A redo command printed by a check is a spend recommendation — if most of its flags are a known normalisation gap, the check is costing more than it saves until the gap is closed.
