@@ -645,3 +645,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** voiceover.py applies calibration.post_stitch automatically and asserts the peak; default level_headings off when the calibration says so; readcheck drops a mismatch when removing spaces/hyphens from the heard token equals the concatenated expected tokens, and runs the British/US normaliser on single-word subs before flagging; print the parts filename next to each section number.
 
 **Principle:** A redo command printed by a check is a spend recommendation — if most of its flags are a known normalisation gap, the check is costing more than it saves until the gap is closed.
+
+### Observation 43: Delivery-gate failures on a v4 master were all upstream or known false positives; setup.sh misses soundfile
+
+**Status:** OPEN
+**Date:** 2026-11-20
+**Session context:** "Weapons That Worked Better for the Wrong Job Explained", v4, verify.py + orphans.py on the final
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** verify.py, orphans.py, setup.sh
+
+**Issue:** verify.py returned NOT DELIVERABLE with 4 FAILs. The three "unexplained pauses" (life|as 320 ms, morning|most 170, killed|and 150) were measured in the pre-master stitch at 410/210/180 ms: v4 rendered them and the master shortened them. The "7 of 8 chapters" FAIL was ASR hearing "StuG III" as "Stuke 3". Observation 35 reproduced (-15.3 LUFS, -1.4 dBTP). orphans.py flagged one ORPHAN at 6:37.37, 129 ms after "nineteen hundred" at a section join; the raw take shows a decaying release with no fence, so by Observation 40's rule it is a release. setup.sh does not install soundfile (orphans.py import fails) and verify.py's QC step fails with "No module named 'humanize'".
+
+**Suggested improvement:** verify.py: when an unexplained pause also exists in the raw stitch, label it "in the take" rather than FAIL, since only a re-render or a manual trim can change it; accept a chapter match on aligner score when ASR spelling differs. setup.sh: add soundfile. verify.py: put the vo-master scripts dir on sys.path before importing humanize.
+
+**Principle:** A gate that FAILs on things no downstream stage caused, and cannot tell them apart from things it did cause, pushes every decision back to the person it was built to relieve.
