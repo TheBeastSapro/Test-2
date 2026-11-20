@@ -296,3 +296,18 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+### Observation 20: The spend gate does not check the chosen model's capabilities against the settings it sends
+
+**Status:** OPEN
+**Date:** 2026-11-20
+**Session context:** Voiceover of "Weapons That Worked Better for the Wrong Job Explained", user asked for ElevenLabs v4 instead of the locked eleven_multilingual_v2
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** --plan CALIBRATION block / generate.py settings assembly
+
+**Issue:** /v1/models reports eleven_v4 with can_use_style=false and can_use_speaker_boost=false, yet the plan printed style 0.05 and use_speaker_boost True as "(profile)" values that will be sent. Whether the API rejects, ignores, or remaps them is unknown, and whether v4 honours previous_text / previous_request_ids (v3 did not support request stitching) is also unverified. The gate showed every value with provenance but not whether the model can use it. Separately, the script carried a "VO HANDOFF" direction block between the H1 and the first ## heading; nothing detects that, so it was stripped by hand, and readTitle had to be turned off with a run-local profile because the handoff says "Do not read the title".
+
+**Suggested improvement:** In --plan, fetch /v1/models for the selected model and mark any setting the model cannot use as "(ignored by <model>)"; probe a 1-sentence render with and without stitching params before a full run on a model the pipeline has never used. Detect a pre-first-heading block labelled handoff/read note and hold it out like the pronunciation guide.
+
+**Principle:** A settings gate must check each value against what the target actually accepts, not only where the value came from — a correct-looking value sent to a model that silently drops it is a decision nobody made.
