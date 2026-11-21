@@ -675,3 +675,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** Merge claude/beautiful-noether-emmlj5 to main (needs Sapro's OK for a PR). Add to SKILL.md's top section: "Before any plan, run: git fetch --all; for each origin branch, compare max observation number in skill-observations/log.md against local; merge the newest voiceover branch." Add a pre-flight warning when a heading contains "pronunciation" but guide detection fails.
 
 **Principle:** When a fix is written down three times and the failure happens a fourth, the gap is that nobody has the authority or step to land it — escalate to the user for the merge instead of logging it again.
+
+### Observation 45: Norse v4 delivery — setup.sh misses librosa, and the aligner-scoring triage is still hand-rolled every time
+
+**Status:** OPEN
+**Date:** 2026-11-21
+**Session context:** "The Full Story of Norse Mythology in 15 Minutes", v4, 15,250 chars, delivered 15:01, -15.4 LUFS (Obs 35 again), declip 0, fragments 0, 196 wpm aligned on the x1.05 stitch.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** setup.sh; read-check triage
+
+**Issue:** (1) regen_span.py imports librosa; setup.sh does not install it. (2) Read-check flagged 12 items in 8 sections and offered a ~2,917-char redo. 10 were homophones (nights/knights x3, sews/sows, eight/ate, Tyr's/tears) or name spellings (Baldur's x3, Heimdahl's); 1 was a real misread ("skull" read as "stall", MMS_FA -80.4 stall vs -93.4 skull); 1 tied ("and nine", -68.3/-67.4/-67.2). The FA candidate scorer was written ad hoc again (third time, after Obs 25 and 34). Sapro declined the 74-char fix: "Leave it".
+
+**Suggested improvement:** Add librosa to setup.sh. Ship fa_score as scripts/fa_score.py (clip window + candidate strings -> total CTC log-prob) and have readcheck downgrade a single-word sub to "homophone" when both words normalise to the same CMUdict phones, and to "name spelling" when the expected word is a guide headword.
+
+**Principle:** A triage step done by hand three times is a missing tool; until it exists every flag list costs a full session of measurement.
