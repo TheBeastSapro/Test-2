@@ -296,3 +296,35 @@ resolved statuses always carry their resolution date
 **Suggested improvement:** State the coverage boundary plainly at the top of the skill: the read-check catches WRONG WORDS, and nothing in the pipeline yet catches wrong-sounding right words. Every delivery message should say which classes were checked and which were not, so "verified" is never heard as "clean". And treat acoustic-defect detection as the skill's main open problem rather than an add-on — it is the actual remaining cost.
 
 **Principle:** Automating one class of defect does not reduce the user's burden if it is the wrong class. Measure what the user actually spends time on, not what happens to be measurable — and when a tool reports "verified", it must say what it verified, because a partial check reported as a whole one moves the burden back to the user while sounding like it lifted it.
+
+## 2026-11-21
+
+### Observation 20: Guide-heading regex capped at 40 trailing chars, so a titled guide heading was narrated as chapters
+
+**Status:** OPEN
+**Date:** 2026-11-21
+**Session context:** Norse mythology voiceover, --plan dry run before any spend.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** script_prep.py — _GUIDE_HEAD
+
+**Issue:** The guide heading was "# Pronunciation and read-aloud notes: <full video title>" (~80 chars after "Pronunciation"). _GUIDE_HEAD allowed only 40 trailing characters, so the guide was not detected and the plan showed the guide heading and its "## Names and words" subheading as two chapter announcements to be read aloud, plus the whole glossary in the narration. Caught only because the plan was read line by line. Widened to 120.
+
+**Suggested improvement:** Add a pre-flight warning when any heading containing "pronunciation" fails guide detection, instead of silently treating it as a chapter. Add a test fixture with a long titled guide heading.
+
+**Principle:** A length cap tuned on past examples is a silent classifier boundary; when the classification fails, the failure should be loud at the gate, not discovered by reading the plan.
+
+### Observation 21: Switching model to eleven_v4 still sends v2-only settings (style, speed, speaker boost) and the gate marks them "(profile)" as if valid
+
+**Status:** OPEN
+**Date:** 2026-11-21
+**Session context:** Sapro asked for ElevenLabs v4. /v1/models reports eleven_v4 can_use_style=false, can_use_speaker_boost=false; docs say Style and Speed sliders are not available on v4.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** generate.py calibration + voiceover.py --plan CALIBRATION block
+
+**Issue:** The calibration block printed speed 1.07, style 0.05, use_speaker_boost True as "(profile)" for model eleven_v4. Speed 1.07 is the locked pace; if v4 ignores it, the read lands at a different pace than every previous delivery and nothing in the gate says so. The provenance marks answer "who chose this value" but not "will this model honour it".
+
+**Suggested improvement:** In --plan, fetch the model's capability flags from /v1/models and mark each setting the model will ignore (e.g. "speed 1.07 (profile — IGNORED by eleven_v4)"). Recommend a one-section calibration render before a full run on any model not previously used with this voice.
+
+**Principle:** A settings gate must check values against the consumer's capabilities, not just their provenance — a correctly-chosen value the target silently ignores is as wrong as a defaulted one.

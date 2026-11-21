@@ -86,7 +86,7 @@ def strip_markdown(t):
 # pronunciation for the tail to be treated as a glossary.
 _GUIDE_HEAD = re.compile(
     r"^\s*#{0,6}\s*\**\s*(pronunciation|pronounciation|pronunciations|"
-    r"pronounce|how to say|say it)\b[^\n]{0,40}$", re.I)
+    r"pronounce|how to say|say it)\b[^\n]{0,120}$", re.I)
 # '- **Syracusia** — sirr-uh-KYOO-zee-uh', also en dash, hyphen, colon or '='.
 # The bullet class is wide because these arrive pasted out of Google Docs.
 _GUIDE_LINE = re.compile(r"^[\s\t]*[-*•●○·▪‣]?[\s\t]*(.+?)\s*[—–\-:=]\s+(.+?)\s*$")
