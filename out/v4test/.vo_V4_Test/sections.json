@@ -1,0 +1,53 @@
+{
+ "sections": [
+  {
+   "index": 0,
+   "text": "The Rhino Tanks.\u0002",
+   "send_text": "The Rhino Tanks.",
+   "is_heading": true,
+   "is_cta": false,
+   "chars": 16
+  },
+  {
+   "index": 1,
+   "text": "The steel Germany planted on the D-Day beaches to rip open Allied landing boats ended up welded to the front of American tanks. And it was more use to the Americans there than it ever was to the Germans on the beach.",
+   "send_text": "The steel Germany planted on the D-Day beaches to rip open Allied landing boats ended up welded to the front of American tanks. And it was more use to the Americans there than it ever was to the Germans on the beach.",
+   "is_heading": false,
+   "is_cta": false,
+   "chars": 216
+  },
+  {
+   "index": 2,
+   "text": "Culin tried to give the credit to Roberts. It didn't stick.",
+   "send_text": "Culin tried to give the credit to Roberts. It didn't stick.",
+   "is_heading": false,
+   "is_cta": false,
+   "chars": 59
+  }
+ ],
+ "marks": [
+  {
+   "index": 0,
+   "start": 0.0,
+   "end": 1.36,
+   "retimed": 1.0
+  },
+  {
+   "index": 1,
+   "start": 1.66,
+   "end": 14.54,
+   "retimed": 1.0
+  },
+  {
+   "index": 2,
+   "start": 14.54,
+   "end": 18.38,
+   "retimed": 1.0
+  }
+ ],
+ "script_lines": [
+  "The Rhino Tanks.",
+  "The steel Germany planted on the D-Day beaches to rip open Allied landing boats ended up welded to the front of American tanks. And it was more use to the Americans there than it ever was to the Germans on the beach.",
+  "Culin tried to give the credit to Roberts. It didn't stick."
+ ]
+}

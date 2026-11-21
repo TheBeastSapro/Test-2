@@ -1,0 +1,36 @@
+[voiceover] “V4 Test” · 3 sections · 291 chars
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/generate.py --script ./.vo_V4_Test/narration_source.txt --out ./.vo_V4_Test/raw_stitched.wav --parts-dir ./.vo_V4_Test/parts --sections-json ./.vo_V4_Test/sections.json --max-chunk 220 --spend-log ./.vo_V4_Test/spend.json --profile ../wrongjob/profile.json --approve-spend 300 --approval 1 (replying to option 1: Approve the v4 test, ~300 credits)
+[voiceover] 3 sections · 291 chars · ~291 credits
+[voiceover] approved by Sapro: “1 (replying to option 1: Approve the v4 test, ~300 credits)”
+[voiceover] sending 291 chars (1,000 left of the 1,000 approved)
+[voiceover]   1/3 chapter, 16 chars
+[voiceover]   2/3 section, 216 chars
+[voiceover]   3/3 section, 59 chars
+[voiceover] stitching
+[voiceover] wrote ./.vo_V4_Test/raw_stitched.wav  (0.3 min)
+[readcheck] loading ASR (distil-large-v3, cpu float32) — first run downloads the model (distil-large-v3 is 1.5 GB on disk, measured)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Traceback (most recent call last):
+  File "/home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/voiceover.py", line 761, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/voiceover.py", line 662, in main
+    results = rc.check_sections(man["sections"], parts_dir, a.asr_model, guide)
+  File "/home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/readcheck.py", line 392, in check_sections
+    heard, wordinfo = transcribe(model, path)
+                      ~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/readcheck.py", line 333, in transcribe
+    segs, _ = model.transcribe(path, language="en", beam_size=5,
+              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                               condition_on_previous_text=False,
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                               word_timestamps=True)
+                               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/faster_whisper/transcribe.py", line 876, in transcribe
+    audio = decode_audio(audio, sampling_rate=sampling_rate)
+  File "/usr/local/lib/python3.13/site-packages/faster_whisper/audio.py", line 46, in decode_audio
+    with av.open(input_file, mode="r", metadata_errors="ignore") as container:
+         ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "av/container/core.py", line 479, in av.container.core.open
+    def open(
+TypeError: open() got an unexpected keyword argument 'metadata_errors'
