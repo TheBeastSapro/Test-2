@@ -1,0 +1,37 @@
+[voiceover] “Weapons That Worked Better for the Wrong Job Explained” · 47 sections · 12607 chars
+[voiceover] pronunciation guide: 27 names, held out of the narration (Curtis Culin, Omar Bradley, Guglielmo Embriaco, Jaffa, Erich von Manstein…)
+
+  TITLE: “Weapons That Worked Better for the Wrong Job Explained”  (not narrated)
+  detected 8 chapters · 2 CTAs — chapter names read aloud as intros
+    1. The Rhino Tanks
+    2. The Genoese Ships
+    3. The StuG III
+    4. The Naval Guns at Ladysmith
+    5. The Trench Shotgun
+    6. HMS Campbeltown
+    7. The M2 Browning
+    8. The R-7
+  CTA: “That's five weapons doing the wrong job so far. Which on…”
+  CTA: “If you want more weapons that won for the wrong reasons,…”
+  pronunciation guide: 27 names held out of the narration
+
+  PRE-FLIGHT — 2 thing(s) to look at before spending:
+    ! guide entry “Boer, Boers” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+    ! guide entry “4.7-inch” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+
+  47 sections (8 chapter announcements) · 12,607 chars · ~15:00 audio
+
+  CALIBRATION — every value that will be sent, and who chose it:
+  voice dUHbvtIZto0ZEBkhYiyk (profile) · model eleven_v4 (env)
+  stability 0.48 (profile) · similarity_boost 0.8 (profile)
+  style 0.05 (profile) · speed 1.07 (profile)
+  use_speaker_boost True (profile)
+  chunkSize 450 (profile) · chapterPause natural (profile)
+  collapseBreaks False (profile) · readTitle False (profile)
+  skipHeadings False (profile)
+
+  COST: ~12,607 credits (first pass) of 237,627 remaining
+  redo rounds: off (--max-redos 0) — flagged sections are reported, not re-rendered
+  WORST CASE this run: ~12,607 credits
+  master: /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py
+

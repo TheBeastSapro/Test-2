@@ -1,0 +1,22 @@
+[voiceover] “V4 Test” · 3 sections · 291 chars
+
+  TITLE: “V4 Test”  (not narrated)
+  detected 1 chapter — chapter names read aloud as intros
+    1. The Rhino Tanks
+
+  3 sections (1 chapter announcements) · 291 chars · ~0:20 audio
+
+  CALIBRATION — every value that will be sent, and who chose it:
+  voice dUHbvtIZto0ZEBkhYiyk (profile) · model eleven_v4 (env)
+  stability 0.48 (profile) · similarity_boost 0.8 (profile)
+  style 0.05 (profile) · speed 1.07 (profile)
+  use_speaker_boost True (profile)
+  chunkSize 450 (flag) · chapterPause natural (profile)
+  collapseBreaks False (profile) · readTitle False (profile)
+  skipHeadings False (profile)
+
+  COST: ~291 credits (first pass) of 237,627 remaining
+  redo rounds: off (--max-redos 0) — flagged sections are reported, not re-rendered
+  WORST CASE this run: ~291 credits
+  master: /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py
+

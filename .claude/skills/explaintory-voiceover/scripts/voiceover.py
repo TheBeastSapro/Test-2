@@ -361,6 +361,14 @@ def show_plan(title, raw, guide, sections, prof, skip_headings, api_key=None,
                        p("read_title", "readTitle", prof["read_title"]),
                        p("skip_headings", "skipHeadings", skip_headings)]):
         print(line)
+    try:
+        from generate import settings_for
+        _, dropped = settings_for(prof["model"], s)
+    except Exception:
+        dropped = []
+    if dropped:
+        print(f"  ^ {prof['model']} cannot use {', '.join(dropped)} — sent as off/0, "
+              f"not the profile value; speed is sent but the docs say v4 ignores it")
     inherited = [k for k in ("stability", "similarity_boost", "style", "speed",
                              "use_speaker_boost", "chunk_size", "chapter_pause",
                              "collapse_breaks", "read_title", "skip_headings")
@@ -457,6 +465,9 @@ def main():
                                       "(one 'wordA|wordB' pair per line)")
     ap.add_argument("--lexicon", help="pronunciation lexicon JSON — names respelled so "
                                       "the voice reads them right")
+    ap.add_argument("--heading-gap", type=float, default=None,
+                    help="with headings skipped: total silence in seconds where each "
+                         "chapter name would have been")
     ap.add_argument("--skip-headings", action="store_true", default=None,
                     help="do not read chapter names aloud (default: whatever the profile locked in)")
     ap.add_argument("--max-chunk", type=int, default=None)
@@ -628,6 +639,8 @@ def main():
         gen_cmd += ["--profile", a.profile]
     if a.skip_headings:
         gen_cmd += ["--skip-headings"]
+        if a.heading_gap:
+            gen_cmd += ["--heading-gap", str(a.heading_gap)]
     if a.chapter_pause:
         gen_cmd += ["--chapter-pause", a.chapter_pause]
     if a.lexicon:

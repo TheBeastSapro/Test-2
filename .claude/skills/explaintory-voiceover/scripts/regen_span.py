@@ -154,8 +154,13 @@ def main():
     model = rc.load_asr()
     segs, _ = model.transcribe(part, language="en", beam_size=5,
                                condition_on_previous_text=False, word_timestamps=True)
-    heard = [(rc.normalize(w.word).strip(), float(w.start), float(w.end))
-             for s_ in segs for w in (s_.words or [])]
+    # One heard word can normalise to several tokens ("night's" -> "night is"),
+    # while the sentence is normalised as a whole and split. Keeping the expansion
+    # as ONE token shifted every later position by one, and a sentence holding a
+    # contraction plus two misreads fell under the 70% match and was refused.
+    heard = [(t, float(w.start), float(w.end))
+             for s_ in segs for w in (s_.words or [])
+             for t in rc.normalize(w.word).split()]
     want = rc.normalize(a.sentence).split()
     hw = [h[0] for h in heard]
     hit = None

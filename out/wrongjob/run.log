@@ -1,0 +1,139 @@
+[voiceover] “Weapons That Worked Better for the Wrong Job Explained” · 47 sections · 12607 chars
+[voiceover] pronunciation guide: 27 names, held out of the narration (Curtis Culin, Omar Bradley, Guglielmo Embriaco, Jaffa, Erich von Manstein…)
+[voiceover] PRE-FLIGHT ! guide entry “Boer, Boers” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] PRE-FLIGHT ! guide entry “4.7-inch” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/generate.py --script ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/narration_source.txt --out ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/raw_stitched.wav --parts-dir ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/parts --sections-json ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/sections.json --max-chunk 450 --spend-log ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/spend.json --profile /home/user/Test-2/voice-calibration.v4.json --approve-spend 12700 --approval approve full v4 run
+[voiceover] 47 sections · 12607 chars · ~12607 credits
+[voiceover] approved by Sapro: “approve full v4 run”
+[voiceover] sending 12,607 chars (12,700 left of the 12,700 approved)
+[voiceover]   1/47 chapter, 16 chars
+[voiceover]   2/47 section, 216 chars
+[voiceover]   3/47 section, 384 chars
+[voiceover]   4/47 section, 226 chars
+[voiceover]   5/47 section, 355 chars
+[voiceover]   6/47 section, 437 chars
+[voiceover]   7/47 section, 375 chars
+[voiceover]   8/47 chapter, 18 chars
+[voiceover]   9/47 section, 386 chars
+[voiceover]   10/47 section, 211 chars
+[voiceover]   11/47 section, 367 chars
+[voiceover]   12/47 section, 405 chars
+[voiceover]   13/47 section, 292 chars
+[voiceover]   14/47 chapter, 13 chars
+[voiceover]   15/47 section, 112 chars
+[voiceover]   16/47 section, 428 chars
+[voiceover]   17/47 section, 177 chars
+[voiceover]   18/47 section, 392 chars
+[voiceover]   19/47 section, 371 chars
+[voiceover]   20/47 chapter, 28 chars
+[voiceover]   21/47 section, 98 chars
+[voiceover]   22/47 section, 417 chars
+[voiceover]   23/47 section, 446 chars
+[voiceover]   24/47 section, 283 chars
+[voiceover]   25/47 section, 312 chars
+[voiceover]   26/47 chapter, 19 chars
+[voiceover]   27/47 section, 439 chars
+[voiceover]   28/47 section, 224 chars
+[voiceover]   29/47 section, 291 chars
+[voiceover]   30/47 section, 381 chars
+[voiceover]   31/47 CTA, 111 chars
+[voiceover]   32/47 chapter, 16 chars
+[voiceover]   33/47 section, 441 chars
+[voiceover]   34/47 section, 332 chars
+[voiceover]   35/47 section, 406 chars
+[voiceover]   36/47 section, 395 chars
+[voiceover]   37/47 section, 84 chars
+[voiceover]   38/47 chapter, 16 chars
+[voiceover]   39/47 section, 439 chars
+[voiceover]   40/47 section, 235 chars
+[voiceover]   41/47 section, 364 chars
+[voiceover]   42/47 chapter, 8 chars
+[voiceover]   43/47 section, 381 chars
+[voiceover]   44/47 section, 385 chars
+[voiceover]   45/47 section, 399 chars
+[voiceover]   46/47 section, 264 chars
+[voiceover]   47/47 CTA, 212 chars
+[voiceover] stitching
+[voiceover]   heading 8: 2.43 syl/s vs 2.90 median — retiming x1.180
+[voiceover]   heading 14: 2.13 syl/s vs 2.90 median — retiming x1.180
+[voiceover]   heading 20: 3.65 syl/s vs 2.84 median — retiming x0.850
+[voiceover]   heading 26: 2.43 syl/s vs 2.90 median — retiming x1.180
+[voiceover]   heading 32: 3.72 syl/s vs 2.84 median — retiming x0.850
+[voiceover] wrote ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/raw_stitched.wav  (13.5 min)
+[readcheck] loading ASR (distil-large-v3, cpu float32) — first run downloads the model (distil-large-v3 is 1.5 GB on disk, measured)
+[readcheck]   1/47 — wer 0.00, 138 wpm, 1.3s
+[readcheck]   2/47 — wer 0.02, 201 wpm, 12.5s  REDO (1 problem)
+[readcheck]   3/47 — wer 0.00, 180 wpm, 26.0s
+[readcheck]   4/47 — wer 0.03, 157 wpm, 14.9s
+[readcheck]   5/47 — wer 0.01, 177 wpm, 22.4s
+[readcheck]   6/47 — wer 0.00, 199 wpm, 25.0s
+[readcheck]   7/47 — wer 0.01, 176 wpm, 22.4s
+[readcheck]   8/47 — wer 0.00, 109 wpm, 1.6s
+[readcheck]   9/47 — wer 0.00, 177 wpm, 24.1s
+[readcheck]   10/47 — wer 0.03, 177 wpm, 13.2s
+[readcheck]   11/47 — wer 0.00, 184 wpm, 22.8s
+[readcheck]   12/47 — wer 0.03, 183 wpm, 24.5s  REDO (1 problem)
+[readcheck]   13/47 — wer 0.04, 160 wpm, 19.1s  REDO (1 problem)
+[readcheck]   14/47 — wer 0.67, 128 wpm, 1.4s  note (1)
+[readcheck]   15/47 — wer 0.10, 189 wpm, 6.3s  REDO (1 problem)
+[readcheck]   16/47 — wer 0.01, 172 wpm, 27.9s
+[readcheck]   17/47 — wer 0.00, 188 wpm, 11.5s
+[readcheck]   18/47 — wer 0.03, 160 wpm, 28.1s  REDO (1 problem)
+[readcheck]   19/47 — wer 0.00, 166 wpm, 23.9s
+[readcheck]   20/47 — wer 0.00, 137 wpm, 2.2s
+[readcheck]   21/47 — wer 0.00, 205 wpm, 5.6s
+[readcheck]   22/47 — wer 0.03, 163 wpm, 26.8s  REDO (1 problem)
+[readcheck]   23/47 — wer 0.02, 176 wpm, 27.6s  REDO (1 problem)
+[readcheck]   24/47 — wer 0.00, 179 wpm, 17.4s
+[readcheck]   25/47 — wer 0.07, 168 wpm, 20.8s
+[readcheck]   26/47 — wer 0.00, 109 wpm, 1.6s
+[readcheck]   27/47 — wer 0.00, 175 wpm, 27.7s
+[readcheck]   28/47 — wer 0.00, 195 wpm, 14.4s
+[readcheck]   29/47 — wer 0.00, 159 wpm, 17.4s
+[readcheck]   30/47 — wer 0.02, 160 wpm, 24.3s
+[readcheck]   31/47 — wer 0.00, 196 wpm, 6.4s
+[readcheck]   32/47 — wer 0.50, 64 wpm, 1.9s  note (1)
+[readcheck]   33/47 — wer 0.01, 170 wpm, 29.3s
+[readcheck]   34/47 — wer 0.03, 184 wpm, 19.9s
+[readcheck]   35/47 — wer 0.04, 186 wpm, 24.5s  REDO (1 problem)
+[readcheck]   36/47 — wer 0.00, 173 wpm, 24.3s
+[readcheck]   37/47 — wer 0.00, 134 wpm, 8.0s
+[readcheck]   38/47 — wer 0.00, 104 wpm, 1.7s
+[readcheck]   39/47 — wer 0.00, 180 wpm, 29.0s
+[readcheck]   40/47 — wer 0.00, 152 wpm, 17.4s
+[readcheck]   41/47 — wer 0.00, 184 wpm, 22.8s
+[readcheck]   42/47 — wer 0.00, 85 wpm, 1.4s
+[readcheck]   43/47 — wer 0.00, 155 wpm, 26.7s
+[readcheck]   44/47 — wer 0.01, 174 wpm, 24.5s  REDO (1 problem)
+[readcheck]   45/47 — wer 0.00, 165 wpm, 25.8s
+[readcheck]   46/47 — wer 0.00, 169 wpm, 17.8s
+[readcheck]   47/47 — wer 0.00, 205 wpm, 11.7s
+REDO section 2 (201 wpm, 12.51s, wer 0.0233)
+     misread: after “…and it was more” expected “use” heard “used”
+REDO section 12 (183 wpm, 24.53s, wer 0.0267)
+     misread: after “…it with a nickname” expected “mallet” heard “mallethead”
+REDO section 13 (160 wpm, 19.07s, wer 0.0392)
+     misread: after “…to their knees and” expected “bridle reins” heard “bridal rains”
+note section 14 (128 wpm, 1.41s, wer 0.6667)
+     chapter name “The StuG III.” transcribed as “The Stuke 3” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong
+REDO section 15 (189 wpm, 6.35s, wer 0.1)
+     misread: after “…war was built to” expected “knock” heard “knockout”
+REDO section 18 (160 wpm, 28.11s, wer 0.026)
+     misread: after “…to give the squat” expected “bunker” heard “bunkerbuster”
+REDO section 22 (163 wpm, 26.83s, wer 0.027)
+     misread: after “…guns the british called” expected “long” heard “longtoms”
+REDO section 23 (176 wpm, 27.56s, wer 0.0247)
+     misread: after “…started building mounts for” expected “dry” heard “dryland”
+note section 32 (64 wpm, 1.88s, wer 0.5)
+     chapter name “HMS Campbeltown.” transcribed as “HMS Campbelltown” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong
+REDO section 35 (186 wpm, 24.53s, wer 0.039)
+     misread: after “…a small fleet of” expected “motor” heard “motorboats”
+REDO section 44 (174 wpm, 24.45s, wer 0.0139)
+     misread: after “…missile could not sit” expected “fuelled” heard “fueled”
+
+47 sections · 9 need a redo
+[voiceover] 9 section(s) flagged: 2, 12, 13, 15, 18, 22, 23, 35, 44
+[voiceover] NOT re-rendering — that would send ~3,071 more characters and this run has spent 12,607 so far. The read-check evidence for each is above and in ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/readcheck.json.
+[voiceover] To re-render them, approve the spend explicitly:
+    python3 /home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/voiceover.py --script script.txt --work ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained --from check --auto-redo --max-redos 1 --approve-spend 15678
+[voiceover] stopping before master; raw stitch at ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/raw_stitched.wav
