@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "The voice and its locked-in settings. Same shape as voiceover_profile.json,",
+    "the file Voiceover Studio writes next to voiceover_studio.py when you tick",
+    "'remember' — so you can copy that file here unchanged.",
+    "",
+    "LEAVE api_key OUT. Put the key in the ELEVENLABS_API_KEY environment variable",
+    "instead, so the secret never sits in a file that gets committed.",
+    "",
+    "calibration.voice is the ElevenLabs voice id, the value the studio's voice",
+    "dropdown holds. The four numbers are whatever the Training Studio locked in",
+    "for you — the values printed in the '🔒 Locked in:' chat message."
+  ],
+  "calibration": {
+    "voice": "PUT-YOUR-ELEVENLABS-VOICE-ID-HERE",
+    "model": "eleven_multilingual_v2",
+    "stability": 0.5,
+    "similarity_boost": 0.75,
+    "style": 0.0,
+    "speed": 1.0,
+    "collapseBreaks": false,
+    "chapterPause": "natural",
+    "skipHeadings": false,
+    "chunkSize": 450
+  }
+}

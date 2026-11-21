@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "ExplainTory locked-in voice profile. Reconstructed from the settings recorded",
+    "in .claude/skills/explaintory-voiceover/SKILL.md, because the container is not",
+    "storage and the copy carried over from Voiceover Studio dies with every session",
+    "(see HANDOFF.md, 'The container is not storage'). Committed here so it stops",
+    "having to be rebuilt from the skill text every time.",
+    "",
+    "NO API KEY IN THIS FILE. ELEVENLABS_API_KEY lives in the environment.",
+    "",
+    "pronOn is false on purpose: Sapro compared a raw take against a respelled one",
+    "and chose the raw. The pronunciation guide is the reference for CHECKING, not",
+    "an automatic substitution."
+  ],
+  "calibration": {
+    "voice": "dUHbvtIZto0ZEBkhYiyk",
+    "model": "eleven_multilingual_v2",
+    "stability": 0.48,
+    "similarity_boost": 0.80,
+    "style": 0.05,
+    "speed": 1.07,
+    "use_speaker_boost": true,
+    "collapseBreaks": false,
+    "chapterPause": "natural",
+    "skipHeadings": false,
+    "pronOn": false,
+    "chunkSize": 450
+  }
+}

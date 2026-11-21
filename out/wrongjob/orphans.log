@@ -1,0 +1,12 @@
+file        Weapons That Worked Better for the Wrong Job Explained (final).mp3
+duration    749.802s
+silence     exact zero
+gaps        20 of >= 40 ms
+candidates  1
+
+    start       end     ms    peak   gapL   gapR   cent    zcr  verdict
+  397.373   397.494  121.3  -25.54    129    154    682   8136  ORPHAN
+
+1 orphan, 0 keep, 0 unjudged.
+Removing an ORPHAN costs no speech — the mute test proves it.
+Still send Sapro the six seconds around it before the full file.

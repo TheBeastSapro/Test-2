@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "Names the voice gets wrong, and how to spell them so it gets them right.",
+    "Pass with --lexicon. Copy this to lexicon.json and add entries as you find them.",
+    "",
+    "RESPELLINGS, NOT PHONEMES. ElevenLabs' docs: 'Pronunciation dictionary phoneme",
+    "tags only work with eleven_flash_v2 and eleven_v3 models. Other models skip",
+    "dictionary phoneme tags and use the default pronunciation.' The channel runs on",
+    "eleven_multilingual_v2, so an IPA string here would be silently ignored — no",
+    "error, same wrong reading. Write how it should be SPELLED to sound right.",
+    "",
+    "Substitution is whole-word, so a 'Hiero' entry cannot corrupt 'hierarchy', and",
+    "it applies only to the text sent to the API — the read-check and the mastering",
+    "alignment still see the real spelling.",
+    "",
+    "Seed it from a run that found consistent mispronunciations:",
+    "  python3 scripts/pronounce.py --from-check <work>/readcheck.json"
+  ],
+  "words": {
+    "Angolpo": "An-gol-poh",
+    "Hiero": "Hee-air-oh",
+    "Archimedes": "Ar-kih-mee-deez"
+  }
+}

@@ -1,0 +1,58 @@
+[voiceover] “Weapons That Worked Better for the Wrong Job Explained” · 47 sections · 12607 chars
+[voiceover] pronunciation guide: 27 names, held out of the narration (Curtis Culin, Omar Bradley, Guglielmo Embriaco, Jaffa, Erich von Manstein…)
+[voiceover] PRE-FLIGHT ! guide entry “Boer, Boers” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] PRE-FLIGHT ! guide entry “4.7-inch” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py --audio ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/raw_stitched.wav --script ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/script_lines.txt --out ./Weapons That Worked Better for the Wrong Job Explained (final).mp3 --report ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/pauses.csv --align-cache ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/align.json --curated curated.txt
+[humanize] decoding
+[humanize]   772.3s, peak -1.37 dBFS
+[humanize] QC (source): clean
+[humanize] declipped 0 over-full-scale region(s)
+[humanize] removed 1 splice fragment(s)
+[humanize]     12:40.830  5 ms  -46 dB
+[humanize] script: 58 lines, 2334 words
+[humanize] forced alignment (this is the slow part)
+[humanize]   aligning 40s / 772s
+[humanize]   aligning 80s / 772s
+[humanize]   aligning 120s / 772s
+[humanize]   aligning 160s / 772s
+[humanize]   aligning 200s / 772s
+[humanize]   aligning 240s / 772s
+[humanize]   aligning 280s / 772s
+[humanize]   aligning 320s / 772s
+[humanize]   aligning 360s / 772s
+[humanize]   aligning 400s / 772s
+[humanize]   aligning 440s / 772s
+[humanize]   aligning 480s / 772s
+[humanize]   aligning 520s / 772s
+[humanize]   aligning 560s / 772s
+[humanize]   aligning 600s / 772s
+[humanize]   aligning 640s / 772s
+[humanize]   aligning 680s / 772s
+[humanize]   aligning 720s / 772s
+[humanize]   aligning 760s / 772s
+[humanize]   aligning 772s / 772s
+[humanize]   cached -> ./.vo_Weapons_That_Worked_Better_for_the_Wrong_Job_Explained/align.json
+[humanize]   2334 words aligned | 181 wpm | mean confidence 0.92 | 4% weak
+[humanize] curated clause breaks: 1
+[humanize] 17 sentence(s) held back from the speed-up (290 chunks stretched)
+[humanize]     0:09.2  283 wpm  x1.000 -> 283   And it was more use to the Americans there than it e
+[humanize]     0:34.1  244 wpm  x1.023 -> 250   To an American tank, it was a car trying to drive up
+[humanize]     1:23.2  244 wpm  x1.027 -> 250   Bradley ordered as many as they could build, and the
+[humanize]     2:49.2  263 wpm  x1.000 -> 263   That turned out to matter as much as the wood.
+[humanize]     4:42.1  241 wpm  x1.038 -> 250   And because it sat so low, it could hide in a ditch 
+[humanize]     6:02.5  250 wpm  x1.001 -> 250   For the lighter ones, they used an axle and the whee
+[humanize]     7:12.5  243 wpm  x1.027 -> 250   It got a metal guard over the barrel, so the soldier
+[humanize]     7:18.3  262 wpm  x1.000 -> 262   In a trench, it made a lot of sense.
+[humanize]     8:15.0  280 wpm  x1.000 -> 280   Which one would you have bet against?
+[humanize]     8:16.9  357 wpm  x1.000 -> 357   Leave it in the comments.
+[humanize]     9:03.5  258 wpm  x1.000 -> 258   So the Germans would think twice about sending her i
+[humanize]     9:45.9  243 wpm  x1.030 -> 250   The blast wrecked the dock gate and killed many of t
+[humanize]     11:01.3  243 wpm  x1.030 -> 250   And the machine gun's huge bullet went on to become 
+[humanize]     11:55.1  244 wpm  x1.025 -> 250   In a real war, it would probably have been destroyed
+[humanize]     ... and 3 more
+[humanize] inserted 3.3s at 55 boundaries {'paragraph': 11, 'comma': 44}
+[humanize] studio master (classic, air 0.0)
+[humanize] loudnorm -14 LUFS / -1.5 dBTP
+[humanize] QC (delivered file): clean
+[humanize] done -> ./Weapons That Worked Better for the Wrong Job Explained (final).mp3  (12:29.80)
+[voiceover] delivered ./Weapons That Worked Better for the Wrong Job Explained (final).mp3 (24.0 MB, 12:29)

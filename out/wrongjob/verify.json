@@ -1,0 +1,36 @@
+{
+ "duration": 749.832,
+ "lufs": -15.3,
+ "true_peak": -1.4,
+ "lra": 1.6,
+ "asr_words": 2342,
+ "script_words": 2334,
+ "wer": 0.0187,
+ "overall_wpm": 186.8,
+ "articulation_wpm": 210.2,
+ "pauses_explained": 230,
+ "pauses_unexplained": [
+  {
+   "at": 491.43,
+   "gap": 0.318,
+   "after": "life",
+   "before": "as"
+  },
+  {
+   "at": 558.86,
+   "gap": 0.158,
+   "after": "morning",
+   "before": "most"
+  },
+  {
+   "at": 580.41,
+   "gap": 0.141,
+   "after": "killed",
+   "before": "and"
+  }
+ ],
+ "chapters": {
+  "in_script": 8,
+  "found_in_audio": 7
+ }
+}
