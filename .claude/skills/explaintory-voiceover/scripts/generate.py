@@ -201,7 +201,7 @@ def tts(client, prof, sections, index, prev_ids):
             status = e.status_code or 0
             msg = str(getattr(e, "body", "") or e)
             if status == 401:
-                raise RuntimeError("Invalid or expired ElevenLabs API key.")
+                raise RuntimeError(f"ElevenLabs 401 (key rejected, or a billing/permission refusal): {msg}")
             if status == 402 or "quota" in msg.lower():
                 raise RuntimeError(f"Not enough ElevenLabs credits for section {index+1}: {msg}")
             if status in (429, 500, 502, 503, 504) and attempt < 3:
