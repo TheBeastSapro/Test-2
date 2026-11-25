@@ -4,3 +4,55 @@
 [voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py --audio /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/raw_stitched.wav --script /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/script_lines.txt --out /home/user/Test-2/out/roman/Every Genius Roman Army Defense Explained (final).mp3 --report /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/pauses.csv --align-cache /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/align.json --curated /home/user/Test-2/out/job/curated.txt
 [humanize] decoding
 [humanize]   857.1s, peak -1.47 dBFS
+[humanize] QC (source): clean
+[humanize] declipped 0 over-full-scale region(s)
+[humanize] removed 0 splice fragment(s)
+[humanize] script: 63 lines, 2598 words
+[humanize] forced alignment (this is the slow part)
+[humanize]   aligning 40s / 857s
+[humanize]   aligning 80s / 857s
+[humanize]   aligning 120s / 857s
+[humanize]   aligning 160s / 857s
+[humanize]   aligning 200s / 857s
+[humanize]   aligning 240s / 857s
+[humanize]   aligning 280s / 857s
+[humanize]   aligning 320s / 857s
+[humanize]   aligning 360s / 857s
+[humanize]   aligning 400s / 857s
+[humanize]   aligning 440s / 857s
+[humanize]   aligning 480s / 857s
+[humanize]   aligning 520s / 857s
+[humanize]   aligning 560s / 857s
+[humanize]   aligning 600s / 857s
+[humanize]   aligning 640s / 857s
+[humanize]   aligning 680s / 857s
+[humanize]   aligning 720s / 857s
+[humanize]   aligning 760s / 857s
+[humanize]   aligning 800s / 857s
+[humanize]   aligning 840s / 857s
+[humanize]   aligning 857s / 857s
+[humanize]   cached -> /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/align.json
+[humanize]   2598 words aligned | 182 wpm | mean confidence 0.93 | 2% weak
+[humanize] curated clause breaks: 4
+[humanize] 17 sentence(s) held back from the speed-up (353 chunks stretched)
+[humanize]     2:29.7  277 wpm  x1.000 -> 277   I have to respect the overkill.
+[humanize]     2:44.8  243 wpm  x1.028 -> 250   The machine's weak spot turned out to be the oxen pu
+[humanize]     3:11.9  245 wpm  x1.021 -> 250   Which is where we get "a Pyrrhic victory."
+[humanize]     4:18.5  258 wpm  x1.000 -> 258   So how do you get out when the enemy is on every sid
+[humanize]     4:28.3  250 wpm  x1.000 -> 250   That line now cut the ring in half, with riders on o
+[humanize]     5:48.0  252 wpm  x1.000 -> 252   Then he tied letters to their necks with a hair and 
+[humanize]     5:52.4  258 wpm  x1.000 -> 258   Desperate for light and a meal, they flew to the hig
+[humanize]     5:59.1  250 wpm  x1.001 -> 250   That's where Brutus picked them up.
+[humanize]     6:01.0  259 wpm  x1.000 -> 259   Soon he was leaving food out to train them.
+[humanize]     7:27.7  256 wpm  x1.000 -> 256   He treated him as a friend anyway.
+[humanize]     7:39.4  252 wpm  x1.000 -> 252   He wanted them on the long road, because he needed t
+[humanize]     9:25.8  245 wpm  x1.020 -> 250   In the end, part of the bank holding back the water 
+[humanize]     9:45.0  247 wpm  x1.011 -> 250   Even the people who couldn't fight went up to help h
+[humanize]     10:26.6  259 wpm  x1.000 -> 259   If the charge had got through the gap, it would have
+[humanize]     ... and 3 more
+[humanize] inserted 3.7s at 62 boundaries {'comma': 52, 'paragraph': 9, 'sentence': 1}
+[humanize] studio master (classic, air 0.0)
+[humanize] loudnorm -14 LUFS / -1.5 dBTP
+[humanize] QC (delivered file): clean
+[humanize] done -> /home/user/Test-2/out/roman/Every Genius Roman Army Defense Explained (final).mp3  (13:53.25)
+[voiceover] delivered /home/user/Test-2/out/roman/Every Genius Roman Army Defense Explained (final).mp3 (26.7 MB, 13:53)

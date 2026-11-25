@@ -735,3 +735,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** fa_score.py: report per-character confidence for the target span (merge_tokens) and refuse sum comparisons between candidates of different length. readcheck: treat a possessive whose only difference is a trailing 's as a non-flag; store word timestamps in readcheck.json.
 
 **Principle:** A likelihood comparison between hypotheses of different length is a length test, not an evidence test — normalise or compare only like with like.
+
+### Observation 49: The master's own tempo pass shrinks post-heading pauses ~10% more than the ×1.05 pre-compensation assumed
+
+**Status:** OPEN
+**Date:** 2026-11-25
+**Session context:** "Every Genius Roman Army Defense Explained", v4, delivered 13:53 from a 14:17 input (after ×1.05)
+**Skill:** explaintory-voiceover (also explaintory-vo-master)
+**Type:** open-source
+**Phase/Area:** stitch --after-heading-pause / humanize.py tempo
+
+**Issue:** Stitch targets 0.356-0.448 s (pre-scaled ×1.05 for the post_stitch atempo) measured 0.31-0.39 s in the delivered file (−45 dB), first heading 0.41 s at −55 dB. The master's own speed-up pass ("17 sentences held back from the speed-up, 353 chunks stretched") shortened the file a further 24 s, and its effect on silences was not in the compensation. Result was in Sapro's 0.30-0.45 range but compressed toward the bottom. verify.py again: 8 "unexplained" 140-175 ms micro-pauses (v4 take, Obs 43), −15.3 LUFS (Obs 35), QC import error (Obs 43). The run also needed a hand chain again: generate.py --stitch-only for the pause, ffmpeg post_stitch, swap into raw_stitched.wav, --from master.
+
+**Suggested improvement:** Measure the post-heading gaps on the DELIVERED file inside verify.py and print them against the requested range; derive the pre-compensation from the measured in/out duration ratio of a previous master (≈0.90 total here) rather than atempo alone.
+
+**Principle:** Compensate for every stage that rescales time, and verify the spec on the delivered artifact — the stage you know about is rarely the only one.
