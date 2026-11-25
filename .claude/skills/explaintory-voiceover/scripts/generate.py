@@ -508,14 +508,23 @@ def _edge_silence(pcm_bytes, rate, lead=True, floor_db=SILENCE_DBFS):
 
 
 def stitch(parts_dir, sections, out_path, preset="natural", rate=SR, level=True,
-           heading_gap=None):
+           heading_gap=None, after_heading=None, seed=0):
     """Concatenate the sections with exact digital silence between them.
     Returns [{index, start, end}] so a flagged section maps back to a timestamp.
 
     heading_gap: with headings skipped, the TOTAL silence (seconds) wanted where a
     chapter name would have been. The voice's own edge silence on both sides is
     measured and only the remainder is inserted, so the gap lands on the number
-    instead of number + ~0.4 s of model padding."""
+    instead of number + ~0.4 s of model padding.
+
+    after_heading: (lo, hi) seconds. The TOTAL silence heard between a spoken
+    chapter name and the first line of its section, drawn per heading from
+    [lo, hi] (seeded, so a re-stitch reproduces it) so the beats do not all land
+    on one machine-exact length. The voice's own edge silence counts toward it;
+    if the padding alone is longer than the target, the next take's lead
+    silence is trimmed (never into sound, 20 ms kept)."""
+    import random
+    rng = random.Random(seed)
     gaps = chapter_gaps(sections, preset)
     factors = level_headings(parts_dir, sections) if level else {}
     pcm = bytearray()
@@ -525,6 +534,18 @@ def stitch(parts_dir, sections, out_path, preset="natural", rate=SR, level=True,
             _decode(os.path.join(parts_dir, f"sec_{i:03d}.mp3"), rate,
                     factors.get(i, 1.0)), rate)
         silent_gap = None
+        if after_heading and i and sections[i - 1].get("is_heading"):
+            target = rng.uniform(*after_heading)
+            tail = _edge_silence(bytes(pcm), rate, lead=False)
+            lead = _edge_silence(take, rate, lead=True)
+            if tail + lead > target:
+                cut = min(tail + lead - target, max(lead - 0.02, 0.0))
+                take = take[int(round(cut * rate)) * 2:]
+                lead -= cut
+            gaps[i] = max(target - tail - lead, 0.0)
+            log(f"after heading {sections[i - 1]['text'][:40]!r}: target "
+                f"{target:.3f}s, total {tail + lead + gaps[i]:.3f}s "
+                f"({gaps[i]:.3f}s inserted)")
         if heading_gap and i and sec.get("after_silent_heading"):
             have = (_edge_silence(bytes(pcm), rate, lead=False)
                     + _edge_silence(take, rate, lead=True))
@@ -590,6 +611,9 @@ def main():
                     help="override the profile's stability for this run. Raising it "
                          "slightly is the studio's fix for false mid-sentence pauses.")
     ap.add_argument("--stitch-only", action="store_true")
+    ap.add_argument("--after-heading-pause", metavar="LO:HI",
+                    help="total silence after each spoken chapter name, varied per "
+                         "heading within LO:HI seconds, e.g. 0.30:0.45")
     ap.add_argument("--no-level-headings", action="store_true",
                     help="leave chapter announcements at whatever rate they rendered")
     ap.add_argument("--lexicon", help="pronunciation lexicon JSON — names respelled so "
@@ -690,7 +714,9 @@ def main():
 
     log("stitching")
     marks = stitch(parts_dir, sections, a.out, preset, level=not a.no_level_headings,
-                   heading_gap=a.heading_gap if a.skip_headings else None)
+                   heading_gap=a.heading_gap if a.skip_headings else None,
+                   after_heading=tuple(float(x) for x in a.after_heading_pause.split(":"))
+                   if a.after_heading_pause else None)
     # The stitch is this stage's artifact, so this stage says whether it exists.
     # ffmpeg reporting a problem on stderr and still exiting 0 has to end the run
     # here, not four minutes later inside the master with a confusing message.

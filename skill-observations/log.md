@@ -705,3 +705,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** When fixing a regex cap, grep for every sibling pattern with the same shape and fix them together. Pre-flight should warn when the first 40 lines before the first chapter heading contain prose that isn't a heading (likely an undetected note). note_wants_runon should match "runs straight into" / "continuous" / "no (long )?pause after". script_prep should drop a bare "# Script" H1 and stop at a "# Storyboard" H1.
 
 **Principle:** A fix to one instance of a length or shape limit is only half a fix if its siblings share the same limit; sweep the class, in code as well as in audio.
+
+### Observation 47: Sapro wants the post-heading beat varied 0.30–0.45 s, measured as heard silence
+
+**Status:** OPEN
+**Date:** 2026-11-25
+**Session context:** "Every Genius Roman Army Defense Explained", v4. Approval: "keep 0.30s pause but rotate around 0.30 to 0.45s so it will feel human pause"
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** generate.stitch / chapter_gaps; voiceover.py CLI
+
+**Issue:** chapter_gaps inserts a fixed preset value (natural: 0.30 s after a heading) ON TOP of the take's own edge padding, so the heard pause is 0.30 + padding, and identical every time. Sapro asked for a varied beat. Added generate.py --after-heading-pause LO:HI: per heading a seeded uniform draw, measured as TOTAL silence (tail of previous + lead of next + inserted), trimming the next take's lead silence if padding alone exceeds the target. voiceover.py does not expose it yet (applied via generate.py --stitch-only), and --no-level-headings likewise exists only on generate.py, so a voiceover.py run with it fails at argparse. The v4 post_stitch atempo 1.05 shrinks every gap, so the range was pre-scaled by 1.05.
+
+**Suggested improvement:** Expose --after-heading-pause and --no-level-headings on voiceover.py; store the range as calibration.afterHeadingPause in voice-calibration*.json; have the stitch divide by post_stitch.atempo automatically; report measured post-master heading pauses in verify.py.
+
+**Principle:** A pause spec from a listener means heard silence — measure it end to end, including the voice's own padding and every later tempo change, not as the number of zeros inserted.

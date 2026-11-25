@@ -1,0 +1,16 @@
+[voiceover] “Every Genius Roman Army Defense Explained” · 56 sections · 14105 chars
+[voiceover] pronunciation guide: 30 names, held out of the narration (Caecina, Arminius, Pyrrhus, Pyrrhic, Asculum…)
+[voiceover] PRE-FLIGHT ! guide entry “Parthia, Parthian” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/generate.py --script /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/narration_source.txt --out /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/raw_stitched.wav --parts-dir /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/parts --sections-json /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/sections.json --max-chunk 450 --spend-log /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/spend.json --profile /home/user/Test-2/voice-calibration.v4.json --approve-spend 14200 --approval Go
+[voiceover] 56 sections · 14105 chars · ~14105 credits
+[voiceover] approved by Sapro: “Go”
+[voiceover] sending 14,105 chars (14,200 left of the 14,200 approved)
+[voiceover]   1/56 chapter, 24 chars
+[voiceover]   2/56 section, 425 chars
+[voiceover]   3/56 section, 152 chars
+[voiceover]   4/56 section, 439 chars
+[voiceover]   5/56 section, 348 chars
+[voiceover]   6/56 section, 298 chars
+[voiceover]   7/56 chapter, 25 chars
+[voiceover]   8/56 section, 154 chars
+[voiceover]   9/56 section, 433 chars
