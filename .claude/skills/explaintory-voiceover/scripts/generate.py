@@ -508,7 +508,7 @@ def _edge_silence(pcm_bytes, rate, lead=True, floor_db=SILENCE_DBFS):
 
 
 def stitch(parts_dir, sections, out_path, preset="natural", rate=SR, level=True,
-           heading_gap=None, after_heading=None, seed=0):
+           heading_gap=None, after_heading=None, before_heading=None, seed=0):
     """Concatenate the sections with exact digital silence between them.
     Returns [{index, start, end}] so a flagged section maps back to a timestamp.
 
@@ -522,7 +522,11 @@ def stitch(parts_dir, sections, out_path, preset="natural", rate=SR, level=True,
     [lo, hi] (seeded, so a re-stitch reproduces it) so the beats do not all land
     on one machine-exact length. The voice's own edge silence counts toward it;
     if the padding alone is longer than the target, the next take's lead
-    silence is trimmed (never into sound, 20 ms kept)."""
+    silence is trimmed (never into sound, 20 ms kept).
+
+    before_heading: (lo, hi) seconds, the same for the silence between the end
+    of a section and the chapter name that follows it. Excess padding is trimmed
+    from the end of the previous take."""
     import random
     rng = random.Random(seed)
     gaps = chapter_gaps(sections, preset)
@@ -546,6 +550,25 @@ def stitch(parts_dir, sections, out_path, preset="natural", rate=SR, level=True,
             log(f"after heading {sections[i - 1]['text'][:40]!r}: target "
                 f"{target:.3f}s, total {tail + lead + gaps[i]:.3f}s "
                 f"({gaps[i]:.3f}s inserted)")
+        if before_heading and i and sec.get("is_heading"):
+            target = rng.uniform(*before_heading)
+            tail = _edge_silence(bytes(pcm), rate, lead=False)
+            lead = _edge_silence(take, rate, lead=True)
+            if tail + lead > target:
+                cut = min(tail + lead - target, max(tail - 0.02, 0.0))
+                n = int(round(cut * rate)) * 2
+                if n:
+                    del pcm[len(pcm) - n:]
+                    if marks:
+                        marks[-1]["end"] = round(len(pcm) / 2 / rate, 3)
+                tail -= cut
+                if tail + lead > target:
+                    cut2 = min(tail + lead - target, max(lead - 0.02, 0.0))
+                    take = take[int(round(cut2 * rate)) * 2:]
+                    lead -= cut2
+            gaps[i] = max(target - tail - lead, 0.0)
+            log(f"before heading {sec['text'][:40]!r}: target {target:.3f}s, "
+                f"total {tail + lead + gaps[i]:.3f}s ({gaps[i]:.3f}s inserted)")
         if heading_gap and i and sec.get("after_silent_heading"):
             have = (_edge_silence(bytes(pcm), rate, lead=False)
                     + _edge_silence(take, rate, lead=True))
@@ -614,6 +637,9 @@ def main():
     ap.add_argument("--after-heading-pause", metavar="LO:HI",
                     help="total silence after each spoken chapter name, varied per "
                          "heading within LO:HI seconds, e.g. 0.30:0.45")
+    ap.add_argument("--before-heading-pause", metavar="LO:HI",
+                    help="total silence before each chapter name (not the first), "
+                         "varied within LO:HI seconds")
     ap.add_argument("--no-level-headings", action="store_true",
                     help="leave chapter announcements at whatever rate they rendered")
     ap.add_argument("--lexicon", help="pronunciation lexicon JSON — names respelled so "
@@ -716,7 +742,9 @@ def main():
     marks = stitch(parts_dir, sections, a.out, preset, level=not a.no_level_headings,
                    heading_gap=a.heading_gap if a.skip_headings else None,
                    after_heading=tuple(float(x) for x in a.after_heading_pause.split(":"))
-                   if a.after_heading_pause else None)
+                   if a.after_heading_pause else None,
+                   before_heading=tuple(float(x) for x in a.before_heading_pause.split(":"))
+                   if a.before_heading_pause else None)
     # The stitch is this stage's artifact, so this stage says whether it exists.
     # ffmpeg reporting a problem on stderr and still exiting 0 has to end the run
     # here, not four minutes later inside the master with a confusing message.

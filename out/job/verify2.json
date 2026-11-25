@@ -1,0 +1,84 @@
+{
+ "duration": 833.856,
+ "lufs": -15.3,
+ "true_peak": -1.4,
+ "lra": 1.7,
+ "asr_words": 2600,
+ "script_words": 2598,
+ "wer": 0.018,
+ "overall_wpm": 186.9,
+ "articulation_wpm": 213.4,
+ "pauses_explained": 289,
+ "pauses_unexplained": [
+  {
+   "at": 43.84,
+   "gap": 0.146,
+   "after": "marsh",
+   "before": "and"
+  },
+  {
+   "at": 82.74,
+   "gap": 0.148,
+   "after": "Then",
+   "before": "the"
+  },
+  {
+   "at": 100.75,
+   "gap": 0.176,
+   "after": "and",
+   "before": "winners."
+  },
+  {
+   "at": 270.73,
+   "gap": 0.144,
+   "after": "forward",
+   "before": "and"
+  },
+  {
+   "at": 282.97,
+   "gap": 0.166,
+   "after": "sundown",
+   "before": "they"
+  },
+  {
+   "at": 443.83,
+   "gap": 0.17,
+   "after": "Euphrates",
+   "before": "and"
+  },
+  {
+   "at": 475.57,
+   "gap": 0.219,
+   "after": "at",
+   "before": "it."
+  },
+  {
+   "at": 701.99,
+   "gap": 0.148,
+   "after": "it",
+   "before": "was"
+  },
+  {
+   "at": 777.22,
+   "gap": 0.162,
+   "after": "it",
+   "before": "choked"
+  },
+  {
+   "at": 805.33,
+   "gap": 0.143,
+   "after": "But",
+   "before": "they"
+  },
+  {
+   "at": 824.82,
+   "gap": 0.491,
+   "after": "back",
+   "before": "out."
+  }
+ ],
+ "chapters": {
+  "in_script": 8,
+  "found_in_audio": 8
+ }
+}

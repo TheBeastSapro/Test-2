@@ -750,3 +750,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** Measure the post-heading gaps on the DELIVERED file inside verify.py and print them against the requested range; derive the pre-compensation from the measured in/out duration ratio of a previous master (≈0.90 total here) rather than atempo alone.
 
 **Principle:** Compensate for every stage that rescales time, and verify the spec on the delivered artifact — the stage you know about is rarely the only one.
+
+### Observation 50: Before-heading pause added; verify.py's "unexplained pause" placements drift between runs on identical audio
+
+**Status:** OPEN
+**Date:** 2026-11-25
+**Session context:** "Every Genius Roman Army Defense Explained" v2 master. Sapro: "Use 0.45 to 0.60 before, go"
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** generate.stitch --before-heading-pause; verify.py pause tracing
+
+**Issue:** Pre-heading silence was fixed 0.22 s + model padding, giving 0.29-0.62 s in the delivered v1. Added --before-heading-pause (trims the previous take's tail if padding alone is too long, and corrects that section's end mark). Compensation 1/0.90 from v1's measured ratio. Delivered v2: before 0.456-0.541 s (asked 0.45-0.60), after 0.297-0.429 s (asked 0.30-0.45) — the master compressed by ~0.85 this time, not 0.90, so both landed in the lower half again. verify.py on v2 listed 11 unexplained pauses vs 8 on v1 from the SAME takes; silencedetect showed every one present at the same length in v1. Its 491 ms "back ‖ out." was the paragraph break after "out." (word timestamps on the raw part: out. ends 9.02, silence 8.90-9.43, Defending 9.34). A first, linear-time-ratio heading measurement matched the wrong silence for one title.
+
+**Suggested improvement:** Measure heading gaps in verify.py by matching speech islands whose length equals the aligned title duration (what worked here). verify.py should report a pause by the alignment of BOTH neighbours and snap to the nearest script boundary within ±1 word before calling it unexplained. For pause ranges, aim at the midpoint of the requested range after compensation rather than mapping the endpoints, since the master's compression varies 0.85-0.90.
+
+**Principle:** A diff between two runs of a nondeterministic checker is not a diff between the two artifacts — measure the artifacts directly before calling anything new.

@@ -1,0 +1,58 @@
+[voiceover] “Every Genius Roman Army Defense Explained” · 56 sections · 14105 chars
+[voiceover] pronunciation guide: 30 names, held out of the narration (Caecina, Arminius, Pyrrhus, Pyrrhic, Asculum…)
+[voiceover] PRE-FLIGHT ! guide entry “Parthia, Parthian” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py --audio /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/raw_stitched.wav --script /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/script_lines.txt --out /home/user/Test-2/out/roman/Every Genius Roman Army Defense Explained (final).mp3 --report /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/pauses.csv --align-cache /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/align.json --curated /home/user/Test-2/out/job/curated.txt
+[humanize] decoding
+[humanize]   857.9s, peak -1.46 dBFS
+[humanize] QC (source): clean
+[humanize] declipped 0 over-full-scale region(s)
+[humanize] removed 0 splice fragment(s)
+[humanize] script: 63 lines, 2598 words
+[humanize] forced alignment (this is the slow part)
+[humanize]   aligning 40s / 858s
+[humanize]   aligning 80s / 858s
+[humanize]   aligning 120s / 858s
+[humanize]   aligning 160s / 858s
+[humanize]   aligning 200s / 858s
+[humanize]   aligning 240s / 858s
+[humanize]   aligning 280s / 858s
+[humanize]   aligning 320s / 858s
+[humanize]   aligning 360s / 858s
+[humanize]   aligning 400s / 858s
+[humanize]   aligning 440s / 858s
+[humanize]   aligning 480s / 858s
+[humanize]   aligning 520s / 858s
+[humanize]   aligning 560s / 858s
+[humanize]   aligning 600s / 858s
+[humanize]   aligning 640s / 858s
+[humanize]   aligning 680s / 858s
+[humanize]   aligning 720s / 858s
+[humanize]   aligning 760s / 858s
+[humanize]   aligning 800s / 858s
+[humanize]   aligning 840s / 858s
+[humanize]   aligning 858s / 858s
+[humanize]   cached -> /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/align.json
+[humanize]   2598 words aligned | 182 wpm | mean confidence 0.94 | 2% weak
+[humanize] curated clause breaks: 4
+[humanize] 17 sentence(s) held back from the speed-up (353 chunks stretched)
+[humanize]     2:29.9  273 wpm  x1.000 -> 273   I have to respect the overkill.
+[humanize]     2:45.0  243 wpm  x1.028 -> 250   The machine's weak spot turned out to be the oxen pu
+[humanize]     3:12.1  245 wpm  x1.021 -> 250   Which is where we get "a Pyrrhic victory."
+[humanize]     4:18.6  258 wpm  x1.000 -> 258   So how do you get out when the enemy is on every sid
+[humanize]     4:28.4  250 wpm  x1.000 -> 250   That line now cut the ring in half, with riders on o
+[humanize]     5:48.1  252 wpm  x1.000 -> 252   Then he tied letters to their necks with a hair and 
+[humanize]     5:52.5  257 wpm  x1.000 -> 257   Desperate for light and a meal, they flew to the hig
+[humanize]     5:59.3  253 wpm  x1.000 -> 253   That's where Brutus picked them up.
+[humanize]     6:01.2  262 wpm  x1.000 -> 262   Soon he was leaving food out to train them.
+[humanize]     7:28.0  253 wpm  x1.000 -> 253   He treated him as a friend anyway.
+[humanize]     7:39.8  252 wpm  x1.000 -> 252   He wanted them on the long road, because he needed t
+[humanize]     9:26.2  245 wpm  x1.020 -> 250   In the end, part of the bank holding back the water 
+[humanize]     9:45.5  249 wpm  x1.005 -> 250   Even the people who couldn't fight went up to help h
+[humanize]     10:27.0  259 wpm  x1.000 -> 259   If the charge had got through the gap, it would have
+[humanize]     ... and 3 more
+[humanize] inserted 3.5s at 59 boundaries {'comma': 50, 'paragraph': 8, 'sentence': 1}
+[humanize] studio master (classic, air 0.0)
+[humanize] loudnorm -14 LUFS / -1.5 dBTP
+[humanize] QC (delivered file): clean
+[humanize] done -> /home/user/Test-2/out/roman/Every Genius Roman Army Defense Explained (final).mp3  (13:53.83)
+[voiceover] delivered /home/user/Test-2/out/roman/Every Genius Roman Army Defense Explained (final).mp3 (26.7 MB, 13:53)
