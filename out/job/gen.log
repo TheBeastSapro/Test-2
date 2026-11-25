@@ -18,3 +18,85 @@
 [voiceover]   11/56 section, 412 chars
 [voiceover]   12/56 chapter, 28 chars
 [voiceover]   13/56 section, 288 chars
+[voiceover]   14/56 section, 274 chars
+[voiceover]   15/56 section, 201 chars
+[voiceover]   16/56 section, 327 chars
+[voiceover]   17/56 section, 396 chars
+[voiceover]   18/56 section, 224 chars
+[voiceover]   19/56 chapter, 18 chars
+[voiceover]   20/56 section, 128 chars
+[voiceover]   21/56 section, 321 chars
+[voiceover]   22/56 section, 165 chars
+[voiceover]   23/56 section, 423 chars
+[voiceover]   24/56 section, 165 chars
+[voiceover]   25/56 CTA, 164 chars
+[voiceover]   26/56 chapter, 22 chars
+[voiceover]   27/56 section, 235 chars
+[voiceover]   28/56 section, 235 chars
+[voiceover]   29/56 section, 398 chars
+[voiceover]   30/56 section, 364 chars
+[voiceover]   31/56 section, 110 chars
+[voiceover]   32/56 section, 350 chars
+[voiceover]   33/56 section, 221 chars
+[voiceover]   34/56 section, 376 chars
+[voiceover]   35/56 chapter, 20 chars
+[voiceover]   36/56 section, 137 chars
+[voiceover]   37/56 section, 357 chars
+[voiceover]   38/56 section, 298 chars
+[voiceover]   39/56 section, 241 chars
+[voiceover]   40/56 section, 408 chars
+[voiceover]   41/56 section, 380 chars
+[voiceover]   42/56 section, 247 chars
+[voiceover]   43/56 chapter, 30 chars
+[voiceover]   44/56 section, 240 chars
+[voiceover]   45/56 section, 320 chars
+[voiceover]   46/56 section, 186 chars
+[voiceover]   47/56 section, 357 chars
+[voiceover]   48/56 section, 115 chars
+[voiceover]   49/56 chapter, 19 chars
+[voiceover]   50/56 section, 356 chars
+[voiceover]   51/56 section, 369 chars
+[voiceover]   52/56 section, 172 chars
+[voiceover]   53/56 section, 307 chars
+[voiceover]   54/56 section, 361 chars
+[voiceover]   55/56 section, 322 chars
+[voiceover]   56/56 section, 286 chars
+[voiceover] stitching
+[voiceover]   heading 7: 3.93 syl/s vs 3.19 median — retiming x0.850
+[voiceover]   heading 19: 2.55 syl/s vs 3.44 median — retiming x1.180
+[voiceover]   heading 26: 2.94 syl/s vs 3.44 median — retiming x1.167
+[voiceover]   heading 49: 3.65 syl/s vs 3.19 median — retiming x0.875
+[voiceover] wrote /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/raw_stitched.wav  (15.0 min)
+[readcheck] loading ASR (distil-large-v3, cpu float32) — first run downloads the model (distil-large-v3 is 1.5 GB on disk, measured)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[readcheck]   1/56 — wer 0.00, 139 wpm, 1.7s
+[readcheck]   2/56 — wer 0.01, 173 wpm, 27.0s  REDO (1 problem)
+[readcheck]   3/56 — wer 0.00, 187 wpm, 10.9s
+[readcheck]   4/56 — wer 0.01, 184 wpm, 28.7s
+[readcheck]   5/56 — wer 0.02, 161 wpm, 22.4s
+[readcheck]   6/56 — wer 0.02, 162 wpm, 19.2s
+[readcheck]   7/56 — wer 0.00, 88 wpm, 2.0s
+[readcheck]   8/56 — wer 0.00, 177 wpm, 10.2s
+[readcheck]   9/56 — wer 0.01, 161 wpm, 29.1s  REDO (1 problem)
+[readcheck]   10/56 — wer 0.01, 166 wpm, 26.7s  REDO (1 problem)
+[readcheck]   11/56 — wer 0.01, 188 wpm, 25.5s
+[readcheck]   12/56 — wer 0.00, 88 wpm, 2.0s
+[readcheck]   13/56 — wer 0.02, 166 wpm, 17.4s  REDO (1 problem)
+[readcheck]   14/56 — wer 0.02, 180 wpm, 17.6s
+[readcheck]   15/56 — wer 0.00, 172 wpm, 12.6s
+[readcheck]   16/56 — wer 0.05, 181 wpm, 20.8s  REDO (1 problem)
+[readcheck]   17/56 — wer 0.00, 180 wpm, 25.7s
+[readcheck]   18/56 — wer 0.03, 170 wpm, 14.1s  REDO (1 problem)
+[readcheck]   19/56 — wer 0.00, 115 wpm, 1.6s
+[readcheck]   20/56 — wer 0.00, 163 wpm, 8.8s
+[readcheck]   21/56 — wer 0.02, 171 wpm, 21.1s
+[readcheck]   22/56 — wer 0.00, 181 wpm, 10.0s
+[readcheck]   23/56 — wer 0.01, 194 wpm, 25.3s
+[readcheck]   24/56 — wer 0.03, 156 wpm, 11.2s  REDO (1 problem)
+[readcheck]   25/56 — wer 0.03, 168 wpm, 10.4s  REDO (1 problem)
+[readcheck]   26/56 — wer 0.25, 118 wpm, 2.0s  REDO (1 problem)
+[readcheck]   27/56 — wer 0.00, 170 wpm, 14.8s
+[readcheck]   28/56 — wer 0.00, 164 wpm, 15.0s
+[readcheck]   29/56 — wer 0.05, 147 wpm, 27.4s  REDO (1 problem)
+[readcheck]   30/56 — wer 0.00, 179 wpm, 23.1s
+[readcheck]   31/56 — wer 0.05, 168 wpm, 7.2s
