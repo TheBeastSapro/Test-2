@@ -1,0 +1,38 @@
+[voiceover] “Every Genius Roman Army Defense Explained” · 56 sections · 14105 chars
+[voiceover] pronunciation guide: 30 names, held out of the narration (Caecina, Arminius, Pyrrhus, Pyrrhic, Asculum…)
+
+  TITLE: “Every Genius Roman Army Defense Explained”  (not narrated)
+  detected 8 chapters · 1 CTA — chapter names read aloud as intros
+    1. The Roman Marching Camp
+    2. The Anti-Elephant Wagons
+    3. Caesar's Double-Facing Line
+    4. The Siege Pigeons
+    5. Ventidius and the Spy
+    6. The Wall of Nisibis
+    7. The Statues of Hadrian's Tomb
+    8. The Tunnel at Dura
+  CTA: “Still to come: Roman soldiers fighting off an attack wit…”
+  pronunciation guide: 30 names held out of the narration
+  READ NOTE: 7 lines held out of the narration
+  chapter style: announce — a beat around the name
+
+  PRE-FLIGHT — 1 thing(s) to look at before spending:
+    ! guide entry “Parthia, Parthian” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+
+  56 sections (8 chapter announcements) · 14,105 chars · ~16:47 audio
+
+  CALIBRATION — every value that will be sent, and who chose it:
+  voice dUHbvtIZto0ZEBkhYiyk (profile) · model eleven_v4 (profile)
+  stability 0.48 (profile) · similarity_boost 0.8 (profile)
+  style 0.0 (profile) · speed 1.07 (profile)
+  use_speaker_boost False (profile)
+  chunkSize 450 (profile) · chapterPause natural (profile)
+  collapseBreaks False (profile) · readTitle False (profile)
+  skipHeadings False (profile)
+  ^ eleven_v4 cannot use style, use_speaker_boost — sent as off/0, not the profile value; speed is sent but the docs say v4 ignores it
+
+  COST: ~14,105 credits (first pass) of 337,405 remaining
+  redo rounds: off (--max-redos 0) — flagged sections are reported, not re-rendered
+  WORST CASE this run: ~14,105 credits
+  master: /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py
+

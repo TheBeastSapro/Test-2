@@ -1,0 +1,70 @@
+usage: voiceover.py [-h] --script SCRIPT [--title TITLE] [--out-dir OUT_DIR]
+                    [--work WORK] [--profile PROFILE] [--curated CURATED]
+                    [--lexicon LEXICON] [--heading-gap HEADING_GAP]
+                    [--skip-headings] [--max-chunk MAX_CHUNK]
+                    [--chapter-pause {tight,natural,wide}]
+                    [--chapter-style {announce,run-on}]
+                    [--asr-model ASR_MODEL] [--approval APPROVAL]
+                    [--approve-spend APPROVE_SPEND] [--max-redos MAX_REDOS]
+                    [--auto-redo] [--from {generate,check,master}]
+                    [--humanize HUMANIZE] [--max-wpm MAX_WPM] [--no-master]
+                    [--suggest-breaks] [--plan]
+
+Script -> mastered ExplainTory voiceover.
+
+options:
+  -h, --help            show this help message and exit
+  --script SCRIPT
+  --title TITLE         video title; defaults to the script's H1 or filename
+  --out-dir OUT_DIR     where the delivered MP3 lands
+  --work WORK           working directory (default: <out-dir>/.vo_<title>)
+  --profile PROFILE     voiceover_profile.json from Voiceover Studio
+  --curated CURATED     clause-break file for the mastering pass (one
+                        'wordA|wordB' pair per line)
+  --lexicon LEXICON     pronunciation lexicon JSON — names respelled so the
+                        voice reads them right
+  --heading-gap HEADING_GAP
+                        with headings skipped: total silence in seconds where
+                        each chapter name would have been
+  --skip-headings       do not read chapter names aloud (default: whatever the
+                        profile locked in)
+  --max-chunk MAX_CHUNK
+  --chapter-pause {tight,natural,wide}
+  --chapter-style {announce,run-on}
+                        announce = a beat around the chapter name (profile
+                        default); run-on = the name leads the first sentence
+                        in the same request, no inserted silence. Auto-read
+                        from the script's READ NOTE when not given.
+  --asr-model ASR_MODEL
+  --approval APPROVAL   Sapro's own words approving this send. Required for
+                        any generation; an earlier approval does not carry
+                        forward.
+  --approve-spend APPROVE_SPEND
+                        characters this RUN is allowed to send, across every
+                        render including redos. Default ceiling is 2000; a
+                        full render needs this set to the plan's worst-case
+                        cost.
+  --max-redos MAX_REDOS
+                        rounds of re-rendering flagged sections before giving
+                        up. Default 0: flagged sections are reported with
+                        their ASR evidence and the cost of re-rendering them,
+                        and nothing is spent. --auto-redo raises the default
+                        to 2.
+  --auto-redo           re-render flagged sections without asking. OFF by
+                        default: the gate before generation is consent for one
+                        quantity of characters, not for every later render the
+                        pipeline decides to do. Spends from the same
+                        --approve-spend ceiling.
+  --from {generate,check,master}
+  --humanize HUMANIZE   path to humanize.py
+  --max-wpm MAX_WPM     slow only sentences faster than this, in the master.
+                        290 = faster than the human reference ever goes, so it
+                        catches only broken sentences; 250 is the human's p90
+                        and will also slow real punchlines. 0 (default) = off,
+                        the approved sound.
+  --no-master           stop after the read-check
+  --suggest-breaks      print candidate clause breaks and exit — read them,
+                        keep the real ones
+  --plan                show the structure and the credit cost, then stop. Run
+                        this first and let Sapro confirm before spending
+                        anything.
