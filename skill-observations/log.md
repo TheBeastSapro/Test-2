@@ -720,3 +720,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** Expose --after-heading-pause and --no-level-headings on voiceover.py; store the range as calibration.afterHeadingPause in voice-calibration*.json; have the stitch divide by post_stitch.atempo automatically; report measured post-master heading pauses in verify.py.
 
 **Principle:** A pause spec from a listener means heard silence — measure it end to end, including the voice's own padding and every later tempo change, not as the number of zeros inserted.
+
+### Observation 48: Read-check: 16 flags, 0 confirmed misreads; summed CTC log-prob is biased toward deletions
+
+**Status:** OPEN
+**Date:** 2026-11-25
+**Session context:** "Every Genius Roman Army Defense Explained", v4 full read-check
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** readcheck.py triage; fa_score.py
+
+**Issue:** 16 sections flagged, ~5,088-char redo offered. Triage: homophones/ASR spellings (plain/plane x2, scythes/sithes, weighed/wade, Antony's/Anthony's, Ventidious, Labinus, "Shapur II", "In a D350", "earthbanks"); possessives where ASR dropped the 's (Labienus's, Ventidius's x2, Caecina's all aligned both s at full confidence; ASR itself wrote "Pyrrhus'"); one substitution (a/the) scored for the script. Two left for an ear: "wicker" (w aligned at 0.01) and "Europos" (eu at 0.05/0.00). fa_score.py's summed log-prob favoured the HEARD (shorter) candidate on every deletion test, by 0.4-7.6, because fewer tokens give a less negative sum; it is only valid for equal-length substitutions. Per-character merge_tokens confidence on the script text was the useful signal. readcheck.json stores no word timestamps, so excerpt cutting needed a second alignment pass.
+
+**Suggested improvement:** fa_score.py: report per-character confidence for the target span (merge_tokens) and refuse sum comparisons between candidates of different length. readcheck: treat a possessive whose only difference is a trailing 's as a non-flag; store word timestamps in readcheck.json.
+
+**Principle:** A likelihood comparison between hypotheses of different length is a length test, not an evidence test — normalise or compare only like with like.

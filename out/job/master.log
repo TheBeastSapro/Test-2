@@ -1,0 +1,6 @@
+[voiceover] “Every Genius Roman Army Defense Explained” · 56 sections · 14105 chars
+[voiceover] pronunciation guide: 30 names, held out of the narration (Caecina, Arminius, Pyrrhus, Pyrrhic, Asculum…)
+[voiceover] PRE-FLIGHT ! guide entry “Parthia, Parthian” does not appear in the narration — export artifact, spelling drift, or a stale guide entry
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py --audio /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/raw_stitched.wav --script /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/script_lines.txt --out /home/user/Test-2/out/roman/Every Genius Roman Army Defense Explained (final).mp3 --report /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/pauses.csv --align-cache /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/align.json --curated /home/user/Test-2/out/job/curated.txt
+[humanize] decoding
+[humanize]   857.1s, peak -1.47 dBFS

@@ -100,3 +100,69 @@ Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF
 [readcheck]   29/56 — wer 0.05, 147 wpm, 27.4s  REDO (1 problem)
 [readcheck]   30/56 — wer 0.00, 179 wpm, 23.1s
 [readcheck]   31/56 — wer 0.05, 168 wpm, 7.2s
+[readcheck]   32/56 — wer 0.01, 193 wpm, 20.8s  REDO (1 problem)
+[readcheck]   33/56 — wer 0.00, 176 wpm, 13.3s
+[readcheck]   34/56 — wer 0.06, 169 wpm, 25.5s  REDO (1 problem)
+[readcheck]   35/56 — wer 0.00, 128 wpm, 1.9s
+[readcheck]   36/56 — wer 0.00, 199 wpm, 8.4s
+[readcheck]   37/56 — wer 0.09, 175 wpm, 22.7s  REDO (3 problems)
+[readcheck]   38/56 — wer 0.02, 194 wpm, 17.9s
+[readcheck]   39/56 — wer 0.00, 177 wpm, 15.2s
+[readcheck]   40/56 — wer 0.01, 175 wpm, 25.7s  REDO (1 problem)
+[readcheck]   41/56 — wer 0.00, 178 wpm, 24.6s
+[readcheck]   42/56 — wer 0.03, 166 wpm, 14.4s
+[readcheck]   43/56 — wer 0.00, 132 wpm, 2.3s
+[readcheck]   44/56 — wer 0.00, 159 wpm, 17.3s
+[readcheck]   45/56 — wer 0.00, 175 wpm, 20.2s
+[readcheck]   46/56 — wer 0.00, 174 wpm, 11.4s
+[readcheck]   47/56 — wer 0.00, 190 wpm, 21.2s
+[readcheck]   48/56 — wer 0.00, 162 wpm, 7.4s
+[readcheck]   49/56 — wer 0.00, 146 wpm, 1.6s
+[readcheck]   50/56 — wer 0.02, 145 wpm, 25.7s  REDO (1 problem)
+[readcheck]   51/56 — wer 0.00, 191 wpm, 21.4s
+[readcheck]   52/56 — wer 0.00, 194 wpm, 9.9s
+[readcheck]   53/56 — wer 0.00, 180 wpm, 18.7s
+[readcheck]   54/56 — wer 0.01, 180 wpm, 22.0s  REDO (1 problem)
+[readcheck]   55/56 — wer 0.00, 188 wpm, 19.5s
+[readcheck]   56/56 — wer 0.02, 174 wpm, 17.6s
+REDO section 2 (173 wpm, 27.01s, wer 0.0127)
+     misread: after “…a roman ditch throwing” expected “wicker” heard “ricker”
+REDO section 9 (161 wpm, 29.07s, wer 0.0128)
+     misread: after “…moment tipped with spikes” expected “scythes” heard “sithes”
+REDO section 10 (166 wpm, 26.67s, wer 0.0137)
+     misread: after “…slowed them down then” expected “pyrrhuss” heard “pyrrhus”
+REDO section 13 (166 wpm, 17.4s, wer 0.0208)
+     misread: after “…soldiers looked across the” expected “plain” heard “plane”
+REDO section 16 (181 wpm, 20.85s, wer 0.0476)
+     misread: after “…threw his javelin into” expected “labienuss” heard “labinus”
+REDO section 18 (170 wpm, 14.11s, wer 0.025)
+     misread: after “…been driven off the” expected “plain” heard “plane”
+REDO section 24 (156 wpm, 11.15s, wer 0.0333)
+     misread: after “…after about 4 months” expected “antonys” heard “anthonys”
+REDO section 25 (168 wpm, 10.37s, wer 0.0333)
+     misread: after “…off an attack with” expected “a” heard “the”
+REDO section 26 (118 wpm, 2.04s, wer 0.25)
+     speaking rate 118 wpm is outside 120–240, and the transcript disagrees — text was dropped or repeated
+REDO section 29 (147 wpm, 27.4s, wer 0.0455)
+     misread: after “…invaded roman syria again” expected “ventidiuss” heard “ventidius”
+REDO section 32 (193 wpm, 20.85s, wer 0.0149)
+     misread: after “…high ground it was” expected “caecinas” heard “sysinas”
+REDO section 34 (169 wpm, 25.55s, wer 0.0556)
+     misread: after “…years later mark antony” expected “ventidiuss” heard “ventidius”
+REDO section 37 (175 wpm, 22.67s, wer 0.0896)
+     misread: after “…southeastern turkey and shapur” expected “the” heard “ii”
+     misread: after “…take it twice in” expected “ad” heard “d”
+     misread: after “…back his army built” expected “earth” heard “earthbanks”
+REDO section 40 (175 wpm, 25.73s, wer 0.0133)
+     misread: after “…rushed out at them” expected “weighed” heard “wade”
+REDO section 50 (145 wpm, 25.73s, wer 0.0159)
+     misread: after “…the city was dura” expected “europos” heard “aropos”
+REDO section 54 (180 wpm, 21.97s, wer 0.0143)
+     misread: after “…caught in his own” expected “sides” heard “side”
+
+56 sections · 16 need a redo
+[voiceover] 16 section(s) flagged: 2, 9, 10, 13, 16, 18, 24, 25, 26, 29, 32, 34, 37, 40, 50, 54
+[voiceover] NOT re-rendering — that would send ~5,088 more characters and this run has spent 14,105 so far. The read-check evidence for each is above and in /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/readcheck.json.
+[voiceover] To re-render them, approve the spend explicitly:
+    python3 /home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/voiceover.py --script /home/user/Test-2/out/job/script.txt --work /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained --from check --auto-redo --max-redos 1 --approve-spend 19193
+[voiceover] stopping before master; raw stitch at /home/user/Test-2/out/roman/.vo_Every_Genius_Roman_Army_Defense_Explained/raw_stitched.wav
