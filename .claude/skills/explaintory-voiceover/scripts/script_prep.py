@@ -304,7 +304,7 @@ def guide_preflight(narration, guide):
 _NOTE_HEAD = re.compile(
     r"^\s*[#*_\s]*((read\s*me|read\s*note|note\s*to\s*(the\s*)?(reader|voice|narrator)|"
     r"voice\s*note|delivery\s*note|recording\s*note|before\s*recording|"
-    r"performance\s*note)s?)\b.{0,60}$", re.I)
+    r"performance\s*note)s?)\b.{0,120}$", re.I)
 
 
 def split_read_note(text):

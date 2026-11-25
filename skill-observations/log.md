@@ -690,3 +690,18 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** Add librosa to setup.sh. Ship fa_score as scripts/fa_score.py (clip window + candidate strings -> total CTC log-prob) and have readcheck downgrade a single-word sub to "homophone" when both words normalise to the same CMUdict phones, and to "name spelling" when the expected word is a guide headword.
 
 **Principle:** A triage step done by hand three times is a missing tool; until it exists every flag list costs a full session of measurement.
+
+### Observation 46: Read-note heading regex had the same 60-char cap as the guide heading — the note would have been narrated
+
+**Status:** OPEN
+**Date:** 2026-11-25
+**Session context:** "Every Genius Roman Army Defense Explained", v4, --plan stage
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** script_prep._NOTE_HEAD; --plan pre-flight
+
+**Issue:** The script's handoff block opened "Read note (VO handoff for script v1.1 LOCKED, 2026-11-25; remove before sending):" — 76 chars after "Read note". _NOTE_HEAD allowed .{0,60}, so detection failed silently and the plan counted the 7-line note as narration (14,938 chars, not 14,105). The plan printed no warning. Observation 44 fixed the identical cap on _GUIDE_HEAD (40 -> 120) but not its sibling. Widened to 120. Also: note_wants_runon() returned falsy for "Each title runs straight into its section as one continuous narration, with no long pause after it", so the run-on/announce NOTE never printed. The Docs export also put a "# Script" H1 above the title and a "# Storyboard" document after the guide; both were cut by hand before --plan.
+
+**Suggested improvement:** When fixing a regex cap, grep for every sibling pattern with the same shape and fix them together. Pre-flight should warn when the first 40 lines before the first chapter heading contain prose that isn't a heading (likely an undetected note). note_wants_runon should match "runs straight into" / "continuous" / "no (long )?pause after". script_prep should drop a bare "# Script" H1 and stop at a "# Storyboard" H1.
+
+**Principle:** A fix to one instance of a length or shape limit is only half a fix if its siblings share the same limit; sweep the class, in code as well as in audio.
