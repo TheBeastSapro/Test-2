@@ -1,0 +1,32 @@
+## TON 618
+Downloading: "https://dl.fbaipublicfiles.com/mms/torchaudio/ctc_alignment_mling_uroman/model.pt" to /root/.cache/torch/hub/checkpoints/model.pt
+'tee oh en six eighteen'                 mean logp -1.2717  total -97.9
+'tee oh en six one eight'                mean logp -1.1225  total -86.4
+'tee oh en six hundred eighteen'         mean logp -1.7992  total -138.5
+'ton six eighteen'                       mean logp -1.1061  total -85.2
+## J0529
+'jay oh five two nine'                   mean logp -1.3304  total -82.5
+'jay oh five twenty nine'                mean logp -1.5402  total -95.5
+'jay oh five hundred twenty nine'        mean logp -1.9619  total -121.6
+'jay zero five two nine'                 mean logp -1.4693  total -91.1
+## J0100
+'jay oh one hundred'                     mean logp -2.0403  total -79.6
+'jay oh one oh oh'                       mean logp -1.5118  total -59.0
+'jay zero one zero zero'                 mean logp -2.6132  total -101.9
+'jay one hundred'                        mean logp -1.7936  total -70.0
+## 2,500
+'twenty five hundred'                    mean logp -1.5689  total -105.1
+'two thousand five hundred'              mean logp -1.6618  total -111.3
+'two thousand and five hundred'          mean logp -1.7970  total -120.4
+## NGC 1600
+'en gee see sixteen hundred'             mean logp -1.4589  total -112.3
+'en gee see one thousand six hundred'    mean logp -1.8061  total -139.1
+'en gee see one six zero zero'           mean logp -1.3098  total -100.9
+## NGC 4889
+'en gee see forty eight eighty nine'     mean logp -1.5784  total -132.6
+'en gee see four thousand eight hundred eighty nine' mean logp -2.8713  total -241.2
+'en gee see four eight eight nine'       mean logp -1.3732  total -115.3
+## 15A
+'fifteen a'                              mean logp -0.9466  total -35.0
+'one five a'                             mean logp -1.2834  total -47.5
+'fifteen ay'                             mean logp -1.0215  total -37.8
