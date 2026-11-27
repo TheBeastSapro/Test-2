@@ -1,0 +1,6 @@
+chain peak -1.61 dBFS
+[voiceover] NOTE: this script's read note asks for no pause after the chapter name. Following the profile (announce) anyway — pass --chapter-style run-on if you want the note's version.
+[voiceover] “Every Ultramassive Black Hole Explained in 13 Minutes” · 52 sections · 13276 chars
+[voiceover] pronunciation guide: 8 names, held out of the narration (J0529, J0100, GRAVITY+, Abell, Holmberg…)
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py --audio out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/raw_stitched.wav --script out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/script_lines.txt --out out/blackholes/Every Ultramassive Black Hole Explained in 13 Minutes (final).mp3 --report out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/pauses.csv --align-cache out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/align.json --curated out/blackholes/curated.txt
+[humanize] decoding

@@ -36,3 +36,40 @@ chain peak -1.61 dBFS
 [humanize]   aligning 80s / 836s
 [humanize]   aligning 120s / 836s
 [humanize]   aligning 160s / 836s
+[humanize]   aligning 200s / 836s
+[humanize]   aligning 240s / 836s
+[humanize]   aligning 280s / 836s
+[humanize]   aligning 320s / 836s
+[humanize]   aligning 360s / 836s
+[humanize]   aligning 400s / 836s
+[humanize]   aligning 440s / 836s
+[humanize]   aligning 480s / 836s
+[humanize]   aligning 520s / 836s
+[humanize]   aligning 560s / 836s
+[humanize]   aligning 600s / 836s
+[humanize]   aligning 640s / 836s
+[humanize]   aligning 680s / 836s
+[humanize]   aligning 720s / 836s
+[humanize]   aligning 760s / 836s
+[humanize]   aligning 800s / 836s
+[humanize]   aligning 836s / 836s
+[humanize]   cached -> out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/align.json
+[humanize]   2416 words aligned | 173 wpm | mean confidence 0.90 | 6% weak
+[humanize] curated clause breaks: 0
+[humanize] 9 sentence(s) held back from the speed-up (307 chunks stretched)
+[humanize]     0:22.2  248 wpm  x1.010 -> 250   So where does a number like that come from?
+[humanize]     8:45.9  277 wpm  x1.000 -> 277   Put your bet in the comments.
+[humanize]     9:52.1  260 wpm  x1.000 -> 260   And if you fell into it, you wouldn't feel the edge 
+[humanize]     10:47.6  288 wpm  x1.000 -> 288   No sign of a lens.
+[humanize]     12:36.5  244 wpm  x1.023 -> 250   Most of the famous ones on the size charts got neith
+[humanize]     12:56.1  253 wpm  x1.000 -> 253   It's also close to the biggest a black hole is thoug
+[humanize]     13:18.5  248 wpm  x1.010 -> 250   Spinning fast, in the same direction as its gas, is 
+[humanize]     13:50.3  261 wpm  x1.000 -> 261   This one didn't need a "might."
+[humanize]     13:52.2  251 wpm  x1.000 -> 251   The next video's on your screen now, if you've got r
+[humanize] inserted 2.7s at 38 boundaries {'comma': 31, 'paragraph': 6, 'sentence': 1}
+[humanize] studio master (classic, air 0.0)
+[humanize] loudnorm -14 LUFS / -1.5 dBTP
+[humanize] QC (delivered file): clean
+[humanize] done -> out/blackholes/Every Ultramassive Black Hole Explained in 13 Minutes (final).mp3  (13:30.49)
+[voiceover] delivered out/blackholes/Every Ultramassive Black Hole Explained in 13 Minutes (final).mp3 (25.9 MB, 13:30)
+EXIT=0
