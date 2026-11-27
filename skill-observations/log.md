@@ -777,3 +777,15 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Issue:** The note heading "Read note (VO handoff for script v0.12, which becomes v1.0 LOCKED unchanged on the owner's go, 2026-11-27; remove before sending):" has 121 chars after "Read note". #46 had widened the cap from 60 to 120. Detection failed silently again: the plan counted 54 sections / 14,423 chars and listed a note bullet as a "CTA", so 1,243 chars of handoff note would have been narrated and billed. The only signal was a CTA starting "- Three lines that look like asides". note_wants_runon also missed "Each title runs straight into its section as one continuous narration, with no long pause after it" ("runs" ≠ "run", "no long pause" ≠ "no pause"). Fixed: a heading-shaped line (ending ':' or ')') may run to 300 chars, and the run-on regex accepts runs?/no (long )?pause/one continuous narration.
 **Suggested improvement:** Stop tuning the cap. Pre-flight should FAIL (not warn) when any CTA or narration section starts with "- " or "* " list markup before the first chapter heading. Bullets above chapter 1 are a note, not narration. Also, the session-start branch check should be a script (scripts/sync_branches.sh: fetch, compare max observation per branch, print merge candidates) so it is not left to memory.
 **Principle:** When the same threshold fails three times, the threshold is the wrong instrument. Add a structural check that cannot be outgrown, such as list markup before the body, instead of a bigger number.
+
+### Observation 52: The read note said the script was not locked, and the plan asked for spend approval anyway
+
+**Status:** OPEN
+**Date:** 2026-11-27
+**Session context:** "Every Ultramassive Black Hole Explained in 13 Minutes", v4. The plan was presented with a ~13,180-credit spend question. Sapro: "Wait it's not locked script yet"
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** intake / --plan pre-flight
+**Issue:** The read note's own heading said "VO handoff for script v0.12, which becomes v1.0 LOCKED unchanged on the owner's go". The agent parsed the note for pause and number instructions, but not for its status, and asked for a spend approval on a draft. Nothing was spent because the approval gate held, but the plan read as ready to send.
+**Suggested improvement:** In --plan, scan the read note and the title line for version/lock markers (v0.x, draft, "not locked", "becomes ... LOCKED on ... go"). Print "SCRIPT STATUS: draft (v0.12)" at the top, and leave out the spend question until the script is locked or the user says to voice the draft. Plain "LOCKED" or "v1.0" counts as ready.
+**Principle:** Read an input's own statement of its status before acting on its contents. A document that says it is a draft is telling you not to spend on it yet.
