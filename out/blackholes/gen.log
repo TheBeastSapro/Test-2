@@ -1,0 +1,159 @@
+[voiceover] NOTE: this script's read note asks for no pause after the chapter name. Following the profile (announce) anyway — pass --chapter-style run-on if you want the note's version.
+[voiceover] “Every Ultramassive Black Hole Explained in 13 Minutes” · 52 sections · 13276 chars
+[voiceover] pronunciation guide: 8 names, held out of the narration (J0529, J0100, GRAVITY+, Abell, Holmberg…)
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/generate.py --script out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/narration_source.txt --out out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/raw_stitched.wav --parts-dir out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/parts --sections-json out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/sections.json --max-chunk 450 --spend-log out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/spend.json --profile voice-calibration.v4.json --lexicon out/blackholes/lexicon.json --approve-spend 13429 --approval Go
+[voiceover] respelled for the voice: 2,500→twenty-five hundred (x1), 740→seven hundred and forty (x1), J0100→Jay oh-one-hundred (x1), NGC 1600→NGC sixteen hundred (x3), NGC 4889→NGC forty-eight eighty-nine (x1), TON 618→TON six-eighteen (x6)
+[voiceover] 52 sections · 13429 chars · ~13429 credits
+[voiceover] approved by Sapro: “Go”
+[voiceover] sending 13,429 chars (13,429 left of the 13,429 approved)
+[voiceover]   1/52 chapter, 10 chars
+[voiceover]   2/52 section, 359 chars
+[voiceover]   3/52 section, 184 chars
+[voiceover]   4/52 section, 446 chars
+[voiceover]   5/52 section, 265 chars
+[voiceover]   6/52 section, 227 chars
+[voiceover]   7/52 section, 370 chars
+[voiceover]   8/52 chapter, 13 chars
+[voiceover]   9/52 section, 419 chars
+[voiceover]   10/52 section, 177 chars
+[voiceover]   11/52 section, 421 chars
+[voiceover]   12/52 section, 464 chars
+[voiceover]   13/52 section, 105 chars
+[voiceover]   14/52 chapter, 20 chars
+[voiceover]   15/52 section, 448 chars
+[voiceover]   16/52 section, 325 chars
+[voiceover]   17/52 CTA, 102 chars
+[voiceover]   18/52 chapter, 11 chars
+[voiceover]   19/52 section, 148 chars
+[voiceover]   20/52 section, 347 chars
+[voiceover]   21/52 section, 428 chars
+[voiceover]   22/52 section, 332 chars
+[voiceover]   23/52 chapter, 6 chars
+[voiceover]   24/52 section, 159 chars
+[voiceover]   25/52 section, 443 chars
+[voiceover]   26/52 section, 368 chars
+[voiceover]   27/52 section, 382 chars
+[voiceover]   28/52 section, 393 chars
+[voiceover]   29/52 section, 104 chars
+[voiceover]   30/52 chapter, 21 chars
+[voiceover]   31/52 section, 433 chars
+[voiceover]   32/52 section, 402 chars
+[voiceover]   33/52 section, 80 chars
+[voiceover]   34/52 CTA, 102 chars
+[voiceover]   35/52 chapter, 17 chars
+[voiceover]   36/52 section, 140 chars
+[voiceover]   37/52 section, 380 chars
+[voiceover]   38/52 section, 446 chars
+[voiceover]   39/52 section, 363 chars
+[voiceover]   40/52 section, 123 chars
+[voiceover]   41/52 chapter, 19 chars
+[voiceover]   42/52 section, 438 chars
+[voiceover]   43/52 section, 350 chars
+[voiceover]   44/52 section, 435 chars
+[voiceover]   45/52 section, 418 chars
+[voiceover]   46/52 chapter, 21 chars
+[voiceover]   47/52 section, 348 chars
+[voiceover]   48/52 section, 396 chars
+[voiceover]   49/52 section, 54 chars
+[voiceover]   50/52 section, 453 chars
+[voiceover]   51/52 section, 445 chars
+[voiceover]   52/52 section, 69 chars
+[voiceover] stitching
+[voiceover]   heading 14: 3.19 syl/s vs 2.58 median — retiming x0.850
+[voiceover]   heading 18: 2.04 syl/s vs 2.69 median — retiming x1.180
+[voiceover]   heading 23: 3.19 syl/s vs 2.58 median — retiming x0.850
+[voiceover]   heading 30: 1.96 syl/s vs 2.69 median — retiming x1.180
+[voiceover]   heading 46: 2.90 syl/s vs 2.58 median — retiming x0.890
+[voiceover] wrote out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/raw_stitched.wav  (14.6 min)
+[readcheck] loading ASR (distil-large-v3, cpu float32) — first run downloads the model (distil-large-v3 is 1.5 GB on disk, measured)
+[readcheck]   1/52 — wer 0.00, 104 wpm, 1.1s
+[readcheck]   2/52 — wer 0.00, 185 wpm, 21.8s
+[readcheck]   3/52 — wer 0.00, 154 wpm, 12.0s
+[readcheck]   4/52 — wer 0.01, 176 wpm, 28.0s
+[readcheck]   5/52 — wer 0.00, 170 wpm, 16.3s
+[readcheck]   6/52 — wer 0.00, 140 wpm, 16.3s
+[readcheck]   7/52 — wer 0.00, 175 wpm, 24.0s
+[readcheck]   8/52 — wer 0.00, 59 wpm, 2.0s
+[readcheck]   9/52 — wer 0.04, 173 wpm, 26.0s
+[readcheck]   10/52 — wer 0.00, 149 wpm, 12.0s
+[readcheck]   11/52 — wer 0.00, 172 wpm, 26.5s
+[readcheck]   12/52 — wer 0.03, 161 wpm, 28.8s  REDO (2 problems)
+[readcheck]   13/52 — wer 0.00, 182 wpm, 6.6s
+[readcheck]   14/52 — wer 0.00, 82 wpm, 2.2s
+[readcheck]   15/52 — wer 0.03, 157 wpm, 29.4s
+[readcheck]   16/52 — wer 0.00, 155 wpm, 22.9s
+[readcheck]   17/52 — wer 0.00, 189 wpm, 5.7s
+[readcheck]   18/52 — wer 1.00, 61 wpm, 2.0s  note (2)
+[readcheck]   19/52 — wer 0.00, 172 wpm, 9.1s
+[readcheck]   20/52 — wer 0.00, 178 wpm, 21.9s
+[readcheck]   21/52 — wer 0.04, 170 wpm, 26.7s  REDO (1 problem)
+[readcheck]   22/52 — wer 0.00, 182 wpm, 20.1s
+[readcheck]   23/52 — wer 0.00, 27 wpm, 2.2s
+[readcheck]   24/52 — wer 0.00, 170 wpm, 9.9s
+[readcheck]   25/52 — wer 0.00, 167 wpm, 29.5s
+[readcheck]   26/52 — wer 0.05, 154 wpm, 24.9s
+[readcheck]   27/52 — wer 0.01, 186 wpm, 22.9s
+[readcheck]   28/52 — wer 0.00, 161 wpm, 24.9s
+[readcheck]   29/52 — wer 0.00, 180 wpm, 6.3s
+[readcheck]   30/52 — wer 0.00, 118 wpm, 2.0s  note (1)
+[readcheck]   31/52 — wer 0.04, 157 wpm, 30.1s  REDO (1 problem)
+[readcheck]   32/52 — wer 0.01, 165 wpm, 25.1s
+[readcheck]   33/52 — wer 0.00, 192 wpm, 5.0s
+[readcheck]   34/52 — wer 0.00, 189 wpm, 6.3s
+[readcheck]   35/52 — wer 0.50, 77 wpm, 1.6s  note (1)
+[readcheck]   36/52 — wer 0.00, 197 wpm, 8.5s
+[readcheck]   37/52 — wer 0.06, 157 wpm, 26.0s  REDO (1 problem)
+[readcheck]   38/52 — wer 0.09, 156 wpm, 31.2s  REDO (2 problems)
+[readcheck]   39/52 — wer 0.01, 193 wpm, 22.1s
+[readcheck]   40/52 — wer 0.00, 191 wpm, 6.9s
+[readcheck]   41/52 — wer 1.00, 67 wpm, 1.8s  note (2)
+[readcheck]   42/52 — wer 0.00, 173 wpm, 28.1s
+[readcheck]   43/52 — wer 0.02, 162 wpm, 23.3s  REDO (1 problem)
+[readcheck]   44/52 — wer 0.00, 174 wpm, 27.2s
+[readcheck]   45/52 — wer 0.00, 176 wpm, 26.6s
+[readcheck]   46/52 — wer 0.00, 104 wpm, 1.7s
+[readcheck]   47/52 — wer 0.00, 157 wpm, 22.6s
+[readcheck]   48/52 — wer 0.05, 160 wpm, 27.8s  REDO (1 problem)
+[readcheck]   49/52 — wer 0.00, 166 wpm, 4.0s
+[readcheck]   50/52 — wer 0.04, 175 wpm, 28.4s  REDO (1 problem)
+[readcheck]   51/52 — wer 0.06, 164 wpm, 30.4s  REDO (2 problems)
+[readcheck]   52/52 — wer 0.00, 217 wpm, 3.9s
+REDO section 12 (161 wpm, 28.76s, wer 0.0263)
+     misread: after “…25000000000 the 2 telescopes” expected “clocked” heard “clock”
+     misread: after “…that matches it is” expected “in” heard “an”
+note section 18 (61 wpm, 1.96s, wer 1.0)
+     misread: after “…” expected “abell 1201” heard “abel 112”
+     chapter name “Abell 1201.” transcribed as “Abel 112.” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong
+REDO section 21 (170 wpm, 26.75s, wer 0.0395)
+     misread: after “…the runs with an” expected “ultramassive” heard “massive”
+note section 30 (118 wpm, 2.04s, wer 0.0)
+     reads at 118 wpm — every word is there, so this is pace, not lost text. Levelled by the master's --max-wpm; re-rendering would not fix it
+REDO section 31 (157 wpm, 30.12s, wer 0.039)
+     repeated or added: after “…at about 25000000000 suns” expected “” heard “thank you”
+note section 35 (77 wpm, 1.57s, wer 0.5)
+     chapter name “TON six-eighteen.” transcribed as “Tawn 618” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong
+REDO section 37 (157 wpm, 25.97s, wer 0.0625)
+     repeated or added: after “…one paper in 2004” expected “” heard “t 0”
+REDO section 38 (156 wpm, 31.24s, wer 0.0854)
+     repeated or added: after “…it nobody has given” expected “” heard “t 0”
+     misread: after “…sometime after the year” expected “2700” heard “700”
+note section 41 (67 wpm, 1.8s, wer 1.0)
+     misread: after “…” expected “jay” heard “0”
+     chapter name “Jay oh-one-hundred.” transcribed as “J.O. 100.” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong
+REDO section 43 (162 wpm, 23.33s, wer 0.0159)
+     misread: after “…gas one measured by” expected “webb” heard “web”
+REDO section 48 (160 wpm, 27.79s, wer 0.0533)
+     misread: after “…36000000000 suns and like” expected “abell 1201” heard “abel 112.1”
+REDO section 50 (175 wpm, 28.45s, wer 0.0366)
+     repeated or added: after “…which is awkward for” expected “” heard “t 0”
+REDO section 51 (164 wpm, 30.43s, wer 0.0581)
+     repeated or added: after “…up 2 different ways” expected “” heard “t 0”
+     repeated or added: after “…not need a might” expected “” heard “thank you”
+
+52 sections · 9 need a redo
+[voiceover] 9 section(s) flagged: 12, 21, 31, 37, 38, 43, 48, 50, 51
+[voiceover] NOT re-rendering — that would send ~3,795 more characters and this run has spent 13,429 so far. The read-check evidence for each is above and in out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/readcheck.json.
+[voiceover] To re-render them, approve the spend explicitly:
+    python3 /home/user/Test-2/.claude/skills/explaintory-voiceover/scripts/voiceover.py --script out/blackholes/script.md --work out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes --from check --auto-redo --max-redos 1 --approve-spend 17224
+[voiceover] stopping before master; raw stitch at out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/raw_stitched.wav
+EXIT=0

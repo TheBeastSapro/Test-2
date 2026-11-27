@@ -1,0 +1,756 @@
+{
+ "results": [
+  {
+   "index": 0,
+   "duration": 1.15,
+   "wpm": 104,
+   "peak_dbfs": -1.745024,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Phoenix A.",
+   "heard": "Phoenix A."
+  },
+  {
+   "index": 1,
+   "duration": 21.79,
+   "wpm": 185,
+   "peak_dbfs": -0.798613,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The biggest number you'll ever see for a black hole, a hundred billion times the mass of our Sun, belongs to one that nobody has ever weighed. It sits in the middle of a galaxy cluster called Phoenix, about 5.7 billion light-years away, and if you've ever looked up the biggest black hole in the universe, there's a good chance this is the one you were shown.",
+   "heard": "The biggest number you'll ever see for a black hole, a hundred billion times the mass of our sun, belongs to one that nobody has ever weighed. It sits in the middle of a galaxy cluster called Phoenix, about 5.7 billion light years away. And if you've ever looked up the biggest black hole in the universe, there's a good chance this is the one you were shown."
+  },
+  {
+   "index": 2,
+   "duration": 12.04,
+   "wpm": 154,
+   "peak_dbfs": -0.387017,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "So where does a number like that come from? And out of every black hole heavier than ten billion suns, the ones astronomers call ultramassive, which ones has anybody actually measured?",
+   "heard": "So where does a number like that come from? And out of every black hole heavier than 10 billion suns, the ones astronomers call ultramassive, which ones has anybody actually measured?"
+  },
+  {
+   "index": 3,
+   "duration": 27.95,
+   "wpm": 176,
+   "peak_dbfs": -0.471195,
+   "wer": 0.0125,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The hundred billion comes from a 2016 paper that worked backwards from the gas around Phoenix. That gas is so hot and so bright that it should be cooling incredibly fast, and the team assumed the black hole was putting out enough energy to stop it. Energy like that needs feeding. So they modelled how fast a black hole would have to grow to keep that up, and in their most extreme version, Phoenix's black hole might pass a hundred billion suns.",
+   "heard": "The 100 billion comes from a 2016 paper that worked backwards from the gas around Phoenix. That gas is so hot and so bright that it should be cooling incredibly fast, and the team assumed the black hole was putting out enough energy to stop it. Energy like that needs feeding. So, they modeled how fast a black hole would have to grow to keep that up, and in their most extreme version, Phoenix's black hole might pass 100 billion suns."
+  },
+  {
+   "index": 4,
+   "duration": 16.27,
+   "wpm": 170,
+   "peak_dbfs": -0.901865,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Like guessing someone's weight from their grocery bill. The paper listed it as a promising one to follow up, which in science means somebody should go and check. Somewhere along the way, \"might\" turned into a world record, and a much smaller number got left behind.",
+   "heard": "like guessing someone's weight from their grocery bill. The paper listed it as a promising one to follow up, which in science means somebody should go and check. Somewhere along the way, might turned into a world record and a much smaller number got left behind."
+  },
+  {
+   "index": 5,
+   "duration": 16.27,
+   "wpm": 140,
+   "peak_dbfs": -0.724818,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "When Phoenix made headlines in 2012, NASA's number for its black hole was about twenty billion suns. By 2025, NASA was saying roughly ten billion. That's still enormous, and it's ninety billion suns short of its own reputation.",
+   "heard": "When Phoenix made headlines in 2012, NASA's number for its black hole was about 20 billion suns. By 2025, NASA was saying roughly 10 billion. That's still enormous, and it's 90 billion suns short of its own reputation."
+  },
+  {
+   "index": 6,
+   "duration": 24.03,
+   "wpm": 175,
+   "peak_dbfs": -0.78809,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "That energy is supposed to come from the black hole's jets, which keep a galaxy quiet by stopping the gas around it from cooling into new stars. In Phoenix, the jets can't keep up. Its galaxy is making about seven hundred and forty suns' worth of new stars every year. Our whole Milky Way makes one or two.\n\nFor now, Phoenix A is the heaviest black hole on the internet.",
+   "heard": "That energy is supposed to come from the black hole's jets, which keep a galaxy quiet by stopping the gas around it from cooling into new stars. In Phoenix, the jets can't keep up. Its galaxy is making about 740 suns worth of new stars every year. Our whole Milky Way makes one or two. For now, Phoenix A is the heaviest black hole on the internet."
+  },
+  {
+   "index": 7,
+   "duration": 2.04,
+   "wpm": 59,
+   "peak_dbfs": -0.884205,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Holmberg 15A.",
+   "heard": "Holmberg 15A"
+  },
+  {
+   "index": 8,
+   "duration": 26.04,
+   "wpm": 173,
+   "peak_dbfs": -0.813917,
+   "wer": 0.0417,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Two teams of astronomers have weighed this black hole the hard way, and their answers are eighteen billion suns apart.\n\nIts home is the brightest galaxy in a cluster called Abell 85. In 2019, the first team weighed it by watching how fast the stars near the center were moving, because the heavier the black hole, the faster they have to swing around it. Their answer was forty billion suns, give or take eight billion.",
+   "heard": "Two teams of astronomers have weighed this black hole the hard way, and their answers are 18 billion suns apart. Its home is the brightest galaxy in a cluster called Abel 85. In 2019, the first team weighted by watching how fast the stars near the center were moving, because the heavier the black hole, the faster they have to swing around it. Their answer was 40 billion suns, give or take 8 billion."
+  },
+  {
+   "index": 9,
+   "duration": 12.04,
+   "wpm": 149,
+   "peak_dbfs": -0.797087,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Then in 2025, a second team looked again with a different telescope and got about twenty-two billion. That's ten billion suns below the bottom of the first answer's wiggle room.",
+   "heard": "Then, in 2025, a second team looked again with a different telescope and got about 22 billion. That's 10 billion suns below the bottom of the first answer's Wiggle Room."
+  },
+  {
+   "index": 10,
+   "duration": 26.51,
+   "wpm": 172,
+   "peak_dbfs": -0.896699,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Part of the difference is the galaxy's shape. To turn star speeds into a weight, it takes a model of the whole galaxy, and the 2019 team treated it as round when seen from above, like a squashed ball. The 2025 team found it has three different widths, more like a bar of soap. They tested about forty thousand versions of the galaxy against twenty-five hundred measurements of its stars, and the soap-shaped one fit best.",
+   "heard": "Part of the difference is the galaxy's shape. To turn star speeds into a weight, it takes a model of the whole galaxy, and the 2019 team treated it as round when seen from above, like a squashed ball. The 2025 team found it has three different widths, more like a bar of soap. They tested about 40,000 versions of the galaxy against 2,500 measurements of its stars, and the soap-shaped one fit best."
+  },
+  {
+   "index": 11,
+   "duration": 28.76,
+   "wpm": 161,
+   "peak_dbfs": -0.646871,
+   "wer": 0.0263,
+   "problems": [
+    "misread: after “…25000000000 the 2 telescopes” expected “clocked” heard “clock”",
+    "misread: after “…that matches it is” expected “in” heard “an”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "clocked",
+     "clock",
+     "25000000000 the 2 telescopes"
+    ],
+    [
+     "misread",
+     "in",
+     "an",
+     "that matches it is"
+    ]
+   ],
+   "text": "But even with the old squashed-ball shape, the new measurements only get to about twenty-five billion. The two telescopes clocked the stars around the middle at different speeds, and nobody has worked out why. Whichever team is closer, it's one of the heaviest black holes anyone has actually weighed. Another nearby one that matches it is in NGC forty-eight eighty-nine, a galaxy in the Coma cluster, weighed by its stars in 2011 at about twenty-one billion suns.",
+   "heard": "But even with the old squashed ball shape, the new measurements only get to about 25 billion. The two telescopes clock the stars around the middle at different speeds, and nobody has worked out why. Whichever team is closer, it's one of the heaviest black holes anyone has actually weighed. Another nearby one that matches it is an NGC 4889, a galaxy in the coma cluster, weighed by its stars in 2011 at about 21 billion suns."
+  },
+  {
+   "index": 12,
+   "duration": 6.61,
+   "wpm": 182,
+   "peak_dbfs": -0.878589,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "That one came with a range from six billion to thirty-seven billion, which is less a weight than a shrug.",
+   "heard": "That one came with a range from 6 billion to 37 billion, which is less a weight than a shrug."
+  },
+  {
+   "index": 13,
+   "duration": 2.19,
+   "wpm": 82,
+   "peak_dbfs": -0.951988,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "NGC sixteen hundred.",
+   "heard": "NGC, 1600."
+  },
+  {
+   "index": 14,
+   "duration": 29.39,
+   "wpm": 157,
+   "peak_dbfs": -0.498795,
+   "wer": 0.0263,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "About two hundred million light-years away, in a quiet little group of around twenty galaxies, sits a giant black hole that isn't supposed to be there.\n\nBlack holes this big usually turn up in the crowded hearts of huge galaxy clusters, the downtowns of the universe, packed in with other giant galaxies. NGC sixteen hundred lives in the suburbs. It's the biggest house on a street of about twenty, and its black hole weighs seventeen billion suns.",
+   "heard": "About 200 million light years away, in a quiet little group of around 20 galaxies, sits a giant black hole that isn't supposed to be there. Black holes this big usually turn up into crowded hearts of huge galaxy clusters, the downtowns of the universe, packed in with other giant galaxies. NGC-1600 lives in the suburbs. It's the biggest house on a street of about 20, and its black hole weighs 17 billion suns."
+  },
+  {
+   "index": 15,
+   "duration": 22.91,
+   "wpm": 155,
+   "peak_dbfs": -0.886549,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Astronomers got that number in 2016 from its stars, the same way as Holmberg 15A. By the usual rules, a galaxy that size should have a black hole about ten times lighter. So either NGC sixteen hundred is a one-off, or the suburbs are hiding more of these than anyone thought. There are about fifty suburbs for every downtown.",
+   "heard": "Astronomers got that number in 2016 from its stars, the same way as Holmberg 15A. By the usual rules, a galaxy that size should have a black hole about 10 times lighter. So either NGC-1600 is a one-off, or the suburbs are hiding more of these than anyone thought. There are about 50 suburbs for every downtown."
+  },
+  {
+   "index": 16,
+   "duration": 5.72,
+   "wpm": 189,
+   "peak_dbfs": -0.762795,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "And since this channel is brand new, if you're enjoying this, a subscribe helps more than you'd think.",
+   "heard": "And since this channel is brand new, if you're enjoying this, a subscribe helps more than you'd think."
+  },
+  {
+   "index": 17,
+   "duration": 1.96,
+   "wpm": 61,
+   "peak_dbfs": -1.116055,
+   "wer": 1.0,
+   "problems": [
+    "misread: after “…” expected “abell 1201” heard “abel 112”",
+    "chapter name “Abell 1201.” transcribed as “Abel 112.” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong"
+   ],
+   "regen": false,
+   "hard": [
+    [
+     "misread",
+     "abell 1201",
+     "abel 112",
+     ""
+    ]
+   ],
+   "text": "Abell 1201.",
+   "heard": "Abel 112."
+  },
+  {
+   "index": 18,
+   "duration": 9.09,
+   "wpm": 172,
+   "peak_dbfs": -1.011065,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "In one Hubble photo of this galaxy, there's another galaxy far behind it, stretched into curved smears around it like it's been poured over the top.",
+   "heard": "In one Hubble photo of this galaxy, there's another galaxy far behind it, stretched into curved smears around it like it's been poured over the top."
+  },
+  {
+   "index": 19,
+   "duration": 21.89,
+   "wpm": 178,
+   "peak_dbfs": -0.773089,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "That stretching is gravity. Anything heavy bends light passing near it, the way a candle seen through the foot of a wine glass stretches into arcs. Most of the bending here comes from the galaxy in front, all its stars and dark matter. But one smear lands unusually close to the center, close enough for the black hole's own pull to get a say too.",
+   "heard": "That stretching is gravity. Anything heavy bends light passing near it, the way a candle seen through the foot of a wine glass stretches into arcs. Most of the bending here comes from the galaxy in front, all its stars and dark matter. But one smear lands unusually close to the center, close enough for the black hole's own pull to get a say too."
+  },
+  {
+   "index": 20,
+   "duration": 26.75,
+   "wpm": 170,
+   "peak_dbfs": -0.588354,
+   "wer": 0.0395,
+   "problems": [
+    "misread: after “…the runs with an” expected “ultramassive” heard “massive”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "ultramassive",
+     "massive",
+     "the runs with an"
+    ]
+   ],
+   "text": "So in 2023, a team used that photo as the answer key. They ran the light's journey through hundreds of thousands of simulations, each with a different black hole in the middle, and the runs with an ultramassive one matched Hubble's picture best. One version with no black hole at all fit almost as well, though the team argues it doesn't make physical sense. Their answer was about thirty-three billion suns, give or take a lot.",
+   "heard": "So in 2023, a team used that photo as the answer key. They ran the light's journey through hundreds of thousands of simulations, each with a different black hole in the middle, and the runs with an ultra-massive one matched Hubble's picture best. One version with no black hole at all fit almost as well, though the team argues it doesn't make physical sense. Their answer was about 33 billion sons, give or take a lot."
+  },
+  {
+   "index": 21,
+   "duration": 20.11,
+   "wpm": 182,
+   "peak_dbfs": -0.741784,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Any heavier than about fifty-three billion, and it would have bent that close-in smear out of shape. It didn't, so that's the ceiling.\n\nMost black holes get weighed by the mess they make while eating. This one is asleep, and it got weighed anyway, by light from a galaxy far behind it. It's the first black hole ever found this way.",
+   "heard": "any heavier than about 53 billion, and it would have bent that close in smear out of shape. It didn't, so that's the ceiling. Most black holes get weighed by the mess they make while eating. This one is asleep, and it got weighed anyway, by light from a galaxy far behind it. It's the first black hole ever found this way."
+  },
+  {
+   "index": 22,
+   "duration": 2.19,
+   "wpm": 27,
+   "peak_dbfs": -1.09473,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "J0529.",
+   "heard": "J0529"
+  },
+  {
+   "index": 23,
+   "duration": 9.87,
+   "wpm": 170,
+   "peak_dbfs": -1.004294,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Astronomers called this the brightest thing ever seen in the universe, and said the black hole behind it was swallowing about one sun's worth of gas every day.",
+   "heard": "Astronomers called this the brightest thing ever seen in the universe, and said the black hole behind it was swallowing about one sun's worth of gas every day."
+  },
+  {
+   "index": 24,
+   "duration": 29.47,
+   "wpm": 167,
+   "peak_dbfs": -0.736187,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "It's a quasar, a black hole feeding so hard that the gas swirling into it glows brighter than whole galaxies. This one shines about five hundred trillion times brighter than our Sun, and its light has been travelling for over twelve billion years to get here. It's so bright that the computer sorting a space telescope's data decided it was too bright to be a quasar and filed it as a star. It had been sitting in sky survey photos since 1980.",
+   "heard": "It's a quasar, a black hole feeding so hard that the gas swirling into it glows brighter than whole galaxies. This one shines about 500 trillion times brighter than our sun, and its light has been traveling for over 12 billion years to get here. It's so bright that the computer sorting a space telescope's data decided it was too bright to be a quasar and filed it as a star. It had been sitting in sky survey photos since 1980."
+  },
+  {
+   "index": 25,
+   "duration": 24.92,
+   "wpm": 154,
+   "peak_dbfs": -0.854731,
+   "wer": 0.0484,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The 2024 team put its black hole at seventeen billion suns. And the same announcement called it a perfect target for GRAVITY+, an upgrade in Chile built to weigh black holes directly. So the press release came with its own fact-checker.\n\nIn late 2025, GRAVITY+ did exactly that, and came back with about eight hundred million suns, about a twentieth of the old number.",
+   "heard": "The 2024 team put its black hole at 17 billion suns, and the same announcement called it a perfect target for Gravity Plus, an upgrade in Chile built to weigh black holes directly. So, the press release came with its own fact checker. In late 2025, Gravity Plus did exactly that, and came back with about 800 million sons, about a 20th of the old number."
+  },
+  {
+   "index": 26,
+   "duration": 22.91,
+   "wpm": 186,
+   "peak_dbfs": -0.758626,
+   "wer": 0.0143,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The first number came from a shortcut: measure how fast the gas near the black hole is moving, and assume it's all orbiting the black hole, not being blown away from it. Faster gas, heavier black hole. But GRAVITY+ could see the shape of that gas, and more than eighty percent of its glow turned out to come from gas being blasted outward, at up to ten thousand kilometers a second.",
+   "heard": "The first number came from a shortcut. Measure how fast the gas near the black hole is moving, and assume it's all orbiting the black hole, not being blown away from it. Faster gas, heavier black hole. But Gravity Plus could see the shape of that gas, and more than 80% of its glow turned out to come from gas being blasted outward at up to 10,000 kilometers a second."
+  },
+  {
+   "index": 27,
+   "duration": 24.92,
+   "wpm": 161,
+   "peak_dbfs": -0.489874,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Like working out how fast a merry-go-round spins by timing the kids who got flung off.\n\nThen in 2026, another study pointed out that the outward-flying gas makes the new measurement tricky too, and kept the old, much bigger number as its working figure, with the smaller one just as believable. So the brightest object anyone has ever found currently has two weights, about twenty times apart.",
+   "heard": "like working out how fast a merry-go-round spins by timing the kids who got flung off. Then, in 2026, another study pointed out that the outward flying gas makes the new measurement tricky too, and kept the old, much bigger number as its working figure, with the smaller one just as believable. So, the brightest object anyone has ever found currently has two weights, about 20 times apart."
+  },
+  {
+   "index": 28,
+   "duration": 6.35,
+   "wpm": 180,
+   "peak_dbfs": -0.939666,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Which matters, because a lot of the biggest numbers on any black hole list came from that same shortcut.",
+   "heard": "Which matters, because a lot of the biggest numbers on any black hole list came from that same shortcut."
+  },
+  {
+   "index": 29,
+   "duration": 2.04,
+   "wpm": 118,
+   "peak_dbfs": -0.667034,
+   "wer": 0.0,
+   "problems": [
+    "reads at 118 wpm — every word is there, so this is pace, not lost text. Levelled by the master's --max-wpm; re-rendering would not fix it"
+   ],
+   "regen": false,
+   "hard": [],
+   "text": "The Eight New Giants.",
+   "heard": "The Eight New Giants"
+  },
+  {
+   "index": 30,
+   "duration": 30.12,
+   "wpm": 157,
+   "peak_dbfs": -0.700565,
+   "wer": 0.039,
+   "problems": [
+    "repeated or added: after “…at about 25000000000 suns” expected “” heard “thank you”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "repeated or added",
+     "",
+     "thank you",
+     "at about 25000000000 suns"
+    ]
+   ],
+   "text": "Until the end of 2025, only seven black holes over ten billion suns had ever been properly weighed, by their stars or by bent light. Then one study added eight more.\n\nThe team used the Large Binocular Telescope in Arizona on the brightest galaxies of sixteen big clusters, and half of them turned out to have a giant in the middle. The heaviest of the eight, in a cluster called Abell 2256, came in at about twenty-five billion suns.",
+   "heard": "Until the end of 2025, only seven black holes over 10 billion suns had ever been properly weighed, by their stars or by bent light. Then, one study added eight more. The team used the large binocular telescope in Arizona on the brightest galaxies of 16 big clusters, and half of them turned out to have a giant in the middle. The heaviest of the eight in a cluster called Abel-2256 came in at about 25 billion suns. Thank you."
+  },
+  {
+   "index": 31,
+   "duration": 25.08,
+   "wpm": 165,
+   "peak_dbfs": -0.764852,
+   "wer": 0.0139,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "They also confirmed the best clue to a black hole's weight. Most of these galaxies have a thinned-out middle, with fewer stars than there should be, probably cleared out by pairs of black holes flinging them away, and the bigger that thin patch, the bigger the black hole. Except Abell 2107. It's the second-heaviest of the eight, about twenty-two billion suns, and its middle isn't thinned out at all.",
+   "heard": "They also confirmed the best clue to a black hole's weight. Most of these galaxies have a thinned out middle, with fewer stars than there should be, probably cleared out by pairs of black holes flinging them away, and the bigger that thin patch, the bigger the black hole. Except Abel 2107. It's the second heaviest of the eight, about 22 billion suns, and its middle isn't thinned out at all."
+  },
+  {
+   "index": 32,
+   "duration": 4.99,
+   "wpm": 192,
+   "peak_dbfs": -0.785849,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The paper's title is about that clue, and one of its own giants doesn't have it.",
+   "heard": "The paper's title is about that clue, and one of its own giants doesn't have it."
+  },
+  {
+   "index": 33,
+   "duration": 6.35,
+   "wpm": 189,
+   "peak_dbfs": -0.920082,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Out of everything so far, which one do you think really is the heaviest? Put your bet in the comments.",
+   "heard": "Out of everything so far, which one do you think really is the heaviest? Put your bet in the comments."
+  },
+  {
+   "index": 34,
+   "duration": 1.57,
+   "wpm": 77,
+   "peak_dbfs": -1.624843,
+   "wer": 0.5,
+   "problems": [
+    "chapter name “TON six-eighteen.” transcribed as “Tawn 618” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong"
+   ],
+   "regen": false,
+   "hard": [],
+   "text": "TON six-eighteen.",
+   "heard": "Tawn 618"
+  },
+  {
+   "index": 35,
+   "duration": 8.52,
+   "wpm": 197,
+   "peak_dbfs": -1.051017,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Put this black hole where our Sun is, and its edge would sit far past Pluto. You could line up more than thirty of Pluto's orbits across it.",
+   "heard": "Put this black hole where our sun is, and its edge would sit far past Pluto. You could line up more than 30 of Pluto's orbits across it."
+  },
+  {
+   "index": 36,
+   "duration": 25.97,
+   "wpm": 157,
+   "peak_dbfs": -0.629504,
+   "wer": 0.0625,
+   "problems": [
+    "repeated or added: after “…one paper in 2004” expected “” heard “t 0”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "repeated or added",
+     "",
+     "t 0",
+     "one paper in 2004"
+    ]
+   ],
+   "text": "It's the giant at the end of almost every black hole size chart, and the number that goes with it is sixty-six billion suns. That number comes from one paper, in 2004. TON six-eighteen is a quasar, so nobody can watch stars going around it. Instead, astronomers measured how fast the gas near it was moving, about ten and a half thousand kilometers a second, and worked backwards.",
+   "heard": "It's the giant at the end of almost every black hole size chart, and the number that goes with it is 66 billion suns. That number comes from one paper in 2004. T-O-N-618 is a quasar, so nobody can watch stars going around it. Instead, astronomers measured how fast the gas near it was moving, about 10.5,000 kilometers a second, and worked backwards."
+  },
+  {
+   "index": 37,
+   "duration": 31.24,
+   "wpm": 156,
+   "peak_dbfs": -0.508701,
+   "wer": 0.0854,
+   "problems": [
+    "repeated or added: after “…it nobody has given” expected “” heard “t 0”",
+    "misread: after “…sometime after the year” expected “2700” heard “700”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "repeated or added",
+     "",
+     "t 0",
+     "it nobody has given"
+    ],
+    [
+     "misread",
+     "2700",
+     "700",
+     "sometime after the year"
+    ]
+   ],
+   "text": "That's the method that had J0529 at seventeen billion, before GRAVITY+ got a proper look at it. Nobody has given TON six-eighteen that look yet. So sixty-six billion could be off in either direction.\n\nTake it at face value and the scale gets silly. Voyager 1 left Earth in 1977, and it's the farthest thing people have ever sent anywhere. At its speed, flying from one side of that edge to the other would take until sometime after the year 2700.",
+   "heard": "That's the method that had J-O-529 at 17 billion, before Gravity Plus got a proper look at it. Nobody has given T-O-N-618 that look yet. So 66 billion could be off in either direction. Take it at face value, and the scale gets silly. Voyager 1 left Earth in 1977, and it's the farthest thing people have ever sent anywhere. At its speed, flying from one side of that edge to the other would take until sometime after the year 26. 700."
+  },
+  {
+   "index": 38,
+   "duration": 22.13,
+   "wpm": 193,
+   "peak_dbfs": -0.457503,
+   "wer": 0.0137,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "And if you fell into it, you wouldn't feel the edge at all. A black hole a few times the Sun's mass stretches you apart before you even get there, because the pull on your feet is so much stronger than the pull on your head. With something this big, that difference across your body is too tiny to notice. You'd drift past the point of no return and feel nothing.",
+   "heard": "And if you fell into it, you wouldn't feel the edge at all. A black hole a few times the sun's mass stretches you apart before you even get there because the pull on your feet is so much stronger than the pull on your head. With something this big, that difference across your body is too tiny to notice. You drift past the point of no return and feel nothing."
+  },
+  {
+   "index": 39,
+   "duration": 6.92,
+   "wpm": 191,
+   "peak_dbfs": -0.873561,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "TON six-eighteen is feeding, though, and the gas swirling in would cook you long before you got the chance to feel nothing.",
+   "heard": "Ton 618 is feeding, though, and the gas swirling in would cook you long before you got the chance to feel nothing."
+  },
+  {
+   "index": 40,
+   "duration": 1.8,
+   "wpm": 67,
+   "peak_dbfs": -1.041882,
+   "wer": 1.0,
+   "problems": [
+    "misread: after “…” expected “jay” heard “0”",
+    "chapter name “Jay oh-one-hundred.” transcribed as “J.O. 100.” — too short to judge by measurement; listen once, and seed the lexicon if it is really wrong"
+   ],
+   "regen": false,
+   "hard": [
+    [
+     "misread",
+     "jay",
+     "0",
+     ""
+    ]
+   ],
+   "text": "Jay oh-one-hundred.",
+   "heard": "J.O. 100."
+  },
+  {
+   "index": 41,
+   "duration": 28.11,
+   "wpm": 173,
+   "peak_dbfs": -0.837795,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "This black hole weighed around ten billion suns when the universe was less than a billion years old, and nobody is quite sure where it found the time.\n\nIt's a quasar, the brightest one known from that early, so bright that some astronomers suspected a trick. Maybe a galaxy was sitting in the way, bending its light like a lens, so the black hole only looked that heavy. In 2023, the James Webb Space Telescope checked. No sign of a lens.",
+   "heard": "This black hole weighed around 10 billion suns when the universe was less than a billion years old, and nobody is quite sure where it found the time. It's a quasar, the brightest one known from that early, so bright that some astronomers suspected a trick. Maybe a galaxy was sitting in the way, bending its light like a lens, so the black hole only looked that heavy. In 2023, the James Webb Space Telescope checked. No sign of a lens."
+  },
+  {
+   "index": 42,
+   "duration": 23.33,
+   "wpm": 162,
+   "peak_dbfs": -0.525257,
+   "wer": 0.0159,
+   "problems": [
+    "misread: after “…gas one measured by” expected “webb” heard “web”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "webb",
+     "web",
+     "gas one measured by"
+    ]
+   ],
+   "text": "And the glow of three different elements in its gas, one measured by Webb and two from telescopes on the ground, all pointed to about ten billion suns, close to the twelve billion from 2015. That's still the gas-speed shortcut, the one that tripped up J0529. Three versions of it agree, which helps, but all three assume the same thing about the gas.",
+   "heard": "and the glow of three different elements in its gas, one measured by web and two from telescopes on the ground, all pointed to about 10 billion suns, close to the 12 billion from 2015. That's still the gas speed shortcut, the one that tripped up J0529. Three versions of it agree, which helps, but all three assume the same thing about the gas."
+  },
+  {
+   "index": 43,
+   "duration": 27.17,
+   "wpm": 174,
+   "peak_dbfs": -0.587442,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Black holes can't eat as fast as they like. Feed one too quickly and it blows its own dinner away, because the light from all that hot, falling gas pushes the rest of the gas back out. At that limit, a black hole can roughly double its weight every thirty-something million years. Start with one about a hundred times the Sun, what a giant early star leaves behind, and reaching ten billion takes about twenty-seven doublings in a row.",
+   "heard": "Black holes can't eat as fast as they like. Feed one too quickly and it blows its own dinner away because the light from all that hot falling gas pushes the rest of the gas back out. At that limit, a black hole can roughly double its weight every 30-something million years. Start with one about a hundred times the sun, what a giant early star leaves behind, and reaching 10 billion takes about 27 doublings in a row."
+  },
+  {
+   "index": 44,
+   "duration": 26.59,
+   "wpm": 176,
+   "peak_dbfs": -0.648115,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "That's eight or nine hundred million years of eating at the legal maximum, with no breaks.\n\nTo make it in time, this thing would have had to start eating almost as soon as the universe began and never stop, long before the first stars were around to leave it behind. So either it started out much bigger, or it ate faster than the limit, or other black holes crashed into it and added their weight. Possibly all three.",
+   "heard": "That's 8 or 900 million years of eating at the legal maximum, with no breaks. To make it in time, this thing would have had to start eating almost as soon as the universe began and never stop, long before the first stars were around to leave it behind. So either it started out much bigger, or it ate faster than the limit, or other black holes crashed into it and added their weight, possibly all three."
+  },
+  {
+   "index": 45,
+   "duration": 1.72,
+   "wpm": 104,
+   "peak_dbfs": -1.016871,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The Cosmic Horseshoe.",
+   "heard": "The Cosmic Horseshoe"
+  },
+  {
+   "index": 46,
+   "duration": 22.6,
+   "wpm": 157,
+   "peak_dbfs": -0.859115,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "Thirty-six billion suns, weighed two completely different ways at the same time.\n\nThis black hole sits in the middle of a galaxy called the Cosmic Horseshoe, about five billion light-years away. It's one of the heaviest galaxies ever seen, heavy enough to bend the light of another galaxy far behind it into a glowing ring, shaped like a horseshoe.",
+   "heard": "36 billion suns weighed two completely different ways at the same time. This black hole sits in the middle of a galaxy called the Cosmic Horseshoe, about 5 billion light years away. It's one of the heaviest galaxies ever seen, heavy enough to bend the light of another galaxy far behind it into a glowing ring, shaped like a horseshoe."
+  },
+  {
+   "index": 47,
+   "duration": 27.79,
+   "wpm": 160,
+   "peak_dbfs": -0.541062,
+   "wer": 0.0533,
+   "problems": [
+    "misread: after “…36000000000 suns and like” expected “abell 1201” heard “abel 112.1”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "misread",
+     "abell 1201",
+     "abel 112.1",
+     "36000000000 suns and like"
+    ]
+   ],
+   "text": "That bent light gives one weight, the way it did for Abell 1201. The stars give another, from how fast they're swinging around the middle, the way they did for Holmberg 15A. Most of the famous ones on the size charts got neither. They got a shortcut, or a guess. In 2025, a team got both, fitted them together, and landed on about thirty-six billion suns. And like Abell 1201, this one is asleep.",
+   "heard": "That bent light gives one weight, the way it did for Abel 1201. The stars give another, from how fast they're swinging around the middle, the way they did for Holmberg 15A. Most of the famous ones on the size charts got neither. They got a shortcut, or a guess. In 2025, a team got both, fitted them together, and landed on about 36 billion sons. And, like Abel 112.1, this one is asleep."
+  },
+  {
+   "index": 48,
+   "duration": 3.97,
+   "wpm": 166,
+   "peak_dbfs": -0.742129,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "No feeding, no glow, so there was no shortcut to take.",
+   "heard": "No feeding, no glow, so there was no shortcut to take."
+  },
+  {
+   "index": 49,
+   "duration": 28.45,
+   "wpm": 175,
+   "peak_dbfs": -0.854413,
+   "wer": 0.0366,
+   "problems": [
+    "repeated or added: after “…which is awkward for” expected “” heard “t 0”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "repeated or added",
+     "",
+     "t 0",
+     "which is awkward for"
+    ]
+   ],
+   "text": "It's also close to the biggest a black hole is thought to be able to grow by eating. One calculation puts that limit at around fifty billion suns, because past that size, the disk of gas feeding a black hole should break up into stars before the gas ever reaches the hole. Which is awkward for TON six-eighteen, supposedly sixty-six billion suns and still feeding. Spinning fast, in the same direction as its gas, is one way it could get away with that.",
+   "heard": "It's also close to the biggest a black hole is thought to be able to grow by eating. One calculation puts that limit at around 50 billion suns. Because past that size, the disk of gas feeding a black hole should break up into stars before the gas ever reaches the hole. Which is awkward for T-O-N-618. Supposedly 66 billion suns and still feeding. Spinning fast in the same direction as its gas is one way it could get away with that."
+  },
+  {
+   "index": 50,
+   "duration": 30.43,
+   "wpm": 164,
+   "peak_dbfs": -0.903911,
+   "wer": 0.0581,
+   "problems": [
+    "repeated or added: after “…up 2 different ways” expected “” heard “t 0”",
+    "repeated or added: after “…not need a might” expected “” heard “thank you”"
+   ],
+   "regen": true,
+   "hard": [
+    [
+     "repeated or added",
+     "",
+     "t 0",
+     "up 2 different ways"
+    ],
+    [
+     "repeated or added",
+     "",
+     "thank you",
+     "not need a might"
+    ]
+   ],
+   "text": "Or that one 2004 number is too high.\n\nEven the team that weighed this one only goes as far as \"quite possibly\" the biggest. Most of the others were measured indirectly, one of them said, so \"we really don't know for sure which is biggest.\" For now, this is the biggest weight anyone has backed up two different ways. TON six-eighteen might beat it. So might Phoenix A, or Holmberg 15A, if the 2019 team was right. This one didn't need a \"might.\"",
+   "heard": "Or that one 2004 number is too high. Even the team that weighed this one only goes as far as quite possibly the biggest. Most of the others were measured indirectly, one of them said. So we really don't know for sure which is biggest. For now, this is the biggest weight anyone has backed up two different ways. T-O-N-618 might beat it. So might Phoenix A or Holmberg-15A if the 2019 team was right. This one didn't need a might. Thank you."
+  },
+  {
+   "index": 51,
+   "duration": 3.87,
+   "wpm": 217,
+   "peak_dbfs": -0.887242,
+   "wer": 0.0,
+   "problems": [],
+   "regen": false,
+   "hard": [],
+   "text": "The next video's on your screen now, if you've got room for one more.",
+   "heard": "The next video's on your screen now, if you've got room for one more."
+  }
+ ],
+ "asr_model": "distil-large-v3",
+ "round": 0
+}

@@ -1,0 +1,35 @@
+[voiceover] respelled for the voice: 2,500→twenty-five hundred (x1), 740→seven hundred and forty (x1), J0100→Jay oh-one-hundred (x1), NGC 1600→NGC sixteen hundred (x3), NGC 4889→NGC forty-eight eighty-nine (x1), TON 618→TON six-eighteen (x6)
+[voiceover] 52 sections · 13429 chars · ~13429 credits
+[voiceover] stitching
+[voiceover] after heading '**Phoenix A**.\x02': target 0.477s, total 0.477s (0.343s inserted)
+[voiceover] before heading '**Holmberg 15A**.\x02': target 0.626s, total 0.626s (0.433s inserted)
+[voiceover] after heading '**Holmberg 15A**.\x02': target 0.413s, total 0.413s (0.345s inserted)
+[voiceover] before heading '**NGC 1600**.\x02': target 0.556s, total 0.556s (0.362s inserted)
+[voiceover] after heading '**NGC 1600**.\x02': target 0.427s, total 0.427s (0.209s inserted)
+[voiceover] before heading '**Abell 1201**.\x02': target 0.577s, total 0.577s (0.369s inserted)
+[voiceover] after heading '**Abell 1201**.\x02': target 0.468s, total 0.468s (0.271s inserted)
+[voiceover] before heading '**J0529**.\x02': target 0.562s, total 0.562s (0.454s inserted)
+[voiceover] after heading '**J0529**.\x02': target 0.421s, total 0.421s (0.205s inserted)
+[voiceover] before heading '**The Eight New Giants**.\x02': target 0.602s, total 0.602s (0.474s inserted)
+[voiceover] after heading '**The Eight New Giants**.\x02': target 0.486s, total 0.486s (0.275s inserted)
+[voiceover] before heading '**TON 618**.\x02': target 0.591s, total 0.591s (0.392s inserted)
+[voiceover] after heading '**TON 618**.\x02': target 0.392s, total 0.392s (0.251s inserted)
+[voiceover] before heading '**J0100**.\x02': target 0.626s, total 0.626s (0.597s inserted)
+[voiceover] after heading '**J0100**.\x02': target 0.443s, total 0.443s (0.403s inserted)
+[voiceover] before heading '**The Cosmic Horseshoe**.\x02': target 0.555s, total 0.555s (0.302s inserted)
+[voiceover] after heading '**The Cosmic Horseshoe**.\x02': target 0.486s, total 0.486s (0.274s inserted)
+[voiceover] wrote out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/raw_stitched.wav  (14.6 min)
+chain peak -1.61 dBFS
+[voiceover] NOTE: this script's read note asks for no pause after the chapter name. Following the profile (announce) anyway — pass --chapter-style run-on if you want the note's version.
+[voiceover] “Every Ultramassive Black Hole Explained in 13 Minutes” · 52 sections · 13276 chars
+[voiceover] pronunciation guide: 8 names, held out of the narration (J0529, J0100, GRAVITY+, Abell, Holmberg…)
+[voiceover] $ /usr/local/bin/python3 /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py --audio out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/raw_stitched.wav --script out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/script_lines.txt --out out/blackholes/Every Ultramassive Black Hole Explained in 13 Minutes (final).mp3 --report out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/pauses.csv --align-cache out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/align.json --curated out/blackholes/curated.txt
+[humanize] decoding
+[humanize]   835.8s, peak -1.61 dBFS
+[humanize] QC (source): clean
+[humanize] declipped 0 over-full-scale region(s)
+[humanize] removed 1 splice fragment(s)
+[humanize]     7:41.805  180 ms  -10 dB
+[humanize] script: 54 lines, 2416 words
+[humanize] forced alignment (this is the slow part)
+[humanize]   aligning 40s / 836s
