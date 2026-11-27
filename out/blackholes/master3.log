@@ -1,0 +1,23 @@
+[humanize] decoding
+[humanize]   836.6s, peak -1.61 dBFS
+[humanize] QC (source): clean
+[humanize] declipped 0 over-full-scale region(s)
+[humanize] script: 54 lines, 2416 words
+[humanize] reusing cached alignment (2416 words)
+[humanize]   2416 words aligned | 173 wpm | mean confidence 0.90 | 6% weak
+[humanize] curated clause breaks: 0
+[humanize] 9 sentence(s) held back from the speed-up (307 chunks stretched)
+[humanize]     0:22.2  248 wpm  x1.010 -> 250   So where does a number like that come from?
+[humanize]     8:45.9  277 wpm  x1.000 -> 277   Put your bet in the comments.
+[humanize]     9:52.9  258 wpm  x1.000 -> 258   And if you fell into it, you wouldn't feel the edge 
+[humanize]     10:48.5  294 wpm  x1.000 -> 294   No sign of a lens.
+[humanize]     12:37.3  248 wpm  x1.008 -> 250   Most of the famous ones on the size charts got neith
+[humanize]     12:57.0  253 wpm  x1.000 -> 253   It's also close to the biggest a black hole is thoug
+[humanize]     13:19.3  248 wpm  x1.010 -> 250   Spinning fast, in the same direction as its gas, is 
+[humanize]     13:51.1  261 wpm  x1.000 -> 261   This one didn't need a "might."
+[humanize]     13:53.0  251 wpm  x1.000 -> 251   The next video's on your screen now, if you've got r
+[humanize] inserted 2.4s at 36 boundaries {'comma': 30, 'paragraph': 6}
+[humanize] studio master (classic, air 0.0)
+[humanize] loudnorm -14 LUFS / -1.5 dBTP
+[humanize] QC (delivered file): clean
+[humanize] done -> out/blackholes/.vo_Every_Ultramassive_Black_Hole_Explained_in_13_Minutes/master.wav  (13:31.01)

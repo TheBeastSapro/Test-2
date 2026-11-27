@@ -1,0 +1,48 @@
+{
+ "duration": 811.056,
+ "lufs": -15.2,
+ "true_peak": -1.4,
+ "lra": 1.6,
+ "asr_words": 2454,
+ "script_words": 2416,
+ "wer": 0.0305,
+ "overall_wpm": 178.7,
+ "articulation_wpm": 202.7,
+ "pauses_explained": 249,
+ "pauses_unexplained": [
+  {
+   "at": 68.58,
+   "gap": 0.149,
+   "after": "\"might\"",
+   "before": "turned"
+  },
+  {
+   "at": 453.92,
+   "gap": 0.149,
+   "after": "had",
+   "before": "ever"
+  },
+  {
+   "at": 703.5,
+   "gap": 0.197,
+   "after": "billion",
+   "before": "suns,"
+  },
+  {
+   "at": 759.93,
+   "gap": 0.191,
+   "after": "billion",
+   "before": "suns,"
+  },
+  {
+   "at": 789.94,
+   "gap": 0.179,
+   "after": "so",
+   "before": "\"we"
+  }
+ ],
+ "chapters": {
+  "in_script": 9,
+  "found_in_audio": 5
+ }
+}

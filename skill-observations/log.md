@@ -789,3 +789,27 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Issue:** The read note's own heading said "VO handoff for script v0.12, which becomes v1.0 LOCKED unchanged on the owner's go". The agent parsed the note for pause and number instructions, but not for its status, and asked for a spend approval on a draft. Nothing was spent because the approval gate held, but the plan read as ready to send.
 **Suggested improvement:** In --plan, scan the read note and the title line for version/lock markers (v0.x, draft, "not locked", "becomes ... LOCKED on ... go"). Print "SCRIPT STATUS: draft (v0.12)" at the top, and leave out the spend question until the script is locked or the user says to voice the draft. Plain "LOCKED" or "v1.0" counts as ready.
 **Principle:** Read an input's own statement of its status before acting on its contents. A document that says it is a draft is telling you not to spend on it yet.
+
+### Observation 53: The master's splice-fragment removal cut the first word of a chapter title, and its QC said clean
+
+**Status:** OPEN
+**Date:** 2026-11-27
+**Session context:** "Every Ultramassive Black Hole Explained in 13 Minutes", v4 master
+**Skill:** explaintory-vo-master (also explaintory-voiceover)
+**Type:** open-source
+**Phase/Area:** humanize.py splice-fragment removal; voiceover.py delivery
+**Issue:** humanize.py logged "removed 1 splice fragment(s): 7:41.805 180 ms -10 dB" and "QC (delivered file): clean". The "fragment" was the word "The" of the chapter title "The Eight New Giants". It came 0.7 s after "…same shortcut." with the before-heading pause on one side and v4's near-digital closure on the other, so it looked fenced. The pre-master stitch read "The Eight New Giants" and the master read "Eight New Giants". It was caught only because the agent windowed-transcribed the location the master's own log named. verify.py's "5 of 9 chapters" FAIL could not tell this apart from ASR spelling misses. Fixed by re-mastering with --keep-glitches; that was the only fragment found, so nothing else changed.
+**Suggested improvement:** humanize.py must not remove a "fragment" that overlaps a forced-aligned word span, or one louder than about -20 dB, since a real splice glitch was never above -16 dB. Every reported removal should be re-transcribed in a ±2 s window before and after, and the removal reverted if a word is lost. voiceover.py should do that check automatically whenever the master's log reports a nonzero fragment count.
+**Principle:** A repair stage's own log is the work list for verifying it. Every edit it reports is a place to look, and a "clean" QC from the stage that made the edit is not evidence about the edit.
+
+### Observation 54: Heading-pause pre-compensation assumed the master compresses ~0.875x; this master compressed 0.97x and topped up two gaps
+
+**Status:** OPEN
+**Date:** 2026-11-27
+**Session context:** Same delivery. Approved ranges: before 0.45-0.60 s, after 0.30-0.45 s
+**Skill:** explaintory-voiceover (also explaintory-vo-master)
+**Type:** open-source
+**Phase/Area:** generate.py --before/--after-heading-pause compensation; post-master gap trim
+**Issue:** The stitch used 0.52:0.66 / 0.35:0.50, i.e. the range divided by 0.875 from Observations 49-50 (0.90, then 0.85). This master shortened the file only 0.97x (836.6 s to 811 s). It also added about 0.13 s after Holmberg 15A and J0100, both 0.56 s against stitch targets of 0.41 and 0.44. 5 of 9 after-heading gaps landed above 0.45 and one before-gap at 0.62. Fixed at zero credits: re-ran the master to WAV (cached alignment, about 1 min), cut 6 gaps at their midpoints (removed regions -84 dBFS or below, every sample outside the cuts asserted identical), encoded once at the master's own settings (libmp3lame 256k), and windowed-transcribed every cut. Final: before 0.49-0.56 s, after 0.35-0.44 s.
+**Suggested improvement:** Make the post-master gap fit the standard step instead of guessing compensation. Stitch at the requested range with no compensation, master to WAV, measure every heading gap, trim or pad at the midpoint into range with the identical-samples invariant, then encode once. Report the delivered-file gaps.
+**Principle:** When a downstream stage's effect on a duration varies run to run (0.85, 0.90, 0.97), stop predicting it. Measure after it and correct there.

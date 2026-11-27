@@ -1,0 +1,34 @@
+[verify] Every Ultramassive Black Hole Explained in 13 Minutes (final).mp3 — 13:31.06
+[verify] measured -15.2 LUFS / -1.4 dBTP true peak (LRA 1.6)
+[verify] transcribing (this is the slow part)
+[readcheck] loading ASR (distil-large-v3, cpu float32) — first run downloads the model (distil-large-v3 is 1.5 GB on disk, measured)
+[verify] 2454 words heard vs 2416 in the script — WER 0.031
+[verify] 179 wpm overall, 203 articulation (reference 181/197); silence 11.8%
+[verify] 249 pauses traced to the script, 5 unexplained, 13 could not be placed
+[verify] date ranges: 0 carrying a beat that splits them
+[verify] chapters: 5 of 9 located in the audio
+
+  FAIL  unexplained 149 ms pause at 1:08.58 — “"might" ‖ turned”
+  FAIL  unexplained 149 ms pause at 7:33.92 — “had ‖ ever”
+  FAIL  unexplained 197 ms pause at 11:43.50 — “billion ‖ suns,”
+  FAIL  unexplained 191 ms pause at 12:39.93 — “billion ‖ suns,”
+  FAIL  unexplained 179 ms pause at 13:09.94 — “so ‖ "we”
+  FAIL  only 5 of 9 chapter names found in the audio
+  warn  QC could not run: No module named 'humanize'
+  warn  loudness -15.2 LUFS is 1.2 LU from the -14.0 target
+  warn  true peak -1.4 dBTP is above the -1.5 ceiling
+  warn  repeated or added: after “…cluster called phoenix about” expected “” heard “5 .7”
+  warn  skipped: after “…hole on the internet” expected “holmberg 15 a” heard “”
+  warn  repeated or added: after “…the bottom of the” expected “” heard “bottom of the the”
+  warn  repeated or added: after “…bet in the comments” expected “” heard “t 0”
+  warn  repeated or added: after “…one paper in 2004” expected “” heard “t 0”
+  warn  repeated or added: after “…it was moving about” expected “” heard “10 .5”
+  warn  repeated or added: after “…it nobody has given” expected “” heard “t 0”
+  warn  repeated or added: after “…that early so bright” expected “” heard “so bright”
+  warn  repeated or added: after “…that tripped up j” expected “” heard “0 .529”
+  warn  misread: after “…way it did for” expected “abell 1201” heard “112 .1”
+  warn  misread: after “…36000000000 suns and like” expected “abell 1201” heard “112 .1”
+  warn  repeated or added: after “…which is awkward for” expected “” heard “t 0”
+  warn  13 silence(s) could not be matched to the script and were NOT judged; 9 of them over 200 ms, longest 570 ms
+
+[verify] NOT DELIVERABLE — 6 failure(s), 16 warning(s)
