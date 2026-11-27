@@ -1,8 +1,8 @@
 [voiceover] NOTE: this script's read note asks for no pause after the chapter name. Following the profile (announce) anyway — pass --chapter-style run-on if you want the note's version.
-[voiceover] “**Every Ultramassive Black Hole Explained in 13 Minutes**” · 50 sections · 13180 chars
+[voiceover] “Every Ultramassive Black Hole Explained in 13 Minutes” · 52 sections · 13276 chars
 [voiceover] pronunciation guide: 8 names, held out of the narration (J0529, J0100, GRAVITY+, Abell, Holmberg…)
 
-  TITLE: “**Every Ultramassive Black Hole Explained in 13 Minutes**”  (not narrated)
+  TITLE: “Every Ultramassive Black Hole Explained in 13 Minutes”  (not narrated)
   detected 9 chapters · 2 CTAs — chapter names read aloud as intros
     1. Phoenix A
     2. Holmberg 15A
@@ -19,7 +19,7 @@
   READ NOTE: 8 lines held out of the narration
   chapter style: announce — a beat around the name
 
-  50 sections (9 chapter announcements) · 13,180 chars · ~15:41 audio
+  52 sections (9 chapter announcements) · 13,276 chars · ~15:48 audio
 
   CALIBRATION — every value that will be sent, and who chose it:
   voice dUHbvtIZto0ZEBkhYiyk (profile) · model eleven_v4 (profile)
@@ -31,8 +31,8 @@
   skipHeadings False (profile)
   ^ eleven_v4 cannot use style, use_speaker_boost — sent as off/0, not the profile value; speed is sent but the docs say v4 ignores it
 
-  COST: ~13,180 credits (first pass) of 327,940 remaining
+  COST: ~13,276 credits (first pass) of 327,940 remaining
   redo rounds: off (--max-redos 0) — flagged sections are reported, not re-rendered
-  WORST CASE this run: ~13,180 credits
+  WORST CASE this run: ~13,276 credits
   master: /home/user/Test-2/.claude/skills/explaintory-vo-master/scripts/humanize.py
 
