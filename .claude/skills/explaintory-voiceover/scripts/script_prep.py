@@ -304,7 +304,10 @@ def guide_preflight(narration, guide):
 _NOTE_HEAD = re.compile(
     r"^\s*[#*_\s]*((read\s*me|read\s*note|note\s*to\s*(the\s*)?(reader|voice|narrator)|"
     r"voice\s*note|delivery\s*note|recording\s*note|before\s*recording|"
-    r"performance\s*note)s?)\b.{0,120}$", re.I)
+    r"performance\s*note)s?)\b(.{0,120}|.{0,300}[:)])$", re.I)
+# The length cap has been hit three times (Observations 44, 46, and a 121-char
+# "Read note (VO handoff ... remove before sending):"). A heading-shaped line --
+# one that ends in ':' or ')' -- may run to 300 chars; prose is still capped.
 
 
 def split_read_note(text):
@@ -343,7 +346,8 @@ def note_wants_runon(note):
     blob = " ".join(note).lower()
     if not blob:
         return None
-    runon = re.search(r"no pause|without a pause|run (straight|on) (from|into)"
+    runon = re.search(r"no (long |real )?pause|without a (long )?pause"
+                      r"|runs? (straight|on) (from|into)|one continuous narration"
                       r"|straight into the first sentence|not an announcement", blob)
     return True if runon else None
 

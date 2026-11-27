@@ -765,3 +765,15 @@ Then assert peak < -0.5 dBFS (without the -3 dB and float output it clipped 2,04
 **Suggested improvement:** Measure heading gaps in verify.py by matching speech islands whose length equals the aligned title duration (what worked here). verify.py should report a pause by the alignment of BOTH neighbours and snap to the nearest script boundary within ±1 word before calling it unexplained. For pause ranges, aim at the midpoint of the requested range after compensation rather than mapping the endpoints, since the master's compression varies 0.85-0.90.
 
 **Principle:** A diff between two runs of a nondeterministic checker is not a diff between the two artifacts — measure the artifacts directly before calling anything new.
+
+### Observation 51: Third length-cap miss on the read-note heading; run-on detector also missed "runs straight into ... no long pause"
+
+**Status:** OPEN
+**Date:** 2026-11-27
+**Session context:** "Every Ultramassive Black Hole Explained in 13 Minutes", v4, --plan stage. Session start found two branches with newer logs (peaceful-carson to #50, jolly-meitner to #45) and merged peaceful-carson before planning, which is the structural fix #37/#44 asked for, done by hand this time.
+**Skill:** explaintory-voiceover
+**Type:** open-source
+**Phase/Area:** script_prep._NOTE_HEAD, note_wants_runon; session start
+**Issue:** The note heading "Read note (VO handoff for script v0.12, which becomes v1.0 LOCKED unchanged on the owner's go, 2026-11-27; remove before sending):" has 121 chars after "Read note". #46 had widened the cap from 60 to 120. Detection failed silently again: the plan counted 54 sections / 14,423 chars and listed a note bullet as a "CTA", so 1,243 chars of handoff note would have been narrated and billed. The only signal was a CTA starting "- Three lines that look like asides". note_wants_runon also missed "Each title runs straight into its section as one continuous narration, with no long pause after it" ("runs" ≠ "run", "no long pause" ≠ "no pause"). Fixed: a heading-shaped line (ending ':' or ')') may run to 300 chars, and the run-on regex accepts runs?/no (long )?pause/one continuous narration.
+**Suggested improvement:** Stop tuning the cap. Pre-flight should FAIL (not warn) when any CTA or narration section starts with "- " or "* " list markup before the first chapter heading. Bullets above chapter 1 are a note, not narration. Also, the session-start branch check should be a script (scripts/sync_branches.sh: fetch, compare max observation per branch, print merge candidates) so it is not left to memory.
+**Principle:** When the same threshold fails three times, the threshold is the wrong instrument. Add a structural check that cannot be outgrown, such as list markup before the body, instead of a bigger number.
