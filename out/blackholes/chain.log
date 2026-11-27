@@ -33,3 +33,6 @@ chain peak -1.61 dBFS
 [humanize] script: 54 lines, 2416 words
 [humanize] forced alignment (this is the slow part)
 [humanize]   aligning 40s / 836s
+[humanize]   aligning 80s / 836s
+[humanize]   aligning 120s / 836s
+[humanize]   aligning 160s / 836s
